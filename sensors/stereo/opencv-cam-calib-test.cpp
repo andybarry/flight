@@ -320,8 +320,8 @@ int main(int argc, char *argv[]) {
             left = GetFrameFormat7(camera);
 
             // use calibration to undistort image
-            Mat left_ud;
-            undistort(left, left_ud, m1_mat, d1_mat);
+            //Mat left_ud;
+            //undistort(left, left_ud, m1_mat, d1_mat);
 
             // display
             //imshow("Input Left", left);
@@ -335,27 +335,13 @@ int main(int argc, char *argv[]) {
 
             right = GetFrameFormat7(camera2);
             // use calibration to undistort image
-            Mat right_ud;
+            //Mat right_ud;
             //undistort(right, right_ud, m2_mat, d2_mat);
 
             //imshow("Input Right", right);
 
             //imshow("Undistort Right", right_ud);
         }
-        if (left_camera_on && right_camera_on) {
-            // stereo recording
-        } else {
-            Mat img;
-            if (left_camera_on) {
-                img = left;
-            } else {
-                img = right;
-            }
-
-            recording_manager.RecFrameHud(img, false, "mono");
-
-        }
-
 
         lcmt_stereo msg;
         msg.timestamp = getTimestampNow();
@@ -369,6 +355,21 @@ int main(int argc, char *argv[]) {
         lcmt_stereo_publish(lcm, "stereo-mono", &msg);
 
         numFrames ++;
+
+
+        if (left_camera_on && right_camera_on) {
+            // stereo recording
+        } else {
+            Mat img;
+            if (left_camera_on) {
+                img = left;
+            } else {
+                img = right;
+            }
+
+            recording_manager.RecFrameHud(img, false, "mono");
+
+        }
 
         if (quiet_mode == false || numFrames % 100 == 0) {
             // compute framerate
@@ -389,7 +390,7 @@ int main(int argc, char *argv[]) {
                 //break;
         //}
 
-        usleep(30000);
+        usleep(20000);
         //usleep(900000);
     }
 
