@@ -5,6 +5,7 @@
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
+    bool visualization = false;
 
     std::string pose_channel = "STATE_ESTIMATOR_POSE";
     std::string stereo_channel = "stereo";
@@ -21,6 +22,7 @@ int main(int argc,char** argv) {
     parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
     parser.add(rc_trajectory_commands_channel, "r", "rc-trajectory-commands-channel", "LCM channel to listen for RC trajectory commands on.");
     parser.add(state_machine_go_autonomous_channel, "a", "state-machine-go-autonomous-channel", "LCM channel to send go-autonmous messages on.");
+    parser.add(visualization, "v", "visualization", "Enables visualization for HUD / LCMGL.");
 
 
     parser.parse();
@@ -45,7 +47,7 @@ int main(int argc,char** argv) {
     std::string trajectory_dir = std::string(bot_param_get_str_or_fail(param, "tvlqr_controller.library_dir"));
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
-    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel);
+    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, visualization);
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);

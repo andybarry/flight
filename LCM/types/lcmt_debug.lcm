@@ -1,4 +1,6 @@
-struct lcmt_debug
+package lcmt;
+
+struct debug
 {
   int64_t utime;
 
