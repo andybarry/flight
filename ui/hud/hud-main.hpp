@@ -31,6 +31,9 @@
 #include <mutex>
 #include <fstream>
 
+#include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
+#include "../../utils/utils/RealtimeUtils.hpp"
+
 void sighandler(int dum);
 
 // stereo handlers
@@ -61,7 +64,5 @@ void Draw2DPointsOnImage(Mat image, const vector<Point> *points);
 void OnMouse( int event, int x, int y, int flags, void* hud_in);
 void ResetBoxDrawing();
 void AskForFrame(int video_number, int frame_number);
-
-bool NonBlockingLcm(lcm_t *lcm);
 
 #endif
