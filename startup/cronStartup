@@ -20,7 +20,6 @@
 #
 # CAM:
 #   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep --name cam-deputy" | /usr/bin/logger -t "bot-procman-cron"
-#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-lcm-tunnel" "bot-lcm-tunnel" | /usr/bin/logger -t "lcm-tunnel-cron"
 #
 #
 
