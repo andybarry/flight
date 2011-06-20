@@ -1,0 +1,38 @@
+struct lcmt_hotrod_u
+{
+  int64_t timestamp; 
+
+  double elevator;
+  double throttle;
+  double aileron;
+  double rudder;
+  
+  
+  double kp_height;
+  double kd_height;
+  
+  double kp_yaw;
+  double kd_yaw;
+  
+  double kp_pitch;
+  double kd_pitch;
+  
+  double kp_roll;
+  double kd_roll;
+  
+  double kp_x;
+  double kd_x;
+  
+  double kp_z;
+  double kd_z;
+  
+  double x_zero;
+  double y_zero;
+  double z_zero;
+  
+  double throttle_trim;
+  double rudder_trim;
+  double elevator_trim;
+  double aileron_trim;
+  
+}

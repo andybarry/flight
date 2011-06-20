@@ -1,0 +1,13 @@
+struct lcmt_glider_optotrak
+{
+    int64_t  timestamp;
+    
+//    int32_t nvalues;
+//    string channel[nvalues];
+    
+//    float value[nvalues];
+    float quaternions[4];
+    float positions[3];
+    float error;
+//    double   qdot[7];
+}

@@ -1,0 +1,8 @@
+struct lcmt_hotrod_optotrak
+{
+    int64_t  timestamp;
+    
+    float positions[3];
+    float angles[3];
+
+}

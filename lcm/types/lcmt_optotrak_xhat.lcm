@@ -1,0 +1,21 @@
+struct lcmt_optotrak_xhat
+{
+    int64_t  timestamp;
+    
+//    int32_t nvalues;
+//    string channel[nvalues];
+    
+//    float value[nvalues];
+    float angles[3];
+    float positions[3];
+    
+    float angles_dot[3];
+    float positions_dot[3];
+    
+//    float error;
+//    double   qdot[7];
+
+
+//      double xhat[8];
+
+}
