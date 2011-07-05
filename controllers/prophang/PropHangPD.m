@@ -1,11 +1,11 @@
-classdef PropHangPD < Control
+classdef PropHangPD < LTIControl
     
     
     properties 
         was_killed = 1;
         xzero = 0.22;
         yzero = -0.3;
-        zzero = -2.7;
+        zzero = -2.7;kk
       
         k;
         sin_t = 0;
@@ -14,12 +14,9 @@ classdef PropHangPD < Control
     end
   methods
     function obj = PropHangPD()
-      obj = obj@Control(12,4);
-      
-      load russ_model_fixed.mat
-      ssmodel = ss(model3.A, model3.B, model3.C, model3.D, .01);
-      obj.k = lqr(ssmodel, eye(8), 0.01*eye(4), []);
-      
+      %obj = obj@LTIControl(12,4);
+      obj = obj@LTIControl(zeros(12,1), zeros(4,1), zeros(4,12));
+            
     end
 
     function uOut = control(obj,t,x)
