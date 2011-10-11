@@ -5,17 +5,27 @@ classdef PropHangPD < LTIControl
         was_killed = 1;
         xzero = 0.22;
         yzero = -0.3;
-        zzero = -2.7;kk
+        zzero = -2.7;
       
-        k;
+        k; % gain matrix
         sin_t = 0;
         sin_freq = 60;
         
     end
   methods
-    function obj = PropHangPD()
-      %obj = obj@LTIControl(12,4);
-      obj = obj@LTIControl(zeros(12,1), zeros(4,1), zeros(4,12));
+    function obj = PropHangPD(setPoints, trims, K)
+        % PropHangPD contructor
+        %
+        % state looks like
+        % x = [ x, y, z, yaw, pitch, roll, xdot, ydot, zdot, yawdot,
+        %       pitchdot, rolldot]'
+        %
+        % @param setPoints points where error is zero formated like the
+        %   state vector
+        % @param trims control actions when error is zero
+        % @param K gain matrix
+        
+      obj = obj@LTIControl(setPoints, trims, K);
             
     end
 
