@@ -1,0 +1,9 @@
+struct lcmt_wingeron_x0
+{
+  int64_t timestamp; 
+
+  double x0[12];
+
+
+ 
+}

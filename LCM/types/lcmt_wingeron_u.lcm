@@ -2,15 +2,16 @@ struct lcmt_wingeron_u
 {
   int64_t timestamp; 
 
-  double elevator;
-
   double throttleFront;
   double throttleRear;
+
+  double rudder;
+
+  double elevator;
 
   double aileronLeft;
   double aileronRight;
 
-  double rudder;
 
  
 }

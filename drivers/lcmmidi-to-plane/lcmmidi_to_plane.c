@@ -61,6 +61,7 @@ lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
             
         case 14:
             // knob 1
+            msg2.p_x = value;
             break;
         
         case 3:
@@ -70,6 +71,7 @@ lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
             
         case 15:
             // knob 2
+            msg2.d_x = value;
             break;
             
         case 4:
@@ -79,6 +81,7 @@ lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
             
         case 16:
             // knob 3
+            msg2.p_z = value;
             break;
             
         case 5:
@@ -88,6 +91,7 @@ lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
             
         case 17:
             // knob 4
+            msg2.d_z = value;
             break;
             
         case 6:
@@ -145,7 +149,12 @@ lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
             // only go on release
             if (msg->event[2] == 0)
             {
-                msg2.live = 1;
+                if (lastMsg.live == 0)
+                {
+                    msg2.live = 1;
+                } else {
+                    msg2.live = 0;
+                }
             }
             break;
             
@@ -206,6 +215,35 @@ int main(int argc,char** argv)
             fprintf(stderr, "lcm_create for send failed.  Quitting.\n");
             return 1;
         }
+        
+        // init last message
+        lastMsg.timestamp = 128;
+        lastMsg.trimThrottle = 128;
+        lastMsg.trimRudder = 128;
+        lastMsg.trimElevator = 128;
+        lastMsg.trimAileronLeft = 128;
+        lastMsg.trimAileronRight = 128;
+          
+        lastMsg.p_throttle = 0;
+        lastMsg.d_throttle = 0;
+          
+        lastMsg.p_rudder = 0;
+        lastMsg.d_rudder = 0;
+          
+        lastMsg.p_elevator = 0;
+        lastMsg.d_elevator = 0;
+          
+        lastMsg.p_aileron = 0;
+        lastMsg.d_aileron = 0;
+
+        lastMsg.p_x = 0;
+        lastMsg.d_x = 0;
+          
+        lastMsg.p_x = 0;
+        lastMsg.d_z = 0;
+        
+        lastMsg.live = 0;
+        
         
         lcmt_midi_subscription_t * midi_sub =  lcmt_midi_subscribe (lcm, lcm_in, &lcm_midi_handler, NULL);
 

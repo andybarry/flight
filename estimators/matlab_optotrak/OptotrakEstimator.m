@@ -1,4 +1,4 @@
-classdef OptotrakEstimator2 < Estimate
+classdef OptotrakEstimator < SmoothRobotLibSystem
     
     
     properties
@@ -17,12 +17,12 @@ classdef OptotrakEstimator2 < Estimate
         L
     end
   methods
-    function obj = OptotrakEstimator2()
-      obj = obj@Estimate(9,12);
+    function obj = OptotrakEstimator()
+      obj = obj@SmoothRobotLibSystem(12,0,6,12);
  
     end
 
-    function xhat = estimate(obj,t,x,u)
+    function xhat = dynamics(obj,t,x,u)
       % decodes the state message
       
       x = double(x);

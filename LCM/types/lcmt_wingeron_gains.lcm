@@ -20,6 +20,12 @@ struct lcmt_wingeron_gains
   int32_t p_aileron;
   int32_t d_aileron;
 
+  int32_t p_x;
+  int32_t d_x;
+  
+  int32_t p_z;
+  int32_t d_z;
+
 
   int32_t live;
  

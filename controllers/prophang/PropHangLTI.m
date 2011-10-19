@@ -1,4 +1,4 @@
-classdef PropHangLTI < Control
+classdef PropHangLTI < SmoothRobotLibSystem
     % Implements LTI control for prophang on the wingeron aircraft.
     %
     % Usage: <pre>runLCMControl(ProphangLTI, WingeronLCMCoder);</pre>
@@ -8,36 +8,55 @@ classdef PropHangLTI < Control
         gainMatrixStorage; % stores the gain matrix messages
         ltiObj; % LTIControl object
         
+        x0lcm; % lcm object for sending data about x0
+        
     end
+    
   methods
     function obj = PropHangLTI()
-      obj = obj@Control(12,4);
-      
-      obj.gainMatrixStorage = LCMStorage('wingeron_gains');
-      obj.ltiObj = LTIControl(zeros(12,1), zeros(4,1), zeros(12));
-      
+        % constructor for PropHangLTI
+        obj = obj@SmoothRobotLibSystem(0, 0, 12, 5);
+
+        obj.gainMatrixStorage = LCMStorage('wingeron_gains');
+        
+        obj.gainMatrixStorage.storage_struct.x0 = zeros(12,1);
+        obj.gainMatrixStorage.storage_struct.was_live = false;
+        
+        obj.ltiObj = LTIControl(zeros(12,1), zeros(4,1), zeros(12));
+        
+        obj.x0lcm = lcm.lcm.LCM.getSingleton();
     end
 
-    function u = control(obj,t,x)
+    function u = output(obj,t,junk,x)
         % Implements control function.  You shouldn't run this; instead
         % use: <pre>runLCMControl(ProphangLTI, WingeronLCMCoder);</pre>
         % 
+        % @param t time
+        % @param x state vector
         %
-        %
+        % @retval u control action vector
         
         % get parameters
         gainMsg = obj.gainMatrixStorage.GetLatestMessage();
         
         % decode gainMsg
-        [K, killed] = decodeGainMsg(gainMsg);
+        [K, u0, live] = obj.decodeGainMsg(gainMsg);
         
-        if (killed == false && obj.gainMatrixStorage.storage_struct.was_killed == true)
-            obj.gainMatrixStorage.storage_struct.was_killed = false;
+        if (live == true && obj.gainMatrixStorage.storage_struct.was_live == false)
+            obj.gainMatrixStorage.storage_struct.was_live = true;
 
-            obj.gainMatrixStorage.storage_struct.x0 = x;
+            obj.gainMatrixStorage.storage_struct.x0 = [x(1); x(2); x(3); zeros(9,1)];
 
+            % send LCM message logging the change in x0
+            
+            x0msg = lcmtypes.lcmt_wingeron_x0();
+            x0msg.x0 = obj.gainMatrixStorage.storage_struct.x0;
+            x0msg.timestamp = t;
+            
+            obj.x0lcm.publish('wingeron_x0',x0msg);
+            
             obj.gainMatrixStorage.storage_struct.sin_t = 0;
-            obj.gainMatrixStorage.storage_struct.sin_freq = sinFreqStart;
+            %obj.gainMatrixStorage.storage_struct.sin_freq = sinFreqStart;
         end
         
         
@@ -46,26 +65,23 @@ classdef PropHangLTI < Control
         % update LTI control object
         obj.ltiObj.K = K;
         obj.ltiObj.x0 = x0;
+        obj.ltiObj.u0 = u0;
         
         
         % get the control values
       
-        u = obj.ltiObj.outupt(0,0,x);
+        u = obj.ltiObj.output(0,0,x);
         
         if (any(isnan(x)) || min(x) < -1e25)
-            if (killed == 1)
-                u(1) = 0;
-                obj.gainMatrixStorage.storage_struct.was_killed = true;
-            end
+            u = obj.ltiObj.u0;
+        end
+        
+        if (live ~= true)
+            u(1) = 0;
+            obj.gainMatrixStorage.storage_struct.was_live = false;
         end
       
         u = min(255, max(0, round(u)) );
-        
-        %TODO: send an LCM message with x0 in it!
-        
-        
-        
-        
         
         
 
@@ -117,23 +133,49 @@ classdef PropHangLTI < Control
       %}
     end
     
-    
-    function [K, killed] = decodeGainMsg(gainMsg)
-        % decodes the LCM message for the gains
+  end
+  
+  methods(Static)
+      
+    function [K, u0, live] = decodeGainMsg(msg)
+        % decodes the LCM message for the gains and converts it to a gain
+        % matrix
         %
-        % @param gainMsg LCM message to decode
+        % @param msg LCM message to decode
         % @retval K gain matrix
-        % @retval killed true if system was killed. You should
-        % <b>respect this value</b>!
-       
-        K = gainMsg.K;
-        killed = gainMsg.killed;
+        % @retval u0 array of trim values (x0 = [trimThrottle, trimRudder,
+        % trimElevator, trimAileronLeft, trimAileronRight]')
+        % @retval live true if system is live, false if killed. You should
+        % <b>respect this value</b> and <b>kill</b> the system when false.
+        %
+        % state vector = [ x y z yaw pitch roll xdot ydot zdot yawdot pitchdot rolldot]'
+        %
+        % K has 5 rows corresponding to each output:
+        %   row 1: throttle
+        %   row 2: rudder
+        %   row 3: elevator
+        %   row 4: aileronLeft
+        %   row 5: aileronRight
         
+        msg = lcmtypes.lcmt_wingeron_gains(msg.data);
         
+        K = [ 0, msg.p_throttle,  zeros(1,5), msg.d_throttle, zeros(1,4) ;
+              msg.p_x, 0, 0, msg.p_rudder, 0, 0, msg.d_x, 0, 0, msg.d_rudder, 0, 0 ;
+              0, 0, msg.p_z, 0, msg.p_elevator, 0, 0, 0, msg.d_z, 0, msg.d_elevator, 0 ;
+              0, 0, 0, 0, 0, msg.p_aileron, 0, 0, 0, 0, 0, msg.d_aileron ;
+              0, 0, 0, 0, 0, msg.p_aileron, 0, 0, 0, 0, 0, msg.d_aileron ; ];
+            
+        if (msg.live == 1)
+            live = true;
+        else
+            live = false;
+        end
         
+        u0 = [ msg.trimThrottle, msg.trimRudder, msg.trimElevator, ...
+                msg.trimAileronLeft, msg.trimAileronRight]';
         
     end
-    
+
   end
   
 end
