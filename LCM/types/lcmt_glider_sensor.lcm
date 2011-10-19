@@ -1,0 +1,18 @@
+struct lcmt_glider_sensor
+{
+    int64_t  timestamp;
+    double   magxc;
+    double   magyc;
+    double   magzc;
+    double   magxs;
+    double   magys;
+    double   magzs;
+    double   accelx;
+    double   accely;
+    double   accelz;
+    double   gyrox;
+    double   gyroy;
+    double   gyroz;
+    double   time;
+    int32_t count;
+}
