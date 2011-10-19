@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 

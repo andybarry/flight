@@ -1,0 +1,7 @@
+struct lcmt_midi
+{
+  int64_t timestamp; 
+
+  int32_t event[3];
+  
+}
