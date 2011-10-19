@@ -10,11 +10,11 @@
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: midi2lcm device-id channel-name\n");
+        fprintf(stderr, "usage: midi-lcm device-id channel-name\n");
         fprintf(stderr, "    device-id : test ALSA input device (find them in /dev/snd/midi*)\n");
         fprintf(stderr, "    channel-name : LCM channel name to output\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    midi2lcm hw:0,0 midi_out\n");
+        fprintf(stderr, "    midi-lcm hw:0,0 midi_out\n");
         fprintf(stderr, "    reads input on card 0, device 0, using snd_rawmidi API\n");
         fprintf(stderr, "    and outputs it on LCM channel \"midi_out\"\n");
 }
@@ -138,7 +138,7 @@ int main(int argc,char** argv)
                 snd_rawmidi_close(handle_in);   
         }
         
-        // TODO: close LCM?
+        lcm_destroy (lcm);
 
         return 0;
 }

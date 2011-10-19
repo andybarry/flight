@@ -9,7 +9,7 @@ SRCDIR=.
 OBJDIR=.
 
 # define custom target name
-TARGNAME=miditolcm
+TARGNAME=midi-lcm
 
 # define the C source files
 SRCS = midi_to_lcm.c
