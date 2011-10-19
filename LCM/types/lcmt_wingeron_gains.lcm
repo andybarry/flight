@@ -1,0 +1,26 @@
+struct lcmt_wingeron_gains
+{
+  int64_t timestamp; 
+
+  int32_t trimThrottle;
+  int32_t trimRudder;
+  int32_t trimElevator;
+  int32_t trimAileronLeft;
+  int32_t trimAileronRight;
+  
+  int32_t p_throttle;
+  int32_t d_throttle;
+  
+  int32_t p_rudder;
+  int32_t d_rudder;
+  
+  int32_t p_elevator;
+  int32_t d_elevator;
+  
+  int32_t p_aileron;
+  int32_t d_aileron;
+
+
+  int32_t live;
+ 
+}
