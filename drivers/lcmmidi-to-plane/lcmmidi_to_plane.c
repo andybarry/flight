@@ -31,7 +31,7 @@ void sighandler(int dum)
         stop=1;
 }
 
-lcmt_wingeron_gains ConvertFromMidiLcmToPlane(lcmt_midi *msg)
+lcmt_wingeron_gains ConvertFromMidiLcmToPlane(const lcmt_midi *msg)
 {
     /* 
     *     Conversion
@@ -253,7 +253,7 @@ int main(int argc,char** argv)
         
         signal(SIGINT,sighandler);
 
-        printf("Converting MIDI LCM on channel \"%s\" to plane gains on channel \"%s\"...", lcm_in, lcm_out);
+        printf("Converting MIDI LCM on channel \"%s\" to plane gains on channel \"%s\"...\n", lcm_in, lcm_out);
 
         while (!stop)
         {

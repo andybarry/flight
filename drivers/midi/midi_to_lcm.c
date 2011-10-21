@@ -17,6 +17,12 @@ static void usage(void)
         fprintf(stderr, "    midi-lcm hw:0,0 midi_out\n");
         fprintf(stderr, "    reads input on card 0, device 0, using snd_rawmidi API\n");
         fprintf(stderr, "    and outputs it on LCM channel \"midi_out\"\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Here, I'll search your available MIDI devices for you:\n---------------------------\n");
+        
+        system("ls /dev/snd/midi*");
+        
+        fprintf(stderr, "\n---------------------------\n");
 }
 
 int stop=0;
