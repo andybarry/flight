@@ -21,6 +21,7 @@ classdef PropHangLTI < SmoothRobotLibSystem
         
         obj.gainMatrixStorage.storage_struct.x0 = zeros(12,1);
         obj.gainMatrixStorage.storage_struct.was_live = false;
+        obj.gainMatrixStorage.storage_struct.t0 = 0;
         
         obj.ltiObj = LTIControl(zeros(12,1), zeros(4,1), zeros(12));
         
@@ -46,7 +47,7 @@ classdef PropHangLTI < SmoothRobotLibSystem
             obj.gainMatrixStorage.storage_struct.was_live = true;
 
             obj.gainMatrixStorage.storage_struct.x0 = [x(1); x(2); x(3); zeros(9,1)];
-
+            
             % send LCM message logging the change in x0
             
             x0msg = lcmtypes.lcmt_wingeron_x0();
@@ -78,59 +79,46 @@ classdef PropHangLTI < SmoothRobotLibSystem
         
         if (live ~= true)
             u(1) = 0;
+            u(3) = 150; % save the plane from elevator damage by slamming the elevator over on kill
             obj.gainMatrixStorage.storage_struct.was_live = false;
         end
-      
+        
+        if (obj.gainMatrixStorage.storage_struct.t0 <= 0)
+            obj.gainMatrixStorage.storage_struct.t0 = t;
+        end
+        
+        sin_t = (t-obj.gainMatrixStorage.storage_struct.t0) / 1000;
+        
+        % add disturbances
+        sin_freq1 = 4;
+        sin_freq2 = 5;
+        sin_freq3 = 7;
+        sin_freq4 = 9;
+
+        %addterm = sin(obj.sin_t * obj.sin_freq);
+        addterm1 = sin(sin_t * sin_freq1); %disabled
+        addterm2 = sin(sin_t * sin_freq2);
+        addterm3 = sin(sin_t * sin_freq3);
+        addterm4 = sin(sin_t * sin_freq4);%%%%disabled
+
+
+        addterm = addterm1 + addterm2 + addterm3 + addterm4;
+        
+        %addterm = addterm1 + addterm2 + addterm3;
+
+        %u(2) = u(2) + addterm * 7; % rudder
+        %u(3) = u(3) + addterm * 4; % elevator
+        u(4) = u(4) + addterm * 13; % aileron
+        u(5) = u(5) + addterm * 13; % aileron
+        
+%}      
+        
+        
+        % ---- do NOT add code past this line -----
+        % min/max protection here
+        
         u = min(255, max(0, round(u)) );
         
-        
-
-        %{
-        addterm = sin(obj.sin_t * obj.sin_freq);
-
-        obj.sin_t = obj.sin_t + 0.01;
-        obj.sin_freq = obj.sin_freq - 0.01;
-
-
-        if (obj.sin_freq < 0.5)
-        obj.sin_freq = 0.5;
-        end
-
-
-        u(2) = u(2) + addterm * 15;
-        %u(3) = u(3) + addterm * 15;
-
-
-        % add position control
-
-        % x postion
-        u(2) = u(2) - kp_x * x(1) - kd_x * x(7);
-
-        % z position (evevator?)
-        u(3) = u(3) - kp_z * x(3) - kd_z * x(9);
-      
-      
-      %k = [5.81972081683635,3.98165427583584,-3.21284936974977,-4.88912166208106,-6.39505762333590,-0.609360622619920,-11.1597811094662,-2.46536195196173;0.444948880519526,-0.0197555924201845,0.431211112016844,0.305441062369966,-0.602288724304874,1.27154819412926,-0.562764487589815,-1.38346077264154;0.177884649664940,0.820774238488977,0.176032846476008,-1.56249846597632,2.63409576490163,-1.15508939135023,-2.44772678978091,0.446537152427191;0.492708574666643,0.912824542330009,-1.92844722643401,3.22999335168441,-1.71715343500542,-1.61352282795339,3.48822912340177,-1.03038033412878;];
-      
-%      u = -obj.k*x;
- 
-      u = min(254,max(0,round(u + u_trim)));
-      
-      % check kill
-      if (gains(9) == 1)
-          u(1) = 0;
-          obj.sin_freq = 1;
-          obj.was_killed = 1;
-      end
-
-      
-      uOut = [u kp_height kd_height kp_yaw kd_yaw kp_pitch kd_pitch kp_roll kd_roll kp_x kd_x kp_z kd_z obj.xzero obj.yzero obj.zzero];
-      
-      %%% CHANGED FOR ONE EXPERIMENT CHANGE IT BACK
-      %uOut = [u kp_height kd_height kp_yaw kd_yaw kp_pitch kd_pitch kp_roll u_trim(1) ];
-      
-      %disp(u)
-      %}
     end
     
   end
@@ -159,9 +147,28 @@ classdef PropHangLTI < SmoothRobotLibSystem
         
         msg = lcmtypes.lcmt_wingeron_gains(msg.data);
         
-        K = [ 0, msg.p_throttle,  zeros(1,5), msg.d_throttle, zeros(1,4) ;
-              msg.p_x, 0, 0, msg.p_rudder, 0, 0, msg.d_x, 0, 0, msg.d_rudder, 0, 0 ;
-              0, 0, msg.p_z, 0, msg.p_elevator, 0, 0, 0, msg.d_z, 0, msg.d_elevator, 0 ;
+        msg.p_rudder = -msg.p_rudder;
+        msg.d_rudder = -msg.d_rudder;
+        
+        msg.p_elevator = -msg.p_elevator;
+        msg.d_elevator = -msg.d_elevator;
+        
+        msg.p_aileron = -msg.p_aileron;
+        msg.d_aileron = -msg.d_aileron;
+        
+        p_throttle = msg.p_throttle / 1000;
+        d_throttle = msg.d_throttle / 1000;
+        
+        p_x = msg.p_x / 1000;
+        p_z = -msg.p_z / 1000;
+        
+        d_x = msg.d_x / 1000;
+        d_z = -msg.d_z / 1000;
+        
+        
+        K = [ 0, p_throttle,  zeros(1,5), d_throttle, zeros(1,4) ;
+              p_x, 0, 0, msg.p_rudder, 0, 0, d_x, 0, 0, msg.d_rudder, 0, 0 ;
+              0, 0, p_z, 0, msg.p_elevator, 0, 0, 0, d_z, 0, msg.d_elevator, 0 ;
               0, 0, 0, 0, 0, msg.p_aileron, 0, 0, 0, 0, 0, msg.d_aileron ;
               0, 0, 0, 0, 0, msg.p_aileron, 0, 0, 0, 0, 0, msg.d_aileron ; ];
             
