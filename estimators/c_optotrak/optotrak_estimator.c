@@ -30,39 +30,48 @@ void sighandler(int dum)
 
 void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_hotrod_optotrak *msg, void *user)
 {
-	// convert message and send it via LCM
-	//printf("msg: %d\n", msg->event[2]);
-	
-	// convert
-	lcmt_optotrak_xhat msg2;
-	
-	int i;
-	
-	for (i=0;i<3;i++)
-	{
-	    msg2.positions[i] = msg->positions[i];
-    	msg2.angles[i] = msg->angles[i];
+    // convert message and send it via LCM
+    //printf("msg: %d\n", msg->event[2]);
+    
+    // convert
+    lcmt_optotrak_xhat msg2;
+    
+    int i;
+    
+    double yaw = msg->angles[2];
+    double pitch = msg->angles[0];
+    double roll = msg->angles[1];
+    
+    yaw = yaw - 0.33;
+    roll = roll + 0.1;
+    
+    double newangles[] = {yaw, pitch, roll};
+    
+    for (i=0;i<3;i++)
+    {
+        msg2.positions[i] = msg->positions[i];
+        msg2.angles[i] = newangles[i];//msg->angles[3-i];
     }
-	
-	
-	for (i=0;i<3;i++)
-	{
-    	msg2.positions_dot[i] = (msg->positions[i] - lastX[i]) * 100;
-    	lastX[i] = msg->positions[i];
+    
+    
+    for (i=0;i<3;i++)
+    {
+        msg2.positions_dot[i] = (msg->positions[i] - lastX[i]) * 100;
+        lastX[i] = msg->positions[i];
     }
     
     for (i=0;i<3;i++)
-	{
-    	msg2.angles_dot[i] = (msg->angles[i] - lastAngles[i]) * 100;
-    	lastAngles[i] = msg->angles[i];
+    {
+        msg2.angles_dot[i] = (newangles[i] - lastAngles[i]) * 100;
+        lastAngles[i] = newangles[i];
     }
-	
-	struct timeval thisTime;
-	gettimeofday(&thisTime, NULL);
+    
+    struct timeval thisTime;
+    gettimeofday(&thisTime, NULL);
     msg2.timestamp = (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
-	
-	// send via LCM
-	lcmt_optotrak_xhat_publish (lcmSend, lcm_out, &msg2);
+    
+    // send via LCM
+    lcmt_optotrak_xhat_publish (lcmSend, lcm_out, &msg2);
 }
 
 
@@ -110,7 +119,7 @@ int main(int argc,char** argv)
         
         signal(SIGINT,sighandler);
 
-        printf("Running estimator on input from channel \"%s\" and outputing to \"%s\"...\n", lcm_in, lcm_out);
+        printf("Broadcasting LCM: %s --> %s\n", lcm_in, lcm_out);
 
         while (!stop)
         {

@@ -57,24 +57,20 @@ classdef UtapeControl < SmoothRobotLibSystem
 %            u = obj.ltiObj.u0;
 %        end
         
-        if (live ~= true)
-            u(1) = 0;
-            %u(3) = 150; % save the plane from elevator damage by slamming the elevator over on kill
-            obj.gainMatrixStorage.storage_struct.was_live = false;
-        end
-        
         if (obj.gainMatrixStorage.storage_struct.t0 <= 0)
             obj.gainMatrixStorage.storage_struct.t0 = t;
         end
         
-        if (obj.gainMatrixStorage.storage_struct.t0_utape <= 0 && x(3) < obj.ztrigger)
+%%%%%%%%%%%% TODO: CHANGED THIS TO X NOT Z AXIS!!!!!!!!!! %%%%%%%%%%%
+        if (obj.gainMatrixStorage.storage_struct.t0_utape <= 0 && x(1) > obj.ztrigger)
             obj.gainMatrixStorage.storage_struct.t0_utape = t;
+            disp('u tape fire');
         end
         
         
         % get the control values
         if (obj.gainMatrixStorage.storage_struct.t0_utape > 0)
-            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)/1000
+            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)/1000;
 
             u_from_tape = obj.utape.eval(currentT);
 
@@ -115,6 +111,12 @@ classdef UtapeControl < SmoothRobotLibSystem
         
         
         % ---- do NOT add code past this line -----
+        
+        if (live ~= true)
+            u(1) = 0;
+            %u(3) = 150; % save the plane from elevator damage by slamming the elevator over on kill
+            obj.gainMatrixStorage.storage_struct.was_live = false;
+        end
         % min/max protection here
         
         u = min(255, max(0, round(u)) );

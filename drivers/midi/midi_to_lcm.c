@@ -66,25 +66,22 @@ int main(int argc,char** argv)
         fprintf(stderr,"device %s\n",device_in);
         fprintf(stderr,"Output: ");
         fprintf(stderr,"LCM channel %s\n", lcm_out);
+        fprintf(stderr,"Read midi in\n");
+        fprintf(stderr,"Press ctrl-c to stop (then cause a midi event, since we'll be blocking on that)\n");
+        fprintf(stderr,"Broadcasting LCM: %s\n", lcm_out);
         
         
         if (device_in) {
             err = snd_rawmidi_open(&handle_in,NULL,device_in,0);    
             if (err) {
                 fprintf(stderr,"snd_rawmidi_open %s failed: %d\n",device_in,err);
+                return -1;
             }
         }
 
         signal(SIGINT,sighandler);
-
-
-
-        if (handle_in || fd_in!=-1) {
-                fprintf(stderr,"Read midi in\n");
-                fprintf(stderr,"Press ctrl-c to stop (then cause a midi event, since we'll be blocking on that)\n");
-                fprintf(stderr,"Broadcasting to LCM...\n");
-        }
-
+        
+        
         int num = 0;
         int val[10];
         

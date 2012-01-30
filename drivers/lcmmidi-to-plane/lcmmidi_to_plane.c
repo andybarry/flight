@@ -253,7 +253,7 @@ int main(int argc,char** argv)
         
         signal(SIGINT,sighandler);
 
-        printf("Converting MIDI LCM on channel \"%s\" to plane gains on channel \"%s\"...\n", lcm_in, lcm_out);
+        printf("Broadcasting LCM: %s --> %s\n", lcm_in, lcm_out);
 
         while (!stop)
         {
