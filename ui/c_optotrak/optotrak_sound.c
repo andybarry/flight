@@ -13,6 +13,8 @@ char *lcm_out = NULL;
 double lastX[10];
 double lastAngles[10];
 int lastHaveMarker = 0;
+char gotcmd[1000];
+char lostcmd[1000];
 
 static void usage(void)
 {
@@ -34,7 +36,7 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
     // if it has, play a sound
         
     int haveMarker = 0;
-    
+
     if (msg->positions[0] > -100000)
     {
         // we have the maker
@@ -49,14 +51,13 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
         if (haveMarker == 1)
         {
             // play the "got marker" sound
-            
-            system("mplayer gotmarker.wav < /dev/null &");
-            printf("got marker\n");
+            system(gotcmd);
+            //printf("got marker\n");
         } else {
             // play the lost marker sound
             
-            system("mplayer lostmarker.wav < /dev/null &");
-            printf("lost marker\n");
+            system(lostcmd);
+            //printf("lost marker\n");
         }
     } else {
         lastHaveMarker = haveMarker;
@@ -68,6 +69,15 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
 
 int main(int argc,char** argv)
 {
+        strcpy(gotcmd, "mplayer ");
+        strcat(gotcmd, argv[0]);
+        strcat(gotcmd, "-gotmarker.wav < /dev/null &");
+        
+        strcpy(lostcmd, "mplayer ");
+        strcat(lostcmd, argv[0]);
+        strcat(lostcmd, "-lostmarker.wav < /dev/null &");
+                
+                printf(gotcmd);
         printf("This program requires mplayer.  If you don't have it, sudo apt-get install mplayer\n");
         char *lcm_in = NULL;
         
