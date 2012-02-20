@@ -1,0 +1,9 @@
+struct lcmt_camera_frame
+{
+  int64_t timestamp; 
+
+  int32_t cameraNumber;
+  int32_t frameNumber;
+
+ 
+}
