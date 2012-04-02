@@ -15,6 +15,10 @@ double lastAngles[10];
 int lastHaveMarker = 0;
 char gotcmd[1000];
 char lostcmd[1000];
+char beepcmd[1000];
+
+long lastSoundTime = 0;
+long lastBeepTime = 0;
 
 static void usage(void)
 {
@@ -37,14 +41,20 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
         
     int haveMarker = 0;
 
+    long thisTime = msg->timestamp;
+
     if (msg->positions[0] > -100000)
     {
         // we have the maker
         haveMarker = 1;
+    } else
+    {
+        lastBeepTime = thisTime;
     }
     
-    if (haveMarker != lastHaveMarker)
+    if (haveMarker != lastHaveMarker && (thisTime - 100) > lastSoundTime )
     {
+        lastSoundTime = thisTime;
         lastHaveMarker = haveMarker;
         // play a sound
         
@@ -63,6 +73,14 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
         lastHaveMarker = haveMarker;
     }
     
+    // check to see if we've had the marker for 5 seconds, if so beep
+    if (haveMarker == 1 && lastBeepTime + 1000 < thisTime)
+    {
+        lastBeepTime = thisTime;
+        // play the "still have maker" sound
+        system(beepcmd);
+    }
+    
     
 }
 
@@ -76,8 +94,12 @@ int main(int argc,char** argv)
         strcpy(lostcmd, "mplayer ");
         strcat(lostcmd, argv[0]);
         strcat(lostcmd, "-lostmarker.wav < /dev/null &");
+        
+        strcpy(beepcmd, "mplayer ");
+        strcat(beepcmd, argv[0]);
+        strcat(beepcmd, "-beepmarker.wav < /dev/null &");
                 
-                printf(gotcmd);
+        printf(gotcmd);
         printf("This program requires mplayer.  If you don't have it, sudo apt-get install mplayer\n");
         char *lcm_in = NULL;
         
