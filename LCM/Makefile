@@ -8,7 +8,7 @@ LIBDIR=lib
 GENDIR=gen
 
 # list the LCM types here
-lcmtypes=lcmt_glider_optotrak lcmt_hotrod_u lcmt_optotrak_xhat lcmt_hotrod_optotrak lcmt_html lcmt_midi lcmt_wingeron_u lcmt_wingeron_x0 lcmt_wingeron_gains lcmt_glider_sensor lcmt_camera_frame lcmt_optotrak
+lcmtypes=lcmt_glider_optotrak lcmt_hotrod_u lcmt_optotrak_xhat lcmt_hotrod_optotrak lcmt_html lcmt_midi lcmt_wingeron_u lcmt_wingeron_x0 lcmt_wingeron_gains lcmt_glider_sensor lcmt_camera_frame
 
 # derive the file names of the .c, .h, and .o files corresponding
 # to the LCM types here
