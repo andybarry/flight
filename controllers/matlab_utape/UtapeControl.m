@@ -11,15 +11,15 @@ classdef UtapeControl < SmoothRobotLibSystem
         utape; % stores the tape to play back
         
         x0lcm; % lcm object for sending data about x0
-        ztrigger; % trigger value to start the clock on the u-tape
+        xtrigger; % trigger value to start the clock on the u-tape
     end
     
   methods
-    function obj = UtapeControl(utape, ztrigger)
+    function obj = UtapeControl(utape, xtrigger)
         % constructor for UtapeControl
         %
         % @param utape input trajectory (as a RobotLib Trajectory)
-        % @param ztrigger z-value for the plane to cross to start the tape
+        % @param xtrigger x-value for the plane to cross to start the tape
         
         obj = obj@SmoothRobotLibSystem(0, 0, 12, 5);
 
@@ -31,7 +31,7 @@ classdef UtapeControl < SmoothRobotLibSystem
         obj.gainMatrixStorage.storage_struct.t0_utape = 0;
         
         obj.utape = utape;
-        obj.ztrigger = ztrigger;
+        obj.xtrigger = xtrigger;
         
         obj.x0lcm = lcm.lcm.LCM.getSingleton();
     end
@@ -63,8 +63,7 @@ classdef UtapeControl < SmoothRobotLibSystem
             obj.gainMatrixStorage.storage_struct.t0 = t;
         end
         
-%%%%%%%%%%%% TODO: CHANGED THIS TO X NOT Z AXIS!!!!!!!!!! %%%%%%%%%%%
-        if (obj.gainMatrixStorage.storage_struct.t0_utape <= 0 && x(1) > obj.ztrigger)
+        if (obj.gainMatrixStorage.storage_struct.t0_utape <= 0 && x(1) > obj.xtrigger)
             obj.gainMatrixStorage.storage_struct.t0_utape = t;
             disp('u tape fire');
         end
