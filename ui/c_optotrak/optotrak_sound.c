@@ -5,13 +5,11 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include "../../LCM/lcmt_hotrod_optotrak.h"
-#include "../../LCM/lcmt_optotrak_xhat.h"
+#include "../../LCM/lcmt_optotrak.h"
 
 
 char *lcm_out = NULL;
-double lastX[10];
-double lastAngles[10];
+
 int lastHaveMarker = 0;
 char gotcmd[1000];
 char lostcmd[1000];
@@ -34,7 +32,7 @@ void sighandler(int dum)
 
 
 
-void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_hotrod_optotrak *msg, void *user)
+void lcm_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_optotrak *msg, void *user)
 {
     // check to see if the object has entered or left the view
     // if it has, play a sound
@@ -43,7 +41,7 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
 
     long thisTime = msg->timestamp;
 
-    if (msg->positions[0] > -100000)
+    if (msg->x[0] > -100000)
     {
         // we have the maker
         haveMarker = 1;
@@ -120,17 +118,7 @@ int main(int argc,char** argv)
         }
         
         
-        
-        
-        int i;
-        // init lastX
-        for (i=0;i<9;i++)
-        {
-            lastX[i] = 0;
-            lastAngles[i] = 0;
-        }
-        
-        lcmt_hotrod_optotrak_subscription_t * hotrod_optotrak_sub =  lcmt_hotrod_optotrak_subscribe (lcm, lcm_in, &lcm_hotrod_optotrak_handler, NULL);
+        lcmt_optotrak_subscription_t * optotrak_sub =  lcmt_optotrak_subscribe (lcm, lcm_in, &lcm_optotrak_handler, NULL);
 
         
     
@@ -150,7 +138,7 @@ int main(int argc,char** argv)
 
         printf("Closing...\n");
         
-        lcmt_hotrod_u_unsubscribe (lcm, hotrod_optotrak_sub);
+        lcmt_optotrak_unsubscribe (lcm, optotrak_sub);
         lcm_destroy (lcm);
 
         printf("Done.\n");

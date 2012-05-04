@@ -5,7 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include "../../LCM/lcmt_hotrod_optotrak.h"
+#include "../../LCM/lcmt_optotrak.h"
 #include "../../LCM/lcmt_optotrak_xhat.h"
 
 
@@ -28,7 +28,7 @@ void sighandler(int dum)
 
 
 
-void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_hotrod_optotrak *msg, void *user)
+void lcm_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_optotrak *msg, void *user)
 {
     // convert message and send it via LCM
     //printf("msg: %d\n", msg->event[2]);
@@ -38,33 +38,54 @@ void lcm_hotrod_optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel
     
     int i;
     
-    double yaw = msg->angles[2];
-    double pitch = msg->angles[0];
-    double roll = msg->angles[1];
-    
-    yaw = yaw - 0.33;
-    roll = roll + 0.1;
-    
-    double newangles[] = {yaw, pitch, roll};
-    
-    for (i=0;i<3;i++)
-    {
-        msg2.positions[i] = msg->positions[i];
-        msg2.angles[i] = newangles[i];//msg->angles[3-i];
-    }
+    double yaw[10];
+    double pitch[10];
+    double roll[10];
     
     
-    for (i=0;i<3;i++)
-    {
-        msg2.positions_dot[i] = (msg->positions[i] - lastX[i]) * 100;
-        lastX[i] = msg->positions[i];
-    }
+    //yaw = yaw - 0.33;
+    //roll = roll + 0.1;
     
-    for (i=0;i<3;i++)
-    {
-        msg2.angles_dot[i] = (newangles[i] - lastAngles[i]) * 100;
-        lastAngles[i] = newangles[i];
-    }
+    // to convert aligned coordinates to plane coordinates, we switch
+    // yaw and roll because optotrak has a different definition of which is which
+    
+
+    yaw[0] = msg->roll[0]; //yaw[0];
+    pitch[0] = msg->pitch[0];
+    roll[0] = msg->yaw[0]; //roll[0];
+
+    double x[10];
+    double y[10];
+    double z[10];
+    
+    x[0] = msg->x[0];
+    y[0] = msg->y[0];
+    z[0] = msg->z[0];
+    
+    msg2.positions[0] = x[0];
+    msg2.positions[1] = y[0];
+    msg2.positions[2] = z[0];
+    
+    msg2.angles[0] = yaw[0];
+    msg2.angles[1] = pitch[0];
+    msg2.angles[2] = roll[0];
+    
+    
+    msg2.positions_dot[0] = (x[0] - lastX[0]) * 100;
+    msg2.positions_dot[1] = (y[0] - lastX[1]) * 100;
+    msg2.positions_dot[2] = (z[0] - lastX[2]) * 100;
+    
+    lastX[0] = x[0];
+    lastX[1] = y[0];
+    lastX[2] = z[0];
+    
+    msg2.angles_dot[0] = (yaw[0] - lastAngles[0]) * 100;
+    msg2.angles_dot[1] = (pitch[0] - lastAngles[1]) * 100;
+    msg2.angles_dot[2] = (roll[0] - lastAngles[2]) * 100;
+    
+    lastAngles[0] = yaw[0];
+    lastAngles[1] = pitch[0];
+    lastAngles[2] = roll[0];
     
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
@@ -111,7 +132,7 @@ int main(int argc,char** argv)
             lastAngles[i] = 0;
         }
         
-        lcmt_hotrod_optotrak_subscription_t * hotrod_optotrak_sub =  lcmt_hotrod_optotrak_subscribe (lcm, lcm_in, &lcm_hotrod_optotrak_handler, NULL);
+        lcmt_optotrak_subscription_t * optotrak_sub =  lcmt_optotrak_subscribe (lcm, lcm_in, &lcm_optotrak_handler, NULL);
 
         
     
@@ -131,7 +152,7 @@ int main(int argc,char** argv)
 
         printf("Closing...\n");
         
-        lcmt_hotrod_u_unsubscribe (lcm, hotrod_optotrak_sub);
+        lcmt_optotrak_unsubscribe (lcm, optotrak_sub);
         lcm_destroy (lcm);
 
         printf("Done.\n");
