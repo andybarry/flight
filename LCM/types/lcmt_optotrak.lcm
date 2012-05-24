@@ -2,7 +2,7 @@ struct lcmt_optotrak
 {
     int64_t  timestamp;
     
-    int64_t number_rigid_bodies;
+    int32_t number_rigid_bodies;
     
     float x[number_rigid_bodies];
     float y[number_rigid_bodies];
