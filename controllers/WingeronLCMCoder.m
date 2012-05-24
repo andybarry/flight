@@ -73,7 +73,9 @@ classdef WingeronLCMCoder < LCMCoder
       % decodes the state message
        msg = lcmtypes.lcmt_optotrak_xhat(msg.data);
        
-       t = msg.timestamp;
+       %t = msg.timestamp;
+       
+       t = now;
        
        if (any(isnan(msg.positions)))
            xhat = NaN*ones(12,1);

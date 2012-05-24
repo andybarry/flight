@@ -1,6 +1,8 @@
 % Plane plant
 p = PlanePlant;
 
+disp('Starting state estimation.');
+
 % Initialize state variables
 s_last = [];
 u_last = zeros(5,1);
@@ -16,6 +18,7 @@ lc.subscribe('wingeron_x',aggregator);
 
 storage = LCMStorage('wingeron_u');
 zeros_storage = LCMStorage('wingeron_gains');
+
 
 
 % Estimator loop
@@ -129,7 +132,7 @@ while true
         
         
         statemsg.positions = [s_new(1);s_new(2);s_new(3)]; % x,y,z
-        statemsg.angles = [s_new(6);s_new(5);s_new(4)]; % yaw, pitch, roll
+        statemsg.angles = [s_new(4);s_new(5);s_new(6)]; % roll, pitch, yaw
         statemsg.timestamp = msg.timestamp;
 
         % Publish state message

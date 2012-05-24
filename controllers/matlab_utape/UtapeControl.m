@@ -38,7 +38,7 @@ classdef UtapeControl < SmoothRobotLibSystem
 
     function u = output(obj,t,junk,x)
         % Implements control function.  You shouldn't run this; instead
-        % use: <pre>runLCMControl(ProphangLTI, WingeronLCMCoder);</pre>
+        % use: <pre>runLCMControl(UtapeControl(pptraj, 1), WingeronLCMCoder);</pre>
         % 
         % @param t time
         % @param x state vector
@@ -71,7 +71,8 @@ classdef UtapeControl < SmoothRobotLibSystem
         
         % get the control values
         if (obj.gainMatrixStorage.storage_struct.t0_utape > 0)
-            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)/1000;
+            %currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)/1000;
+            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)*86400; % matlab returns decimal days since 1900 (?!?!?!!)
 
             u_from_tape = obj.utape.eval(currentT);
 
