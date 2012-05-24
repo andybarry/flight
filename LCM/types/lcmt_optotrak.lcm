@@ -1,0 +1,15 @@
+struct lcmt_optotrak
+{
+    int64_t  timestamp;
+    
+    int64_t number_rigid_bodies;
+    
+    float x[number_rigid_bodies];
+    float y[number_rigid_bodies];
+    float z[number_rigid_bodies];
+    
+    float yaw[number_rigid_bodies];
+    float pitch[number_rigid_bodies];
+    float roll[number_rigid_bodies];
+
+}
