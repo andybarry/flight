@@ -1,7 +1,17 @@
-tstart = 00;
-tend = 100;
+%tstart = 00;
+%tend = 100;
 
 t = wingeron_xhat(:,14);
+
+% discover stop of throttle
+t_u = wingeron_u(:,8);
+throttle = wingeron_u(:,2);
+
+% find all the points where the throttle drops to zero
+dthrottle = diff(throttle);
+ind = find(dthrottle < 0);
+tend = t_u(ind(end)) + 1;
+tstart = tend - 2;
 
 x = wingeron_xhat(:,5);
 y = wingeron_xhat(:,6);
@@ -11,7 +21,7 @@ roll = wingeron_xhat(:,2);
 pitch = wingeron_xhat(:,3);
 yaw = wingeron_xhat(:,4);
 
-figure(1)
+figure(4)
 clf
 plot(t,x,'bx-')
 hold on
@@ -27,7 +37,7 @@ xlim([tstart tend]);
 
 %return;
 
-figure(2)
+figure(5)
 clf
 plot(t, yaw.*180/pi, 'bx-')
 hold on
@@ -43,13 +53,18 @@ title('wingeron xhat angles');
 
 xlim([tstart tend]);
 
-figure(3)
+figure(6)
 clf
 throttle = wingeron_u(:,2);
 ailR = wingeron_u(:,7);
 t_u = wingeron_u(:,8);
 plot(t_u, throttle);
+
+t_u_ret = wingeron_u_return_gumstix(:,8);
+ailR_ret = wingeron_u_return_gumstix(:,7);
 hold on
 plot(t_u, ailR, 'xr-')
-legend('Thottle','Aileron Right');
+plot(t_u_ret, ailR_ret, 'xk-');
+legend('Thottle','Aileron Right', 'Aileron Right Return');
 title('wingeron u');
+xlim([tstart tend]);
