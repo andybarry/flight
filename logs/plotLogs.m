@@ -10,7 +10,12 @@ throttle = wingeron_u(:,2);
 % find all the points where the throttle drops to zero
 dthrottle = diff(throttle);
 ind = find(dthrottle < 0);
-tend = t_u(ind(end)) + 1;
+if (isempty(ind))
+    tend = 2;
+else
+    tend = t_u(ind(end)) + 1;
+end
+
 tstart = tend - 2;
 
 x = wingeron_x(:,3);
@@ -21,7 +26,7 @@ yaw = wingeron_x(:,8); %%% ROLL AND YAW SWITCH FROM OPTOTRAK
 pitch = wingeron_x(:,7);
 roll = wingeron_x(:,6);
 
-figure(1)
+thisFig = figure(1);
 clf
 plot(t,x,'bx-')
 hold on
@@ -34,10 +39,11 @@ title('wingeron x positions');
 ylim([-5000 5000]);
 
 xlim([tstart tend]);
+set(thisFig, 'Position', [20 375 560 420])
 
 
 
-figure(2)
+thisFig = figure(2);
 clf
 plot(t, yaw.*180/pi, 'bx')
 hold on
@@ -49,11 +55,12 @@ ylim([-200 200]);
 xlabel('Time (s)');
 ylabel('Angle (deg)');
 title('wingeron x angles');
+set(thisFig, 'Position', [1+560 375 560 420])
 
 
 xlim([tstart tend]);
 
-figure(3)
+thisFig = figure(3);
 clf
 
 ailR = wingeron_u(:,7);
@@ -63,3 +70,4 @@ plot(t_u, ailR, 'xr')
 legend('Thottle','Aileron Right');
 title('wingeron u');
 xlim([tstart tend]);
+set(thisFig, 'Position', [850 375 560 420])
