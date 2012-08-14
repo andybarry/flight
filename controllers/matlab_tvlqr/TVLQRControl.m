@@ -18,14 +18,19 @@ classdef TVLQRControl < SmoothRobotLibSystem
         
         splineK1; % Spline of linear part of K (pre-computed for efficiency)
         splineK2; % Affine part
+        
+        u0spline; % Precomputed u0 trajectory
+        delayT; % Time in seconds that we're using to account for delay.
     end
     
   methods
-    function obj = TVLQRControl(ltvcontrol, xtrigger)
+    function obj = TVLQRControl(ltvcontrol, xtrigger, delayT)
         % constructor for TVLQRControl
         %
         % @parma ltvcontrol LTVControl system
         % @param xtrigger x-value for the plane to cross to start the tape
+        % @param delayT time in seconds to assume that the tape started
+        %   before we detected it
         
         obj = obj@SmoothRobotLibSystem(0, 0, 12, 5);
 
@@ -38,6 +43,7 @@ classdef TVLQRControl < SmoothRobotLibSystem
         
         obj.maxT = ltvcontrol.K.tspan(end);
         
+        obj.delayT = delayT;
         obj.xtrigger = xtrigger;
         
         obj.ltvcontrol = ltvcontrol;
@@ -58,10 +64,17 @@ classdef TVLQRControl < SmoothRobotLibSystem
         
         obj.splineK1 = spline(ts, K1);
         obj.splineK2 = spline(ts, K2);
+        
+        disp('Precomputing u0...');
+        ts = ltvcontrol.u0.getBreaks();
+        obj.u0spline = spline(ts,ltvcontrol.u0.eval(ts));
+        
+        
         disp('done.');
         
         
         obj.x0lcm = lcm.lcm.LCM.getSingleton();
+
     end
 
     function u = output(obj,t,junk,x)
@@ -81,7 +94,6 @@ classdef TVLQRControl < SmoothRobotLibSystem
         
         x0 = obj.gainMatrixStorage.storage_struct.x0;
         
-        
 %        if (any(isnan(x)) || min(x) < -1e25)
 %            u = obj.ltiObj.u0;
 %        end
@@ -94,35 +106,47 @@ classdef TVLQRControl < SmoothRobotLibSystem
             obj.gainMatrixStorage.storage_struct.t0_utape = t;
             disp('u tape fire');
         end
-        
+        flagPastMax = false;
         
         % get the control values
-        if (obj.gainMatrixStorage.storage_struct.t0_utape > 0)
-            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)*86400; % matlab returns decimal days since 1900 (?!?!?!!)
-            
-             if (currentT < obj.maxT)
-            
-               % u_from_tape = obj.ltvcontrol.output(currentT, 0, x);
-          
-                u_from_tape = obj.ltvcontrol.u0.eval(currentT) - ppval(obj.splineK1,currentT)*(x - obj.ltvcontrol.x0.eval(currentT)) - ppval(obj.splineK2, currentT);
-               
-                umsg = struct();
-                umsg.throttle = u_from_tape(1);
-                umsg.elevator = u_from_tape(2);
-                umsg.rudder = u_from_tape(3);
-                umsg.aileronLeft = u_from_tape(4);
-                umsg.aileronRight = u_from_tape(5);
-
-                umsg = degreesToCommands(umsg);
-
-                u_from_tape = [ umsg.throttle; umsg.rudder; umsg.elevator; ...
-                    umsg.aileronLeft; umsg.aileronRight ];
-                
-             else
-                 u_from_tape = zeros(5,1);
-             end
-
+        
+        if obj.gainMatrixStorage.storage_struct.t0_utape < 0
+            currentT = 0.1; % this is a hack to force MATLAB to run code now, instead of when the trajectory is actually fired
         else
+            currentT = (t - obj.gainMatrixStorage.storage_struct.t0_utape)*86400; % matlab returns decimal days since 1900 (?!?!?!!)
+            currentT = currentT + obj.delayT;
+        end
+
+        
+        
+         if (currentT > obj.maxT && obj.gainMatrixStorage.storage_struct.t0_utape > 0)
+             % don't do feedback past the end of the tape because that
+             % can cause the plane to flip out in the net and damage
+             % itself.
+             flagPastMax = true;
+
+             u_from_tape = ppval(obj.u0spline, obj.maxT);
+         else
+             % normally, use feedback
+            u_from_tape = ppval(obj.u0spline, currentT) - ppval(obj.splineK1,currentT)*(x - obj.ltvcontrol.x0.eval(currentT)) - ppval(obj.splineK2, currentT);
+         end
+
+        umsg = struct();
+        umsg.throttle = u_from_tape(1);
+        umsg.elevator = u_from_tape(2);
+        umsg.rudder = u_from_tape(3);
+        umsg.aileronLeft = u_from_tape(4);
+        umsg.aileronRight = u_from_tape(5);
+
+        umsg = degreesToCommands(umsg);
+
+        u_from_tape = [ umsg.throttle; umsg.rudder; umsg.elevator; ...
+            umsg.aileronLeft; umsg.aileronRight ];
+
+
+        % check to see if we're actually going to use the things we
+        % computed or if we're not past the launcher yet...
+        if (obj.gainMatrixStorage.storage_struct.t0_utape <= 0)
            u_from_tape =  zeros(5,1);
         end
         
@@ -155,10 +179,16 @@ classdef TVLQRControl < SmoothRobotLibSystem
         u(5) = u(5) + addterm * 13; % aileron
         %}
       
-        u(1) = min(60, u(1));
+        u(1) = min(180, u(1));
         
         
         % ---- do NOT add code past this line -----
+        
+        % No throttle after tape
+        if (flagPastMax == true)
+            u(1) = 0;
+        end
+        
         
         if (live ~= true)
             u(1) = 0;
@@ -168,7 +198,6 @@ classdef TVLQRControl < SmoothRobotLibSystem
         % min/max protection here
         
         u = min(255, max(0, round(u)) );
-        
     end
     
   end
