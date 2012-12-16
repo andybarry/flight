@@ -22,6 +22,10 @@ x = wingeron_x(:,3);
 y = wingeron_x(:,4);
 z = wingeron_x(:,5);
 
+x_raw = x;
+y_raw = y;
+z_raw = z;
+
 yaw = wingeron_x(:,8); %%% ROLL AND YAW SWITCH FROM OPTOTRAK
 pitch = wingeron_x(:,7);
 roll = wingeron_x(:,6);
