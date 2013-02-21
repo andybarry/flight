@@ -1,5 +1,10 @@
 #!/bin/bash
 
+mkdir lcmtypes # this directory is about to be created, but we want to add a symlink in it
+cd lcmtypes
+ln -s ../mavconn/mavlink_message_t.java
+cd ..
+
 export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 
 for FILE in `ls types/*.lcm`
@@ -23,4 +28,10 @@ done
 jar cf LCMtypes.jar lcmtypes/*.class
 
 
+# now do the c stuff
+ln -s mavconn_mavlink_message_t.c mavlink_message_t.c
+ln -s mavconn_mavlink_message_t.h mavlink_message_t.h
+
+
+make
 

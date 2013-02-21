@@ -1,0 +1,13 @@
+package mavconn;
+
+struct mavlink_message_t
+{
+	int16_t checksum;
+	int8_t magic;
+	int8_t len;
+	int8_t seq;
+	int8_t sysid;
+	int8_t compid;
+	int8_t msgid;
+	int64_t payload64[33];
+}
