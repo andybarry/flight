@@ -1,0 +1,11 @@
+package mavconn;
+
+struct mavlink_msg_container_t
+{
+    int8_t link_network_source;
+    int8_t link_component_id;
+    mavlink_message_t msg;
+
+    int32_t extended_payload_len;
+    int8_t extended_payload[extended_payload_len];
+}
