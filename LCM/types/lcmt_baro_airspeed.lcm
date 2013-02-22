@@ -1,0 +1,9 @@
+struct lcmt_baro_airspeed
+{
+  int64_t timestamp;
+
+  float airspeed;
+  float baro_altitude;
+  float temperature;
+  
+}

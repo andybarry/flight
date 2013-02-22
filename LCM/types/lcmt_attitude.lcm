@@ -1,0 +1,13 @@
+struct lcmt_attitude
+{
+  int64_t timestamp; 
+
+  float roll;
+  float pitch;
+  float yaw;
+  
+  float rollspeed;
+  float pitchspeed;
+  float yawspeed;
+  
+}

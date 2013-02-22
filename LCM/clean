@@ -2,8 +2,8 @@
 
 # clean up java stuff
 rm -r lcmtypes
-rm -r mavconn
 
+rm LCMtypes.jar
 
 # clean up python stuff
 

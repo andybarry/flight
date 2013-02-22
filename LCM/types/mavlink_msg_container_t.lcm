@@ -1,5 +1,3 @@
-package mavconn;
-
 struct mavlink_msg_container_t
 {
     int8_t link_network_source;

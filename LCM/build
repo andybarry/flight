@@ -5,7 +5,7 @@ export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 echo "---------------------------"
 echo "    Building LCM types     "
 echo "---------------------------"
-for FILE in `ls types/*.lcm | grep -v mavlink`
+for FILE in `ls types/*.lcm`
 do
     lcm-gen -j $FILE
     lcm-gen -p $FILE
@@ -26,37 +26,11 @@ done
 
 jar cf LCMtypes.jar lcmtypes/*.class
 
-echo "---------------------------"
-echo "  Building mavconn types   "
-echo "---------------------------"
-
-for FILE in `ls types/*.lcm | grep mavlink`
-do
-    lcm-gen -j $FILE
-    lcm-gen -p $FILE
- 
-    # replace "types" in path with "lcmtypes" and ".lcm" with ".java"
-    FILE2=${FILE/types/mavconn}
-    
-    # % says "search from back"
-    echo "javac ${FILE2/%lcm/java}"
-    javac ${FILE2/%lcm/java}
-
-done
-
-jar cf mavconn.jar mavconn/*.class
-
 
 # now do the c stuff
 echo "---------------------------"
 echo "       Running make        "
 echo "---------------------------"
-
-ln -s mavconn_mavlink_message_t.c mavlink_message_t.c
-ln -s mavconn_mavlink_message_t.h mavlink_message_t.h
-ln -s mavconn_mavlink_msg_container_t.c mavlink_msg_container_t.c
-ln -s mavconn_mavlink_msg_container_t.h mavlink_msg_container_t.h
-
 
 
 make

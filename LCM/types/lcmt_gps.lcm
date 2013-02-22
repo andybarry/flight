@@ -1,0 +1,15 @@
+struct lcmt_gps
+{
+  int64_t timestamp; 
+
+  int32_t latitude;
+  int32_t longitude;
+  int32_t alt;
+  int32_t relative_alt;
+  
+  int16_t vx;
+  int16_t vy;
+  int16_t vz;
+  int16_t hdg;
+  
+}

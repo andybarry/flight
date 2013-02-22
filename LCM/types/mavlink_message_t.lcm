@@ -1,5 +1,3 @@
-package mavconn;
-
 struct mavlink_message_t
 {
 	int16_t checksum;
