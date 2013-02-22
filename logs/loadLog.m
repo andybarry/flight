@@ -22,10 +22,20 @@ plotLogsXhat
 [~, istart] = min(abs(t-tstart));
 [~, iend] = min(abs(t-tend));
 
+[~, poleIend] = min(abs(x(istart:iend)/1000-2.75));
+poleIend = poleIend+istart;
+
+%poleIend = iend; % COMMENT TO PLOT ONLY UP TO THE POLE
+
 
 thisFig = figure(7);
 
 xs = xtraj.eval(xtraj.getBreaks);
+
+[~, poleIendSim] = min(abs(xs(1,:)-2.75));
+%poleIendSim = length(xs(1,:)); % COMMENT TO PLOT ONLY UP TO THE POLE
+
+
 ref7 = plot(xs(1,:),xs(3,:),'b-','LineWidth',2);
 hold on
 cl7 = plot(x(istart:iend)/1000,z(istart:iend)/1000,'rx');
@@ -47,10 +57,14 @@ ylabel('Y (m)');
 %legend('Reference Trajectory','Closed Loop Trajectory');
 set(thisFig, 'Position', [20 1 560 420])
 
+% NOTE: for this plot, you probably do not want to run plotLogsXhat, because
+% you probably want to plot raw optotrak data.
 thisFig = figure(9);
-refHandle = plot(xs(1,:),xs(4,:)*180/pi,'b-','LineWidth',2);
+%refHandle = plot(xs(1,1:poleIendSim),xs(4,1:poleIendSim)*180/pi,'b-','LineWidth',2);
+refHandle = plot(xtraj.getBreaks(),xs(4,:)*180/pi,'b-','LineWidth',2);
 hold on
-closedLoopHandle = plot(x(istart:iend)/1000,roll(istart:iend)*180/pi,'rx');
+%closedLoopHandle = plot(x(istart:poleIend)/1000,roll(istart:poleIend)*180/pi,'rx');
+closedLoopHandle = plot(t(istart:iend)-tstart,roll(istart:iend)*180/pi,'rx');
 axis([-1 5 -90 90])
 xlabel('X (m)')
 ylabel('Roll (deg)');
