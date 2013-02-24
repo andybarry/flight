@@ -1,5 +1,13 @@
 #!/bin/bash
 
+echo "---------------------------"
+echo "       Running make        "
+echo "---------------------------"
+
+
+make
+
+
 export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 
 echo "---------------------------"
@@ -25,13 +33,4 @@ do
 done
 
 jar cf LCMtypes.jar lcmtypes/*.class
-
-
-# now do the c stuff
-echo "---------------------------"
-echo "       Running make        "
-echo "---------------------------"
-
-
-make
 

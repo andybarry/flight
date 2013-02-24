@@ -17,7 +17,8 @@
 
 #include <GL/gl.h>
 #include <lcm/lcm.h>
-#include <bot_lcmgl_client/lcmgl.h>
+//#include <bot_lcmgl_client/lcmgl.h>
+#include "../../LCM/lcmt_stereo.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -60,10 +61,11 @@ struct RemapState
     int flags;
 };
 
-void PublishToLcm(bot_lcmgl_t* lcmgl, Mat imgDisp, Mat Q, Mat leftImg);
 Mat GetFrameFormat7(dc1394camera_t *camera);
 
 bool ResetPointGreyCameras();
+
+int64_t getTimestampNow();
 
 
 dc1394_t        *d;
@@ -217,7 +219,7 @@ int main(int argc, char *argv[])
     // start up LCM
     lcm_t * lcm;
     lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
-    bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
+    //bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
     Mat imgDisp;
     Mat imgDisp2;
@@ -282,6 +284,27 @@ int main(int argc, char *argv[])
         
         StereoBarryMoore(matL, matR, &pointVector3d, &pointVector2d, state);
         
+        lcmt_stereo msg;
+        msg.timestamp = getTimestampNow();
+        msg.number_of_points = (int)pointVector3d.size();
+        
+        float x[msg.number_of_points];
+        float y[msg.number_of_points];
+        float z[msg.number_of_points];
+        
+        for (unsigned int i=0;i<pointVector3d.size();i++)
+        {
+            x[i] = pointVector3d[i].x;
+            y[i] = pointVector3d[i].y;
+            z[i] = pointVector3d[i].z;
+            
+        }
+        
+        msg.x = x;
+        msg.y = y;
+        msg.z = z;
+        
+        lcmt_stereo_publish(lcm, "stereo", &msg);
         
         // publish points to the 3d map
         //PublishToLcm(lcmgl, matDisp, Q, matR);
@@ -290,57 +313,62 @@ int main(int argc, char *argv[])
         //normalize(matDisp, matDisp, 0, 256, NORM_MINMAX, CV_8S);
         
         // display images
-        
-        bot_lcmgl_push_matrix(lcmgl);
-        bot_lcmgl_point_size(lcmgl, 10.5f);
-        bot_lcmgl_begin(lcmgl, GL_POINTS);
-        
-        for (unsigned int i=0;i<pointVector3d.size();i++)
-        {
-            float x = pointVector3d[i].x;
-            float y = pointVector3d[i].y;
-            float z = pointVector3d[i].z;
-            // publish to LCM
+        #if USE_LCMGL
+            bot_lcmgl_push_matrix(lcmgl);
+            bot_lcmgl_point_size(lcmgl, 10.5f);
+            bot_lcmgl_begin(lcmgl, GL_POINTS);
             
-            #if SHOW_DISPLAY
-             #if 0
-             //cout << "(" << x << ", " << y << ", " << z << ")" << endl;
-            
-            // get the color of the pixel
-            int x2 = pointVector2d[i].x;
-            int y2 = pointVector2d[i].y;
-            double factor = 2.0;
-            //int delta = (state.blockSize-1)/2;
-            int delta = 20;
-           
-            for (int row=y2-delta;row<y2+delta;row++)
+            for (unsigned int i=0;i<pointVector3d.size();i++)
             {
-                int rowdelta = row-y2*factor;
-                for (int col = x2-delta; col < x2+delta; col++)
+                float x = pointVector3d[i].x;
+                float y = pointVector3d[i].y;
+                float z = pointVector3d[i].z;
+                // publish to LCM
+                
+                #if SHOW_DISPLAY
+                 #if 0
+                 //cout << "(" << x << ", " << y << ", " << z << ")" << endl;
+                
+                // get the color of the pixel
+                int x2 = pointVector2d[i].x;
+                int y2 = pointVector2d[i].y;
+                double factor = 2.0;
+                //int delta = (state.blockSize-1)/2;
+                int delta = 20;
+               
+                for (int row=y2-delta;row<y2+delta;row++)
                 {
-                    int coldelta = col-x2*factor;
-                
-                    uchar pxL = remapL.at<uchar>(row, col);
-                    float gray = pxL/255.0;
-                
-                    bot_lcmgl_color3f(lcmgl, gray, gray, gray);                    
-                    bot_lcmgl_vertex3f(lcmgl, x+coldelta, -y-rowdelta, z);
+                    int rowdelta = row-y2*factor;
+                    for (int col = x2-delta; col < x2+delta; col++)
+                    {
+                        int coldelta = col-x2*factor;
+                    
+                        uchar pxL = remapL.at<uchar>(row, col);
+                        float gray = pxL/255.0;
+                    
+                        bot_lcmgl_color3f(lcmgl, gray, gray, gray);                    
+                        bot_lcmgl_vertex3f(lcmgl, x+coldelta, -y-rowdelta, z);
+                    }
                 }
+                #endif
+                
+                #endif
+            
+                bot_lcmgl_vertex3f(lcmgl, z, x, -y);
             }
-            #endif
             
-            #endif
-            
-            bot_lcmgl_vertex3f(lcmgl, z, x, -y);
-        }
+            bot_lcmgl_end(lcmgl);
+            bot_lcmgl_pop_matrix(lcmgl);
         
-        bot_lcmgl_end(lcmgl);
-        bot_lcmgl_pop_matrix(lcmgl);
+         
+         
 
-        //if (numFrames%200 == 0)
-        {
-        bot_lcmgl_switch_buffer(lcmgl);
-        }
+            //if (numFrames%200 == 0)
+            {
+            bot_lcmgl_switch_buffer(lcmgl);
+            }
+        #endif //USE_LCMGL
+        
         #if SHOW_DISPLAY
         
         for (unsigned int i=0;i<pointVector2d.size();i++)
@@ -457,57 +485,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void PublishToLcm(bot_lcmgl_t* lcmgl, Mat imgDisp, Mat Q, Mat leftImg)
-{
-
-    // ok so now, parse out the points
-    Mat reprojected;
-
-    reprojectImageTo3D(imgDisp, reprojected, Q, true);
-
-    // now create points in lcmgl using the reprojected image
-
-
-    bot_lcmgl_push_matrix(lcmgl);
-    bot_lcmgl_point_size(lcmgl, 10.5f);
-    bot_lcmgl_begin(lcmgl, GL_POINTS);  // render as points
-    
-    float *p;
-    uchar *imgP;
-
-    for (int i=0; i < imgDisp.rows; i++)
-    {
-        p = reprojected.ptr<float>(i);
-        
-        imgP = leftImg.ptr<uchar>(i);
-        
-        for (int j=0; j < imgDisp.cols; j++)
-        {
-            // for each point, get the xyz value and make an opengl object for it
-            // set the color of the point
-            
-            float gray = imgP[j]/255.0;
-            
-            //cout << imgP[j] << "...." << gray << endl;cout << imgP[j/3] << gray << endl;
-            
-            if (p[3*j+2] < 9000) // filter outliers
-            {
-                bot_lcmgl_color3f(lcmgl, gray, gray, gray);
-                //bot_lcmgl_vertex3f(lcmgl, i,j,0);
-                bot_lcmgl_vertex3f(lcmgl, -p[3*j],  p[3*j+1], -p[3*j+2]);
-            }
-        }
-    }
-
-
-
-    bot_lcmgl_end(lcmgl);
-    bot_lcmgl_pop_matrix(lcmgl);
-
-    bot_lcmgl_switch_buffer(lcmgl);
-  
-}
-
 /**
  * Gets a Format7 frame from a Firefly MV USB camera.
  * The frame will be CV_8UC1 and black and white.
@@ -536,6 +513,13 @@ Mat GetFrameFormat7(dc1394camera_t *camera)
     DC1394_WRN(err,"releasing buffer");
     
     return matOut;
+}
+
+int64_t getTimestampNow()
+{
+    struct timeval thisTime;
+    gettimeofday(&thisTime, NULL);
+    return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
 }
 
 # if 0

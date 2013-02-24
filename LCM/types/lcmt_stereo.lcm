@@ -1,0 +1,10 @@
+struct lcmt_stereo
+{
+    int64_t  timestamp;
+    
+    int32_t number_of_points;
+    
+    float x[number_of_points];
+    float y[number_of_points];
+    float z[number_of_points];
+}
