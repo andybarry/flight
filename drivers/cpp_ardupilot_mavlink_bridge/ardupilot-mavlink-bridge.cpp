@@ -45,17 +45,23 @@ lcm_t * lcmGps;
 lcm_t * lcmAttitude;
 lcm_t * lcmBaroAirspeed;
 lcm_t * lcm;
-char *lcm_out = NULL;
+
+char *channelAttitude = NULL;
+char *channelBaroAirspeed = NULL;
+char *channelGps = NULL;
+
 mavlink_msg_container_t_subscription_t * mavlink_sub;
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: cam-imu-integration input-channel-name output-channel-name\n");
-        fprintf(stderr, "    input-channel-name : LCM channel name with MAVLINK LCM messages\n");
-        fprintf(stderr, "    output-channel-name : LCM channel name with plane messages\n");
+        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name\n");
+        fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
+        fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
+        fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
+        fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    cam-imu-integration MAVLINK temp\n");
-        fprintf(stderr, "    reads LCM MAVLINK messages and TODO\n");
+        fprintf(stderr, "    ardupilot-mavlink-bridge MAVLINK attidue baro-airspeed gps\n");
+        fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages\n");
 }
 
 
@@ -127,7 +133,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             attitudeMsg.rollspeed = attitude.rollspeed;
             attitudeMsg.pitchspeed = attitude.pitchspeed;
             attitudeMsg.yawspeed = attitude.yawspeed;
-            lcmt_attitude_publish (lcmAttitude, "attitude", &attitudeMsg);
+            lcmt_attitude_publish (lcmAttitude, channelAttitude, &attitudeMsg);
             break;
             
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
@@ -148,7 +154,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             gpsMsg.vz = pos.vz;
             gpsMsg.hdg = pos.hdg;
             
-            lcmt_gps_publish (lcmGps, "gps", &gpsMsg);
+            lcmt_gps_publish (lcmGps, channelGps, &gpsMsg);
             
             
             break;
@@ -165,7 +171,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             baroAirMsg.baro_altitude = pressure.press_diff;  // HACK
             baroAirMsg.temperature = pressure.temperature;
             
-            lcmt_baro_airspeed_publish (lcmBaroAirspeed, "baro_airspeed", &baroAirMsg);
+            lcmt_baro_airspeed_publish (lcmBaroAirspeed, channelBaroAirspeed, &baroAirMsg);
             break;
         default:
             cout << "unknown message id = " << mavmsg.msgid << endl;
@@ -177,15 +183,17 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 int main(int argc,char** argv)
 {
-    char *lcm_in = NULL;
+    char *channelMavlink = NULL;
 
-    if (argc!=3) {
+    if (argc!=5) {
         usage();
         exit(0);
     }
 
-    lcm_in = argv[1];
-    lcm_out = argv[2];
+    channelMavlink = argv[1];
+    channelAttitude = argv[2];
+    channelBaroAirspeed = argv[3];
+    channelGps = argv[4];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -216,13 +224,12 @@ int main(int argc,char** argv)
         return 1;
     }
 
-    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, lcm_in, &mavlink_handler, NULL);
-
+    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
 
 
     signal(SIGINT,sighandler);
 
-    printf("Receiving LCM: %s\n", lcm_in);
+    printf("Receiving:\n\tMavlink LCM: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelMavlink, channelAttitude, channelBaroAirspeed, channelGps);
 
     while (true)
     {
