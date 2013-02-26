@@ -195,7 +195,7 @@ int main(int argc,char** argv)
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
 
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
+    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
@@ -203,21 +203,21 @@ int main(int argc,char** argv)
     }
 
 
-    lcmGps = lcm_create("udpm://239.255.76.67:7667?ttl=0");
+    lcmGps = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     if (!lcmGps)
     {
         fprintf(stderr, "lcm_create for lcmGps failed.  Quitting.\n");
         return 1;
     }
     
-    lcmAttitude = lcm_create("udpm://239.255.76.67:7667?ttl=0");
+    lcmAttitude = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     if (!lcmAttitude)
     {
         fprintf(stderr, "lcm_create for lcmAttitude failed.  Quitting.\n");
         return 1;
     }
     
-    lcmBaroAirspeed = lcm_create("udpm://239.255.76.67:7667?ttl=0");
+    lcmBaroAirspeed = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     if (!lcmBaroAirspeed)
     {
         fprintf(stderr, "lcm_create for lcmBaroAirspeed failed.  Quitting.\n");
