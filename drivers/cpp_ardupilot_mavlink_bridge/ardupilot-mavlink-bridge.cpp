@@ -31,9 +31,9 @@ using namespace std;
 /* XXX XXX XXX XXX
  *
  * You must add
- *      #include "../mavlink-generated/ardupilotmega/mavlink.h"
+ *      #include "../mavlink-generated2/ardupilotmega/mavlink.h"
  * to 
- *      ../LCM/mavlink_message_t.h
+ *      ../../LCM/mavlink_message_t.h
  * and comment out its definition of
  *  mavlink_message to make this work
  * 
@@ -135,7 +135,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             attitudeMsg.yawspeed = attitude.yawspeed;
             lcmt_attitude_publish (lcmAttitude, channelAttitude, &attitudeMsg);
             break;
-            
+         /*   
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
             mavlink_global_position_int_t pos;
             mavlink_msg_global_position_int_decode(&mavmsg, &pos);
@@ -153,6 +153,32 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             gpsMsg.vy = pos.vy;
             gpsMsg.vz = pos.vz;
             gpsMsg.hdg = pos.hdg;
+            
+            lcmt_gps_publish (lcmGps, channelGps, &gpsMsg);
+            
+            
+            break;
+           */ 
+        case MAVLINK_MSG_ID_GPS_RAW_INT:
+            mavlink_gps_raw_int_t pos;
+            mavlink_msg_gps_raw_int_decode(&mavmsg, &pos);
+            
+            // convert to LCM type
+            lcmt_gps gpsMsg;
+            gpsMsg.timestamp = getTimestampNow();
+            
+            gpsMsg.fix_type = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
+            
+            gpsMsg.latitude = pos.lat; //Latitude in 1E7 degrees
+            gpsMsg.longitude = pos.lon; //Latitude in 1E7 degrees
+            gpsMsg.alt = pos.alt; //Altitude in 1E3 meters (millimeters) above MSL
+            
+            gpsMsg.hdop = pos.eph; //GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+            gpsMsg.vdop = pos.epv; //GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+            
+            gpsMsg.velocity = pos.vel; // GPS ground speed (m/s * 100). If unknown, set to: 65535
+            gpsMsg.course_over_ground = pos.cog; //Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535
+            gpsMsg.satellites_visible = pos.satellites_visible; //Number of satellites visible. If unknown, set to 255
             
             lcmt_gps_publish (lcmGps, channelGps, &gpsMsg);
             
