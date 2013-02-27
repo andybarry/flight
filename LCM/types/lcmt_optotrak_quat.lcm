@@ -1,0 +1,16 @@
+struct lcmt_optotrak_quat
+{
+    int64_t  timestamp;
+    
+    int32_t number_rigid_bodies;
+    
+    float x[number_rigid_bodies];
+    float y[number_rigid_bodies];
+    float z[number_rigid_bodies];
+    
+    float q0[number_rigid_bodies];
+    float qx[number_rigid_bodies];
+    float qy[number_rigid_bodies];
+    float qz[number_rigid_bodies];
+
+}
