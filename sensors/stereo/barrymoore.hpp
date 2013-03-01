@@ -14,6 +14,8 @@
 
 #define SHOW_DISPLAY 0
 
+#define NUM_THREADS 8
+
 
 using namespace cv;
 using namespace std;
@@ -30,6 +32,8 @@ struct BarryMooreState
     Mat mapxR;
     
     Mat Q;
+    
+    //cv::vector<Point3f> *localHitPoints; // this is an array of cv::vector<Point3f>'s
 };
 
 struct BarryMooreStateThreaded
@@ -40,6 +44,7 @@ struct BarryMooreStateThreaded
     Mat rightImage;
     cv::vector<Point3f> *pointVector3d;
     cv::vector<Point> *pointVector2d;
+    //cv::vector<Point3f> *localHitPoints;
     
     int rowOffset;
     

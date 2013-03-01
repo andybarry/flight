@@ -8,12 +8,10 @@
 #include "barrymoore.hpp"
 #include <pthread.h>
 
-#define NUM_THREADS 8
-
-// if USE_SAFTEY_CHECKS is defined, GetSAD will try to make sure
+// if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Comment for a small speedup.
-//#define USE_SAFTEY_CHECKS
+#define USE_SAFTEY_CHECKS 1
 
 
 /**
@@ -67,6 +65,8 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
          // send in a subset of the map
         statet[i].submapxL = state.mapxL.rowRange(start, end);
         statet[i].submapxR = state.mapxR.rowRange(start, end);
+        
+        //statet[i].localHitPoints = &(state.localHitPoints[i]);
 
         // fire the thread        
         pthread_create( &thread[i], NULL, StereoBarryMooreThreaded, &statet[i]);
@@ -117,6 +117,8 @@ void* StereoBarryMooreThreaded(void *statet)
     Mat rightImageUnremapped = x->rightImage;
     cv::vector<Point3f> *pointVector3d = x->pointVector3d;
     cv::vector<Point> *pointVector2d = x->pointVector2d;
+    //cv::vector<Point3f> &localHitPoints = *(x->localHitPoints);
+    //localHitPoints.clear();
     
     int rowOffset = x->rowOffset;
     
@@ -140,19 +142,30 @@ void* StereoBarryMooreThreaded(void *statet)
     // (defined by blockSize) and checking for a matching value on
     // the right image
 
-    cv::vector<Point3f> localHitPoints; 
+    cv::vector<Point3f> localHitPoints;
 
     int blockSize = state.blockSize;
     int disparity = state.disparity;
     int sadThreshold = state.sadThreshold;
+    
+    int startJ = 0;
+    int stopJ = leftImage.cols - (disparity + blockSize);
+    if (disparity < 0)
+    {
+        startJ = -disparity;
+        stopJ = leftImage.cols - blockSize;
+    }
+    
+    int hitCounter = 0;
+    
     for (int i=0; i < leftImage.rows; i+=blockSize)
     {
-        for (int j=0; j < leftImage.cols -(disparity + blockSize); j+=blockSize)
+        for (int j=startJ; j < stopJ; j+=blockSize)
         {
             // get the sum of absolute differences for this location
             // on both images
             int sad = GetSAD(leftImage, rightImage, sobelL, sobelR, j, i, state);
-            
+            //cout << "x = " << j << " x + disparity = " << j + disparity << endl;
             // check to see if the SAD is below the threshold,
             // indicating a hit
             if (sad < sadThreshold && sad > 10)
@@ -163,6 +176,8 @@ void* StereoBarryMooreThreaded(void *statet)
                 // of the top left corner
                 localHitPoints.push_back(Point3f(j+blockSize/2.0, i+rowOffset+blockSize/2.0, disparity));
                 
+                hitCounter ++;
+                
                 #if SHOW_DISPLAY
                     pointVector2d->push_back(Point(j, i+rowOffset));
                 #endif
@@ -171,7 +186,7 @@ void* StereoBarryMooreThreaded(void *statet)
     }
     
     // now we have an array of hits -- transform them to 3d points
-    if (localHitPoints.size() > 0)
+    if (hitCounter > 0)
     {
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
     }
@@ -207,10 +222,47 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
     int endX = pxX + blockSize - 1;
     int endY = pxY + blockSize - 1;
     
-    #ifdef USE_SAFTEY_CHECKS
-        if (endY + disparity > rightImage.cols)
+    #if USE_SAFTEY_CHECKS
+        int flag = false;
+        if (startX < 0)
         {
-            endY = rightImage.cols - disparity;
+            printf("Warning: startX < 0\n");
+            flag = true;
+        }
+        
+        if (endX > rightImage.cols)
+        {
+            printf("Warning: endX > leftImage.cols\n");
+            flag = true;
+        }
+        
+        if (startX + disparity < 0)
+        {
+            printf("Warning: startX + disparity < 0\n");
+            flag = true;
+        }
+        
+        if (endX + disparity > rightImage.cols)
+        {
+            printf("Warning: endX + disparity > leftImage.cols\n");
+            flag = true;
+        }
+        
+        if (endX + disparity > rightImage.cols)
+        {
+            endX = rightImage.cols - disparity;
+            flag = true;
+        }
+        
+        if (flag == true)
+        {
+            printf("startX = %d, endX = %d, disparity = %d\n", startX, endX, disparity);
+        }
+        
+        // disparity might be negative as well
+        if (disparity < 0 && startX + disparity < 0)
+        {
+            startX = -disparity;
         }
         
         startX = max(0, startX);

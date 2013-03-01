@@ -12,16 +12,16 @@ all: opencv-stereo opencv-calibrate
 opencv-stereo: opencv-stereo.o barrymoore.o
 	$(CC) opencv-stereo.o barrymoore.o -o opencv-stereo $(LIBS)
 	
-barrymoore.o: barrymoore.cpp
+barrymoore.o: barrymoore.cpp barrymoore.hpp
 	$(CC) $(CFLAGS) barrymoore.cpp
 
-opencv-stereo.o: opencv-stereo.cpp
+opencv-stereo.o: opencv-stereo.cpp barrymoore.hpp
 	$(CC) $(CFLAGS) opencv-stereo.cpp
 	
 opencv-calibrate: opencv-calibrate.o
 	$(CC) opencv-calibrate.o -o opencv-calibrate $(LIBS)
     
-opencv-calibrate.o:
+opencv-calibrate.o: opencv-calibrate.cpp
 	$(CC) $(CFLAGS) opencv-calibrate.cpp
     
 

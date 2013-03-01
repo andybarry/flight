@@ -234,6 +234,7 @@ cout << "d2 = " << d2 << endl;
     printf("\n");
 // HARVEST CHESSBOARD 3D OBJECT POINT LIST:
     nframes = active[0].size();//Number of good chessboads found
+    printf("\nusing %d chessboards.\n", nframes);
     objectPoints.resize(nframes*n);
     for( i = 0; i < ny; i++ )
         for( j = 0; j < nx; j++ )

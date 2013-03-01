@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 
 	cvNamedWindow("Input", CV_WINDOW_AUTOSIZE);
 	cvNamedWindow("Input2", CV_WINDOW_AUTOSIZE);
+	cvMoveWindow("Input2", 500, 100);
 	
     CvVideoWriter *writer = NULL;
     CvVideoWriter *writer2 = NULL;

@@ -44,6 +44,8 @@ extern "C"
     #include "utils.h"
 }
 
+#define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup
+
 //#define POINT_GREY_VENDOR_ID 0x1E10
 //#define POINT_GREY_PRODUCT_ID 0x2000
 
@@ -74,6 +76,8 @@ dc1394camera_t  *camera;
 dc1394_t        *d2;
 dc1394camera_t  *camera2;
 
+//cv::vector<Point3f> *localHitPoints;
+
 /**
  * Cleanly handles and exit from a command-line
  * ctrl-c signal.
@@ -95,6 +99,8 @@ void control_c_handler(int s)
     
     dc1394_free (d);
     dc1394_free (d2);
+    
+    //delete[] localHitPoints;
     
     exit(1);
 
@@ -190,8 +196,8 @@ int main(int argc, char *argv[])
 
     namedWindow("Input", CV_WINDOW_AUTOSIZE);
     namedWindow("Input2", CV_WINDOW_AUTOSIZE);
-    namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
     namedWindow("Depth", CV_WINDOW_AUTOSIZE);
+    namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
     
     
     // load calibration
@@ -227,7 +233,7 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    state.disparity = 30;
+    state.disparity = -40;
     state.sobelLimit = 260;
     state.blockSize = 5;
     state.sadThreshold = 79; //50
@@ -235,6 +241,14 @@ int main(int argc, char *argv[])
     state.mapxL = mx1fp;
     state.mapxR = mx2fp;
     state.Q = qMat;
+    
+    //localHitPoints = new cv::vector<Point3f>[NUM_THREADS];
+    //state.localHitPoints = localHitPoints;
+    //
+    //for (int i=0; i< NUM_THREADS; i++)
+    //{
+    //    localHitPoints[i].resize(MAX_HIT_POINTS);
+    //}
     
     Mat depthMap;
     
@@ -246,8 +260,7 @@ int main(int argc, char *argv[])
         matL = imread("left.jpg", -1);
         matR = imread("right.jpg", -1);
     #endif
-
-
+    
     // start the framerate clock
     struct timeval start, now;
     gettimeofday( &start, NULL );
@@ -481,6 +494,8 @@ int main(int argc, char *argv[])
     
     dc1394_free (d);
     dc1394_free (d2);
+    
+    //delete[] localHitPoints;
     
     return 0;
 }
