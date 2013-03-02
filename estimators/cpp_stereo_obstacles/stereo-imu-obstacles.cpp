@@ -23,15 +23,23 @@ using namespace std;
 
 #include <Eigen/Dense>
 
+#include <GL/gl.h>
+#include <bot_lcmgl_client/lcmgl.h>
+
 #include "../../LCM/lcmt_gps.h"
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_stereo.h"
     
 using Eigen::Matrix3f;
+using Eigen::Vector3f;
     
 lcm_t * lcm;
 char *lcm_out = NULL;
+int numFrames = 0;
+unsigned long totalTime = 0;
+
+bot_lcmgl_t* lcmgl;
 
 std::mutex attitude_mutex, gps_mutex, baro_airspeed_mutex;
 
@@ -44,6 +52,8 @@ lcmt_gps_subscription_t * gps_sub;
 lcmt_attitude *lastAttitudeMsg;
 lcmt_baro_airspeed *lastBaroAirspeedMsg;
 lcmt_gps *lastGpsMsg;
+
+bool gpsFlag = false, baroAirspeedFlag = false, attitudeFlag = false;
 
 void rotation_matrix_from_euler(Matrix3f *matrixIn, float roll, float pitch, float yaw);
 
@@ -58,7 +68,7 @@ static void usage(void)
 
 void sighandler(int dum)
 {
-    printf("\nClosing... ");
+    printf("\n\nclosing... ");
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
     lcmt_attitude_unsubscribe(lcm, attitude_sub);
@@ -77,12 +87,32 @@ int64_t getTimestampNow()
     return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
 }
 
+lcmt_stereo *lastStereo = NULL;
+
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user)
 {
+    if (!attitudeFlag || !gpsFlag || !baroAirspeedFlag)
+    {
+        // we don't have all the data we need yet, bail out
+        return;
+    }
+    
+    if (lastStereo == NULL)
+    {
+        lastStereo = lcmt_stereo_copy(msg);
+    }
+    
+    msg = lastStereo;
+
+    // start the rate clock
+    struct timeval start, now;
+    unsigned long elapsed;
+    gettimeofday( &start, NULL );
+    
     // on the stereo handler is when we trigger a new update for something
     // this must last less than 8.3ms, which is the rate of the stereo data.
     
-    cout << "got stereo message" << endl;
+    //cout << "got stereo message" << endl;
     
     // we need to be careful of threading issues if other data comes in while we're operating here
     
@@ -101,17 +131,56 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     Matrix3f rotationMatrix;
     rotation_matrix_from_euler(&rotationMatrix, lastAttitudeMsg->roll, lastAttitudeMsg->pitch, lastAttitudeMsg->yaw);
     
+    
+    Matrix3f toOpengl;
+    toOpengl << (Matrix3f() << -1, 0, 0, 0, -1, 0, 0, 0, 1).finished();
+    
+    // begin opengl
+    bot_lcmgl_push_matrix(lcmgl);
+    bot_lcmgl_point_size(lcmgl, 10.5f);
+    bot_lcmgl_begin(lcmgl, GL_POINTS);
+    
+    // make a blue point at the origin
+    bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+    bot_lcmgl_vertex3f(lcmgl, 0, 0, 0);
+    
+    bot_lcmgl_color3f(lcmgl, 0.5, 0.5, 0.5);
     // now apply this matrix to each point
-    //for (int i = 0; i<msg->
+    for (int i = 0; i<msg->number_of_points; i++)
+    {
+        Vector3f thisPoint;
+        thisPoint << msg->z[i], msg->x[i], msg->y[i];
+        
+        //cout << endl << "-------------" << endl << thisPoint << endl << "--------------" << endl;
+        
+        Vector3f transformedPoint = toOpengl*rotationMatrix*thisPoint;
+        
+        bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), -transformedPoint(1), transformedPoint(2));
+        bot_lcmgl_vertex3f(lcmgl, 1, -1, 0);
+    }
     
     //cout << lastAttitudeMsg->roll << lastAttitudeMsg->pitch << lastAttitudeMsg->yaw << endl;
     
-    cout << rotationMatrix << endl;
+    //cout << rotationMatrix << endl;
+    
+    bot_lcmgl_end(lcmgl);
+    bot_lcmgl_pop_matrix(lcmgl);
+    bot_lcmgl_switch_buffer(lcmgl);
     
     // we're done, unlock everything
     attitude_mutex.unlock();
     gps_mutex.unlock();
     baro_airspeed_mutex.unlock();
+    
+    numFrames ++;
+    
+    // compute framerate
+    gettimeofday( &now, NULL );
+    
+    elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - (start.tv_usec / 1000 + start.tv_sec * 1000);
+    totalTime += elapsed;
+    printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
+    fflush(stdout);
 }
 
 void attitude_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_attitude *msg, void *user)
@@ -120,6 +189,7 @@ void attitude_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcm
     attitude_mutex.lock();
     lastAttitudeMsg = lcmt_attitude_copy(msg);
     attitude_mutex.unlock();
+    attitudeFlag = true;
 }
 
 void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user)
@@ -127,6 +197,8 @@ void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     baro_airspeed_mutex.lock();
     lastBaroAirspeedMsg = lcmt_baro_airspeed_copy(msg);
     baro_airspeed_mutex.unlock();
+    
+    baroAirspeedFlag = true;
 }
 
 void gps_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_gps *msg, void *user)
@@ -134,6 +206,8 @@ void gps_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_gps
     gps_mutex.lock();
     lastGpsMsg = lcmt_gps_copy(msg);
     gps_mutex.unlock();
+    
+    gpsFlag = true;
 }
 
 
@@ -154,7 +228,7 @@ int main(int argc,char** argv)
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
 
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
+    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
@@ -167,7 +241,7 @@ int main(int argc,char** argv)
     baro_airspeed_sub =  lcmt_baro_airspeed_subscribe (lcm, channelBaroAirspeed, &baro_airspeed_handler, NULL);
     gps_sub =  lcmt_gps_subscribe (lcm, channelGps, &gps_handler, NULL);
 
-
+    lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
 
     signal(SIGINT,sighandler);
 
@@ -195,8 +269,6 @@ void rotation_matrix_from_euler(Matrix3f *matrix, float roll, float pitch, float
     float cr = cosf(roll);
     float sy = sinf(yaw);
     float cy = cosf(yaw);
-
-    cout << -sp << endl;
 
     // [ a.x    a.y     a.z ]
     // [ b.x    b.y     b.z ]

@@ -9,7 +9,7 @@ LCMLIB=../../LCM/lib/libtypes.a
 
 CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3` -I/$(LCMDIR) -I../../mavlink-generated
 
-LIBS=`pkg-config --libs lcm` $(LCMLIB)
+LIBS=`pkg-config --libs lcm` $(LCMLIB) -pthread -Wl,-rpath -Wl,/usr/local/lib `pkg-config --libs bot2-lcmgl-client`
 
 
 
