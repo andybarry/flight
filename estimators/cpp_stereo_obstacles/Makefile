@@ -7,7 +7,7 @@ CC=g++
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a
 
-CFLAGS=-c -Wall -O3 -mfpu=neon `pkg-config --cflags lcm` -I/$(LCMDIR) -I../../mavlink-generated
+CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3` -I/$(LCMDIR) -I../../mavlink-generated
 
 LIBS=`pkg-config --libs lcm` $(LCMLIB)
 

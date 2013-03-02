@@ -60,7 +60,7 @@ static void usage(void)
         fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
         fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ardupilot-mavlink-bridge MAVLINK attidue baro-airspeed gps\n");
+        fprintf(stderr, "    ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps\n");
         fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages\n");
 }
 
