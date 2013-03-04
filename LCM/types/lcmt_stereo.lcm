@@ -7,4 +7,6 @@ struct lcmt_stereo
     float x[number_of_points];
     float y[number_of_points];
     float z[number_of_points];
+    
+    byte grey[number_of_points];
 }
