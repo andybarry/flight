@@ -7,9 +7,9 @@ CC=g++
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a
 
-CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3` -I/$(LCMDIR) -I../../mavlink-generated
+CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3 opencv` -I/$(LCMDIR) -I../../mavlink-generated
 
-LIBS=`pkg-config --libs lcm` $(LCMLIB) -pthread -Wl,-rpath -Wl,/usr/local/lib `pkg-config --libs bot2-lcmgl-client`
+LIBS=`pkg-config --libs lcm opencv` $(LCMLIB) -pthread -Wl,-rpath -Wl,/usr/local/lib `pkg-config --libs bot2-lcmgl-client`
 
 
 

@@ -21,6 +21,8 @@ using namespace std;
 #include <mutex>
 #include <math.h>
 
+#include "opencv2/opencv.hpp"
+
 #include <Eigen/Dense>
 
 #include <GL/gl.h>
@@ -31,8 +33,16 @@ using namespace std;
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_stereo.h"
     
+#define IMAGE_GL_X_OFFSET 400
+#define IMAGE_GL_WIDTH 376
+#define IMAGE_GL_HEIGHT 240
+    
+
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
+
+using namespace cv;
+using namespace std;
     
 lcm_t * lcm;
 char *lcm_out = NULL;
@@ -41,8 +51,10 @@ unsigned long totalTime = 0;
 
 bot_lcmgl_t* lcmgl;
 
+// global mutexes
 std::mutex attitude_mutex, gps_mutex, baro_airspeed_mutex;
 
+// globals for subscription functions, so we can unsubscribe in the control-c handler
 lcmt_stereo_subscription_t * stereo_sub;
 lcmt_attitude_subscription_t * attitude_sub;
 lcmt_baro_airspeed_subscription_t * baro_airspeed_sub;
@@ -53,6 +65,7 @@ lcmt_attitude *lastAttitudeMsg;
 lcmt_baro_airspeed *lastBaroAirspeedMsg;
 lcmt_gps *lastGpsMsg;
 
+// globals for ensuring data has arrived
 bool gpsFlag = false, baroAirspeedFlag = false, attitudeFlag = false;
 
 void rotation_matrix_from_euler(Matrix3f *matrixIn, float roll, float pitch, float yaw);
@@ -102,7 +115,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         lastStereo = lcmt_stereo_copy(msg);
     }
     
-    msg = lastStereo;
+    //msg = lastStereo;
 
     // start the rate clock
     struct timeval start, now;
@@ -135,9 +148,11 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     Matrix3f toOpengl;
     toOpengl << (Matrix3f() << -1, 0, 0, 0, -1, 0, 0, 0, 1).finished();
     
+    vector<Point3f> opencvPoints;
+    
     // begin opengl
     bot_lcmgl_push_matrix(lcmgl);
-    bot_lcmgl_point_size(lcmgl, 10.5f);
+    bot_lcmgl_point_size(lcmgl, 5.5f);
     bot_lcmgl_begin(lcmgl, GL_POINTS);
     
     // make a blue point at the origin
@@ -155,17 +170,95 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         
         Vector3f transformedPoint = toOpengl*rotationMatrix*thisPoint;
         
+        float grey = msg->grey[i]/255.0;
+        
+        bot_lcmgl_color3f(lcmgl, grey, grey, grey);
         bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), -transformedPoint(1), transformedPoint(2));
-        bot_lcmgl_vertex3f(lcmgl, 1, -1, 0);
+        
+        opencvPoints.push_back(Point3f(msg->x[i], msg->y[i], msg->z[i]));
+    }
+    bot_lcmgl_end(lcmgl);
+    bot_lcmgl_pop_matrix(lcmgl);
+    
+    // now use those points to place markers on the lcmgl image
+    
+    // project 3d points onto the image plane
+    vector<Point2f> imagePoints;
+    
+    if (opencvPoints.size() > 0)
+    {
+        projectPoints(opencvPoints, Mat::zeros(3,1,CV_32F), Mat::zeros(3,1,CV_32F), Mat::eye(3,3, CV_32F), Mat::zeros(4,1,CV_32F), imagePoints);
+        
+        // publish points to lcm
+        
+        for (unsigned int i = 0; i < imagePoints.size(); i++)
+        {
+            // set the color based on the distance
+            float colorz = msg->z[i]*3/37.0 +204/37;
+
+            //cout << msg->z[i] << endl;
+
+
+            float redc, greenc, bluec;
+            
+            if (colorz > 1)
+            {
+                redc = 1;
+            } else {
+                redc = colorz;
+            }
+            if (colorz > 2)
+            {
+                greenc = 1;
+            } else {
+                greenc = colorz-1;
+            }
+            if (greenc < 0)
+            {
+                greenc = 0;
+            }
+            
+            bluec = colorz-2;
+            if (bluec < 0)
+            {
+                bluec = 0;
+            }
+            
+            double colorv[4];
+            colorv[0] = redc;
+            colorv[1] = greenc;
+            colorv[2] = bluec;
+            colorv[3] = .5;
+            
+            bot_lcmgl_color4fv(lcmgl, colorv);
+        
+            double xyz[3];
+            xyz[0] = -((imagePoints[i].x+1)*IMAGE_GL_WIDTH/2);
+            xyz[1] = double(imagePoints[i].y+.5)*(IMAGE_GL_HEIGHT-50); // TODO: this is wrong
+            xyz[2] = 0;
+            
+            double rsize[2];
+            rsize[0] = 15;
+            rsize[1] = 15;
+            
+            bot_lcmgl_rect(lcmgl, xyz, rsize, 1);
+            //cout << "(" << imagePoints[i].x << ", " << imagePoints[i].y << ")" << endl;
+        }
+    }
+       
+       
+    if (numFrames%200 == 0)
+    {
+        bot_lcmgl_switch_buffer(lcmgl);
     }
     
     //cout << lastAttitudeMsg->roll << lastAttitudeMsg->pitch << lastAttitudeMsg->yaw << endl;
     
     //cout << rotationMatrix << endl;
     
-    bot_lcmgl_end(lcmgl);
-    bot_lcmgl_pop_matrix(lcmgl);
-    bot_lcmgl_switch_buffer(lcmgl);
+    
+    
+    
     
     // we're done, unlock everything
     attitude_mutex.unlock();
@@ -235,13 +328,13 @@ int main(int argc,char** argv)
         return 1;
     }
 
-
     stereo_sub =  lcmt_stereo_subscribe (lcm, channelStereo, &stereo_handler, NULL);
     attitude_sub =  lcmt_attitude_subscribe (lcm, channelAttitude, &attitude_handler, NULL);
     baro_airspeed_sub =  lcmt_baro_airspeed_subscribe (lcm, channelBaroAirspeed, &baro_airspeed_handler, NULL);
     gps_sub =  lcmt_gps_subscribe (lcm, channelGps, &gps_handler, NULL);
 
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
+    bot_lcmgl_enable(lcmgl, GL_BLEND);
 
     signal(SIGINT,sighandler);
 
