@@ -12,7 +12,7 @@
 #include <cv.h>
 #include <iostream>
 
-#define SHOW_DISPLAY 0
+#define SHOW_DISPLAY 1
 
 #define NUM_THREADS 8
 
@@ -44,6 +44,7 @@ struct BarryMooreStateThreaded
     Mat rightImage;
     cv::vector<Point3f> *pointVector3d;
     cv::vector<Point> *pointVector2d;
+    cv::vector<uchar> *pointColors;
     //cv::vector<Point3f> *localHitPoints;
     
     int rowOffset;
@@ -54,7 +55,7 @@ struct BarryMooreStateThreaded
     
 };
 
-void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<Point> *pointVector2d, BarryMooreState state);
+void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point> *pointVector2d, BarryMooreState state);
 
 void* StereoBarryMooreThreaded(void *statet);
 

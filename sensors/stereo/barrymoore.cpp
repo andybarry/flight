@@ -11,7 +11,7 @@
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Comment for a small speedup.
-#define USE_SAFTEY_CHECKS 1
+#define USE_SAFTEY_CHECKS 0
 
 
 /**
@@ -24,7 +24,7 @@
  * @param state set of configuration parameters for the function.
  *      You can change these on each run of the function if you'd like.
  */
-void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<Point> *pointVector2d, BarryMooreState state)
+void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point> *pointVector2d, BarryMooreState state)
 {
     Mat leftImage = _leftImage.getMat();
     Mat rightImage = _rightImage.getMat();
@@ -44,6 +44,7 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
     
     cv::vector<Point3f> pointVector3dArray[NUM_THREADS+1];
     cv::vector<Point> pointVector2dArray[NUM_THREADS+1];
+    cv::vector<uchar> pointColorsArray[NUM_THREADS+1];
     
     for (int i=0;i<NUM_THREADS;i++)
     {
@@ -60,6 +61,7 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         
         statet[i].pointVector3d = &pointVector3dArray[i];
         statet[i].pointVector2d = &pointVector2dArray[i];
+        statet[i].pointColors = &pointColorsArray[i];
         statet[i].rowOffset = start;
         
          // send in a subset of the map
@@ -87,11 +89,14 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         numPoints += pointVector3dArray[i].size();
     }
     pointVector3d->reserve(numPoints);
+    pointColors->reserve(numPoints);
     
     // combine the hit vectors
     for (int i=0;i<NUM_THREADS;i++)
     {
         pointVector3d->insert( pointVector3d->end(), pointVector3dArray[i].begin(), pointVector3dArray[i].end() );
+        
+        pointColors->insert( pointColors->end(), pointColorsArray[i].begin(), pointColorsArray[i].end() );
         
         #if SHOW_DISPLAY
         pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
@@ -117,6 +122,7 @@ void* StereoBarryMooreThreaded(void *statet)
     Mat rightImageUnremapped = x->rightImage;
     cv::vector<Point3f> *pointVector3d = x->pointVector3d;
     cv::vector<Point> *pointVector2d = x->pointVector2d;
+    cv::vector<uchar> *pointColors = x->pointColors;
     //cv::vector<Point3f> &localHitPoints = *(x->localHitPoints);
     //localHitPoints.clear();
     
@@ -175,6 +181,9 @@ void* StereoBarryMooreThreaded(void *statet)
                 // so we match the center of the block instead
                 // of the top left corner
                 localHitPoints.push_back(Point3f(j+blockSize/2.0, i+rowOffset+blockSize/2.0, disparity));
+                
+                uchar pxL = leftImage.at<uchar>(i,j);
+                pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
                 
                 hitCounter ++;
                 

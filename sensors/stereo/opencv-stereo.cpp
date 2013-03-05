@@ -17,7 +17,7 @@
 
 #include <GL/gl.h>
 #include <lcm/lcm.h>
-//#include <bot_lcmgl_client/lcmgl.h>
+#include <bot_lcmgl_client/lcmgl.h>
 #include "../../LCM/lcmt_stereo.h"
 
 #include <signal.h>
@@ -146,7 +146,8 @@ int main(int argc, char *argv[])
         camera = dc1394_camera_new (d, guid);
         if (!camera)
         {
-            cerr << "Could not create dc1394 camera... attempting bus reset" << endl;
+            cerr << "Could not create dc1394 camera... quitting." << endl;
+            exit(1);
             #if 0
             if (!ResetPointGreyCameras())
             {
@@ -225,7 +226,7 @@ int main(int argc, char *argv[])
     // start up LCM
     lcm_t * lcm;
     lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
-    //bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
+    bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
     Mat imgDisp;
     Mat imgDisp2;
@@ -292,10 +293,11 @@ int main(int argc, char *argv[])
         #endif
         
         cv::vector<Point3f> pointVector3d;
+        cv::vector<uchar> pointColors;
         cv::vector<Point> pointVector2d; // for display
         
         
-        StereoBarryMoore(matL, matR, &pointVector3d, &pointVector2d, state);
+        StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
         
         lcmt_stereo msg;
         msg.timestamp = getTimestampNow();
@@ -304,18 +306,21 @@ int main(int argc, char *argv[])
         float x[msg.number_of_points];
         float y[msg.number_of_points];
         float z[msg.number_of_points];
+        uchar grey[msg.number_of_points];
         
         for (unsigned int i=0;i<pointVector3d.size();i++)
         {
             x[i] = pointVector3d[i].x;
             y[i] = pointVector3d[i].y;
             z[i] = pointVector3d[i].z;
+            grey[i] = pointColors[i];
             
         }
         
         msg.x = x;
         msg.y = y;
         msg.z = z;
+        msg.grey = grey;
         
         lcmt_stereo_publish(lcm, "stereo", &msg);
         
@@ -383,6 +388,25 @@ int main(int argc, char *argv[])
         #endif //USE_LCMGL
         
         #if SHOW_DISPLAY
+        
+        // 1b. Convert image into a GL texture:
+        int row_stride = remapL.cols; // 1*width
+        int height = remapL.rows;
+        int width = remapL.cols;
+        int gray_texid = bot_lcmgl_texture2d(lcmgl, remapL.data, remapL.cols, remapL.rows, row_stride, BOT_LCMGL_LUMINANCE,
+                                       BOT_LCMGL_UNSIGNED_BYTE,
+                                       BOT_LCMGL_COMPRESS_NONE);
+        bot_lcmgl_push_matrix(lcmgl);
+        bot_lcmgl_color3f(lcmgl, 1, 1, 1);
+        bot_lcmgl_translated(lcmgl, 0, 0, 0); // example offset
+        bot_lcmgl_texture_draw_quad(lcmgl, gray_texid,
+        0     , 0      , 0   ,
+        0     , height , 0   ,
+        -width , height , 0   ,   ///... where to put the image
+        -width , 0      , 0);  
+
+        bot_lcmgl_pop_matrix(lcmgl);
+        bot_lcmgl_switch_buffer(lcmgl);
         
         for (unsigned int i=0;i<pointVector2d.size();i++)
         {
