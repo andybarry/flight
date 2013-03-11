@@ -27,6 +27,9 @@ struct BarryMooreState
     int blockSize;
     int sadThreshold;
     
+    // a parameter added to the SAD/sobel division in the denominator
+    int sobelAdd;
+    
     Mat mapxL;
     
     Mat mapxR;

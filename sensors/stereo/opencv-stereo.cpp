@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 
     // start up LCM
     lcm_t * lcm;
-    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    lcm = lcm_create("udpm://239.255.76.68:7667?ttl=1");
     bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
     Mat imgDisp;
@@ -238,6 +238,7 @@ int main(int argc, char *argv[])
     state.sobelLimit = 260;
     state.blockSize = 5;
     state.sadThreshold = 79; //50
+    state.sobelAdd = 0;
     
     state.mapxL = mx1fp;
     state.mapxR = mx2fp;
@@ -398,7 +399,7 @@ int main(int argc, char *argv[])
                                        BOT_LCMGL_COMPRESS_NONE);
         bot_lcmgl_push_matrix(lcmgl);
         bot_lcmgl_color3f(lcmgl, 1, 1, 1);
-        bot_lcmgl_translated(lcmgl, 0, 0, 0); // example offset
+        bot_lcmgl_translated(lcmgl, 0, 400, 0); // example offset
         bot_lcmgl_texture_draw_quad(lcmgl, gray_texid,
         0     , 0      , 0   ,
         0     , height , 0   ,
@@ -466,6 +467,14 @@ int main(int argc, char *argv[])
                 state.sadThreshold --;
                 break;
                 
+            case 'u':
+                state.sobelAdd ++;
+                break;
+                
+            case 'j':
+                state.sobelAdd --;
+                break;
+                
             case 'q':
                 quit = true;
                 break;
@@ -477,6 +486,7 @@ int main(int argc, char *argv[])
             cout << "sobelLimit = " << state.sobelLimit << endl;
             cout << "blockSize = " << state.blockSize << endl;
             cout << "sadThreshold = " << state.sadThreshold << endl;
+            cout << "sobelAdd = " << state.sobelAdd << endl;
         }
         #endif
         

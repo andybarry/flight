@@ -309,5 +309,5 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
         return -1;
     }    
     
-    return (float)sad/(float)(sobel)*100;
+    return 100*(float)sad/(float)(sobel + state.sobelAdd);
 }
