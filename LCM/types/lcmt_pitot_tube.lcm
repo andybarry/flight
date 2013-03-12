@@ -3,5 +3,9 @@ struct lcmt_pitot_tube
   int64_t utime;
 
   float airspeed;
-  float estimatedGroundSpeed;  
+  float estimatedGroundSpeed;
+  
+  float wind_x;
+  float wind_y;
+  float wind_z;
 }
