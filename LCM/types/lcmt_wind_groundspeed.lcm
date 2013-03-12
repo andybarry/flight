@@ -1,4 +1,4 @@
-struct lcmt_pitot_tube
+struct lcmt_wind_groundspeed
 {
   int64_t utime;
 
