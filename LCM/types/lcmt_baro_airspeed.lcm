@@ -1,6 +1,6 @@
 struct lcmt_baro_airspeed
 {
-  int64_t timestamp;
+  int64_t utime;
 
   float airspeed;
   float baro_altitude;

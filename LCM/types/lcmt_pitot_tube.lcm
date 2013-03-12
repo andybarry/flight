@@ -1,0 +1,7 @@
+struct lcmt_pitot_tube
+{
+  int64_t utime;
+
+  float airspeed;
+  float estimatedGroundSpeed;  
+}
