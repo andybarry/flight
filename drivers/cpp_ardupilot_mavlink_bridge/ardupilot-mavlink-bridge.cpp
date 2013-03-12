@@ -22,6 +22,9 @@ using namespace std;
 #include "../../LCM/lcmt_gps.h"
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
+
+#include "mav_ins_t.h" // from Fixie
+#include "mav_gps_data_t.h" // from Fixie
     
 //#include "../../mavlink-generated/ardupilotmega/mavlink.h"
 #include "../../mavlink-generated2/csailrlg/mavlink.h"
@@ -81,7 +84,7 @@ int64_t getTimestampNow()
 {
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
+    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user)
@@ -113,10 +116,36 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             cout << "got a heartbeat" << endl;
             break;
         case MAVLINK_MSG_ID_RAW_IMU:
-            cout << "got an imu message" << endl;
             mavlink_raw_imu_t rawImu;
             mavlink_msg_raw_imu_decode(&mavmsg, &rawImu);
-            cout << rawImu.xacc << ", " << rawImu.yacc << endl;
+            
+            // convert to LCM type
+            mav_ins_t insMsg;
+            insMsg.utime = getTimestampNow();
+            insMsg.device_time = rawImu.time_usec;
+            
+            insMsg.gyro[0] = rawImu.xgyro;
+            insMsg.gyro[1] = rawImu.ygyro;
+            insMsg.gyro[2] = rawImu.zgyro;
+            
+            insMsg.accel[0] = (double)rawImu.xacc/100;
+            insMsg.accel[1] = (double)rawImu.yacc/100;
+            insMsg.accel[2] = (double)rawImu.zacc/100;
+            
+            insMsg.mag[0] = rawImu.xmag;
+            insMsg.mag[1] = rawImu.ymag;
+            insMsg.mag[2] = rawImu.zmag;
+            
+            insMsg.quat[0] = 0; // unused
+            insMsg.quat[1] = 0; // unused
+            insMsg.quat[2] = 0; // unused
+            insMsg.quat[3] = 0; // unused
+            
+            insMsg.pressure = 0; // set somewhere else
+            insMsg.rel_alt = 0; // set somewhere else
+            
+            mav_ins_t_publish(lcmAttitude, channelAttitude, &insMsg);
+            
             break;
         case MAVLINK_MSG_ID_ATTITUDE:
             mavlink_attitude_t attitude;
@@ -164,23 +193,28 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             mavlink_msg_gps_raw_int_decode(&mavmsg, &pos);
             
             // convert to LCM type
-            lcmt_gps gpsMsg;
-            gpsMsg.timestamp = getTimestampNow();
+            mav_gps_data_t gpsMsg;
+            gpsMsg.utime = getTimestampNow();
             
-            gpsMsg.fix_type = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
+            gpsMsg.gps_lock = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
             
-            gpsMsg.latitude = pos.lat; //Latitude in 1E7 degrees
-            gpsMsg.longitude = pos.lon; //Latitude in 1E7 degrees
-            gpsMsg.alt = pos.alt; //Altitude in 1E3 meters (millimeters) above MSL
+            gpsMsg.latitude = (double)pos.lat/1e7; //Latitude comes in at 1E7 degrees
+            gpsMsg.longitude = (double)pos.lon/1e7; //Latitude comes in at 1E7 degrees
+            gpsMsg.elev = (double)pos.alt/1e3; //Altitude comes in at 1E3 meters (millimeters) above MSL
             
-            gpsMsg.hdop = pos.eph; //GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
-            gpsMsg.vdop = pos.epv; //GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+            gpsMsg.horizontal_accuracy = pos.eph; //GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+            gpsMsg.vertical_accuracy = pos.epv; //GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
             
-            gpsMsg.velocity = pos.vel; // GPS ground speed (m/s * 100). If unknown, set to: 65535
-            gpsMsg.course_over_ground = pos.cog; //Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535
-            gpsMsg.satellites_visible = pos.satellites_visible; //Number of satellites visible. If unknown, set to 255
+            gpsMsg.speed = (double)pos.vel/100; // GPS ground speed comes in at (m/s * 100). If unknown, set to: 65535
+            gpsMsg.heading = (double)pos.cog/100; //Course over ground (NOT heading, but direction of movement) comes in at degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535
+            gpsMsg.numSatellites = pos.satellites_visible; //Number of satellites visible. If unknown, set to 255
             
-            lcmt_gps_publish (lcmGps, channelGps, &gpsMsg);
+            gpsMsg.xyz_pos[0] = 0; // TODO
+            gpsMsg.xyz_pos[1] = 0; // TODO
+            gpsMsg.xyz_pos[2] = 0; // TODO
+            
+            
+            mav_gps_data_t_publish (lcmGps, channelGps, &gpsMsg);
             
             
             break;
@@ -221,7 +255,7 @@ int main(int argc,char** argv)
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
 
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+    lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
@@ -229,21 +263,21 @@ int main(int argc,char** argv)
     }
 
 
-    lcmGps = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    lcmGps = lcm_create("udpm://239.255.76.68:7667?ttl=1");
     if (!lcmGps)
     {
         fprintf(stderr, "lcm_create for lcmGps failed.  Quitting.\n");
         return 1;
     }
     
-    lcmAttitude = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    lcmAttitude = lcm_create("udpm://239.255.76.68:7667?ttl=1");
     if (!lcmAttitude)
     {
         fprintf(stderr, "lcm_create for lcmAttitude failed.  Quitting.\n");
         return 1;
     }
     
-    lcmBaroAirspeed = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    lcmBaroAirspeed = lcm_create("udpm://239.255.76.68:7667?ttl=1");
     if (!lcmBaroAirspeed)
     {
         fprintf(stderr, "lcm_create for lcmBaroAirspeed failed.  Quitting.\n");

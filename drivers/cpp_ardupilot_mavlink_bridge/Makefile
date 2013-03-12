@@ -7,9 +7,11 @@ CC=g++
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a
 
-CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm` -I/$(LCMDIR) -I../../mavlink-generated
+MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
-LIBS=`pkg-config --libs lcm` $(LCMLIB)
+CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes
+
+LIBS=`pkg-config --libs lcm` $(LCMLIB) $(MAVLCMLIB)
 
 
 

@@ -33,7 +33,7 @@ using namespace std;
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_stereo.h"
     
-#define IMAGE_GL_X_OFFSET 400
+#define IMAGE_GL_Y_OFFSET 400
 #define IMAGE_GL_WIDTH 376
 #define IMAGE_GL_HEIGHT 240
     
@@ -115,7 +115,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         lastStereo = lcmt_stereo_copy(msg);
     }
     
-    //msg = lastStereo;
+    msg = lastStereo;
 
     // start the rate clock
     struct timeval start, now;
@@ -234,7 +234,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         
             double xyz[3];
             xyz[0] = -((imagePoints[i].x+1)*IMAGE_GL_WIDTH/2);
-            xyz[1] = double(imagePoints[i].y+.5)*(IMAGE_GL_HEIGHT-50); // TODO: this is wrong
+            xyz[1] = double(imagePoints[i].y+.5)*(IMAGE_GL_HEIGHT-50) + IMAGE_GL_Y_OFFSET; // TODO: this is wrong
             xyz[2] = 0;
             
             double rsize[2];
@@ -247,7 +247,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     }
        
        
-    if (numFrames%200 == 0)
+    //if (numFrames%200 == 0)
     {
         bot_lcmgl_switch_buffer(lcmgl);
     }
@@ -321,7 +321,7 @@ int main(int argc,char** argv)
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
 
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+    lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
