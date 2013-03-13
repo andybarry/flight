@@ -1,5 +1,5 @@
 /*
- * Integrates the 3d stereo data (from LCM) and the IMU data (from mavlink's LCM bridge)
+ * Bridges MAVLINK LCM messages and libbot LCM messages, using the ardupilot
  *
  * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
  *
@@ -23,6 +23,9 @@ using namespace std;
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 
+#include <bot_core/bot_core.h>
+#include <bot_param/param_client.h>
+
 #include "mav_ins_t.h" // from Fixie
 #include "mav_gps_data_t.h" // from Fixie
     
@@ -30,6 +33,7 @@ using namespace std;
 #include "../../mavlink-generated2/csailrlg/mavlink.h"
 //#include "../../mavlink-generated2/csailrlg/mavlink_msg_scaled_pressure_and_airspeed.h"
 
+#define GRAVITY_MSS 9.80665f // this matches the ArduPilot definition
 
 /* XXX XXX XXX XXX
  *
@@ -44,10 +48,11 @@ using namespace std;
  */
 
 
-lcm_t * lcmGps;
-lcm_t * lcmAttitude;
-lcm_t * lcmBaroAirspeed;
 lcm_t * lcm;
+
+int origin_init = 0;
+BotGPSLinearize gpsLinearize;
+double elev_origin;
 
 char *channelAttitude = NULL;
 char *channelBaroAirspeed = NULL;
@@ -124,13 +129,13 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             insMsg.utime = getTimestampNow();
             insMsg.device_time = rawImu.time_usec;
             
-            insMsg.gyro[0] = rawImu.xgyro;
-            insMsg.gyro[1] = rawImu.ygyro;
-            insMsg.gyro[2] = rawImu.zgyro;
+            insMsg.gyro[0] = (double)rawImu.xgyro/1000;
+            insMsg.gyro[1] = (double)rawImu.ygyro/1000;
+            insMsg.gyro[2] = (double)rawImu.zgyro/1000;
             
-            insMsg.accel[0] = (double)rawImu.xacc/100;
-            insMsg.accel[1] = (double)rawImu.yacc/100;
-            insMsg.accel[2] = (double)rawImu.zacc/100;
+            insMsg.accel[0] = (double)rawImu.xacc/1000*GRAVITY_MSS;
+            insMsg.accel[1] = (double)rawImu.yacc/1000*GRAVITY_MSS;
+            insMsg.accel[2] = (double)rawImu.zacc/1000*GRAVITY_MSS;
             
             insMsg.mag[0] = rawImu.xmag;
             insMsg.mag[1] = rawImu.ymag;
@@ -144,7 +149,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             insMsg.pressure = 0; // set somewhere else
             insMsg.rel_alt = 0; // set somewhere else
             
-            mav_ins_t_publish(lcmAttitude, channelAttitude, &insMsg);
+            mav_ins_t_publish(lcm, channelAttitude, &insMsg);
             
             break;
         case MAVLINK_MSG_ID_ATTITUDE:
@@ -162,7 +167,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             attitudeMsg.rollspeed = attitude.rollspeed;
             attitudeMsg.pitchspeed = attitude.pitchspeed;
             attitudeMsg.yawspeed = attitude.yawspeed;
-            lcmt_attitude_publish (lcmAttitude, channelAttitude, &attitudeMsg);
+            //DISABLED: USING RAW IMU DATA INSTEAD
+            //lcmt_attitude_publish (lcmAttitude, channelAttitude, &attitudeMsg);
             break;
          /*   
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
@@ -209,12 +215,40 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             gpsMsg.heading = (double)pos.cog/100; //Course over ground (NOT heading, but direction of movement) comes in at degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535
             gpsMsg.numSatellites = pos.satellites_visible; //Number of satellites visible. If unknown, set to 255
             
-            gpsMsg.xyz_pos[0] = 0; // TODO
-            gpsMsg.xyz_pos[1] = 0; // TODO
-            gpsMsg.xyz_pos[2] = 0; // TODO
             
+            /**
+            * Get lineared XYZ.
+            * This code from Fixie/drivers/ublox_comm/src/driver/ublox_comm.c
+            *
+            */
+            double latlong[2];
+            latlong[0] = gpsMsg.latitude;
+            latlong[1] = gpsMsg.longitude;
+            double xy[2]; //xy in ENU coordinates
+            //require 3d lock to linearize gps
+            if (gpsMsg.gps_lock == 3 && origin_init == true)
+            {
+                bot_gps_linearize_to_xy(&gpsLinearize, latlong, xy);
+            }
+            else {
+                xy[0] = xy[1] = 0;
+            }
             
-            mav_gps_data_t_publish (lcmGps, channelGps, &gpsMsg);
+            double xyz[3];
+            xyz[0] = xy[0];
+            xyz[1] = xy[1];
+            xyz[2] = gpsMsg.elev - elev_origin;
+            memcpy(gpsMsg.xyz_pos, xyz, 3 * sizeof(double));
+
+
+
+            
+            // TEMP JUST FOR TESTING
+            if (gpsMsg.gps_lock == 3)
+            {
+                mav_gps_data_t_publish (lcm, channelGps, &gpsMsg);
+            }
+            
             
             
             break;
@@ -225,13 +259,13 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             
             // convert to LCM type
             lcmt_baro_airspeed baroAirMsg;
-            baroAirMsg.timestamp = getTimestampNow();
+            baroAirMsg.utime = getTimestampNow();
             
             baroAirMsg.airspeed = pressure.press_abs;   // HACK
-            baroAirMsg.baro_altitude = pressure.press_diff;  // HACK
+            baroAirMsg.baro_altitude = 37;//pressure.press_diff;  // HACK
             baroAirMsg.temperature = pressure.temperature;
             
-            lcmt_baro_airspeed_publish (lcmBaroAirspeed, channelBaroAirspeed, &baroAirMsg);
+            lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
             break;
         default:
             cout << "unknown message id = " << mavmsg.msgid << endl;
@@ -262,32 +296,31 @@ int main(int argc,char** argv)
         return 1;
     }
 
-
-    lcmGps = lcm_create("udpm://239.255.76.68:7667?ttl=1");
-    if (!lcmGps)
-    {
-        fprintf(stderr, "lcm_create for lcmGps failed.  Quitting.\n");
-        return 1;
-    }
-    
-    lcmAttitude = lcm_create("udpm://239.255.76.68:7667?ttl=1");
-    if (!lcmAttitude)
-    {
-        fprintf(stderr, "lcm_create for lcmAttitude failed.  Quitting.\n");
-        return 1;
-    }
-    
-    lcmBaroAirspeed = lcm_create("udpm://239.255.76.68:7667?ttl=1");
-    if (!lcmBaroAirspeed)
-    {
-        fprintf(stderr, "lcm_create for lcmBaroAirspeed failed.  Quitting.\n");
-        return 1;
-    }
-
     mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
 
 
     signal(SIGINT,sighandler);
+    
+    // init GPS origin
+    double latlong_origin[2];
+    BotParam *param = bot_param_new_from_server(lcm, 0);
+    if (param != NULL) {
+        if (bot_param_get_double_array(param, "gps_origin.latlon", latlong_origin, 2) == -1) {
+            fprintf(stderr, "error: unable to get gps_origin.latlon from param server\n");
+            exit(1); // Don't allow usage without latlon origin.
+        } else {
+            fprintf(stderr, "Initializing gps origin at %f,%f\n", latlong_origin[0], latlong_origin[1]);
+            bot_gps_linearize_init(&gpsLinearize, latlong_origin);
+            origin_init = 1;
+        }
+
+        if (bot_param_get_double(param, "gps_origin.elevation", &elev_origin) == -1) {
+            fprintf(stderr, "error: unable to get elev_origin from param server, using 0\n");
+            elev_origin = 0;
+        }
+    } else {
+        fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
+    }
 
     printf("Receiving:\n\tMavlink LCM: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelMavlink, channelAttitude, channelBaroAirspeed, channelGps);
 

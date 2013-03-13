@@ -9,9 +9,9 @@ LCMLIB=../../LCM/lib/libtypes.a
 
 MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
-CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes
+CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm bot2-core bot2-param-client` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes
 
-LIBS=`pkg-config --libs lcm` $(LCMLIB) $(MAVLCMLIB)
+LIBS=`pkg-config --libs lcm bot2-core bot2-param-client` $(LCMLIB) $(MAVLCMLIB)
 
 
 

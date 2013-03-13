@@ -7,6 +7,10 @@ echo "---------------------------"
 
 make
 
+# create a symlink for other scripts
+cd lib
+ln -s libtypes.a libplanerlg.a
+cd ..
 
 export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 
