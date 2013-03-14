@@ -468,11 +468,11 @@ int main(int argc, char *argv[])
                 break;
                 
             case 'u':
-                state.sobelAdd ++;
+                state.sobelAdd += 10;
                 break;
                 
             case 'j':
-                state.sobelAdd --;
+                state.sobelAdd -= 10;
                 break;
                 
             case 'q':

@@ -12,7 +12,7 @@
 #include <cv.h>
 #include <iostream>
 
-#define SHOW_DISPLAY 1
+#define SHOW_DISPLAY 0
 
 #define NUM_THREADS 8
 
