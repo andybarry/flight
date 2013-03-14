@@ -226,7 +226,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             latlong[1] = gpsMsg.longitude;
             double xy[2]; //xy in ENU coordinates
             //require 3d lock to linearize gps
-            if (gpsMsg.gps_lock == 3 && origin_init == true)
+            if (gpsMsg.gps_lock == 3 && origin_init == 1)
             {
                 bot_gps_linearize_to_xy(&gpsLinearize, latlong, xy);
             }
@@ -239,17 +239,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             xyz[1] = xy[1];
             xyz[2] = gpsMsg.elev - elev_origin;
             memcpy(gpsMsg.xyz_pos, xyz, 3 * sizeof(double));
-
-
-
             
-            // TEMP JUST FOR TESTING
-            if (gpsMsg.gps_lock == 3)
-            {
-                mav_gps_data_t_publish (lcm, channelGps, &gpsMsg);
-            }
-            
-            
+            mav_gps_data_t_publish (lcm, channelGps, &gpsMsg);
             
             break;
             
@@ -268,7 +259,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // airspeed is unreliable under about 1.25 m/s
             if (baroAirMsg.airspeed < 1.5)
             {
-                baroAirMsg.airspeed = 0;
+             //   baroAirMsg.airspeed = 0;
             }
             
             lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
