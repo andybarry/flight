@@ -262,8 +262,14 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             baroAirMsg.utime = getTimestampNow();
             
             baroAirMsg.airspeed = pressure.press_abs;   // HACK
-            baroAirMsg.baro_altitude = 37;//pressure.press_diff;  // HACK
+            baroAirMsg.baro_altitude = pressure.press_diff + elev_origin;  // HACK
             baroAirMsg.temperature = pressure.temperature;
+            
+            // airspeed is unreliable under about 1.25 m/s
+            if (baroAirMsg.airspeed < 1.5)
+            {
+                baroAirMsg.airspeed = 0;
+            }
             
             lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
             break;

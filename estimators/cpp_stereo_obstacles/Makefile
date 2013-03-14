@@ -7,9 +7,11 @@ CC=g++
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a
 
-CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3 opencv` -I/$(LCMDIR) -I../../mavlink-generated
+MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
-LIBS=`pkg-config --libs lcm opencv` $(LCMLIB) -pthread -Wl,-rpath -Wl,/usr/local/lib `pkg-config --libs bot2-lcmgl-client`
+CFLAGS=-c -Wall -O3 -mfpu=neon -std=c++0x `pkg-config --cflags lcm eigen3 opencv bot2-core bot2-frames bot2-param-client` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes
+
+LIBS=`pkg-config --libs lcm opencv bot2-core bot2-frames bot2-param-client` $(LCMLIB) -pthread -Wl,-rpath -Wl,/usr/local/lib `pkg-config --libs bot2-lcmgl-client` $(MAVLCMLIB)
 
 
 

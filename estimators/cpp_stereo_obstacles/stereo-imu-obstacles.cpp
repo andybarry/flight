@@ -1,6 +1,6 @@
 /*
  * Integrates the 3d stereo data (from LCM) and the IMU data (from LCM)
- * and outputs and obstacle map (tbd)
+ * and outputs and obstacle map
  *
  * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
  *
@@ -27,19 +27,20 @@ using namespace std;
 
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
+#include <bot_core/rotations.h>
+#include <bot_frames/bot_frames.h>
+#include <bot_param/param_client.h>
 
-#include "../../LCM/lcmt_gps.h"
-#include "../../LCM/lcmt_attitude.h"
-#include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_stereo.h"
+#include "../../../Fixie/build/include/lcmtypes/mav_pose_t.h"
     
 #define IMAGE_GL_Y_OFFSET 400
 #define IMAGE_GL_WIDTH 376
 #define IMAGE_GL_HEIGHT 240
     
 
-using Eigen::Matrix3f;
-using Eigen::Vector3f;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 using namespace cv;
 using namespace std;
@@ -51,28 +52,26 @@ unsigned long totalTime = 0;
 
 bot_lcmgl_t* lcmgl;
 
-// global mutexes
-std::mutex attitude_mutex, gps_mutex, baro_airspeed_mutex;
+// bot frames global
+BotFrames *botFrames;
+
+// global mutex
+std::mutex pose_mutex;
+
 
 // globals for subscription functions, so we can unsubscribe in the control-c handler
 lcmt_stereo_subscription_t * stereo_sub;
-lcmt_attitude_subscription_t * attitude_sub;
-lcmt_baro_airspeed_subscription_t * baro_airspeed_sub;
-lcmt_gps_subscription_t * gps_sub;
+mav_pose_t_subscription_t * pose_sub;
 
 // globals for holding state between messages
-lcmt_attitude *lastAttitudeMsg;
-lcmt_baro_airspeed *lastBaroAirspeedMsg;
-lcmt_gps *lastGpsMsg;
+mav_pose_t *lastPoseMsg;
 
 // globals for ensuring data has arrived
-bool gpsFlag = false, baroAirspeedFlag = false, attitudeFlag = false;
-
-void rotation_matrix_from_euler(Matrix3f *matrixIn, float roll, float pitch, float yaw);
+bool poseFlag = false;
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: stereo-imu-obstacles stereo-channel-name attitude-channel-name baro/airspeed-channel-name gps-channel-name\n");
+        fprintf(stderr, "usage: stereo-imu-obstacles stereo-channel-name pose-channel-name TODO\n");
         fprintf(stderr, "    input-channel-name : LCM channel name with stereo LCM messages\n");
         fprintf(stderr, "  example:\n");
         fprintf(stderr, "    ./stereo-imu-obstacles stereo attitude baro-airspeed gps\n");
@@ -84,8 +83,7 @@ void sighandler(int dum)
     printf("\n\nclosing... ");
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
-    lcmt_attitude_unsubscribe(lcm, attitude_sub);
-    lcmt_gps_unsubscribe(lcm, gps_sub);
+    mav_pose_t_unsubscribe(lcm, pose_sub);
     lcm_destroy (lcm);
 
     printf("done.\n");
@@ -104,7 +102,7 @@ lcmt_stereo *lastStereo = NULL;
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user)
 {
-    if (!attitudeFlag || !gpsFlag || !baroAirspeedFlag)
+    if (!poseFlag)
     {
         // we don't have all the data we need yet, bail out
         return;
@@ -132,23 +130,33 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     // lock all the mutexes
     // this shouldn't take a long time since each handler only copies some data when it has the mutexes.
     // mostly this is here to prevent data from changing under our feet as we go
-    attitude_mutex.lock();
-    gps_mutex.lock();
-    baro_airspeed_mutex.lock();
+    pose_mutex.lock();
     
     // ok, we're ready for the real processing now...
     
     // first, rotate the stereo points into the global frame
     
     // build the rotation matrix
-    Matrix3f rotationMatrix;
-    rotation_matrix_from_euler(&rotationMatrix, lastAttitudeMsg->roll, lastAttitudeMsg->pitch, lastAttitudeMsg->yaw);
     
     
-    Matrix3f toOpengl;
-    toOpengl << (Matrix3f() << -1, 0, 0, 0, -1, 0, 0, 0, 1).finished();
+    double rotMat[9];
+    bot_quat_to_matrix(lastPoseMsg->orientation, rotMat);
     
-    vector<Point3f> opencvPoints;
+    Eigen::Matrix3d rotationMatrix(rotMat);
+    
+    //cout << rotationMatrix << endl;
+    
+    Matrix3d toOpengl;
+    toOpengl << (Matrix3d() << -1, 0, 0, 0, -1, 0, 0, 0, 1).finished();
+    
+    vector<Point3d> opencvPoints;
+    
+    Vector3d posVec(lastPoseMsg->pos);
+    
+    // get transform from global to local frame
+    BotTrans toOpenCv, camToLocal;
+    bot_frames_get_trans(botFrames, "opencvFrame", "local", &toOpenCv);
+    
     
     // begin opengl
     bot_lcmgl_push_matrix(lcmgl);
@@ -160,20 +168,35 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     bot_lcmgl_vertex3f(lcmgl, 0, 0, 0);
     
     bot_lcmgl_color3f(lcmgl, 0.5, 0.5, 0.5);
+    
     // now apply this matrix to each point
     for (int i = 0; i<msg->number_of_points; i++)
     {
-        Vector3f thisPoint;
+        Vector3d thisPoint;
         thisPoint << msg->z[i], msg->x[i], msg->y[i];
+        double thisPointd[3];
+        double transPoint[3];
+        thisPointd[0] = msg->x[i];
+        thisPointd[1] = msg->y[i];
+        thisPointd[2] = -msg->z[i]; // opencv sends the z coordinate reversed from what we expect
         
         //cout << endl << "-------------" << endl << thisPoint << endl << "--------------" << endl;
         
-        Vector3f transformedPoint = toOpengl*rotationMatrix*thisPoint;
+        // add the position vector
+        //Vector3d transformedPoint = thisPoint + posVec;
+        bot_trans_apply_vec(&toOpenCv, thisPointd, transPoint);
+        
+        Vector3d transformedPoint(transPoint);
+        
+        // now rotate
+        //transformedPoint = toOpengl*rotationMatrix*thisPoint;
+        //transformedPoint = toOpengl*transformedPoint;
         
         float grey = msg->grey[i]/255.0;
         
         bot_lcmgl_color3f(lcmgl, grey, grey, grey);
-        bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), -transformedPoint(1), transformedPoint(2));
+        //bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), -transformedPoint(1), transformedPoint(2));
+        bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), transformedPoint(1), transformedPoint(2));
         
         opencvPoints.push_back(Point3f(msg->x[i], msg->y[i], msg->z[i]));
     }
@@ -181,7 +204,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     bot_lcmgl_pop_matrix(lcmgl);
     
     // now use those points to place markers on the lcmgl image
-    
+    #if 0
     // project 3d points onto the image plane
     vector<Point2f> imagePoints;
     
@@ -245,6 +268,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
             //cout << "(" << imagePoints[i].x << ", " << imagePoints[i].y << ")" << endl;
         }
     }
+    #endif
        
        
     //if (numFrames%200 == 0)
@@ -261,9 +285,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     
     // we're done, unlock everything
-    attitude_mutex.unlock();
-    gps_mutex.unlock();
-    baro_airspeed_mutex.unlock();
+    pose_mutex.unlock();
     
     numFrames ++;
     
@@ -272,54 +294,32 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - (start.tv_usec / 1000 + start.tv_sec * 1000);
     totalTime += elapsed;
-    printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
-    fflush(stdout);
+    //printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
+    //fflush(stdout);
 }
 
-void attitude_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_attitude *msg, void *user)
+void pose_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user)
 {
-    // get the lock
-    attitude_mutex.lock();
-    lastAttitudeMsg = lcmt_attitude_copy(msg);
-    attitude_mutex.unlock();
-    attitudeFlag = true;
-}
-
-void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user)
-{
-    baro_airspeed_mutex.lock();
-    lastBaroAirspeedMsg = lcmt_baro_airspeed_copy(msg);
-    baro_airspeed_mutex.unlock();
+    pose_mutex.lock();
+    lastPoseMsg = mav_pose_t_copy(msg);
+    pose_mutex.unlock();
     
-    baroAirspeedFlag = true;
-}
-
-void gps_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_gps *msg, void *user)
-{
-    gps_mutex.lock();
-    lastGpsMsg = lcmt_gps_copy(msg);
-    gps_mutex.unlock();
-    
-    gpsFlag = true;
+    poseFlag = true;
 }
 
 
 int main(int argc,char** argv)
 {
     char *channelStereo = NULL;
-    char *channelAttitude = NULL;
-    char *channelBaroAirspeed = NULL;
-    char *channelGps = NULL;
+    char *channelPose = NULL;
 
-    if (argc!=5) {
+    if (argc!=3) {
         usage();
         exit(0);
     }
 
     channelStereo = argv[1];
-    channelAttitude = argv[2];
-    channelBaroAirspeed = argv[3];
-    channelGps = argv[4];
+    channelPose = argv[2];
 
     lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
     if (!lcm)
@@ -329,16 +329,18 @@ int main(int argc,char** argv)
     }
 
     stereo_sub =  lcmt_stereo_subscribe (lcm, channelStereo, &stereo_handler, NULL);
-    attitude_sub =  lcmt_attitude_subscribe (lcm, channelAttitude, &attitude_handler, NULL);
-    baro_airspeed_sub =  lcmt_baro_airspeed_subscribe (lcm, channelBaroAirspeed, &baro_airspeed_handler, NULL);
-    gps_sub =  lcmt_gps_subscribe (lcm, channelGps, &gps_handler, NULL);
+    pose_sub =  mav_pose_t_subscribe (lcm, channelPose, &pose_handler, NULL);
 
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
     bot_lcmgl_enable(lcmgl, GL_BLEND);
+    
+    // init frames
+    BotParam *param = bot_param_new_from_server(lcm, 0);
+    botFrames = bot_frames_new(lcm, param);
 
     signal(SIGINT,sighandler);
 
-    printf("Receiving LCM:\n\tStereo: %s\n\tAttitude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelStereo, channelAttitude, channelBaroAirspeed, channelGps);
+    printf("Receiving LCM:\n\tStereo: %s\n\tPose: %s\n", channelStereo, channelPose);
 
     while (true)
     {
@@ -348,48 +350,3 @@ int main(int argc,char** argv)
 
     return 0;
 }
-
-
-/* *** from Ardupilot source (so it will be consistent with their angle convention *** */
-// ================================================================================== //
-// create a rotation matrix given some euler angles
-// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
-void rotation_matrix_from_euler(Matrix3f *matrix, float roll, float pitch, float yaw)
-{
-    float cp = cosf(pitch);
-    float sp = sinf(pitch);
-    float sr = sinf(roll);
-    float cr = cosf(roll);
-    float sy = sinf(yaw);
-    float cy = cosf(yaw);
-
-    // [ a.x    a.y     a.z ]
-    // [ b.x    b.y     b.z ]
-    // [ c.x    c.y     c.z ]
-    (*matrix)(0,0) = cp * cy;
-    (*matrix)(0,1) = (sr * sp * cy) - (cr * sy);
-    (*matrix)(0,2) = (cr * sp * cy) + (sr * sy);
-    (*matrix)(1,0) = cp * sy;
-    (*matrix)(1,1) = (sr * sp * sy) + (cr * cy);
-    (*matrix)(1,2) = (cr * sp * sy) - (sr * cy);
-    (*matrix)(2,0) = -sp;
-    (*matrix)(2,1) = sr * cp;
-    (*matrix)(2,2) = cr * cp;
-}
-#if 0
-// calculate euler angles from a rotation matrix
-// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
-void Matrix3f::to_euler(float *roll, float *pitch, float *yaw)
-{
-    if (pitch != NULL) {
-        *pitch = -safe_asin(c.x);
-    }
-    if (roll != NULL) {
-        *roll = atan2f(c.y, c.z);
-    }
-    if (yaw != NULL) {
-        *yaw = atan2f(b.x, a.x);
-    }
-}
-#endif
-// ================================================================================== //
