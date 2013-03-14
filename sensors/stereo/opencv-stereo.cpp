@@ -46,6 +46,8 @@ extern "C"
 
 #define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup
 
+#define RINGBUFFER_SIZE (120*30) // number of seconds to allocate for recording * framerate
+
 //#define POINT_GREY_VENDOR_ID 0x1E10
 //#define POINT_GREY_PRODUCT_ID 0x2000
 
@@ -53,6 +55,10 @@ extern "C"
 #define EXPOSURE_VALUE 128
 
 //#define USE_IMAGE // uncomment to use left.jpg and right.jpg as test images
+
+// allocate a huge array for a ringbuffer
+Mat ringbuffer[RINGBUFFER_SIZE];
+
 
 struct RemapState
 {
@@ -68,7 +74,9 @@ Mat GetFrameFormat7(dc1394camera_t *camera);
 bool ResetPointGreyCameras();
 
 int64_t getTimestampNow();
+void WriteVideo();
 
+int numFrames = 0;
 
 dc1394_t        *d;
 dc1394camera_t  *camera;
@@ -100,10 +108,36 @@ void control_c_handler(int s)
     dc1394_free (d);
     dc1394_free (d2);
     
+    // write video
+    WriteVideo();
+    
     //delete[] localHitPoints;
     
     exit(1);
 
+}
+
+void WriteVideo()
+{
+    printf("writing video...\n");
+    VideoWriter record("RobotVideo.avi", CV_FOURCC('P','I','M','1'), 110, ringbuffer[0].size(), false);
+    if( !record.isOpened() ) {
+        printf("VideoWriter failed to open!\n");
+    }
+    
+    int temp;
+    if (numFrames < RINGBUFFER_SIZE)
+    {
+        temp = numFrames;
+    } else {
+        temp = RINGBUFFER_SIZE;
+    }
+    
+    for (int i=0; i<temp; i++)
+    {
+        record << ringbuffer[i];
+    }
+    printf("done.\n");
 }
 
 int main(int argc, char *argv[])
@@ -113,7 +147,6 @@ int main(int argc, char *argv[])
     uint64         guid = 0x00b09d0100af04d8; // camera 1
     
     unsigned long elapsed;
-    int numFrames = 0;
     
     // ----- cam 2 -----
     
@@ -244,6 +277,19 @@ int main(int argc, char *argv[])
     state.mapxR = mx2fp;
     state.Q = qMat;
     
+    Mat matL, matR;
+    bool quit = false;
+    Mat depthMap;
+    
+    // allocate a huge buffer for video frames
+    printf("allocation data...\n");
+    matL = GetFrameFormat7(camera);
+    for (int i=0; i<RINGBUFFER_SIZE; i++)
+    {
+        ringbuffer[i].create(matL.size(), matL.type());
+    }
+    printf("done.\n");
+
     //localHitPoints = new cv::vector<Point3f>[NUM_THREADS];
     //state.localHitPoints = localHitPoints;
     //
@@ -252,11 +298,6 @@ int main(int argc, char *argv[])
     //    localHitPoints[i].resize(MAX_HIT_POINTS);
     //}
     
-    Mat depthMap;
-    
-    bool quit = false;
-    
-    Mat matL, matR;
     
     #ifdef USE_IMAGE
         matL = imread("left.jpg", -1);
@@ -274,6 +315,10 @@ int main(int argc, char *argv[])
             matL = GetFrameFormat7(camera);
             matR = GetFrameFormat7(camera2);
         #endif
+        
+        // record video
+        //record << matL;
+        ringbuffer[numFrames%RINGBUFFER_SIZE] = matL;
         
         Mat matDisp;
         
