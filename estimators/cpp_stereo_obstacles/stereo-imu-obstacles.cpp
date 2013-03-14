@@ -30,9 +30,13 @@ using namespace std;
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
 #include <bot_param/param_client.h>
+#include <lcmtypes/mav_pose_t.h>
+#include <lcmtypes/octomap_raw_t.h>
+
+#include <octomap/OcTree.h>
 
 #include "../../LCM/lcmt_stereo.h"
-#include "../../../Fixie/build/include/lcmtypes/mav_pose_t.h"
+
     
 #define IMAGE_GL_Y_OFFSET 400
 #define IMAGE_GL_WIDTH 376
@@ -44,11 +48,15 @@ using Eigen::Vector3d;
 
 using namespace cv;
 using namespace std;
-    
+using namespace octomap;
+
 lcm_t * lcm;
 char *lcm_out = NULL;
 int numFrames = 0;
 unsigned long totalTime = 0;
+
+// global octree
+OcTree octree(0.1);
 
 bot_lcmgl_t* lcmgl;
 
@@ -113,7 +121,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         lastStereo = lcmt_stereo_copy(msg);
     }
     
-    msg = lastStereo;
+    //msg = lastStereo;
 
     // start the rate clock
     struct timeval start, now;
@@ -154,9 +162,19 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     Vector3d posVec(lastPoseMsg->pos);
     
     // get transform from global to local frame
-    BotTrans toOpenCv, camToLocal;
+    BotTrans toOpenCv, bodyToLocal;
     bot_frames_get_trans(botFrames, "opencvFrame", "local", &toOpenCv);
+    bot_frames_get_trans(botFrames, "body", "local", &bodyToLocal);
     
+    // get the new origin
+    double origin[3];
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
+    
+    double planeOrigin[3];
+    bot_trans_apply_vec(&bodyToLocal, origin, planeOrigin);
+    octomath::Vector3 vecPlaneOrigin(planeOrigin[0], planeOrigin[1], planeOrigin[2]);
     
     // begin opengl
     bot_lcmgl_push_matrix(lcmgl);
@@ -176,9 +194,9 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         thisPoint << msg->z[i], msg->x[i], msg->y[i];
         double thisPointd[3];
         double transPoint[3];
-        thisPointd[0] = msg->x[i];
-        thisPointd[1] = msg->y[i];
-        thisPointd[2] = -msg->z[i]; // opencv sends the z coordinate reversed from what we expect
+        thisPointd[0] = msg->x[i]/10;
+        thisPointd[1] = msg->y[i]/10;
+        thisPointd[2] = -msg->z[i]/10; // opencv sends the z coordinate reversed from what we expect and is also in cm
         
         //cout << endl << "-------------" << endl << thisPoint << endl << "--------------" << endl;
         
@@ -187,6 +205,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         bot_trans_apply_vec(&toOpenCv, thisPointd, transPoint);
         
         Vector3d transformedPoint(transPoint);
+        octomath::Vector3 vecNewPoint(transPoint[0], transPoint[1], transPoint[2]);
         
         // now rotate
         //transformedPoint = toOpengl*rotationMatrix*thisPoint;
@@ -198,11 +217,38 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         //bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), -transformedPoint(1), transformedPoint(2));
         bot_lcmgl_vertex3f(lcmgl, transformedPoint(0), transformedPoint(1), transformedPoint(2));
         
+        // add this point to the octree
+        //cout << "Inserted ray: " << vecPlaneOrigin << " --> " << vecNewPoint << endl;
+        octree.insertRay(vecPlaneOrigin, vecNewPoint);
+        
+        
         opencvPoints.push_back(Point3f(msg->x[i], msg->y[i], msg->z[i]));
     }
     bot_lcmgl_end(lcmgl);
     bot_lcmgl_pop_matrix(lcmgl);
     
+    // only publish every so often since it swamps the viewer
+    if (numFrames%30 == 0)
+    {
+        // publish octomap to LCM
+        octomap_raw_t ocMsg;
+        ocMsg.utime = getTimestampNow();
+
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                ocMsg.transform[i][j] = 0;
+            }
+            ocMsg.transform[i][i] = 1;
+        }
+
+        std::stringstream datastream;
+        octree.writeBinaryConst(datastream);
+        std::string datastring = datastream.str();
+        ocMsg.data = (uint8_t *) datastring.c_str();
+        ocMsg.length = datastring.size();
+
+        octomap_raw_t_publish(lcm, "OCTOMAP", &ocMsg);
+    }   
     // now use those points to place markers on the lcmgl image
     #if 0
     // project 3d points onto the image plane
@@ -337,7 +383,8 @@ int main(int argc,char** argv)
     // init frames
     BotParam *param = bot_param_new_from_server(lcm, 0);
     botFrames = bot_frames_new(lcm, param);
-
+    
+    // control-c handler
     signal(SIGINT,sighandler);
 
     printf("Receiving LCM:\n\tStereo: %s\n\tPose: %s\n", channelStereo, channelPose);
