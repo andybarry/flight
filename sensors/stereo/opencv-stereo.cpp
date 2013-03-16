@@ -46,7 +46,7 @@ extern "C"
 
 #define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup
 
-#define RINGBUFFER_SIZE (120*30) // number of seconds to allocate for recording * framerate
+#define RINGBUFFER_SIZE (120*80) // number of seconds to allocate for recording * framerate
 
 //#define POINT_GREY_VENDOR_ID 0x1E10
 //#define POINT_GREY_PRODUCT_ID 0x2000
@@ -57,8 +57,13 @@ extern "C"
 //#define USE_IMAGE // uncomment to use left.jpg and right.jpg as test images
 
 // allocate a huge array for a ringbuffer
-Mat ringbuffer[RINGBUFFER_SIZE];
+Mat ringbufferL[RINGBUFFER_SIZE];
+Mat ringbufferR[RINGBUFFER_SIZE];
 
+
+// global for where we are drawing a line on the image
+int lineLeftImgPosition = -1;
+int lineLeftImgPositionY = -1;
 
 struct RemapState
 {
@@ -75,6 +80,9 @@ bool ResetPointGreyCameras();
 
 int64_t getTimestampNow();
 void WriteVideo();
+
+void onMouse( int event, int x, int y, int, void* );
+void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
 
 int numFrames = 0;
 
@@ -120,8 +128,12 @@ void control_c_handler(int s)
 void WriteVideo()
 {
     printf("writing video...\n");
-    VideoWriter record("RobotVideo.avi", CV_FOURCC('P','I','M','1'), 110, ringbuffer[0].size(), false);
-    if( !record.isOpened() ) {
+    VideoWriter recordL("RobotVideoL.avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
+    if( !recordL.isOpened() ) {
+        printf("VideoWriter failed to open!\n");
+    }
+    VideoWriter recordR("RobotVideoR.avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
+    if( !recordR.isOpened() ) {
         printf("VideoWriter failed to open!\n");
     }
     
@@ -135,9 +147,13 @@ void WriteVideo()
     
     for (int i=0; i<temp; i++)
     {
-        record << ringbuffer[i];
+        recordL << ringbufferL[i];
+        recordR << ringbufferR[i];
+        
+        printf("\rWriting video: (%.1f%) -- %d/%d frames", (float)(i+1)/temp*100, i+1, temp);
+        fflush(stdout);
     }
-    printf("done.\n");
+    printf("\ndone.\n");
 }
 
 int main(int argc, char *argv[])
@@ -227,12 +243,21 @@ int main(int argc, char *argv[])
         err2 = dc1394_video_set_transmission(camera2, DC1394_ON);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
     #endif
-
+	
+    #if SHOW_DISPLAY
     namedWindow("Input", CV_WINDOW_AUTOSIZE);
     namedWindow("Input2", CV_WINDOW_AUTOSIZE);
     namedWindow("Depth", CV_WINDOW_AUTOSIZE);
     namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
     
+    setMouseCallback("Input", onMouse); // for drawing disparity lines
+    setMouseCallback("Stereo", onMouse); // for drawing disparity lines
+    
+    cvMoveWindow("Input", 100, 100);
+    cvMoveWindow("Stereo", 100, 370);
+    cvMoveWindow("Input2", 500, 100);
+    cvMoveWindow("Depth", 500, 370);
+    #endif
     
     // load calibration
 
@@ -267,8 +292,8 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    state.disparity = -40;
-    state.sobelLimit = 260;
+    state.disparity = -44;
+    state.sobelLimit = 130;
     state.blockSize = 5;
     state.sadThreshold = 79; //50
     state.sobelAdd = 0;
@@ -281,15 +306,17 @@ int main(int argc, char *argv[])
     bool quit = false;
     Mat depthMap;
     
+    #ifndef USE_IMAGE
     // allocate a huge buffer for video frames
-    printf("allocation data...\n");
+    printf("Allocating ringbuffer data...\n");
     matL = GetFrameFormat7(camera);
     for (int i=0; i<RINGBUFFER_SIZE; i++)
     {
-        ringbuffer[i].create(matL.size(), matL.type());
+        ringbufferL[i].create(matL.size(), matL.type());
+        ringbufferR[i].create(matL.size(), matL.type());
     }
     printf("done.\n");
-
+    #endif
     //localHitPoints = new cv::vector<Point3f>[NUM_THREADS];
     //state.localHitPoints = localHitPoints;
     //
@@ -300,8 +327,8 @@ int main(int argc, char *argv[])
     
     
     #ifdef USE_IMAGE
-        matL = imread("left.jpg", -1);
-        matR = imread("right.jpg", -1);
+        matL = imread("left.jpg", 0);
+        matR = imread("right.jpg", 0);
     #endif
     
     // start the framerate clock
@@ -314,11 +341,14 @@ int main(int argc, char *argv[])
         #ifndef USE_IMAGE
             matL = GetFrameFormat7(camera);
             matR = GetFrameFormat7(camera2);
+            
+            // record video
+            //record << matL;
+            ringbufferL[numFrames%RINGBUFFER_SIZE] = matL;
+            ringbufferR[numFrames%RINGBUFFER_SIZE] = matR;
         #endif
         
-        // record video
-        //record << matL;
-        ringbuffer[numFrames%RINGBUFFER_SIZE] = matL;
+        
         
         Mat matDisp;
         
@@ -467,6 +497,9 @@ int main(int argc, char *argv[])
             circle(depthMap, Point(x2,y2), 5, gray, -1);
         }
         
+        // draw a line for the user to show disparity
+        DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
+        
         imshow("Input", remapL);
         imshow("Input2", remapR);
         imshow("Stereo", matDisp);
@@ -614,6 +647,34 @@ int64_t getTimestampNow()
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
     return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
+}
+
+/* setup a mouse callback so that the user can click on an image
+ * and see where the disparity line is on the other image pair
+ */
+void onMouse( int event, int x, int y, int flags, void* )
+{
+    if( flags & CV_EVENT_FLAG_LBUTTON)
+    {
+        // paint a line on the image they clicked on
+        lineLeftImgPosition = x;
+        lineLeftImgPositionY = y;
+    }
+}
+
+void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity)
+{
+    if (lineX >= 0)
+    {
+        line(leftImg, Point(lineX, 0), Point(lineX, leftImg.rows), 0);
+        line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), 0);
+        line(rightImg, Point(lineX + disparity, 0), Point(lineX + disparity, rightImg.rows), 0);
+        
+        line(leftImg, Point(0, lineY), Point(leftImg.cols, lineY), 0);
+        line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), 0);
+        line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), 0);
+        
+    }
 }
 
 # if 0
