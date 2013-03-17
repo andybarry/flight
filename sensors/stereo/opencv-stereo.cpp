@@ -76,6 +76,7 @@ struct RemapState
 
 Mat GetFrameFormat7(dc1394camera_t *camera);
 
+void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
 bool ResetPointGreyCameras();
 
 int64_t getTimestampNow();
@@ -103,8 +104,9 @@ dc1394camera_t  *camera2;
  */
 void control_c_handler(int s)
 {
-    cout << endl << "exiting via ctrl-c" << endl;
-
+    cout << endl << "exiting via ctrl-c" << endl
+        << "\tpress ctrl+\\ to quit while writing video." << endl;
+    
     dc1394_video_set_transmission(camera, DC1394_OFF);
     dc1394_capture_stop(camera);
     dc1394_camera_free(camera);
@@ -242,6 +244,10 @@ int main(int argc, char *argv[])
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
         err2 = dc1394_video_set_transmission(camera2, DC1394_ON);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
+        
+        dc1394_feature_set_absolute_control(camera, DC1394_FEATURE_GAIN, DC1394_OFF);
+        
+        dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_GAIN, DC1394_OFF);
     #endif
 	
     #if SHOW_DISPLAY
@@ -339,6 +345,15 @@ int main(int argc, char *argv[])
     
         // get the frames from the camera
         #ifndef USE_IMAGE
+        
+            // we would like to match brightness every frame
+            // but that would really hurt our framerate
+            // match brightness every 10 frames instead
+            if (numFrames % 10 == 0)
+            {
+                MatchBrightnessSettings(camera, camera2);
+            }
+        
             matL = GetFrameFormat7(camera);
             matR = GetFrameFormat7(camera2);
             
@@ -647,6 +662,85 @@ int64_t getTimestampNow()
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
     return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
+}
+
+void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
+{
+    // we need to make sure the brightness settings
+    // are identical on both cameras. to do this, we
+    // read the settings off the left camera, and force
+    // the right camera to do the exact same thing.
+    // since we want auto-brightness, we do this every frame
+    
+    // in practice, it is really important to get this right
+    // otherwise the pixel values will be totally different
+    // and stereo will not work at all
+    
+    // get brightness
+    #if 0
+    float brightnessVal;
+    dc1394featureset_t features, features2;
+    dc1394_feature_get_all(camera1, &features);
+    
+    dc1394error_t err;
+
+    //dc1394_feature_print(&features.feature[8], stdout);
+    
+    
+    // set brightness
+    dc1394_feature_set_value(camera2, features.feature[0].id, features.feature[0].value);
+    
+    // set exposure
+    dc1394_feature_set_value(camera2, features.feature[1].id, features.feature[1].value);
+    
+    // set gamma
+    dc1394_feature_set_value(camera2, features.feature[6].id, features.feature[6].value);
+    
+    // set shutter
+    dc1394_feature_set_absolute_value(camera2, features.feature[7].id, features.feature[7].abs_value);
+    #endif
+    
+    // set gain
+    uint32_t gainVal;
+    dc1394_feature_get_value(camera1, DC1394_FEATURE_GAIN, &gainVal);
+    
+    dc1394_feature_set_value(camera2, DC1394_FEATURE_GAIN, gainVal);
+    //DC1394_WRN(err,"Could not set gain");
+    
+    
+    #if 0
+    // set framerate
+    dc1394_feature_set_absolute_value(camera2, features.feature[15].id, features.feature[15].abs_value);
+    
+    dc1394_feature_get_all(camera2, &features2);
+    
+    
+    
+    cout << endl << dc1394_feature_get_string(features.feature[0].id) << ": " << features.feature[0].value << "/" << features2.feature[0].value << endl;
+
+    
+    // set exposure
+    cout << endl << dc1394_feature_get_string(features.feature[1].id) << ": " << features.feature[1].value << "/" << features2.feature[1].value << endl;
+
+    
+    // set gamma
+    cout << endl << dc1394_feature_get_string(features.feature[6].id) << ": " << features.feature[6].value << "/" << features2.feature[6].value << endl;
+
+    
+    // set shutter
+    cout << endl << dc1394_feature_get_string(features.feature[7].id) << ": " << features.feature[7].value << "/" << features2.feature[7].value << endl;
+    
+    // set gain
+   cout << endl << dc1394_feature_get_string(features.feature[8].id) << ": " << features.feature[8].value << "/" << features2.feature[8].value << endl;
+    
+    //cout << "---------------------------------------" << endl;
+    //dc1394_feature_print_all(&features, stdout);
+    //cout << "222222222222222222222222222222222222222222222" << endl;
+    //dc1394_feature_print_all(&features2, stdout);
+    //dc1394_feature_get_absolute_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightnessVal);
+    
+    //cout << endl << "brightness: " << brightnessVal << endl;
+    #endif
 }
 
 /* setup a mouse callback so that the user can click on an image
