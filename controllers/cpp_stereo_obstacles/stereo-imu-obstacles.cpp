@@ -1,6 +1,7 @@
 /*
  * Integrates the 3d stereo data (from LCM) and the IMU data (from LCM)
- * and outputs and obstacle map
+ * and generates an obstacle map.  Then uses that map with a trajectory
+ * library for control.
  *
  * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
  *
@@ -37,6 +38,8 @@ using namespace std;
 
 #include "../../LCM/lcmt_stereo.h"
 
+#include "TrajectoryLibrary.hpp"
+
     
 #define IMAGE_GL_Y_OFFSET 400
 #define IMAGE_GL_WIDTH 376
@@ -57,6 +60,9 @@ unsigned long totalTime = 0;
 
 // global octree
 OcTree octree(0.1);
+
+// global trajectory library
+TrajectoryLibrary trajlib;
 
 bot_lcmgl_t* lcmgl;
 
@@ -79,10 +85,10 @@ bool poseFlag = false;
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: stereo-imu-obstacles stereo-channel-name pose-channel-name TODO\n");
+        fprintf(stderr, "usage: stereo-imu-obstacles stereo-channel-name pose-channel-name trajectory-library-directory\n");
         fprintf(stderr, "    input-channel-name : LCM channel name with stereo LCM messages\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./stereo-imu-obstacles stereo attitude baro-airspeed gps\n");
+        fprintf(stderr, "    ./stereo-imu-obstacles stereo STATE_ESTIMATOR_POSE trajlib\n");
 }
 
 
@@ -131,12 +137,12 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     // on the stereo handler is when we trigger a new update for something
     // this must last less than 8.3ms, which is the rate of the stereo data.
     
-    //cout << "got stereo message" << endl;
-    
     // we need to be careful of threading issues if other data comes in while we're operating here
     
     // lock all the mutexes
-    // this shouldn't take a long time since each handler only copies some data when it has the mutexes.
+    // this shouldn't take a long time since each handler only copies some
+    // data when it has the mutexes.
+    
     // mostly this is here to prevent data from changing under our feet as we go
     pose_mutex.lock();
     
@@ -249,87 +255,13 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
 
         octomap_raw_t_publish(lcm, "OCTOMAP", &ocMsg);
     }   
-    // now use those points to place markers on the lcmgl image
-    #if 0
-    // project 3d points onto the image plane
-    vector<Point2f> imagePoints;
-    
-    if (opencvPoints.size() > 0)
-    {
-        projectPoints(opencvPoints, Mat::zeros(3,1,CV_32F), Mat::zeros(3,1,CV_32F), Mat::eye(3,3, CV_32F), Mat::zeros(4,1,CV_32F), imagePoints);
-        
-        // publish points to lcm
-        
-        for (unsigned int i = 0; i < imagePoints.size(); i++)
-        {
-            // set the color based on the distance
-            float colorz = msg->z[i]*3/37.0 +204/37;
-
-            //cout << msg->z[i] << endl;
-
-
-            float redc, greenc, bluec;
-            
-            if (colorz > 1)
-            {
-                redc = 1;
-            } else {
-                redc = colorz;
-            }
-            if (colorz > 2)
-            {
-                greenc = 1;
-            } else {
-                greenc = colorz-1;
-            }
-            if (greenc < 0)
-            {
-                greenc = 0;
-            }
-            
-            bluec = colorz-2;
-            if (bluec < 0)
-            {
-                bluec = 0;
-            }
-            
-            double colorv[4];
-            colorv[0] = redc;
-            colorv[1] = greenc;
-            colorv[2] = bluec;
-            colorv[3] = .5;
-            
-            bot_lcmgl_color4fv(lcmgl, colorv);
-        
-            double xyz[3];
-            xyz[0] = -((imagePoints[i].x+1)*IMAGE_GL_WIDTH/2);
-            xyz[1] = double(imagePoints[i].y+.5)*(IMAGE_GL_HEIGHT-50) + IMAGE_GL_Y_OFFSET; // TODO: this is wrong
-            xyz[2] = 0;
-            
-            double rsize[2];
-            rsize[0] = 15;
-            rsize[1] = 15;
-            
-            bot_lcmgl_rect(lcmgl, xyz, rsize, 1);
-            //cout << "(" << imagePoints[i].x << ", " << imagePoints[i].y << ")" << endl;
-        }
-    }
-    #endif
-       
        
     //if (numFrames%200 == 0)
     {
         bot_lcmgl_switch_buffer(lcmgl);
     }
     
-    //cout << lastAttitudeMsg->roll << lastAttitudeMsg->pitch << lastAttitudeMsg->yaw << endl;
-    
-    //cout << rotationMatrix << endl;
-    
-    
-    
-    
-    
+
     // we're done, unlock everything
     pose_mutex.unlock();
     
@@ -344,6 +276,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     //fflush(stdout);
 }
 
+// Handler for pose LCM messages
 void pose_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user)
 {
     pose_mutex.lock();
@@ -358,14 +291,17 @@ int main(int argc,char** argv)
 {
     char *channelStereo = NULL;
     char *channelPose = NULL;
+    char *libDir = NULL;
 
-    if (argc!=3) {
+    if (argc!=4) {
         usage();
         exit(0);
     }
 
     channelStereo = argv[1];
     channelPose = argv[2];
+    libDir = argv[3];
+    
 
     lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
     if (!lcm)
@@ -383,6 +319,9 @@ int main(int argc,char** argv)
     // init frames
     BotParam *param = bot_param_new_from_server(lcm, 0);
     botFrames = bot_frames_new(lcm, param);
+    
+    // init trajectory library
+    trajlib.LoadLibrary(libDir);
     
     // control-c handler
     signal(SIGINT,sighandler);
