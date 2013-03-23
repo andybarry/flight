@@ -73,7 +73,7 @@ void TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, Trajectory *farth
     {
         
     
-        double thisTrajProbability;
+        double thisTrajProbability = 0;
         // for each trajectory, look at each point
         for (int j=0; j<int(trajVector[i].xpoints.size()); j++)
         {
@@ -94,7 +94,7 @@ void TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, Trajectory *farth
                 thisTrajProbability += result->getOccupancy();
             } else {
                 //cout << "occupancy probability at " << query << ":\t is unknown" << endl;
-                break;
+                //break;
             }
             
             
@@ -102,9 +102,8 @@ void TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, Trajectory *farth
         
         if (lcmgl != NULL)
         {
-            trajVector[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
+            //trajVector[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }
-        
         if (minProbability == -1 || thisTrajProbability < minProbability)
         {
             minProbability = thisTrajProbability;
