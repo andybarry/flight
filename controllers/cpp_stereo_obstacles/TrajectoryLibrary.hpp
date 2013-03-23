@@ -18,6 +18,11 @@
 #include <octomap/OcTree.h>
 #include <octomap/octomap.h>
 
+#include <bot_core/rotations.h>
+#include <bot_frames/bot_frames.h>
+#include <GL/gl.h>
+#include <bot_lcmgl_client/lcmgl.h>
+
 
 #include "Trajectory.hpp"
 
@@ -33,12 +38,12 @@ class TrajectoryLibrary
         
         bool LoadLibrary(string dirname);  // loads a trajectory from a directory of .csv files
         
-        void FindFarthestTrajectory(OcTree octree, Trajectory *fathestTraj);
+        void FindFarthestTrajectory(OcTree *octree, Trajectory *farthestTraj, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = NULL);
+        
         
         
     private:
         vector<Trajectory> trajVector;
-
 
 };
 

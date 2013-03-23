@@ -149,6 +149,34 @@ void Trajectory::print()
     }
 }
 
+void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz)
+{
+    // apply the transformation from the global frame: orgin = (0,0,0)
+    // to the local frame point
+    
+    double originalPoint[3];
+    originalPoint[0] = xpoints[index][0];
+    originalPoint[1] = xpoints[index][1];
+    originalPoint[2] = xpoints[index][2];
+    
+    
+    bot_trans_apply_vec(transform, originalPoint, xyz);
+}
+
+void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform)
+{
+    bot_lcmgl_line_width(lcmgl, 2.0f);
+    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+    for (int i=0; i<int(xpoints.size()); i++)
+    {
+        double xyz[3];
+        GetTransformedPoint(i, transform, xyz);
+        
+        bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
+    }
+    bot_lcmgl_end(lcmgl);
+}
+
 #if 0
 float Trajectory::DistanceToPoint(float x, float y, float z)
 {

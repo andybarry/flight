@@ -15,6 +15,11 @@
 #include <sstream>
 #include <cmath>
 
+#include <bot_core/rotations.h>
+#include <bot_frames/bot_frames.h>
+#include <GL/gl.h>
+#include <bot_lcmgl_client/lcmgl.h>
+
 using namespace std;
 
 class Trajectory
@@ -32,6 +37,9 @@ class Trajectory
         int GetUDimension() { return udimension; }
         
         void print();
+        
+        void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
+        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
         
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
