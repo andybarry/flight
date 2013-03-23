@@ -15,10 +15,14 @@
 #include <sstream>
 
 #include <dirent.h>
+#include <octomap/OcTree.h>
+#include <octomap/octomap.h>
+
 
 #include "Trajectory.hpp"
 
 using namespace std;
+using namespace octomap;
 
 
 class TrajectoryLibrary
@@ -27,13 +31,13 @@ class TrajectoryLibrary
     public:
         TrajectoryLibrary();
         
-        bool LoadLibrary(string dirname);  // loads a trajectory from a .csv file
+        bool LoadLibrary(string dirname);  // loads a trajectory from a directory of .csv files
         
-        
+        void FindFarthestTrajectory(OcTree octree, Trajectory *fathestTraj);
         
         
     private:
-        vector<Trajectory*> trajVector;
+        vector<Trajectory> trajVector;
 
 
 };

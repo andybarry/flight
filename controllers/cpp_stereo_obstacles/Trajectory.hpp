@@ -13,6 +13,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <cmath>
 
 using namespace std;
 
@@ -20,23 +21,32 @@ class Trajectory
 {
 
     public:
+        Trajectory();
         Trajectory(string filename); // loads a trajectory from a .csv file
         
-        vector<double> GetPoint(double t);
+        void LoadTrajectory(string filename);
+        
+        vector<float> GetPoint(float t);
         
         int GetDimension() { return dimension; }
         int GetUDimension() { return udimension; }
-        double GetTLength() { return tlength; }
         
         void print();
         
+        // returns the distance to the closest point on the trajectory
+        // could optimize this with cover trees?
+        //float DistanceToPoint(float x, float y, float z);
+        
+        vector<vector<float>> xpoints;
+        vector<vector<float>> upoints;
+        
         
     private:
+        
+    
         int dimension; // state space dimension
         int udimension; // control input dimension
-        double tlength; // length in time
-        vector<vector<double>> xpoints;
-        vector<vector<double>> upoints;
+        
 
         void LoadXFromCSV( const std::string& filename);
         void LoadUFromCSV( const std::string& filename);

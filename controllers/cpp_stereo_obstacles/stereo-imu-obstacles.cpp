@@ -39,6 +39,7 @@ using namespace std;
 #include "../../LCM/lcmt_stereo.h"
 
 #include "TrajectoryLibrary.hpp"
+#include "Trajectory.hpp"
 
     
 #define IMAGE_GL_Y_OFFSET 400
@@ -322,6 +323,9 @@ int main(int argc,char** argv)
     
     // init trajectory library
     trajlib.LoadLibrary(libDir);
+    
+    Trajectory temptraj;
+    trajlib.FindFarthestTrajectory(octree, &temptraj);
     
     // control-c handler
     signal(SIGINT,sighandler);

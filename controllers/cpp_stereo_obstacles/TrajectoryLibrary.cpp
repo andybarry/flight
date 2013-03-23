@@ -37,7 +37,7 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
             // found a .csv file
             // load a trajectory
             
-            Trajectory *thisTraj = new Trajectory(dirname + dp->d_name);
+            Trajectory thisTraj(dirname + dp->d_name);
             
             // add it to the library
             trajVector.push_back(thisTraj);
@@ -55,4 +55,30 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
         return true;
     }
     return false;
+}
+
+void TrajectoryLibrary::FindFarthestTrajectory(OcTree octree, Trajectory *fathestTraj)
+{
+    // for each point in each trajectory, find the point that is closest in the octree
+    for (int i=0; i<int(trajVector.size()); i++)
+    {
+        // for each trajectory, look at each point
+        for (int j=0; j<int(trajVector[i].xpoints.size()); j++)
+        {
+            // now we are looking at a single point in a trajectory
+            
+            point3d query (trajVector[i].xpoints[j][0], trajVector[i].xpoints[j][1], trajVector[i].xpoints[j][2]);
+            
+            OcTreeNode* result = octree.search(query);
+            
+            
+            if (result != NULL)
+            {
+                cout << "occupancy probability at " << query << ":\t " << result->getOccupancy() << endl;
+            } else {
+                cout << "occupancy probability at " << query << ":\t is unknown" << endl;
+            }
+        }
+    }
+    
 }

@@ -10,7 +10,17 @@
 
 
 // Constructor that loads a trajectory from a file
+Trajectory::Trajectory()
+{
+
+}
+
 Trajectory::Trajectory(string filename)
+{
+    LoadTrajectory(filename);
+}
+
+void Trajectory::LoadTrajectory(string filename)
 {
     // open the file
     vector<vector<string>> strs;
@@ -57,7 +67,7 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
     
     for( int i=0; i<int(matrix.size()); i++ )
     {
-        vector<double> thisRow;
+        vector<float> thisRow;
         for( int j=0; j<int(matrix[i].size()); j++ )
         {
             thisRow.push_back(atof(matrix[i][j].c_str()));
@@ -102,7 +112,7 @@ void Trajectory::LoadUFromCSV( const std::string& filename)
     
     for( int i=0; i<int(matrix.size()); i++ )
     {
-        vector<double> thisRow;
+        vector<float> thisRow;
         for( int j=0; j<int(matrix[i].size()); j++ )
         {
             thisRow.push_back(atof(matrix[i][j].c_str()));
@@ -138,3 +148,23 @@ void Trajectory::print()
         cout << endl;
     }
 }
+
+#if 0
+float Trajectory::DistanceToPoint(float x, float y, float z)
+{
+    float minDist = -1;
+    
+    for (int i=0; i<int(xpoints.size()); i++)
+    {
+        // find the distance to this point
+        float thisDist = sqrt( pow(x-xpoints[i][0],2) + pow(y-xpoints[i][1],2) + pow(z-xpoints[i][2],2) );
+        
+        if (minDist < 0 || thisDist < minDist)
+        {
+            minDist = thisDist;
+        }
+    }
+    
+    return minDist;
+}
+#endif
