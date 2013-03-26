@@ -22,12 +22,15 @@ using namespace std;
 #include "../../LCM/lcmt_gps.h"
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
+#include "../../LCM/lcmt_wingeron_u.h"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
 #include "mav_ins_t.h" // from Fixie
 #include "mav_gps_data_t.h" // from Fixie
+
+#include "mavconn.h" // from mavconn
     
 //#include "../../mavlink-generated/ardupilotmega/mavlink.h"
 #include "../../mavlink-generated2/csailrlg/mavlink.h"
@@ -59,6 +62,9 @@ char *channelBaroAirspeed = NULL;
 char *channelGps = NULL;
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
+lcmt_wingeron_u_subscription_t *wingeron_u_sub;
+
+uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
@@ -78,6 +84,7 @@ void sighandler(int dum)
     printf("\nClosing... ");
 
     mavlink_msg_container_t_unsubscribe(lcm, mavlink_sub);
+    lcmt_wingeron_u_unsubscribe(lcm, wingeron_u_sub);
     lcm_destroy (lcm);
 
     printf("done.\n");
@@ -90,6 +97,31 @@ int64_t getTimestampNow()
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
+}
+
+int EightBitToServoCmd(int charInputIn)
+{
+    return 200/51 * charInputIn + 1000;
+}
+
+void wingeron_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_wingeron_u *msg, void *user)
+{
+    // translate a local LCM message for servos into a message for the airplane over
+    // mavlink
+    
+    int aileronLeft = EightBitToServoCmd(msg->aileronLeft);
+    int aileronRight = EightBitToServoCmd(msg->aileronRight);
+    int elevator = EightBitToServoCmd(msg->elevator);
+    int rudder = EightBitToServoCmd(msg->rudder);
+    int throttleFront = EightBitToServoCmd(msg->throttleFront);
+    int throttleRear = EightBitToServoCmd(msg->throttleRear);
+    
+    mavlink_message_t mavmsg;
+    
+	mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, aileronLeft, elevator, throttleFront, rudder, aileronRight, throttleRear, 1000, 1000);
+	// Publish the message on the LCM IPC bus
+	sendMAVLinkMessage(lcm, &mavmsg);
+    
 }
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user)
@@ -261,11 +293,24 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             {
              //   baroAirMsg.airspeed = 0;
             }
-            
             lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
             break;
+            
+        case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
+            // we sent this message, so ignore it
+            break;
+            
+        case MAVLINK_MSG_ID_STATUSTEXT:
+            mavlink_statustext_t textMsg;
+            mavlink_msg_statustext_decode(&mavmsg, &textMsg);
+            
+            
+            
+            cout << "status text: " << textMsg.text << endl;
+            break;
+            
         default:
-            cout << "unknown message id = " << mavmsg.msgid << endl;
+            cout << "unknown message id = " << (int)mavmsg.msgid << endl;
             break;
             
     }
@@ -275,8 +320,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 int main(int argc,char** argv)
 {
     char *channelMavlink = NULL;
+    char *channelWingeronU = NULL;
 
-    if (argc!=5) {
+    if (argc!=6) {
         usage();
         exit(0);
     }
@@ -285,6 +331,7 @@ int main(int argc,char** argv)
     channelAttitude = argv[2];
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
+    channelWingeronU = argv[5];
 
     lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
     if (!lcm)
@@ -294,7 +341,7 @@ int main(int argc,char** argv)
     }
 
     mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
-
+    wingeron_u_sub = lcmt_wingeron_u_subscribe(lcm, channelWingeronU, &wingeron_u_handler, NULL);
 
     signal(SIGINT,sighandler);
     
@@ -306,7 +353,7 @@ int main(int argc,char** argv)
             fprintf(stderr, "error: unable to get gps_origin.latlon from param server\n");
             exit(1); // Don't allow usage without latlon origin.
         } else {
-            fprintf(stderr, "Initializing gps origin at %f,%f\n", latlong_origin[0], latlong_origin[1]);
+            fprintf(stderr, "\n\nInitializing gps origin at %f,%f\n", latlong_origin[0], latlong_origin[1]);
             bot_gps_linearize_init(&gpsLinearize, latlong_origin);
             origin_init = 1;
         }
@@ -319,7 +366,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelMavlink, channelAttitude, channelBaroAirspeed, channelGps);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps);
 
     while (true)
     {
