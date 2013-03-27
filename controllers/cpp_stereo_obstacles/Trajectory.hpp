@@ -35,11 +35,13 @@ class Trajectory
         
         int GetDimension() { return dimension; }
         int GetUDimension() { return udimension; }
+        int GetTrajectoryNumber() { return trajNumber; }
         
         void print();
         
         void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
+        
         
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
@@ -54,7 +56,7 @@ class Trajectory
     
         int dimension; // state space dimension
         int udimension; // control input dimension
-        
+        int trajNumber;
 
         void LoadXFromCSV( const std::string& filename);
         void LoadUFromCSV( const std::string& filename);

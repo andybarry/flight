@@ -57,10 +57,10 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
     return false;
 }
 
-void TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, Trajectory *farthestTraj, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl)
+Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl)
 {
     double minProbability = -1;
-    farthestTraj = NULL;
+    Trajectory *farthestTraj = NULL;
     
     if (lcmgl != NULL)
     {
@@ -123,5 +123,7 @@ void TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, Trajectory *farth
         bot_lcmgl_pop_matrix(lcmgl);
         bot_lcmgl_switch_buffer(lcmgl);
     }
+    
+    return farthestTraj;
 }
 

@@ -1,0 +1,8 @@
+struct lcmt_trajectory_number
+{
+  int64_t timestamp; 
+
+  int64_t trajNum;
+
+ 
+}

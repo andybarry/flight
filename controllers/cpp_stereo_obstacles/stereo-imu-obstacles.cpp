@@ -101,8 +101,14 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     InsertPointsIntoOctree(msg, &toOpenCv, &bodyToLocal);
     
     // search the trajectory library for the best trajectory
-    Trajectory *farthestTraj;
-    trajlib.FindFarthestTrajectory(&octree, farthestTraj, &bodyToLocal, lcmgl);
+    Trajectory* farthestTraj = trajlib.FindFarthestTrajectory(&octree, &bodyToLocal, lcmgl);
+    
+    // publish the farthest trajectory number over LCM for visualization
+    lcmt_trajectory_number trajNumMsg;
+    trajNumMsg.timestamp = getTimestampNow();
+    trajNumMsg.trajNum = farthestTraj->GetTrajectoryNumber();
+    
+    lcmt_trajectory_number_publish(lcm, "trajectory_number", &trajNumMsg);
     
     
     // only publish every so often since it swamps the viewer
@@ -197,7 +203,7 @@ int main(int argc,char** argv)
     libDir = argv[2];
     
 
-    lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
+    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");

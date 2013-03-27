@@ -333,7 +333,7 @@ int main(int argc,char** argv)
     channelGps = argv[4];
     channelWingeronU = argv[5];
 
-    lcm = lcm_create ("udpm://239.255.76.68:7667?ttl=1");
+    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");

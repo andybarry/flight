@@ -31,6 +31,7 @@ using namespace std;
 #include <octomap/OcTree.h>
 
 #include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt_trajectory_number.h"
 
 #include "TrajectoryLibrary.hpp"
 #include "Trajectory.hpp"
