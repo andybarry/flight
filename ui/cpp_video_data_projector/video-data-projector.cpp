@@ -25,7 +25,6 @@
 #include "mav_ins_t.h" // from Fixie
 #include "mav_gps_data_t.h" // from Fixie
 
-#include "mavconn.h" // from mavconn
 
 using namespace std;
 using namespace cv;using namespace std;
@@ -38,6 +37,10 @@ lcm_t * lcm;
 lcmt_stereo_subscription_t * stereo_sub;
 
 VideoCapture videoFileCap;
+
+
+// global calibration
+Mat camMatL, dMatL, camMatR, dMatR;
 
 
 static void usage(void)
@@ -56,6 +59,8 @@ void sighandler(int dum)
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
     lcm_destroy (lcm);
+    
+    waitKey(1);
 
     printf("done.\n");
     
@@ -69,9 +74,41 @@ int64_t getTimestampNow()
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
-int EightBitToServoCmd(int charInputIn)
+void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *pointsOut)
 {
-    return 200/51 * charInputIn + 1000;
+    for (int i=0; i<msg->number_of_points; i++)
+    {
+        pointsOut->push_back(Point3f(msg->x[i], msg->y[i], msg->z[i]));
+    }
+}
+
+void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar color)
+{
+    vector<Point3f> &pointsList = *pointsListIn;
+    
+    if (pointsList.size() <= 0)
+    {
+        cout << "zero sized points list" << endl;
+        return;
+    }
+    
+    int color = 127;
+    
+    vector<Point2f> imgPointsList;
+
+    projectPoints(pointsList, Mat::zeros(3, 1, CV_32F), Mat::zeros(3, 1, CV_32F), camMatL, dMatL, imgPointsList);
+    
+    // now draw the points onto the image
+    for (int i=0; i<int(imgPointsList.size()); i++)
+    {
+        rectangle(cameraImage, Point(imgPointsList[i].x - 2, imgPointsList[i].y - 2),
+            Point(imgPointsList[i].x + 2, imgPointsList[i].y + 2), color);
+    }
+}
+
+void Get3DPointsFromTrajMsg(const lcmt_traj_points *msg, vector<Point3f> trajPonts)
+{
+    
 }
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user)
@@ -81,7 +118,21 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     videoFileCap >> thisImg;
     
+    // project points from 3D to 2D based on our calibration
+    vector<Point3f> stereoPoints;
+    Get3DPointsFromStereoMsg(msg, &stereoPoints);
+    
+    Draw3DPointsOnImage(thisImg, &stereoPoints, Scalar(0, 0, 255));
+    
+    vector<Point3f> trajPoints;
+
+    Get3DPontsFromTrajMsg(lastTrajMsg, &trajPoints);
+    DrawTrajectoryOnImage(thisImg, &trajectoryPoints, Scalar(255, 0, 0));
+
+
     imshow("Data on video", thisImg);
+    
+    waitKey(1); // must do a waitKey to get GUI events to be called
 }
 
 
@@ -120,12 +171,29 @@ int main(int argc,char** argv)
         exit(1);
     }
     
+    // load calibration
+    cout << "Loading calibration..." << endl;
+    
+    
+    
+    CvMat *m1 = (CvMat *)cvLoad("../../sensors/stereo/calib/M1.xml",NULL,NULL,NULL);
+    CvMat *d1 = (CvMat *)cvLoad("../../sensors/stereo/calib/D1.xml",NULL,NULL,NULL);
+    CvMat *m2 = (CvMat *)cvLoad("../../sensors/stereo/calib/M2.xml",NULL,NULL,NULL);
+    CvMat *d2 = (CvMat *)cvLoad("../../sensors/stereo/calib/D2.xml",NULL,NULL,NULL);
+    
+    camMatL = Mat(m1, true);
+    dMatL = Mat(d1,true);
+    camMatR = Mat(m2,true);
+    dMatR = Mat(d2,true);
+    
+    
     namedWindow("Data on video", CV_WINDOW_AUTOSIZE);
 
     while (true)
     {
         // read the LCM channel
         lcm_handle (lcm);
+        waitKey(1);
     }
 
     return 0;
