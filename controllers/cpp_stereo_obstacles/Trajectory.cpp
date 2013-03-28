@@ -17,22 +17,22 @@ Trajectory::Trajectory()
     udimension = 0;
 }
 
-Trajectory::Trajectory(string filename)
+Trajectory::Trajectory(string filename, bool quiet)
 {
-    LoadTrajectory(filename);
+    LoadTrajectory(filename, quiet);
 }
 
-void Trajectory::LoadTrajectory(string filename)
+void Trajectory::LoadTrajectory(string filename, bool quiet)
 {
-    
-    
-    
     // open the file
     vector<vector<string>> strs;
     
     string utrajFile = filename.substr(0, filename.length()-4) + "-u.csv";
     
-    cout << "Loading trajectory: " << filename << " + " << utrajFile << endl;
+    if (!quiet)
+    {
+        cout << "Loading trajectory: " << filename << " + " << utrajFile << endl;
+    }
     
     int trajlibLoc = filename.rfind("trajlib");
     string trajNumberStr = filename.substr(trajlibLoc+7, filename.length()-trajlibLoc-4-7);

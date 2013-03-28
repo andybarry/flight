@@ -27,9 +27,9 @@ class Trajectory
 
     public:
         Trajectory();
-        Trajectory(string filename); // loads a trajectory from a .csv file
+        Trajectory(string filename, bool quiet = false); // loads a trajectory from a .csv file
         
-        void LoadTrajectory(string filename);
+        void LoadTrajectory(string filename, bool quiet = false);
         
         vector<float> GetPoint(float t);
         
