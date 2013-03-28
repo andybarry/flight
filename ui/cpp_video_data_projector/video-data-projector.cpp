@@ -14,20 +14,24 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <mutex>
 
 #include "opencv2/opencv.hpp"
 
 #include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt_trajectory_number.h"
+#include "../../controllers/cpp_stereo_obstacles/Trajectory.hpp"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
+#include <bot_core/rotations.h>
+#include <bot_frames/bot_frames.h>
 
 #include "mav_ins_t.h" // from Fixie
 #include "mav_gps_data_t.h" // from Fixie
 
 
 using namespace std;
-using namespace cv;using namespace std;
 using namespace cv;
 
 #define GRAVITY_MSS 9.80665f // this matches the ArduPilot definition
@@ -35,8 +39,16 @@ using namespace cv;
 lcm_t * lcm;
 
 lcmt_stereo_subscription_t * stereo_sub;
+lcmt_trajectory_number_subscription_t * trajnum_sub;
 
 VideoCapture videoFileCap;
+
+lcmt_trajectory_number *lastTrajMsg;
+
+std::mutex trajnumMutex;
+
+// bot frames global
+BotFrames *botFrames;
 
 
 // global calibration
@@ -45,11 +57,11 @@ Mat camMatL, dMatL, camMatR, dMatR;
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: video-data-projector video-file stereo-lcm-channel-name\n");
+        fprintf(stderr, "usage: video-data-projector video-file stereo-lcm-channel-name trajectory-number-lcm-channel-name\n");
         fprintf(stderr, "    video-file: .avi file with video\n");
         fprintf(stderr, "    stereo-lcm-channel-name : LCM channel to receive stereo matches on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    video-data-projector videoL-2013-03-27-18-53-43.avi stereo\n");
+        fprintf(stderr, "    video-data-projector videoL-2013-03-27-18-53-43.avi stereo trajectory_number\n");
 }
 
 
@@ -58,8 +70,11 @@ void sighandler(int dum)
     printf("\nClosing... ");
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
+    lcmt_trajectory_number_unsubscribe(lcm, trajnum_sub);
+    
     lcm_destroy (lcm);
     
+    // let opencv close it's windows
     waitKey(1);
 
     printf("done.\n");
@@ -88,11 +103,9 @@ void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar 
     
     if (pointsList.size() <= 0)
     {
-        cout << "zero sized points list" << endl;
+        cout << "Draw3DPointsOnimage: zero sized points list" << endl;
         return;
     }
-    
-    int color = 127;
     
     vector<Point2f> imgPointsList;
 
@@ -102,17 +115,47 @@ void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar 
     for (int i=0; i<int(imgPointsList.size()); i++)
     {
         rectangle(cameraImage, Point(imgPointsList[i].x - 2, imgPointsList[i].y - 2),
-            Point(imgPointsList[i].x + 2, imgPointsList[i].y + 2), color);
+            Point(imgPointsList[i].x + 2, imgPointsList[i].y + 2), color, CV_FILLED);
     }
 }
 
-void Get3DPointsFromTrajMsg(const lcmt_traj_points *msg, vector<Point3f> trajPonts)
+void Get3DPointsFromTrajMsg(const lcmt_trajectory_number *msg, vector<Point3f> *trajPoints)
 {
+    if (msg == NULL)
+    {
+        return;
+    }
+    
+    // load the 3D points from a file
+    
+    string filename = "../../controllers/cpp_stereo_obstacles/trajlib/trajlib" + to_string(msg->trajNum) + ".csv";
+    
+    Trajectory thisTraj(filename, true);
+    
+    BotTrans toOpenCv;
+    bot_frames_get_trans(botFrames, "local", "opencvFrame", &toOpenCv);
+    
+    
+    // dump the ponits into trajPoints
+    for (int i=0; i<int(thisTraj.xpoints.size()); i++)
+    {
+        double thisPoint[3];
+        double newPoint[3];
+        thisPoint[0] = thisTraj.xpoints[i][0];
+        thisPoint[1] = thisTraj.xpoints[i][1];
+        thisPoint[2] = thisTraj.xpoints[i][2];
+        
+        bot_trans_apply_vec(&toOpenCv, thisPoint, newPoint);
+        
+        trajPoints->push_back(Point3f(newPoint[0]/10.0, newPoint[1]/10.0, newPoint[2]/10.0));
+    }
     
 }
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user)
 {
+    trajnumMutex.lock();
+    
     // if we got a stereo message, grab the next frame of video
     Mat thisImg;
     
@@ -126,8 +169,10 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     vector<Point3f> trajPoints;
 
-    Get3DPontsFromTrajMsg(lastTrajMsg, &trajPoints);
-    DrawTrajectoryOnImage(thisImg, &trajectoryPoints, Scalar(255, 0, 0));
+    Get3DPointsFromTrajMsg(lastTrajMsg, &trajPoints);
+    Draw3DPointsOnImage(thisImg, &trajPoints, Scalar(255, 0, 0));
+    
+    trajnumMutex.unlock();
 
 
     imshow("Data on video", thisImg);
@@ -135,19 +180,27 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     waitKey(1); // must do a waitKey to get GUI events to be called
 }
 
+void trajnum_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_trajectory_number *msg, void *user)
+{
+    trajnumMutex.lock();
+    lastTrajMsg = lcmt_trajectory_number_copy(msg);
+    trajnumMutex.unlock();
+}
 
 int main(int argc,char** argv)
 {
     char *channelStereo = NULL;
+    char *channelTrajNum = NULL;
     char *videoFile = NULL;
     
-    if (argc!=3) {
+    if (argc!=4) {
         usage();
         exit(0);
     }
 
     videoFile = argv[1];
     channelStereo = argv[2];
+    channelTrajNum = argv[3];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -157,10 +210,11 @@ int main(int argc,char** argv)
     }
 
     stereo_sub = lcmt_stereo_subscribe (lcm, channelStereo, &stereo_handler, NULL);
+    trajnum_sub = lcmt_trajectory_number_subscribe(lcm, channelTrajNum, &trajnum_handler, NULL);
 
     signal(SIGINT,sighandler);
 
-    printf("Reading:\n\tVideo file: %s\n\tStereo LCM: %s\n", videoFile, channelStereo);
+    printf("Reading:\n\tVideo file: %s\n\tStereo LCM: %s\n\tTrajectory Number LCM: %s\n", videoFile, channelStereo, channelTrajNum);
     
     // open the video file
     if (videoFileCap.open(videoFile) == true)
@@ -170,6 +224,10 @@ int main(int argc,char** argv)
         cout << "ERROR: failed to open video file: " << string(videoFile) << endl;
         exit(1);
     }
+    
+    // init frames
+    BotParam *param = bot_param_new_from_server(lcm, 0);
+    botFrames = bot_frames_new(lcm, param);
     
     // load calibration
     cout << "Loading calibration..." << endl;
