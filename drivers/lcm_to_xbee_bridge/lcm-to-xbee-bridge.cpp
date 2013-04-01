@@ -18,11 +18,7 @@ using namespace std;
 #include <time.h>
 #include <sys/time.h>
 
-#include "../../LCM/mavlink_msg_container_t.h"
-#include "../../LCM/lcmt_gps.h"
-#include "../../LCM/lcmt_attitude.h"
-#include "../../LCM/lcmt_baro_airspeed.h"
-#include "../../LCM/lcmt_wingeron_u.h"
+#include "../../mavlink-rlg/csailrlg/mavlink.h"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
@@ -31,8 +27,7 @@ using namespace std;
 
 #include "mavconn.h" // from mavconn
     
-#include "../../mavlink-rlg/csailrlg/mavlink.h"
-#include "../../mavlink-rlg/csailrlg/mavlink_msg_state_estimator_pose.h"
+
 
 #include <stdio.h>   /* Standard input/output definitions */
 #include <string.h>  /* String function definitions */
@@ -45,6 +40,8 @@ using namespace std;
 #include <fstream>
 
 #define BAUD_RATE 57600
+
+#define DOWNSAMPLE_AMOUNT 10
 
 
 lcm_t * lcm;
@@ -62,6 +59,8 @@ uint8_t systemID = getSystemID();
 uint8_t serialBuffer[MAVLINK_MAX_PACKET_LEN];
 
 int serialPort_fd;
+
+int downsampleCounter = 0;
 
 int open_port(char *port);
 bool setup_port(int fd, int baud, int data_bits, int stop_bits, bool parity, bool hardware_control);
@@ -102,31 +101,38 @@ int64_t getTimestampNow()
 
 void pose_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user)
 {
-    // translates a local LCM message for servos into a message for the airplane over
-    
-    // create the mavlink message
-    mavlink_message_t mavmsg;
-    
-    
-    mavlink_msg_state_estimator_pose_pack(
-        systemID,   
-        201,
-        &mavmsg,
-		(int32_t) getTimestampNow(),
-		msg->pos[0], msg->pos[1], msg->pos[2],
-		msg->vel[0], msg->vel[1], msg->vel[2],
-		msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3],
-		msg->rotation_rate[0], msg->rotation_rate[1], msg->rotation_rate[2],
-		msg->accel[0], msg->accel[1], msg->accel[2]
-	);
-    
-    
-    int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
-    int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
-    
-    if (written != messageLength)
+    if (downsampleCounter >= DOWNSAMPLE_AMOUNT)
     {
-	    fprintf(stderr, "\nERROR: Unable to send pose message over serial port.\n");
+        // translates a local LCM message for servos into a message for the airplane over
+        
+        downsampleCounter = 0;
+        
+        // create the mavlink message
+        mavlink_message_t mavmsg;
+        
+        
+        mavlink_msg_state_estimator_pose_pack(
+            systemID,   
+            201,
+            &mavmsg,
+		    (int32_t) getTimestampNow(),
+		    msg->pos[0], msg->pos[1], msg->pos[2],
+		    msg->vel[0], msg->vel[1], msg->vel[2],
+		    msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3],
+		    msg->rotation_rate[0], msg->rotation_rate[1], msg->rotation_rate[2],
+		    msg->accel[0], msg->accel[1], msg->accel[2]
+	    );
+        
+        
+        int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
+        int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
+        
+        if (written != messageLength)
+        {
+	        fprintf(stderr, "\nERROR: Unable to send pose message over serial port.\n");
+        }
+    } else {
+        downsampleCounter ++;
     }
     
 }
