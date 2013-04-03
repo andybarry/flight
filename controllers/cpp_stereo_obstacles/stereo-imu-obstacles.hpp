@@ -46,6 +46,8 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
 
 void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *toOpenCv, BotTrans *bodyToLocal);
 
+void RemoveOldPoints();
+
 void PublishOctomap();
 
 

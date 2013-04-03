@@ -14,11 +14,11 @@
 #define IMAGE_GL_WIDTH 376
 #define IMAGE_GL_HEIGHT 240
     
+#define OCTREE_LIFE 2000000 // in usec
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
-using namespace cv;
 using namespace std;
 using namespace octomap;
 
@@ -28,7 +28,10 @@ int numFrames = 0;
 unsigned long totalTime = 0;
 
 // global octree
-OcTree octree(0.1);
+OcTree *currentOctree;
+OcTree *buildingOctree;
+
+int64_t currentOctreeTimestamp, buildingOctreeTimestamp;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
@@ -60,6 +63,16 @@ void sighandler(int dum)
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
     lcm_destroy (lcm);
+    
+    if (currentOctree != NULL)
+    {
+        delete currentOctree;
+    }
+    
+    if (buildingOctree != NULL)
+    {
+        delete buildingOctree;
+    }
 
     printf("done.\n");
     
@@ -70,7 +83,7 @@ int64_t getTimestampNow()
 {
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
+    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
 
@@ -100,8 +113,12 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     // insert the points into the octree
     InsertPointsIntoOctree(msg, &toOpenCv, &bodyToLocal);
     
+    // zap the old points from the tree
+    RemoveOldPoints();
+    
     // search the trajectory library for the best trajectory
-    Trajectory* farthestTraj = trajlib.FindFarthestTrajectory(&octree, &bodyToLocal, lcmgl);
+    
+    Trajectory* farthestTraj = trajlib.FindFarthestTrajectory(currentOctree, &bodyToLocal, lcmgl);
     
     // publish the farthest trajectory number over LCM for visualization
     lcmt_trajectory_number trajNumMsg;
@@ -124,8 +141,8 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - (start.tv_usec / 1000 + start.tv_sec * 1000);
     totalTime += elapsed;
-    //printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
-    //fflush(stdout);
+    printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
+    fflush(stdout);
 }
 
 void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *toOpenCv, BotTrans *bodyToLocal)
@@ -160,9 +177,30 @@ void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *toOpenCv, BotTrans
         octomath::Vector3 vecNewPoint(transPoint[0], transPoint[1], transPoint[2]);
         
         // add this point to the octree
-        octree.insertRay(vecPlaneOrigin, vecNewPoint);
+        currentOctree->insertRay(vecPlaneOrigin, vecNewPoint);
+        buildingOctree->insertRay(vecPlaneOrigin, vecNewPoint);
         
     }
+}
+
+void RemoveOldPoints()
+{
+    // check timestamps
+    if (currentOctreeTimestamp + OCTREE_LIFE < getTimestampNow())
+    {
+        // swap out trees since this one has expired
+        delete currentOctree;
+        
+        currentOctreeTimestamp = buildingOctreeTimestamp;
+        buildingOctreeTimestamp = getTimestampNow();
+        
+        currentOctree = buildingOctree;
+        buildingOctree = new OcTree(0.1);
+        
+        cout << endl << "swapping octrees" << endl;
+    }
+    
+    //currentOctree->degradeOutdatedNodes(2);
 }
 
 void PublishOctomap()
@@ -180,7 +218,7 @@ void PublishOctomap()
     }
 
     std::stringstream datastream;
-    octree.writeBinaryConst(datastream);
+    currentOctree->writeBinaryConst(datastream);
     std::string datastring = datastream.str();
     ocMsg.data = (uint8_t *) datastring.c_str();
     ocMsg.length = datastring.size();
@@ -218,6 +256,15 @@ int main(int argc,char** argv)
     // init frames
     BotParam *param = bot_param_new_from_server(lcm, 0);
     botFrames = bot_frames_new(lcm, param);
+    
+    // init octrees
+    currentOctree = new OcTree(0.1);
+    buildingOctree = new OcTree(0.1);
+    currentOctreeTimestamp = getTimestampNow();
+    
+    // half a life into the future
+    buildingOctreeTimestamp = getTimestampNow() + OCTREE_LIFE/2; 
+    
     
     // init trajectory library
     trajlib.LoadLibrary(libDir);
