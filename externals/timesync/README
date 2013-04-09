@@ -1,0 +1,33 @@
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
+
+  http://sourceforge.net/projects/pods
+
+====
+
+Name:         timesync
+Maintainers:  
+Summary:      a utility for keeping a set of computers' clocks in sync
+Description:
+  FILL-ME-IN
+
+Requirements: 
+  bot2-core
+
+License:      FILL-ME-IN
+
+===
+
+The script timesync-as-root works by sshing into localhost as root.
+You can make this passwordless by setting up public key authentication for the root account (this is probably bad general security practice)
+
+
+timesync was ported over from Agile: agile/software/src/timesync
+
+== original documentation (Agile) ==
+
+timesync handles time synchronization of the blade servers.
+
+A startup script (/etc/init.d/dgc-timesync) is installed to each blade and run
+on system startup.  This script spawns the timesync daemon, which should always
+be running on every machine.
