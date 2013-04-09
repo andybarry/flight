@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# useage: ./cronTimesync [timesync command]
+#
+# example: ./cronTimesync /home/linaro/timesync/build/bin/timesync -s -l /home/linaro/timesync-process-log
+
+# check for command line arguments
+if (( $# < 1 ))
+then
+    echo "Error: not enough arguments"
+    echo "useage: ./cronTimesync [timesync command]"
+    echo "example: ./cronTimesync /home/linaro/timesync/build/bin/timesync -s -l /home/linaro/timesync-process-log"
+    exit
+fi
+
+# check for existing timesync
+if [ `ps -A|grep timesync |wc -l` = 0 ]
+then
+    echo "Found no timesyncs, starting one..."
+    $1 &
+fi
+
