@@ -1,0 +1,13 @@
+struct lcmt_stereo_reprojected
+{
+    int64_t  timestamp;
+    
+    int32_t number_of_points;
+    
+    int32_t x[number_of_points];
+    int32_t y[number_of_points];
+    
+    float depth[number_of_points];
+    
+    byte grey[number_of_points];
+}

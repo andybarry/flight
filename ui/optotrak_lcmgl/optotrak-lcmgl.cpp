@@ -31,7 +31,7 @@ using namespace std;
 
 lcm_t * lcm;
 
-double obstacleXY[2];
+double obstacleXY1[2], obstacleXY2[2], obstacleHeight, obstacleBottom;
 
 bot_lcmgl_t* lcmgl;
 
@@ -84,7 +84,6 @@ void PlotLcmGlCoordinateTri(BotTrans *trans)
     
     bot_trans_apply_vec(trans, origin, originTrans);
     
-    bot_lcmgl_push_matrix(lcmgl);
     bot_lcmgl_line_width(lcmgl, 3.0f);
     
     // now get the three edges
@@ -136,9 +135,6 @@ void PlotLcmGlCoordinateTri(BotTrans *trans)
     bot_lcmgl_vertex3f(lcmgl, zEdgeTrans[0], zEdgeTrans[1], zEdgeTrans[2]);
     bot_lcmgl_end(lcmgl);
     
-    bot_lcmgl_pop_matrix(lcmgl);
-    bot_lcmgl_switch_buffer(lcmgl);
-    
     
 }
 
@@ -169,12 +165,35 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     //bot_trans_apply_trans(&newTrans, &optotrakToLocal2);
     
     // update transform
-    bot_frames_update_frame(botFrames, "optotrak-local", "local", &optotrakToLocal, getTimestampNow());
+    bot_frames_update_frame(botFrames, "body", "local", &optotrakToLocal, getTimestampNow());
     
     BotTrans drawTrans;
     bot_frames_get_trans(botFrames, "optotrak-local", "local", &drawTrans);
     
+    // draw obstacle
+    // publish to LCMGL
+    bot_lcmgl_push_matrix(lcmgl);
+    bot_lcmgl_point_size(lcmgl, 10.5f);
+    bot_lcmgl_begin(lcmgl, GL_QUADS);
+    
+    // obstacle
+    bot_lcmgl_color3f(lcmgl, 255, 0, 0);
+    bot_lcmgl_vertex3f(lcmgl, obstacleXY1[0], obstacleXY1[1], obstacleBottom);
+    bot_lcmgl_vertex3f(lcmgl, obstacleXY1[0], obstacleXY1[1], obstacleBottom + obstacleHeight);
+    bot_lcmgl_vertex3f(lcmgl, obstacleXY2[0], obstacleXY2[1], obstacleBottom + obstacleHeight);
+    bot_lcmgl_vertex3f(lcmgl, obstacleXY2[0], obstacleXY2[1], obstacleBottom);
+    
+    bot_lcmgl_end(lcmgl);
+    
+    // draw coordinate
+    
     PlotLcmGlCoordinateTri(&drawTrans);
+    
+    
+    bot_lcmgl_pop_matrix(lcmgl);
+    bot_lcmgl_switch_buffer(lcmgl);
+    
+    
     #if 0
     // publish to LCMGL
     bot_lcmgl_push_matrix(lcmgl);
@@ -254,11 +273,26 @@ int main(int argc,char** argv)
     // init obstacle position
     BotParam *param = bot_param_new_from_server(lcm, 0);
     if (param != NULL) {
-        if (bot_param_get_double_array(param, "optotrak_obstacle.xy", obstacleXY, 2) == -1) {
-            fprintf(stderr, "error: unable to get optotrak_obstacle.xy from param server\n");
+        if (bot_param_get_double_array(param, "optotrak_obstacle.xy1", obstacleXY1, 2) == -1) {
+            fprintf(stderr, "error: unable to get optotrak_obstacle.xy1 from param server\n");
             exit(1); // Don't allow usage without latlon origin.
         } else {
-            fprintf(stderr, "\n\nInitializing obstacle at %f,%f\n", obstacleXY[0], obstacleXY[1]);
+            if (bot_param_get_double_array(param, "optotrak_obstacle.xy2", obstacleXY2, 2) == -1) {
+                fprintf(stderr, "error: unable to get optotrak_obstacle.xy1 from param server\n");
+            } else {
+                if (bot_param_get_double_array(param, "optotrak_obstacle.height", &obstacleHeight, 2) == -1)
+                {
+                    fprintf(stderr, "error: unable to get optotrak_obstacle.height from param server\n");
+                } else {
+                    if (bot_param_get_double_array(param, "optotrak_obstacle.bottom", &obstacleBottom, 2) == -1)
+                    {
+                        fprintf(stderr, "error: unable to get optotrak_obstacle.bottom from param server\n");
+                    } else {
+            
+                        fprintf(stderr, "\n\nInitializing obstacle at %f, %f --> %f, %f, height: %f, bottom: %f\n", obstacleXY1[0], obstacleXY1[1], obstacleXY2[0], obstacleXY2[1], obstacleHeight, obstacleBottom);
+                    }
+                }
+            }
         }
         
         // init frames

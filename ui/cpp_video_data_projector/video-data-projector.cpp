@@ -19,6 +19,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt_stereo_reprojected.h"
 #include "../../LCM/lcmt_trajectory_number.h"
 #include "../../controllers/cpp_stereo_obstacles/Trajectory.hpp"
 
@@ -54,14 +55,17 @@ BotFrames *botFrames;
 // global calibration
 Mat camMatL, dMatL, camMatR, dMatR;
 
+char *channelReprojected = NULL;
+
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: video-data-projector video-file stereo-lcm-channel-name trajectory-number-lcm-channel-name\n");
+        fprintf(stderr, "usage: video-data-projector video-file stereo-lcm-channel-name trajectory-number-lcm-channel-name [projected-channel]\n");
         fprintf(stderr, "    video-file: .avi file with video\n");
         fprintf(stderr, "    stereo-lcm-channel-name : LCM channel to receive stereo matches on\n");
+        fprintf(stderr, "    reprojected channel (optional): if passed, will publish LCM messages with image-based x, y, and depth data.\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    video-data-projector videoL-2013-03-27-18-53-43.avi stereo trajectory_number\n");
+        fprintf(stderr, "    ./video-data-projector videoL-2013-03-27-18-53-43.avi stereo trajectory_number\n");
 }
 
 
@@ -97,6 +101,48 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *pointsOut
     }
 }
 
+void PublishReprojectedPoints(vector<Point2f> imgPointsList, vector<Point3f> *pointsListIn)
+{
+    // pointsList contains the (x,y,z) position of the points, which we need
+    // because we want the depth as well as pixel location.    
+    vector<Point3f> &pointsList = *pointsListIn;
+    
+    // check to see if the channel is defined
+    if (channelReprojected == NULL)
+    {
+        return;
+    }
+    
+    // create the lcm message
+    lcmt_stereo_reprojected msg;
+    
+    msg.number_of_points = int(imgPointsList.size());
+    
+    // create the message's arrays
+    int x[msg.number_of_points];
+    int y[msg.number_of_points];
+    float depth[msg.number_of_points];
+    
+    // populate it with points from imgPointsList
+    for (int i=0; i<int(imgPointsList.size()); i++)
+    {
+        x[i] = imgPointsList[i].x;
+        y[i] = imgPointsList[i].y;
+        
+        depth[i] = pointsList[i].z;
+    }
+    
+    // fill in the message's fields
+    msg.x = x;
+    msg.y = y;
+    msg.depth = depth;
+    
+    // now publish the message
+    lcmt_stereo_reprojected_publish(lcm, channelReprojected, &msg);
+}
+
+// this function also publishes the image points on
+// channelReprojected if that variable is not NULL
 void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar color)
 {
     vector<Point3f> &pointsList = *pointsListIn;
@@ -117,6 +163,9 @@ void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar 
         rectangle(cameraImage, Point(imgPointsList[i].x - 2, imgPointsList[i].y - 2),
             Point(imgPointsList[i].x + 2, imgPointsList[i].y + 2), color, CV_FILLED);
     }
+    
+    // publish points
+    PublishReprojectedPoints(imgPointsList, pointsListIn);
 }
 
 void Get3DPointsFromTrajMsg(const lcmt_trajectory_number *msg, vector<Point3f> *trajPoints)
@@ -128,7 +177,7 @@ void Get3DPointsFromTrajMsg(const lcmt_trajectory_number *msg, vector<Point3f> *
     
     // load the 3D points from a file
     
-    string filename = "../../controllers/cpp_stereo_obstacles/trajlib/trajlib" + to_string(msg->trajNum) + ".csv";
+    string filename = "../../controllers/cpp_stereo_obstacles/trajlib/trajlib" + to_string((long long int) msg->trajNum) + ".csv";
     
     Trajectory thisTraj(filename, true);
     
@@ -193,7 +242,7 @@ int main(int argc,char** argv)
     char *channelTrajNum = NULL;
     char *videoFile = NULL;
     
-    if (argc!=4) {
+    if (argc!=4 && argc!=5) {
         usage();
         exit(0);
     }
@@ -201,6 +250,11 @@ int main(int argc,char** argv)
     videoFile = argv[1];
     channelStereo = argv[2];
     channelTrajNum = argv[3];
+    
+    if (argc == 5)
+    {
+        channelReprojected = argv[4];
+    }
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -215,6 +269,11 @@ int main(int argc,char** argv)
     signal(SIGINT,sighandler);
 
     printf("Reading:\n\tVideo file: %s\n\tStereo LCM: %s\n\tTrajectory Number LCM: %s\n", videoFile, channelStereo, channelTrajNum);
+    
+    if (channelReprojected != NULL)
+    {
+        printf("Publishing reprojected stereo: %s\n", channelReprojected);
+    }
     
     // open the video file
     if (videoFileCap.open(videoFile) == true)
