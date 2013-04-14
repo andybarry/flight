@@ -4,7 +4,7 @@ struct lcmt_battery_status
   
   float voltage;
   float amps_now;
-  float amps_total;
+  float milliamp_hours_total;
   
   int16_t percent_remaining;
   

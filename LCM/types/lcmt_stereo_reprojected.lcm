@@ -4,6 +4,9 @@ struct lcmt_stereo_reprojected
     
     int32_t number_of_points;
     
+    int32_t width;
+    int32_t height;
+    
     int32_t x[number_of_points];
     int32_t y[number_of_points];
     

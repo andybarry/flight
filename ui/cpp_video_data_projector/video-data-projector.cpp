@@ -101,7 +101,7 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *pointsOut
     }
 }
 
-void PublishReprojectedPoints(vector<Point2f> imgPointsList, vector<Point3f> *pointsListIn)
+void PublishReprojectedPoints(vector<Point2f> imgPointsList, vector<Point3f> *pointsListIn, int width, int height)
 {
     // pointsList contains the (x,y,z) position of the points, which we need
     // because we want the depth as well as pixel location.    
@@ -129,13 +129,16 @@ void PublishReprojectedPoints(vector<Point2f> imgPointsList, vector<Point3f> *po
         x[i] = imgPointsList[i].x;
         y[i] = imgPointsList[i].y;
         
-        depth[i] = pointsList[i].z;
+        depth[i] = -pointsList[i].z/10.0; // coming in in cm
     }
     
     // fill in the message's fields
     msg.x = x;
     msg.y = y;
     msg.depth = depth;
+    
+    msg.width = width;
+    msg.height = height;
     
     // now publish the message
     lcmt_stereo_reprojected_publish(lcm, channelReprojected, &msg);
@@ -165,7 +168,7 @@ void Draw3DPointsOnImage(Mat cameraImage, vector<Point3f> *pointsListIn, Scalar 
     }
     
     // publish points
-    PublishReprojectedPoints(imgPointsList, pointsListIn);
+    PublishReprojectedPoints(imgPointsList, pointsListIn, cameraImage.cols, cameraImage.rows);
 }
 
 void Get3DPointsFromTrajMsg(const lcmt_trajectory_number *msg, vector<Point3f> *trajPoints)
@@ -218,8 +221,12 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     vector<Point3f> trajPoints;
 
-    Get3DPointsFromTrajMsg(lastTrajMsg, &trajPoints);
-    Draw3DPointsOnImage(thisImg, &trajPoints, Scalar(255, 0, 0));
+    // do not draw trajectories if we're reprojecting images
+    if (channelReprojected == NULL)
+    {
+        Get3DPointsFromTrajMsg(lastTrajMsg, &trajPoints);
+        Draw3DPointsOnImage(thisImg, &trajPoints, Scalar(255, 0, 0));
+    }
     
     trajnumMutex.unlock();
 
@@ -302,6 +309,8 @@ int main(int argc,char** argv)
     dMatL = Mat(d1,true);
     camMatR = Mat(m2,true);
     dMatR = Mat(d2,true);
+    
+    cout << "Calibration loaded successfully." << endl;
     
     
     namedWindow("Data on video", CV_WINDOW_AUTOSIZE);
