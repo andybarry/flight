@@ -20,9 +20,11 @@ using namespace std;
 
 #include "../../LCM/mavlink_msg_container_t.h"
 #include "../../LCM/lcmt_gps.h"
+#include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_wingeron_u.h"
+
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
@@ -60,6 +62,7 @@ double elev_origin;
 char *channelAttitude = NULL;
 char *channelBaroAirspeed = NULL;
 char *channelGps = NULL;
+char *channelBatteryStatus = NULL;
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
 lcmt_wingeron_u_subscription_t *wingeron_u_sub;
@@ -68,13 +71,15 @@ uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name\n");
+        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name\n");
         fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
         fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
         fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
         fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
+        fprintf(stderr, "    battery-status-channel-name : LCM channel to publish battery status messages on\n");
+        fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps\n");
+        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status wingeron_u\n");
         fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages\n");
 }
 
@@ -300,6 +305,24 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // we sent this message, so ignore it
             break;
             
+        case MAVLINK_MSG_ID_BATTERY_STATUS:
+            mavlink_battery_status_t batmsg;
+            mavlink_msg_battery_status_decode(&mavmsg, &batmsg);
+            
+            lcmt_battery_status lcmmsg;
+            
+            lcmmsg.timestamp = getTimestampNow();
+            
+            lcmmsg.voltage = batmsg.voltage_cell_1/1000.0;
+            lcmmsg.amps_now = batmsg.current_battery/100.0;
+            lcmmsg.amps_total = batmsg.voltage_cell_6/100.0;
+            lcmmsg.percent_remaining = batmsg.battery_remaining;
+            
+            //cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << endl;
+            
+            lcmt_battery_status_publish (lcm, channelBatteryStatus, &lcmmsg);
+            break;
+            
         case MAVLINK_MSG_ID_STATUSTEXT:
             mavlink_statustext_t textMsg;
             mavlink_msg_statustext_decode(&mavmsg, &textMsg);
@@ -322,7 +345,7 @@ int main(int argc,char** argv)
     char *channelMavlink = NULL;
     char *channelWingeronU = NULL;
 
-    if (argc!=6) {
+    if (argc!=7) {
         usage();
         exit(0);
     }
@@ -331,7 +354,8 @@ int main(int argc,char** argv)
     channelAttitude = argv[2];
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
-    channelWingeronU = argv[5];
+    channelBatteryStatus = argv[5];
+    channelWingeronU = argv[6];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
@@ -366,7 +390,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus);
 
     while (true)
     {
