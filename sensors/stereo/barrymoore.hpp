@@ -4,15 +4,15 @@
  * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
  *
  */
- 
+
 #ifndef BARRYMOORE_H
 #define BARRYMOORE_H
- 
+
 #include "opencv2/opencv.hpp"
 #include <cv.h>
 #include <iostream>
 
-#define SHOW_DISPLAY 1
+#define SHOW_DISPLAY 0
 
 #define NUM_THREADS 8
 
@@ -46,7 +46,7 @@ struct BarryMooreStateThreaded
     Mat leftImage;
     Mat rightImage;
     cv::vector<Point3f> *pointVector3d;
-    cv::vector<Point> *pointVector2d;
+    cv::vector<Point3i> *pointVector2d;
     cv::vector<uchar> *pointColors;
     //cv::vector<Point3f> *localHitPoints;
     
@@ -58,9 +58,13 @@ struct BarryMooreStateThreaded
     
 };
 
-void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point> *pointVector2d, BarryMooreState state);
+void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+
+Mat get_hogdescriptor_visu(Mat& origImg, vector<float>& descriptorValues);
 
 void* StereoBarryMooreThreaded(void *statet);
+
+int GetHOG(Mat leftImage, Mat rightImage, int pxX, int pxY, BarryMooreState state);
 
 int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
 

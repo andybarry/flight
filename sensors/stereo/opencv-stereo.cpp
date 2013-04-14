@@ -7,7 +7,7 @@
  * Written by Andrew Barry <abarry@csail.mit.edu>, 2013
  *
  */
- 
+
 #include <cv.h>
 #include <highgui.h>
 #include "opencv2/legacy/legacy.hpp"
@@ -54,7 +54,7 @@ extern "C"
 #define BRIGHTNESS_VALUE 78
 #define EXPOSURE_VALUE 128
 
-//#define USE_IMAGE // uncomment to use left.jpg and right.jpg as test images
+#define USE_IMAGE 0 // set to 1 to use left.jpg and right.jpg as test images
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -106,7 +106,7 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl
         << "\tpress ctrl+\\ to quit while writing video." << endl;
-    
+  
     dc1394_video_set_transmission(camera, DC1394_OFF);
     dc1394_capture_stop(camera);
     dc1394_camera_free(camera);
@@ -129,12 +129,24 @@ void control_c_handler(int s)
 
 void WriteVideo()
 {
-    printf("writing video...\n");
-    VideoWriter recordL("RobotVideoL.avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
+    printf("Writing video...\n");
+    
+    // get the date and time for the filename
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [80];
+
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+
+    strftime (buffer,80,"%Y-%m-%d-%H-%M-%S",timeinfo);
+
+
+    VideoWriter recordL("videoL-" + string(buffer) + ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
     if( !recordL.isOpened() ) {
         printf("VideoWriter failed to open!\n");
     }
-    VideoWriter recordR("RobotVideoR.avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
+    VideoWriter recordR("videoR-" + string(buffer) + ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
     if( !recordR.isOpened() ) {
         printf("VideoWriter failed to open!\n");
     }
@@ -185,7 +197,7 @@ int main(int argc, char *argv[])
     // own threading without a fight
     setNumThreads(1);
     
-    #ifndef USE_IMAGE
+    #if !USE_IMAGE
         d = dc1394_new ();
         if (!d)
             cerr << "Could not create dc1394 context" << endl;
@@ -223,6 +235,7 @@ int main(int argc, char *argv[])
         err2 = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not setup camera number 2");
         
+        #if 0
         // enable auto-exposure
         // turn on the auto exposure feature
         err = dc1394_feature_set_power(camera, DC1394_FEATURE_EXPOSURE, DC1394_ON);
@@ -238,6 +251,7 @@ int main(int argc, char *argv[])
         
         err = dc1394_feature_set_mode(camera2, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
         DC1394_ERR_RTN(err,"Could not turn on Auto-exposure for cam2");
+        #endif
         
         // enable camera
         err = dc1394_video_set_transmission(camera, DC1394_ON);
@@ -246,8 +260,9 @@ int main(int argc, char *argv[])
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
         dc1394_feature_set_absolute_control(camera, DC1394_FEATURE_GAIN, DC1394_OFF);
-        
         dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_GAIN, DC1394_OFF);
+        dc1394_feature_set_absolute_control(camera, DC1394_FEATURE_SHUTTER, DC1394_OFF);
+        dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_SHUTTER, DC1394_OFF);
     #endif
 	
     #if SHOW_DISPLAY
@@ -289,7 +304,7 @@ int main(int argc, char *argv[])
 
     // start up LCM
     lcm_t * lcm;
-    lcm = lcm_create("udpm://239.255.76.68:7667?ttl=1");
+    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
     Mat imgDisp;
@@ -299,9 +314,9 @@ int main(int argc, char *argv[])
     BarryMooreState state;
     
     state.disparity = -44;
-    state.sobelLimit = 130;
+    state.sobelLimit = 180; //130
     state.blockSize = 5;
-    state.sadThreshold = 79; //50
+    state.sadThreshold = 84;//79;
     state.sobelAdd = 0;
     
     state.mapxL = mx1fp;
@@ -312,7 +327,7 @@ int main(int argc, char *argv[])
     bool quit = false;
     Mat depthMap;
     
-    #ifndef USE_IMAGE
+    #if !USE_IMAGE
     // allocate a huge buffer for video frames
     printf("Allocating ringbuffer data...\n");
     matL = GetFrameFormat7(camera);
@@ -332,7 +347,7 @@ int main(int argc, char *argv[])
     //}
     
     
-    #ifdef USE_IMAGE
+    #if USE_IMAGE
         matL = imread("left.jpg", 0);
         matR = imread("right.jpg", 0);
     #endif
@@ -344,7 +359,7 @@ int main(int argc, char *argv[])
     while (quit == false) {
     
         // get the frames from the camera
-        #ifndef USE_IMAGE
+        #if !USE_IMAGE
         
             // we would like to match brightness every frame
             // but that would really hurt our framerate
@@ -385,7 +400,7 @@ int main(int argc, char *argv[])
         
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
-        cv::vector<Point> pointVector2d; // for display
+        cv::vector<Point3i> pointVector2d; // for display
         
         
         StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
@@ -503,7 +518,8 @@ int main(int argc, char *argv[])
         {
             int x2 = pointVector2d[i].x;
             int y2 = pointVector2d[i].y;
-            rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), 0);
+            int sad = pointVector2d[i].z;
+            rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
             rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
             
             int gray = 337.0 - state.disparity*41.0/6;
@@ -518,7 +534,7 @@ int main(int argc, char *argv[])
         imshow("Input", remapL);
         imshow("Input2", remapR);
         imshow("Stereo", matDisp);
-        imshow("Depth", depthMap);
+        //imshow("Depth", depthMap);
             
         char key = waitKey(1);
         
@@ -566,6 +582,12 @@ int main(int argc, char *argv[])
                 
             case 'j':
                 state.sobelAdd -= 10;
+                break;
+            
+            case '5':
+                // to show SAD boxes
+                state.sobelLimit = 0;
+                state.sadThreshold = 255;
                 break;
                 
             case 'q':
@@ -676,12 +698,9 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     // otherwise the pixel values will be totally different
     // and stereo will not work at all
     
-    // get brightness
-    #if 0
-    float brightnessVal;
-    dc1394featureset_t features, features2;
-    dc1394_feature_get_all(camera1, &features);
     
+    
+    #if 0
     dc1394error_t err;
 
     //dc1394_feature_print(&features.feature[8], stdout);
@@ -700,6 +719,13 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     dc1394_feature_set_absolute_value(camera2, features.feature[7].id, features.feature[7].abs_value);
     #endif
     
+    // set shutter
+    uint32_t shutterVal;
+    dc1394_feature_get_value(camera1, DC1394_FEATURE_SHUTTER, &shutterVal);
+    dc1394_feature_set_value(camera2, DC1394_FEATURE_SHUTTER, shutterVal);
+    
+    
+    
     // set gain
     uint32_t gainVal;
     dc1394_feature_get_value(camera1, DC1394_FEATURE_GAIN, &gainVal);
@@ -709,6 +735,9 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     
     
     #if 0
+    dc1394featureset_t features, features2;
+    dc1394_feature_get_all(camera1, &features);
+    
     // set framerate
     dc1394_feature_set_absolute_value(camera2, features.feature[15].id, features.feature[15].abs_value);
     
@@ -758,16 +787,21 @@ void onMouse( int event, int x, int y, int flags, void* )
 
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity)
 {
+    int lineColor = 128;
     if (lineX >= 0)
     {
-        line(leftImg, Point(lineX, 0), Point(lineX, leftImg.rows), 0);
-        line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), 0);
-        line(rightImg, Point(lineX + disparity, 0), Point(lineX + disparity, rightImg.rows), 0);
+        // print out the values of the pixels where they clicked
+        cout << endl << endl << "Left px: " << (int)leftImg.at<uchar>(lineY, lineX)
+            << "\tRight px: " << (int)rightImg.at<uchar>(lineY, lineX + disparity)
+            << endl;
+            
+        line(leftImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
+        line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
+        line(rightImg, Point(lineX + disparity, 0), Point(lineX + disparity, rightImg.rows), lineColor);
         
-        line(leftImg, Point(0, lineY), Point(leftImg.cols, lineY), 0);
-        line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), 0);
-        line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), 0);
-        
+        line(leftImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
+        line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
+        line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), lineColor);
     }
 }
 
