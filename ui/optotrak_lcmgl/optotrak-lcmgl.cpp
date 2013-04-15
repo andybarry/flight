@@ -165,7 +165,7 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     //bot_trans_apply_trans(&newTrans, &optotrakToLocal2);
     
     // update transform
-    bot_frames_update_frame(botFrames, "body", "local", &optotrakToLocal, getTimestampNow());
+    bot_frames_update_frame(botFrames, "optotrak-local", "local", &optotrakToLocal, getTimestampNow());
     
     BotTrans drawTrans;
     bot_frames_get_trans(botFrames, "optotrak-local", "local", &drawTrans);
