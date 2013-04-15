@@ -14,7 +14,8 @@
 #define IMAGE_GL_WIDTH 376
 #define IMAGE_GL_HEIGHT 240
     
-#define OCTREE_LIFE 2000000 // in usec
+//#define OCTREE_LIFE 2000000 // in usec
+#define OCTREE_LIFE 2000 // in msec
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -114,7 +115,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     InsertPointsIntoOctree(msg, &toOpenCv, &bodyToLocal);
     
     // zap the old points from the tree
-    RemoveOldPoints();
+    RemoveOldPoints(msg->timestamp);
     
     // search the trajectory library for the best trajectory
     
@@ -183,23 +184,28 @@ void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *toOpenCv, BotTrans
     }
 }
 
-void RemoveOldPoints()
+void RemoveOldPoints(int64_t lastMsgTime)
 {
     // check timestamps
-    if (currentOctreeTimestamp + OCTREE_LIFE < getTimestampNow())
+    if (currentOctreeTimestamp < 0 || currentOctreeTimestamp > lastMsgTime) // the second case can happen if you're replaying a log and jump back
     {
-        // swap out trees since this one has expired
-        delete currentOctree;
-        
-        currentOctreeTimestamp = buildingOctreeTimestamp;
-        buildingOctreeTimestamp = getTimestampNow();
-        
-        currentOctree = buildingOctree;
-        buildingOctree = new OcTree(0.1);
-        
-        cout << endl << "swapping octrees" << endl;
+         currentOctreeTimestamp = lastMsgTime;
+         buildingOctreeTimestamp = lastMsgTime + OCTREE_LIFE/2; // half a life in the future
+    } else {
+        if (currentOctreeTimestamp + OCTREE_LIFE < lastMsgTime)
+        {
+            // swap out trees since this one has expired
+            delete currentOctree;
+            
+            currentOctreeTimestamp = buildingOctreeTimestamp;
+            buildingOctreeTimestamp = lastMsgTime;
+            
+            currentOctree = buildingOctree;
+            buildingOctree = new OcTree(0.1);
+            
+            cout << endl << "swapping octrees" << endl;
+        }
     }
-    
     //currentOctree->degradeOutdatedNodes(2);
 }
 
@@ -260,10 +266,8 @@ int main(int argc,char** argv)
     // init octrees
     currentOctree = new OcTree(0.1);
     buildingOctree = new OcTree(0.1);
-    currentOctreeTimestamp = getTimestampNow();
-    
-    // half a life into the future
-    buildingOctreeTimestamp = getTimestampNow() + OCTREE_LIFE/2; 
+    currentOctreeTimestamp = -1;
+    buildingOctreeTimestamp = -1;
     
     
     // init trajectory library
