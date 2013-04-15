@@ -315,7 +315,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             
             lcmmsg.voltage = batmsg.voltage_cell_1/1000.0;
             lcmmsg.amps_now = batmsg.current_battery/100.0;
-            lcmmsg.amps_total = batmsg.voltage_cell_6/100.0;
+            lcmmsg.milliamp_hours_total = batmsg.voltage_cell_6/100.0;
             lcmmsg.percent_remaining = batmsg.battery_remaining;
             
             //cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << endl;
