@@ -96,7 +96,7 @@ void PlotLcmGlCoordinateTri(BotTrans *trans)
     
     bot_trans_apply_vec(trans, xEdge, xEdgeTrans);
     
-    //cout << "xedge: x: " << xEdgeTrans[0] << "y: " << xEdgeTrans[1] << "z: " << xEdgeTrans[2]  << endl;
+    cout << "originTrans: x: " << originTrans[0] << "y: " << originTrans[1] << "z: " << originTrans[2]  << endl;
     
     
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
@@ -152,6 +152,8 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     quat[2] = msg->qy[0];
     quat[3] = msg->qz[0];
     
+    cout << "x = " << xyz[0] << endl;
+    
     
     BotTrans newTrans;
     
@@ -159,7 +161,7 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     
     bot_frames_get_trans(botFrames, "optotrak", "local", &optotrakToLocal);
     
-    bot_trans_apply_trans(&newTrans, &optotrakToLocal);
+    //bot_trans_apply_trans(&newTrans, &optotrakToLocal);
     bot_trans_apply_trans(&optotrakToLocal, &newTrans);
     
     //bot_trans_apply_trans(&newTrans, &optotrakToLocal2);
