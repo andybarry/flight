@@ -42,7 +42,8 @@ lcm_t * lcm;
 lcmt_stereo_subscription_t * stereo_sub;
 lcmt_trajectory_number_subscription_t * trajnum_sub;
 
-VideoCapture videoFileCap;
+vector<Mat> fullVideo;
+bool videoLoaded = false;
 
 lcmt_trajectory_number *lastTrajMsg;
 
@@ -206,12 +207,16 @@ void Get3DPointsFromTrajMsg(const lcmt_trajectory_number *msg, vector<Point3f> *
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user)
 {
+    if (videoLoaded != true)
+    {
+        return;
+    }
+
     trajnumMutex.lock();
     
-    // if we got a stereo message, grab the next frame of video
+    // if we got a stereo message, grab the right frame of video
     Mat thisImg;
-    
-    videoFileCap >> thisImg;
+    thisImg = fullVideo[msg->frame_number];
     
     // project points from 3D to 2D based on our calibration
     vector<Point3f> stereoPoints;
@@ -224,12 +229,14 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     // do not draw trajectories if we're reprojecting images
     if (channelReprojected == NULL)
     {
-        Get3DPointsFromTrajMsg(lastTrajMsg, &trajPoints);
-        Draw3DPointsOnImage(thisImg, &trajPoints, Scalar(255, 0, 0));
+        if (lastTrajMsg != NULL)
+        {
+            Get3DPointsFromTrajMsg(lastTrajMsg, &trajPoints);
+            Draw3DPointsOnImage(thisImg, &trajPoints, Scalar(255, 0, 0));
+        }
     }
-    
-    trajnumMutex.unlock();
 
+    trajnumMutex.unlock();
 
     imshow("Data on video", thisImg);
     
@@ -282,23 +289,12 @@ int main(int argc,char** argv)
         printf("Publishing reprojected stereo: %s\n", channelReprojected);
     }
     
-    // open the video file
-    if (videoFileCap.open(videoFile) == true)
-    {
-        cout << "File opened successfully." << endl;
-    } else {
-        cout << "ERROR: failed to open video file: " << string(videoFile) << endl;
-        exit(1);
-    }
-    
     // init frames
     BotParam *param = bot_param_new_from_server(lcm, 0);
     botFrames = bot_frames_new(lcm, param);
     
     // load calibration
     cout << "Loading calibration..." << endl;
-    
-    
     
     CvMat *m1 = (CvMat *)cvLoad("../../sensors/stereo/calib/M1.xml",NULL,NULL,NULL);
     CvMat *d1 = (CvMat *)cvLoad("../../sensors/stereo/calib/D1.xml",NULL,NULL,NULL);
@@ -312,8 +308,40 @@ int main(int argc,char** argv)
     
     cout << "Calibration loaded successfully." << endl;
     
-    
     namedWindow("Data on video", CV_WINDOW_AUTOSIZE);
+    
+    VideoCapture videoFileCap;
+    // open the video file
+    if (videoFileCap.open(videoFile) == true)
+    {
+        cout << "Video file opened successfully." << endl;
+        
+        // load the entire file into frame
+        cout << "Loading video into RAM..." << endl;
+        
+        Mat thisImg;
+        int framenum = 0;
+        int totalFrames = (int)videoFileCap.get(CV_CAP_PROP_FRAME_COUNT);
+    
+        while (videoFileCap.read(thisImg))
+        {
+            // add this image to vector
+            Mat imgCopy;
+            thisImg.copyTo(imgCopy);
+            fullVideo.push_back(imgCopy);
+            framenum ++;
+            
+            printf("\rFrame: %d/%d -- (%2.1f%%)", framenum, totalFrames, (float)framenum/totalFrames*100);
+            fflush(stdout);
+        }
+        videoLoaded = true;
+        cout << endl << "Ready." << endl;
+        
+    } else {
+        cout << "ERROR: failed to open video file: " << string(videoFile) << endl;
+        exit(1);
+    }
+    
 
     while (true)
     {
