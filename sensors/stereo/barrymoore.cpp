@@ -98,9 +98,12 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         
         pointColors->insert( pointColors->end(), pointColorsArray[i].begin(), pointColorsArray[i].end() );
         
-        #if SHOW_DISPLAY
-        pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
-        #endif
+        //#if SHOW_DISPLAY
+        if (state.show_display)
+        {
+            pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
+        }
+        //#endif
     }
 }
 
@@ -188,9 +191,12 @@ void* StereoBarryMooreThreaded(void *statet)
                 
                 hitCounter ++;
                 
-                #if SHOW_DISPLAY
+                //#if SHOW_DISPLAY
+                if (state.show_display)
+                {
                     pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
-                #endif
+                }
+                //#endif
             }
         }
     }

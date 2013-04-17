@@ -56,6 +56,8 @@ extern "C"
 
 #define USE_IMAGE 0 // set to 1 to use left.jpg and right.jpg as test images
 
+bool show_display; // set to true to show opencv images on screen
+
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
 Mat ringbufferR[RINGBUFFER_SIZE];
@@ -173,6 +175,15 @@ void WriteVideo()
 int main(int argc, char *argv[])
 {
     
+    cout << "Pass the -v flag to show dispaly." << endl;
+    if (argc > 1)
+    {
+        // FIXME: quick hack to do show_display
+        show_display = true;
+    } else {
+        show_display = false;
+    }
+    
     dc1394error_t   err;
     uint64         guid = 0x00b09d0100af04d8; // camera 1
     
@@ -265,20 +276,23 @@ int main(int argc, char *argv[])
         dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_SHUTTER, DC1394_OFF);
     #endif
 	
-    #if SHOW_DISPLAY
-    namedWindow("Input", CV_WINDOW_AUTOSIZE);
-    namedWindow("Input2", CV_WINDOW_AUTOSIZE);
-    namedWindow("Depth", CV_WINDOW_AUTOSIZE);
-    namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
-    
-    setMouseCallback("Input", onMouse); // for drawing disparity lines
-    setMouseCallback("Stereo", onMouse); // for drawing disparity lines
-    
-    cvMoveWindow("Input", 100, 100);
-    cvMoveWindow("Stereo", 100, 370);
-    cvMoveWindow("Input2", 500, 100);
-    cvMoveWindow("Depth", 500, 370);
-    #endif
+    //#if SHOW_DISPLAY
+    if (show_display)
+    {
+        namedWindow("Input", CV_WINDOW_AUTOSIZE);
+        namedWindow("Input2", CV_WINDOW_AUTOSIZE);
+        namedWindow("Depth", CV_WINDOW_AUTOSIZE);
+        namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
+        
+        setMouseCallback("Input", onMouse); // for drawing disparity lines
+        setMouseCallback("Stereo", onMouse); // for drawing disparity lines
+        
+        cvMoveWindow("Input", 100, 100);
+        cvMoveWindow("Stereo", 100, 370);
+        cvMoveWindow("Input2", 500, 100);
+        cvMoveWindow("Depth", 500, 370);
+    }
+    //#endif
     
     // load calibration
 
@@ -322,6 +336,7 @@ int main(int argc, char *argv[])
     state.mapxL = mx1fp;
     state.mapxR = mx2fp;
     state.Q = qMat;
+    state.show_display = show_display;
     
     Mat matL, matR;
     bool quit = false;
@@ -380,23 +395,29 @@ int main(int argc, char *argv[])
         
         
         
-        Mat matDisp;
+        Mat matDisp, remapL, remapR;
         
-        #if SHOW_DISPLAY
-        // we remap again here because we're just in display
-        Mat remapL(matL.rows, matL.cols, matL.depth());
-        Mat remapR(matR.rows, matR.cols, matR.depth());
-        
-        if (numFrames == 0)
+        //#if SHOW_DISPLAY
+        if (show_display)
         {
-            depthMap = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
+            // we remap again here because we're just in display
+            Mat remapLtemp(matL.rows, matL.cols, matL.depth());
+            Mat remapRtemp(matR.rows, matR.cols, matR.depth());
+            
+            remapL = remapLtemp;
+            remapR = remapRtemp;
+            
+            if (numFrames == 0)
+            {
+                depthMap = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
+            }
+            
+            remap(matL, remapL, mx1fp, Mat(), INTER_NEAREST);
+            remap(matR, remapR, mx2fp, Mat(), INTER_NEAREST);
+            
+            remapL.copyTo(matDisp);
         }
-        
-        remap(matL, remapL, mx1fp, Mat(), INTER_NEAREST);
-        remap(matR, remapR, mx2fp, Mat(), INTER_NEAREST);
-        
-        remapL.copyTo(matDisp);
-        #endif
+        //#endif
         
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
@@ -427,6 +448,7 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
+        msg.frame_number = numFrames;
         
         lcmt_stereo_publish(lcm, "stereo", &msg);
         
@@ -449,32 +471,36 @@ int main(int argc, char *argv[])
                 float z = pointVector3d[i].z;
                 // publish to LCM
                 
-                #if SHOW_DISPLAY
-                 #if 0
-                 //cout << "(" << x << ", " << y << ", " << z << ")" << endl;
-                
-                // get the color of the pixel
-                int x2 = pointVector2d[i].x;
-                int y2 = pointVector2d[i].y;
-                double factor = 2.0;
-                //int delta = (state.blockSize-1)/2;
-                int delta = 20;
-               
-                for (int row=y2-delta;row<y2+delta;row++)
+                #if 0
+                //#if SHOW_DISPLAY
+                if (show_display)
                 {
-                    int rowdelta = row-y2*factor;
-                    for (int col = x2-delta; col < x2+delta; col++)
+                 
+                     //cout << "(" << x << ", " << y << ", " << z << ")" << endl;
+                    
+                    // get the color of the pixel
+                    int x2 = pointVector2d[i].x;
+                    int y2 = pointVector2d[i].y;
+                    double factor = 2.0;
+                    //int delta = (state.blockSize-1)/2;
+                    int delta = 20;
+                   
+                    for (int row=y2-delta;row<y2+delta;row++)
                     {
-                        int coldelta = col-x2*factor;
-                    
-                        uchar pxL = remapL.at<uchar>(row, col);
-                        float gray = pxL/255.0;
-                    
-                        bot_lcmgl_color3f(lcmgl, gray, gray, gray);                    
-                        bot_lcmgl_vertex3f(lcmgl, x+coldelta, -y-rowdelta, z);
+                        int rowdelta = row-y2*factor;
+                        for (int col = x2-delta; col < x2+delta; col++)
+                        {
+                            int coldelta = col-x2*factor;
+                        
+                            uchar pxL = remapL.at<uchar>(row, col);
+                            float gray = pxL/255.0;
+                        
+                            bot_lcmgl_color3f(lcmgl, gray, gray, gray);                    
+                            bot_lcmgl_vertex3f(lcmgl, x+coldelta, -y-rowdelta, z);
+                        }
                     }
                 }
-                #endif
+                //#endif
                 
                 #endif
             
@@ -493,117 +519,119 @@ int main(int argc, char *argv[])
             }
         #endif //USE_LCMGL
         
-        #if SHOW_DISPLAY
-        
-        // 1b. Convert image into a GL texture:
-        int row_stride = remapL.cols; // 1*width
-        int height = remapL.rows;
-        int width = remapL.cols;
-        int gray_texid = bot_lcmgl_texture2d(lcmgl, remapL.data, remapL.cols, remapL.rows, row_stride, BOT_LCMGL_LUMINANCE,
-                                       BOT_LCMGL_UNSIGNED_BYTE,
-                                       BOT_LCMGL_COMPRESS_NONE);
-        bot_lcmgl_push_matrix(lcmgl);
-        bot_lcmgl_color3f(lcmgl, 1, 1, 1);
-        bot_lcmgl_translated(lcmgl, 0, 400, 0); // example offset
-        bot_lcmgl_texture_draw_quad(lcmgl, gray_texid,
-        0     , 0      , 0   ,
-        0     , height , 0   ,
-        -width , height , 0   ,   ///... where to put the image
-        -width , 0      , 0);  
+        //#if SHOW_DISPLAY
+        if (show_display)
+        {
+            // 1b. Convert image into a GL texture:
+            int row_stride = remapL.cols; // 1*width
+            int height = remapL.rows;
+            int width = remapL.cols;
+            int gray_texid = bot_lcmgl_texture2d(lcmgl, remapL.data, remapL.cols, remapL.rows, row_stride, BOT_LCMGL_LUMINANCE,
+                                           BOT_LCMGL_UNSIGNED_BYTE,
+                                           BOT_LCMGL_COMPRESS_NONE);
+            bot_lcmgl_push_matrix(lcmgl);
+            bot_lcmgl_color3f(lcmgl, 1, 1, 1);
+            bot_lcmgl_translated(lcmgl, 0, 400, 0); // example offset
+            bot_lcmgl_texture_draw_quad(lcmgl, gray_texid,
+            0     , 0      , 0   ,
+            0     , height , 0   ,
+            -width , height , 0   ,   ///... where to put the image
+            -width , 0      , 0);  
 
-        bot_lcmgl_pop_matrix(lcmgl);
-        bot_lcmgl_switch_buffer(lcmgl);
-        
-        for (unsigned int i=0;i<pointVector2d.size();i++)
-        {
-            int x2 = pointVector2d[i].x;
-            int y2 = pointVector2d[i].y;
-            int sad = pointVector2d[i].z;
-            rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
-            rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
+            bot_lcmgl_pop_matrix(lcmgl);
+            bot_lcmgl_switch_buffer(lcmgl);
             
-            int gray = 337.0 - state.disparity*41.0/6;
+            for (unsigned int i=0;i<pointVector2d.size();i++)
+            {
+                int x2 = pointVector2d[i].x;
+                int y2 = pointVector2d[i].y;
+                int sad = pointVector2d[i].z;
+                rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
+                rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
+                
+                int gray = 337.0 - state.disparity*41.0/6;
+                
+                // fill in the depth map at this point
+                circle(depthMap, Point(x2,y2), 5, gray, -1);
+            }
             
-            // fill in the depth map at this point
-            circle(depthMap, Point(x2,y2), 5, gray, -1);
-        }
-        
-        // draw a line for the user to show disparity
-        DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
-        
-        imshow("Input", remapL);
-        imshow("Input2", remapR);
-        imshow("Stereo", matDisp);
-        //imshow("Depth", depthMap);
+            // draw a line for the user to show disparity
+            DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
             
-        char key = waitKey(1);
-        
-        if (key != 255)
-        {
-            cout << endl << key << endl;
-        }
-        
-        switch (key)
-        {
-            case 'T':
-                state.disparity --;
-                break;
-            case 'R':
-                state.disparity ++;
-                break;
+            imshow("Input", remapL);
+            imshow("Input2", remapR);
+            imshow("Stereo", matDisp);
+            //imshow("Depth", depthMap);
                 
-            case 'w':
-                state.sobelLimit += 10;
-                break;
-                
-            case 's':
-                state.sobelLimit -= 10;
-                break;
-                
-            case 'g':
-                state.blockSize ++;
-                break;
-                
-            case 'b':
-                state.blockSize --;
-                break;
-                
-            case 'y':
-                state.sadThreshold ++;
-                break;
-                
-            case 'h':
-                state.sadThreshold --;
-                break;
-                
-            case 'u':
-                state.sobelAdd += 10;
-                break;
-                
-            case 'j':
-                state.sobelAdd -= 10;
-                break;
+            char key = waitKey(1);
             
-            case '5':
-                // to show SAD boxes
-                state.sobelLimit = 0;
-                state.sadThreshold = 255;
-                break;
+            if (key != 255)
+            {
+                cout << endl << key << endl;
+            }
+            
+            switch (key)
+            {
+                case 'T':
+                    state.disparity --;
+                    break;
+                case 'R':
+                    state.disparity ++;
+                    break;
+                    
+                case 'w':
+                    state.sobelLimit += 10;
+                    break;
+                    
+                case 's':
+                    state.sobelLimit -= 10;
+                    break;
+                    
+                case 'g':
+                    state.blockSize ++;
+                    break;
+                    
+                case 'b':
+                    state.blockSize --;
+                    break;
+                    
+                case 'y':
+                    state.sadThreshold ++;
+                    break;
+                    
+                case 'h':
+                    state.sadThreshold --;
+                    break;
+                    
+                case 'u':
+                    state.sobelAdd += 10;
+                    break;
+                    
+                case 'j':
+                    state.sobelAdd -= 10;
+                    break;
                 
-            case 'q':
-                quit = true;
-                break;
+                case '5':
+                    // to show SAD boxes
+                    state.sobelLimit = 0;
+                    state.sadThreshold = 255;
+                    break;
+                    
+                case 'q':
+                    quit = true;
+                    break;
+            }
+            
+            if (key != 255)
+            {
+                cout << "disparity = " << state.disparity << endl;
+                cout << "sobelLimit = " << state.sobelLimit << endl;
+                cout << "blockSize = " << state.blockSize << endl;
+                cout << "sadThreshold = " << state.sadThreshold << endl;
+                cout << "sobelAdd = " << state.sobelAdd << endl;
+            }
         }
-        
-        if (key != 255)
-        {
-            cout << "disparity = " << state.disparity << endl;
-            cout << "sobelLimit = " << state.sobelLimit << endl;
-            cout << "blockSize = " << state.blockSize << endl;
-            cout << "sadThreshold = " << state.sadThreshold << endl;
-            cout << "sobelAdd = " << state.sobelAdd << endl;
-        }
-        #endif
+        //#endif
         
         numFrames ++;    
             

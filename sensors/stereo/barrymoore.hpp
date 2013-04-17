@@ -12,7 +12,7 @@
 #include <cv.h>
 #include <iostream>
 
-#define SHOW_DISPLAY 0
+//#define SHOW_DISPLAY 0
 
 #define NUM_THREADS 8
 
@@ -35,6 +35,8 @@ struct BarryMooreState
     Mat mapxR;
     
     Mat Q;
+    
+    bool show_display;
     
     //cv::vector<Point3f> *localHitPoints; // this is an array of cv::vector<Point3f>'s
 };
