@@ -1,10 +1,8 @@
-struct lcmt_stereo
+struct lcmt_stereo_old
 {
     int64_t  timestamp;
     
     int32_t number_of_points;
-    
-    int32_t frame_number;
     
     float x[number_of_points];
     float y[number_of_points];
