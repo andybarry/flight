@@ -300,7 +300,7 @@ for e in log:
     else:
         flattener = make_flattener(msg)
         flatteners[e.channel] = flattener
-        data[e.channel] = []
+        data[e.channel.replace("-","_")] = []
         if printFormat:
             statusMsg = deleteStatusMsg(statusMsg)
             typeStr, fieldCount = make_lcmtype_string(msg)
@@ -327,7 +327,8 @@ for e in log:
     if printOutput:
         printFile.write("%s%s%s\n" % (e.channel, separator, separator.join([str(k) for k in a])))
     else:
-        data[e.channel].append(a)
+        # change all "-" to "_" in the channel names, otherwise we'll have inaccessible matlab variables
+        data[e.channel.replace("-","_")].append(a)
         
        
     
