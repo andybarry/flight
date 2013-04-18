@@ -153,20 +153,32 @@ void WriteVideo()
         printf("VideoWriter failed to open!\n");
     }
     
-    int temp;
+    int endI, firstFrame = 0;
     if (numFrames < RINGBUFFER_SIZE)
     {
-        temp = numFrames;
+        endI = numFrames;
     } else {
-        temp = RINGBUFFER_SIZE;
+        // our buffer is smaller than the full movie.
+        // figure out where in the ringbuffer we are
+        firstFrame = numFrames%RINGBUFFER_SIZE+1;
+        if (firstFrame > RINGBUFFER_SIZE)
+        {
+            firstFrame = 0;
+        }
+        
+        endI = RINGBUFFER_SIZE;
+        
+        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", numFrames-RINGBUFFER_SIZE);
+        
     }
     
-    for (int i=0; i<temp; i++)
+    // write the video
+    for (int i=0; i<endI; i++)
     {
-        recordL << ringbufferL[i];
-        recordR << ringbufferR[i];
+        recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
+        recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
         
-        printf("\rWriting video: (%.1f%) -- %d/%d frames", (float)(i+1)/temp*100, i+1, temp);
+        printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
         fflush(stdout);
     }
     printf("\ndone.\n");
@@ -174,13 +186,12 @@ void WriteVideo()
 
 int main(int argc, char *argv[])
 {
-    
-    cout << "Pass the -v flag to show dispaly." << endl;
     if (argc > 1)
     {
         // FIXME: quick hack to do show_display
         show_display = true;
     } else {
+        cout << "Pass the -v flag to show dispaly." << endl;
         show_display = false;
     }
     
@@ -711,7 +722,7 @@ int64_t getTimestampNow()
 {
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
+    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
