@@ -1,0 +1,55 @@
+<?xml version='1.0'?>
+<mavlink>
+    <include>ardupilotmega.xml</include>
+    <enums>
+    </enums>
+    <messages>
+        <message id="221" name="SCALED_PRESSURE_AND_AIRSPEED">
+               <description>Augmented SCALED_PRESSURE message to include airspeed data. The pressure readings for the typical setup of one absolute and differential pressure sensor. The units are as specified in each field.</description>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+               <field type="float" name="press_abs">Absolute pressure (hectopascal)</field>
+               <field type="float" name="press_diff">Differential pressure 1 (hectopascal)</field>
+               <field type="int16_t" name="temperature">Temperature measurement (0.01 degrees celsius)</field>
+               <field type="float" name="airspeed">Airspeed measurement (meters per second)</field>
+          </message>
+          
+          <message id="222" name="STATE_ESTIMATOR_POSE">
+               <description>State estimator pose from the MIT RLG aircraft.</description>
+               <field type="uint32_t" name="utime">Timestamp (milliseconds since system boot)</field>
+               <field type="float" name="x">Position on the X axis.</field>
+               <field type="float" name="y">Position on the Y axis.</field>
+               <field type="float" name="z">Position on the Z axis.</field>
+               
+               <field type="float" name="velx">Position on the X axis.</field>
+               <field type="float" name="vely">Position on the Y axis.</field>
+               <field type="float" name="velz">Position on the Z axis.</field>
+               
+               <field type="float" name="q1">Orientation in quaternians (1st component).</field>
+               <field type="float" name="q2">Orientation in quaternians (2nd component).</field>
+               <field type="float" name="q3">Orientation in quaternians (3rd component).</field>
+               <field type="float" name="q4">Orientation in quaternians (4th component).</field>
+               
+               <field type="float" name="rotation_rate_x">Rotation rate on the X axis</field>
+               <field type="float" name="rotation_rate_y">Rotation rate on the Y axis</field>
+               <field type="float" name="rotation_rate_z">Rotation rate on the Z axis</field>
+               
+               <field type="float" name="accelx">Acceleration on the X axis</field>
+               <field type="float" name="accely">Acceleration on the Y axis</field>
+               <field type="float" name="accelz">Acceleration on the Z axis</field>
+               
+               
+          </message>
+          
+          <message id="223" name="LCM_TRANSPORT">
+               <description>Message that is a header for an LCM packet transport. contains an LCM message.  Useful for transporting LCM over Xbee and similar links.</description>
+               <field type="uint64_t" name="utime">Timestamp (milliseconds since system boot)</field>
+               <field type="char[21]" name="channel_name">Channel name</field>
+               <field type="uint16_t" name="msg_id">Unique id that will be the same for each mav message making up this LCM message</field>
+               <field type="uint32_t" name="message_part_counter">Some LCM messages are broken up into multiple mavlink messages.  This field denotes which part this is.</field>
+               <field type="uint32_t" name="message_part_total">Total number of payloads to combine to create the LCM message..</field>
+               <field type="uint32_t" name="payload_size">Size of this payload (likely full for most messages and then smaller for the last message.)</field>
+               
+               <field type="char[62]" name="payload">Payload data that is all or part of an LCM message.</field>
+          </message>
+    </messages>
+</mavlink>
