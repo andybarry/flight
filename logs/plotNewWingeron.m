@@ -2,11 +2,13 @@
 % load the log
 
 dir = '2013-04-17-holodeck-bike/attempt1/';
-filename = 'stereo_fix_u2_lcmlog_2013_04_17_01.mat';
+filename = 'stereo_fix_u2_lcmlog_2013_04_17_02.mat';
 
+filename2 = 'laptop_lcmlog_2013_04_17_00.mat';
 
 
 load(strcat(dir, filename));
+load(strcat(dir, filename2));
 
 % grab estimator values
 est.utime = STATE_ESTIMATOR_POSE(:,1);
@@ -79,3 +81,18 @@ trajnum.trajnum = trajectory_number(:,2);
 trajnum.logtime = trajectory_number(:,3);
 
 
+% optotrak
+optotrak.timestamp = wingeron_x_quat(:,1);
+optotrak.sec = (optotrak.timestamp - optotrak.timestamp(1)) / 1000;
+optotrak.number_of_rigid_bodies = wingeron_x_quat(:,2);
+
+optotrak.x = wingeron_x_quat(:,3);
+optotrak.y = wingeron_x_quat(:,4);
+optotrak.z = wingeron_x_quat(:,5);
+
+optotrak.q0 = wingeron_x_quat(:,6);
+optotrak.qx = wingeron_x_quat(:,7);
+optotrak.qy = wingeron_x_quat(:,8);
+optotrak.qz = wingeron_x_quat(:,9);
+
+optotrak.logtime = wingeron_x_quat(:,10);
