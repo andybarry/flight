@@ -63,6 +63,7 @@ char *channelAttitude = NULL;
 char *channelBaroAirspeed = NULL;
 char *channelGps = NULL;
 char *channelBatteryStatus = NULL;
+char *channelServoOutput = NULL;
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
 lcmt_wingeron_u_subscription_t *wingeron_u_sub;
@@ -71,16 +72,17 @@ uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name\n");
+        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name output-servo-channel-name\n");
         fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
         fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
         fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
         fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
         fprintf(stderr, "    battery-status-channel-name : LCM channel to publish battery status messages on\n");
         fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
+        fprintf(stderr, "    output-servo-channel-name : LCM channel to publish executed servo commands on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status wingeron_u\n");
-        fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages\n");
+        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status wingeron_u servo_out\n");
+        fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages.  Also pushes servo commands to the APM and reads the executed commands.\n");
 }
 
 
@@ -323,6 +325,43 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             lcmt_battery_status_publish (lcm, channelBatteryStatus, &lcmmsg);
             break;
             
+        case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
+            
+            // decode the mavlink message
+            
+            mavlink_servo_output_raw_t servomsg;
+            mavlink_msg_servo_output_raw_decode(&mavmsg, &servomsg);
+            
+            // create the LCM message
+            lcmt_wingeron_u servoOutMsg;
+            
+            servoOutMsg.timestamp = getTimestampNow();
+            
+            /*
+             * Output channels:
+             *  1: Wingeron R
+             *  2: Elevator
+             *  3: Prop 1
+             *  4: Rudder
+             *  5: Wingeron L
+             *  6: Prop 2
+             *  7:
+             *  8:
+             */
+            
+            servoOutMsg.aileronRight = servomsg.servo1_raw;
+            servoOutMsg.elevator = servomsg.servo2_raw;
+            servoOutMsg.throttleFront = servomsg.servo3_raw;
+            servoOutMsg.rudder = servomsg.servo4_raw;
+            servoOutMsg.aileronLeft = servomsg.servo5_raw;
+            servoOutMsg.throttleRear = servomsg.servo6_raw;
+            
+            // send the lcm message
+            lcmt_wingeron_u_publish(lcm, channelServoOutput, &servoOutMsg);
+            
+        
+            break;
+            
         case MAVLINK_MSG_ID_STATUSTEXT:
             mavlink_statustext_t textMsg;
             mavlink_msg_statustext_decode(&mavmsg, &textMsg);
@@ -345,7 +384,7 @@ int main(int argc,char** argv)
     char *channelMavlink = NULL;
     char *channelWingeronU = NULL;
 
-    if (argc!=7) {
+    if (argc!=8) {
         usage();
         exit(0);
     }
@@ -356,6 +395,7 @@ int main(int argc,char** argv)
     channelGps = argv[4];
     channelBatteryStatus = argv[5];
     channelWingeronU = argv[6];
+    channelServoOutput = argv[7];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
@@ -390,7 +430,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput);
 
     while (true)
     {
