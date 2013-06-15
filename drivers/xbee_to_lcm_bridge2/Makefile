@@ -11,7 +11,7 @@ MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
 MAVLIB=/home/linaro/mav/mavconn/build/lib
 
-CFLAGS=-c -Wall -g -I../../mavlink-rlg `pkg-config --cflags lcm bot2-core bot2-param-client` -I/$(LCMDIR) -I../../../Fixie/build/include/lcmtypes
+CFLAGS=-c -Wall -O3 -I../../mavlink-rlg `pkg-config --cflags lcm bot2-core bot2-param-client` -I/$(LCMDIR) -I../../../Fixie/build/include/lcmtypes
 
 LIBS=`pkg-config --libs lcm bot2-core bot2-param-client` $(LCMLIB) $(MAVLCMLIB)
 
