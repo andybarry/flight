@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     dc1394camera_t  *camera;
     IplImage        *frame;
     dc1394error_t   err;
-    guint64         guid = 0x00b09d0100af04d8;
+    guint64         guid = 0x00b09d0100c728a5; //0x00b09d0100af04d8;
     
     IplImage *frameArray[MAX_FRAMES];
     IplImage *frameArray2[MAX_FRAMES];
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     dc1394camera_t  *camera2;
     IplImage        *frame2;
     dc1394error_t   err2;
-    guint64         guid2 = 0x00b09d0100a01ac5;
+    guint64         guid2 = 0x00b09d0100c72894; //0x00b09d0100a01ac5;
 
     d = dc1394_new ();
     if (!d)
@@ -200,18 +200,29 @@ int main(int argc, char *argv[])
 
     printf("\n\n");
     
-    writer = cvCreateVideoWriter("testvid.avi", CV_FOURCC('P','I','M','1'), 30, size, 0 );
-    writer2 = cvCreateVideoWriter("testvid2.avi", CV_FOURCC('P','I','M','1'), 30, size, 0 );
+    //writer = cvCreateVideoWriter("testvid-uc.avi", CV_FOURCC('I','4','2','0'), 30, size, 0 );
+    //writer2 = cvCreateVideoWriter("testvid-uc2.avi", CV_FOURCC('I','4','2','0'), 30, size, 0 );
+    
+    char filename[1000];
     
     for (i=0;i<numFrames;i++)
     {
         printf("hi\n");
-        cvWriteFrame(writer, frameArray[i]);
-        cvWriteFrame(writer2, frameArray2[i]);
+        //cvWriteFrame(writer, frameArray[i]);
+        sprintf(filename, "calibrationImages/cam1-%05d.ppm", i+1);
+        cvSaveImage(filename, frameArray[i]);
+        
+        sprintf(filename, "calibrationImages/cam2-%05d.ppm", i+1);
+        cvSaveImage(filename, frameArray2[i]);
+        
+        //cvWriteFrame(writer2, frameArray2[i]);
         printf("Writing frame %d", i);
     }
     
     printf("\n\n");
+    
+    //cvReleaseVideoWriter(&writer);
+    //cvReleaseVideoWriter(&writer2);
     
     cvDestroyWindow("Input");
     cvDestroyWindow("Input2");
@@ -229,9 +240,6 @@ int main(int argc, char *argv[])
     dc1394_free (d);
     dc1394_free (d2);
     
-    cvReleaseVideoWriter(&writer);
-    cvReleaseVideoWriter(&writer2);
-
     return 0;
 }
 

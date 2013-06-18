@@ -191,19 +191,19 @@ int main(int argc, char *argv[])
         // FIXME: quick hack to do show_display
         show_display = true;
     } else {
-        cout << "Pass the -v flag to show dispaly." << endl;
+        cout << "Pass the -v flag to show display." << endl;
         show_display = false;
     }
     
     dc1394error_t   err;
-    uint64         guid = 0x00b09d0100af04d8; // camera 1
+    uint64         guid = 0x00b09d0100c728a5; // camera 1
     
     unsigned long elapsed;
     
     // ----- cam 2 -----
     
     dc1394error_t   err2;
-    uint64         guid2 = 0x00b09d0100a01ac5; // camera2
+    uint64         guid2 = 0x00b09d0100c72894; // camera2
     
     // setup control-c handling
     struct sigaction sigIntHandler;

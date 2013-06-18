@@ -1,13 +1,14 @@
 #!/bin/bash
 
-rm stereo_camera_calibrate/img/*.ppm
+#rm stereo_camera_calibrate/img/*.ppm
 
-avconv -i testvid.avi -f image2 stereo_camera_calibrate/img/cam1-%05d.ppm
+#avconv -i testvid.avi -f image2 stereo_camera_calibrate/img/cam1-%05d.ppm
 NUMIMG=`ls stereo_camera_calibrate/img/*.ppm | wc -l`
 
-avconv -i testvid2.avi -f image2 stereo_camera_calibrate/img/cam2-%05d.ppm
+#avconv -i testvid2.avi -f image2 stereo_camera_calibrate/img/cam2-%05d.ppm
 
-echo "Image converstion complete... writing file list."
+#echo "Image converstion complete... writing file list."
+echo "Writing file list..."
 
 # write out the text file
 python stereo_camera_calibrate/printImgList.py $NUMIMG > stereo_camera_calibrate/pyimglist.txt
