@@ -18,11 +18,14 @@ LIBS=`pkg-config --libs lcm bot2-core bot2-param-client` $(LCMLIB) $(MAVLCMLIB) 
 
 all: lcm-to-xbee-bridge2
 
-lcm-to-xbee-bridge2: lcm-to-xbee-bridge2.o
-	$(CC) lcm-to-xbee-bridge2.o -o lcm-to-xbee-bridge2 $(LIBS)
+lcm-to-xbee-bridge2: lcm-to-xbee-bridge2.o LcmTransportPart.o
+	$(CC) lcm-to-xbee-bridge2.o LcmTransportPart.o -o lcm-to-xbee-bridge2 $(LIBS)
 
 lcm-to-xbee-bridge2.o: lcm-to-xbee-bridge2.cpp
 	$(CC) $(CFLAGS) lcm-to-xbee-bridge2.cpp
+
+LcmTrasportPart.o: LcmTransportPart.cpp
+	$(CC) $(CFLAGS) LcmTransportPart.cpp
 
 clean:
 	rm -rf *o lcm-to-xbee-bridge2

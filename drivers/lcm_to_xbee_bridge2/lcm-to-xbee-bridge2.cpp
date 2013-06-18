@@ -42,10 +42,13 @@ using namespace std;
 #include <sys/ioctl.h>
 #include <inttypes.h>
 #include <fstream>
+#include <mutex>
 
 #define BAUD_RATE 57600
 
 #define MAX_CHANNELS 255
+
+#define MAX_HOLDING_MESSAGES 255
 
 map<string, int> downsampleAmounts;
 map<string, int> downsampleCounters;
@@ -74,7 +77,10 @@ int serialPort_fd;
 int open_port(char *port);
 bool setup_port(int fd, int baud, int data_bits, int stop_bits, bool parity, bool hardware_control);
 void close_port(int fd);
+void* serial_wait(void* serial_ptr);
 
+LcmTransportPart globalHoldingArray[MAX_HOLDING_MESSAGES];
+int globalNextMessageSlot = 0;
 
 static void usage(void)
 {
@@ -112,6 +118,19 @@ int64_t getTimestampNow()
     gettimeofday(&thisTime, NULL);
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
+
+int GetMessageIndex(int id)
+{
+    for (int i=0;i<MAX_HOLDING_MESSAGES; i++)
+    {
+        if (id == globalHoldingArray[i].id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 
 void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *userdata)
 {
@@ -170,6 +189,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
             
             
         int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
+        
         int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
         
         if (written != messageLength)
@@ -186,6 +206,74 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     }
     
 }
+
+
+void sendLcmMessage(mavlink_message_t *message)
+{
+    // send this mavlink message as an LCM message
+    switch(message->msgid)
+    {
+        // process messages here
+        case MAVLINK_MSG_ID_LCM_TRANSPORT:
+            
+            // rebuild the LCM message
+            mavlink_lcm_transport_t transportIn;
+            
+            mavlink_msg_lcm_transport_decode(message, &transportIn);
+            
+            // check to see if we know about this message
+            int index;
+            index = GetMessageIndex(transportIn.msg_id);
+            if (index >= 0)
+            {
+                globalHoldingArray[index].AddMessage(transportIn);
+                if (globalHoldingArray[index].IsComplete())
+                {
+                    // send the message
+                    
+                    // send the lcm message
+                    lcm_publish(lcm, globalHoldingArray[index].channelName.c_str(), globalHoldingArray[index].data,     
+                        globalHoldingArray[index].totalDataSizeSoFar);                    
+                }
+            } else {
+                // we don't know about this message yet
+                globalHoldingArray[globalNextMessageSlot].AddMessage(transportIn);
+                globalNextMessageSlot ++;
+                if (globalNextMessageSlot >= MAX_HOLDING_MESSAGES)
+                {
+                    globalNextMessageSlot = 0;
+                }
+            }
+            
+            break;            
+            
+            
+        default:
+            printf("Error: got unknown MAVLINK message: %d\n", message->msgid);
+    }
+}
+
+
+// threaded mavlink reading
+void* MavlinkReadingThread(void *fd_ptr)
+{  
+    while (true)
+    {
+        serial_wait((void*)fd_ptr);
+    }
+    return NULL;
+}
+
+// threaded lcm reading
+void* LcmReadingThread(void *nothing)
+{  
+    while (true)
+    {
+        lcm_handle(lcm);
+    }
+    return NULL;
+}
+
 
 int main(int argc,char** argv)
 {
@@ -212,7 +300,7 @@ int main(int argc,char** argv)
     
     // SETUP SERIAL PORT
 
-	printf("LCM --> Xbee bridge started\n");
+	printf("LCM / Xbee bridge started\n");
 
 	// Exit if opening port failed
 	// Open the serial port.
@@ -275,16 +363,22 @@ int main(int argc,char** argv)
 
     signal(SIGINT,sighandler);
     
+    pthread_t lcmReadThread, mavlinkReadThread;
     
-
-    while (true)
-    {
-        // read the LCM channel
-        lcm_handle (lcm);
-    }
+    int* fd_ptr = &serialPort_fd;
+    
+    // fire off the two threads that wait for serial messages
+    // and wait for LCM messages
+    pthread_create( &lcmReadThread, NULL, LcmReadingThread, NULL);
+    pthread_create( &mavlinkReadThread, NULL, MavlinkReadingThread, fd_ptr);
+    
+    // wait for the threads to rejoin (which they never will, this is just a blocking call)
+    pthread_join( lcmReadThread, NULL);
+    
 
     return 0;
 }
+
 
 
 // --------- code copied from mavconn-bridge-serial.cc ----------------------
@@ -301,7 +395,7 @@ int open_port(char *port)
 	// Open serial port
 	// O_RDWR - Read and write
 	// O_NOCTTY - Ignore special chars like CTRL-C
-	fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
+	fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
 	if (fd == -1)
 	{
 		/* Could not open the port. */
@@ -494,3 +588,104 @@ void close_port(int fd)
 	close(fd);
 }
 // ------------------ end copied code ------------------------
+
+
+// -------------- slightly modified copied code --------------
+
+
+/**
+* @brief Serial function
+*
+* This function blocks waiting for serial data in it's own thread
+* and forwards the data once received.
+*/
+void* serial_wait(void* serial_ptr)
+{
+    bool verbose = false;
+    bool debug = false;
+    bool silent = false;
+    
+	int fd = *((int*) serial_ptr);
+
+	mavlink_status_t lastStatus;
+	lastStatus.packet_rx_drop_count = 0;
+
+	//if (debug) printf("Checking for new data on serial port\n");
+	// Block until data is available, read only one byte to be able to continue immediately
+	//char buf[MAVLINK_MAX_PACKET_LEN];
+	uint8_t cp;
+	mavlink_message_t message;
+	mavlink_status_t status;
+	uint8_t msgReceived = false;
+	//tcflush(fd, TCIFLUSH);
+    
+    // before we do a read we need to grab the serial port mutex
+	if (read(fd, &cp, 1) > 0)
+	{
+    
+		// Check if a message could be decoded, return the message in case yes
+		msgReceived = mavlink_parse_char(MAVLINK_COMM_1, cp, &message, &status);
+		if (lastStatus.packet_rx_drop_count != status.packet_rx_drop_count)
+		{
+			if (verbose || debug) printf("ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
+			if (debug)
+			{
+				unsigned char v=cp;
+				fprintf(stderr,"%02x ", v);
+			}
+		}
+		lastStatus = status;
+	}
+	else
+	{
+		if (!silent) fprintf(stderr, "ERROR: Could not read from port %s\n", xbeeDevice);
+	}
+
+	// If a message could be decoded, handle it
+	if(msgReceived)
+	{
+		if (verbose || debug) std::cout << std::dec << "Received and forwarded serial port message with id " << static_cast<unsigned int>(message.msgid) << " from system " << static_cast<int>(message.sysid) << std::endl;
+
+		// Do not send images over serial port
+
+		// DEBUG output
+		if (debug)
+		{
+			//fprintf(stderr,"Forwarding SERIAL -> LCM: ");
+			unsigned int i;
+			uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+			unsigned int messageLength = mavlink_msg_to_send_buffer(buffer, &message);
+			if (messageLength > MAVLINK_MAX_PACKET_LEN)
+			{
+				fprintf(stderr, "\nFATAL ERROR: MESSAGE LENGTH IS LARGER THAN BUFFER SIZE\n");
+			}
+			else
+			{
+				for (i=0; i<messageLength; i++)
+				{
+					unsigned char v=buffer[i];
+					fprintf(stderr,"%02x ", v);
+				}
+				fprintf(stderr,"\n");
+			}
+		}
+
+		// Send out packets to LCM
+		// Send over LCM
+        /*
+		if (pc2serial)
+		{
+			sendMAVLinkMessage(lcm, &message, MAVCONN_LINK_TYPE_UART_VICON);
+		}
+		else
+		{
+			sendMAVLinkMessage(lcm, &message, MAVCONN_LINK_TYPE_UART);
+		}
+		*/
+		sendLcmMessage(&message); 
+	}
+	return NULL;
+				}
+
+// -----------------------------------------------------------
+
