@@ -20,16 +20,32 @@ static void usage(void)
         fprintf(stderr, "\n");
         fprintf(stderr, "Here, I'll search your available MIDI devices for you:\n---------------------------\n");
         
+        system("amidi -l");
+        fprintf(stderr, "\n---------------------------\n");
+        
         system("ls /dev/snd/midi*");
         
         fprintf(stderr, "\n---------------------------\n");
 }
 
 int stop=0;
+lcm_t * lcm;
+snd_rawmidi_t *handle_in = 0;
 
 void sighandler(int dum)
 {
         stop=1;
+        
+        fprintf(stderr,"Closing.\n");
+        
+        if (handle_in) {
+                snd_rawmidi_drain(handle_in); 
+                snd_rawmidi_close(handle_in);   
+        }
+        
+        lcm_destroy (lcm);
+        
+        exit(0);
 }
 
 int main(int argc,char** argv)
@@ -44,7 +60,7 @@ int main(int argc,char** argv)
         
         
         int fd_in = -1,fd_out = -1;
-        snd_rawmidi_t *handle_in = 0,*handle_out = 0;
+        snd_rawmidi_t *handle_out = 0;
         
         if (argc!=3) {
             usage();
@@ -54,7 +70,7 @@ int main(int argc,char** argv)
         device_in = argv[1];
         lcm_out = argv[2];
         
-        lcm_t * lcm;
+        
         lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
         if (!lcm)
             return 1;
@@ -67,7 +83,7 @@ int main(int argc,char** argv)
         fprintf(stderr,"Output: ");
         fprintf(stderr,"LCM channel %s\n", lcm_out);
         fprintf(stderr,"Read midi in\n");
-        fprintf(stderr,"Press ctrl-c to stop (then cause a midi event, since we'll be blocking on that)\n");
+        fprintf(stderr,"Press ctrl-c to stop\n");
         fprintf(stderr,"Broadcasting LCM: %s\n", lcm_out);
         
         
