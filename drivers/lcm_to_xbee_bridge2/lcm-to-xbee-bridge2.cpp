@@ -174,7 +174,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
         
         // build mavlink message
         mavlink_message_t mavmsg;
-        
+        printf("sending message on channel %s (%d/%d)\n", channel, i, numMessagesNeeded);
         mavlink_msg_lcm_transport_pack(
             systemID,   
             201,
