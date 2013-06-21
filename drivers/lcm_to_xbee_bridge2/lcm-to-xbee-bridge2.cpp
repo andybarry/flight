@@ -277,7 +277,7 @@ void* LcmReadingThread(void *nothing)
 
 int main(int argc,char** argv)
 {
-    if (argc < 4) {
+    if (argc != 2 && argc < 4) {
         usage();
         exit(0);
     }
@@ -337,8 +337,13 @@ int main(int argc,char** argv)
         return 1;
     }
     
-    printf("Publishing to Xbee: %s\nRecieving:\n", xbeeDevice);
-    
+    printf("Publishing to Xbee: %s\nSending:\n", xbeeDevice);
+
+    if (numChannels == 0)
+    {
+        printf("\t(no channels, only receiving)\n");
+    }
+
     // subscribe to all of the channels we need
     for (int i=0; i < numChannels; i++)
     {
