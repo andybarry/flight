@@ -38,7 +38,7 @@ void LcmTransportPart::AddMessage(mavlink_lcm_transport_t mavmsg)
         channelName = mavmsg.payload;
         
         channelNameLen = channelName.length() + 1; // + 1 for the \0 at the end of the string
-        channelName += "-recv";
+        //channelName += "-recv";
         
         nameOffset = channelNameLen;
     }
