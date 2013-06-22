@@ -158,8 +158,6 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     
     // we cast the void* to a char so that we can do arithmetic on it
     char *buffer = (char*) rbuf->data;
-    char bufferA[255];
-    memcpy(bufferA, rbuf->data, rbuf->data_size); // for debugging
     
     
     for (int i=0; i < numMessagesNeeded; i++)
