@@ -29,7 +29,7 @@ using namespace std;
 
 #include "mavconn.h" // from mavconn
 
-#include "../xbee_to_lcm_bridge2/LcmTransportPart.hpp" // for message size defines
+#include "LcmTransportPart.hpp" // for message size defines
     
 #include <string>
 
@@ -79,7 +79,7 @@ bool setup_port(int fd, int baud, int data_bits, int stop_bits, bool parity, boo
 void close_port(int fd);
 void* serial_wait(void* serial_ptr);
 
-LcmTransportPart globalHoldingArray[MAX_HOLDING_MESSAGES];
+LcmTransportPart* globalHoldingArray[MAX_HOLDING_MESSAGES];
 int globalNextMessageSlot = 0;
 
 static void usage(void)
@@ -123,7 +123,7 @@ int GetMessageIndex(int id)
 {
     for (int i=0;i<MAX_HOLDING_MESSAGES; i++)
     {
-        if (id == globalHoldingArray[i].id)
+        if (globalHoldingArray[i] != NULL && id == globalHoldingArray[i]->id)
         {
             return i;
         }
@@ -148,50 +148,75 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     // send the message via Xbee
     
     // first, break up the LCM message into a few different parts (if needed)
-    int numMessagesNeeded = rbuf->data_size / MAVLINK_LCM_PAYLOAD_SIZE + 1;
+    int channelStringLength = strlen(channel) + 1; // + 1 for the \0 at the end of the string
+    int totalBytes = rbuf->data_size + channelStringLength;
+    int numMessagesNeeded = totalBytes / MAVLINK_LCM_PAYLOAD_SIZE + 1;
     
     char payload[MAVLINK_LCM_PAYLOAD_SIZE];
-    int payloadSize;
+    int payloadSize, payloadStart;
+    int bufferLocation = 0;
+    
+    // we cast the void* to a char so that we can do arithmetic on it
+    char *buffer = (char*) rbuf->data;
+    char bufferA[255];
+    memcpy(bufferA, rbuf->data, rbuf->data_size); // for debugging
+    
     
     for (int i=0; i < numMessagesNeeded; i++)
     {
         // send a message with this part of the message
         
-        if (i == numMessagesNeeded - 1)
+        //if this is the first message, we add the channel name to it
+        if (i == 0 && numMessagesNeeded == 1)
         {
-            // this is the last message
-            payloadSize = rbuf->data_size % MAVLINK_LCM_PAYLOAD_SIZE;
+            // first and last message
+            payloadSize = rbuf->data_size;
+            payloadStart = channelStringLength;
+            //memcpy(&payload, channel, channelStringLength); // copy in the channel name
+            strcpy(payload, channel);
+            
+        } else if (i == 0) {
+            // first but not last message
+            payloadSize = MAVLINK_LCM_PAYLOAD_SIZE - channelStringLength;
+            payloadStart = channelStringLength;
+            //memcpy(&payload, channel, channelStringLength); // copy in the channel name
+            strcpy(payload, channel);
+            
+        } else if (i == numMessagesNeeded - 1) {
+            // not the first, but is the last message
+            payloadSize = rbuf->data_size - bufferLocation;
+            payloadStart = 0;
         } else {
-            // this isn't the last message, so fill the payload completely
+            // not the first or the last message
             payloadSize = MAVLINK_LCM_PAYLOAD_SIZE;
+            payloadStart = 0;
+            
         }
         
-        // we cast the void* to a char so that we can do arithmetic on it
-        char *buffer = (char*) rbuf->data;
-        
         // copy in the relavent payload
-        memcpy(&payload, buffer + i * MAVLINK_LCM_PAYLOAD_SIZE, payloadSize);
+        memcpy(payload + payloadStart, buffer + bufferLocation, payloadSize);
+        bufferLocation += payloadSize;
+        
         
         // build mavlink message
         mavlink_message_t mavmsg;
-        printf("sending message on channel %s (%d/%d)\n", channel, i, numMessagesNeeded);
+        //printf("sending message on channel %s (%d/%d)\n", channel, i + 1, numMessagesNeeded);
+
         mavlink_msg_lcm_transport_pack(
             systemID,   
             201,
             &mavmsg,
 		    (int32_t) getTimestampNow(),    // timestamp
-            channel,                        // channel name
             globalId,                       // ID for this message
 		    i,                              // which message this is
             numMessagesNeeded,              // total messages required
             payloadSize,                     // size of this payload
             payload);                       // payload data
             
-            
         int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
-        
+
         int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
-        
+
         if (written != messageLength)
         {
 	        fprintf(stderr, "\nERROR: Unable to send message over serial port.\n");
@@ -226,23 +251,32 @@ void sendLcmMessage(mavlink_message_t *message)
             index = GetMessageIndex(transportIn.msg_id);
             if (index >= 0)
             {
-                globalHoldingArray[index].AddMessage(transportIn);
-                if (globalHoldingArray[index].IsComplete())
-                {
-                    // send the message
-                    
-                    // send the lcm message
-                    lcm_publish(lcm, globalHoldingArray[index].channelName.c_str(), globalHoldingArray[index].data,     
-                        globalHoldingArray[index].totalDataSizeSoFar);                    
-                }
+                
+                globalHoldingArray[index]->AddMessage(transportIn);
+                
             } else {
                 // we don't know about this message yet
-                globalHoldingArray[globalNextMessageSlot].AddMessage(transportIn);
+                globalHoldingArray[globalNextMessageSlot] = new LcmTransportPart(transportIn);
+                index = globalNextMessageSlot;
                 globalNextMessageSlot ++;
                 if (globalNextMessageSlot >= MAX_HOLDING_MESSAGES)
                 {
                     globalNextMessageSlot = 0;
                 }
+                
+            }
+            
+            if (globalHoldingArray[index]->DoComplete())
+            {
+                // send the message
+                
+                // send the lcm message
+
+                lcm_publish(lcm, globalHoldingArray[index]->channelName.c_str(), globalHoldingArray[index]->data,     
+                    globalHoldingArray[index]->totalDataSizeSoFar);
+                    
+                // done with this message, delete it
+                delete globalHoldingArray[index];
             }
             
             break;            
@@ -337,7 +371,7 @@ int main(int argc,char** argv)
         return 1;
     }
     
-    printf("Publishing to Xbee: %s\nSending:\n", xbeeDevice);
+    printf("Publishing/receiving on Xbee: %s\nSending:\n", xbeeDevice);
 
     if (numChannels == 0)
     {
