@@ -1,0 +1,18 @@
+struct lcmt_process_control
+{
+    int64_t  timestamp;
+    
+    // a 0 means no change
+    // a 1 means start the process
+    // a 2 means stop the process
+    
+    int8_t paramServer;
+    int8_t mavlinkLcmBridge;
+    int8_t mavlinkSerial;
+    int8_t windEstimator;
+    int8_t stateEstimator;
+    int8_t controller;
+    int8_t stereo;
+    int8_t logger;
+    
+}
