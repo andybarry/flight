@@ -19,6 +19,7 @@
 #include <lcm/lcm.h>
 #include <bot_lcmgl_client/lcmgl.h>
 #include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt_stereo_control.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -67,6 +68,9 @@ Mat ringbufferR[RINGBUFFER_SIZE];
 int lineLeftImgPosition = -1;
 int lineLeftImgPositionY = -1;
 
+// lcm subscription to the control channel
+lcmt_stereo_control_subscription_t *stereo_control_sub;
+
 struct RemapState
 {
     Mat inputImage;
@@ -88,6 +92,8 @@ void onMouse( int event, int x, int y, int, void* );
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
 
 int numFrames = 0;
+int recNumFrames = 0;
+bool recordingOn = false;
 
 dc1394_t        *d;
 dc1394camera_t  *camera;
@@ -96,6 +102,32 @@ dc1394_t        *d2;
 dc1394camera_t  *camera2;
 
 //cv::vector<Point3f> *localHitPoints;
+
+static void usage(void)
+{
+    fprintf(stderr, "usage: ./opencv-stereo stereo-control-channel [options]\n");
+    fprintf(stderr, "\tstereo-control-channel: lcm channel to receive start and stop commands on\n");
+    fprintf(stderr, "\t Options:\n");
+    fprintf(stderr, "\t-v: show displays for debugging (substantially slows down processing)\n\n");
+    exit(0);
+}
+
+void StopCapture()
+{
+    
+    dc1394_video_set_transmission(camera, DC1394_OFF);
+    dc1394_capture_stop(camera);
+    dc1394_camera_free(camera);
+    
+    dc1394_video_set_transmission(camera2, DC1394_OFF);
+    dc1394_capture_stop(camera2);
+    dc1394_camera_free(camera2);
+    
+    dc1394_free (d);
+    dc1394_free (d2);
+    
+    
+}
 
 /**
  * Cleanly handles and exit from a command-line
@@ -109,24 +141,53 @@ void control_c_handler(int s)
     cout << endl << "exiting via ctrl-c" << endl
         << "\tpress ctrl+\\ to quit while writing video." << endl;
   
-    dc1394_video_set_transmission(camera, DC1394_OFF);
-    dc1394_capture_stop(camera);
-    dc1394_camera_free(camera);
-    
-    dc1394_video_set_transmission(camera2, DC1394_OFF);
-    dc1394_capture_stop(camera2);
-    dc1394_camera_free(camera2);
-    
-    dc1394_free (d);
-    dc1394_free (d2);
-    
-    // write video
+    StopCapture();
     WriteVideo();
+    
     
     //delete[] localHitPoints;
     
     exit(1);
 
+}
+
+
+
+void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_control *msg, void *user)
+{
+    /*
+     * The way this works is that as soon as the program starts, stereo is always running.  The only thing that causes
+     * the stereo to stop running is if stereoOn is set to false AND recOn is set to false.  The we write
+     * the video we have to disk.
+     * 
+     * If recOn is false but stereoOn is true, we pause the recording
+     * 
+     */
+     
+    // got a control message, so parse it and figure out what we should do
+    if (msg->stereoOn == false && msg->recOn == false)
+    {
+        // shut everything down and write the video out
+        StopCapture();
+        WriteVideo();
+        
+    } else if (msg->stereoOn == true && msg->recOn == false)
+    {
+        // pause recording if we were recording
+        cout << "Recording stopped." << endl;
+        recordingOn = false;
+        
+    } else if (msg->stereoOn == true && msg->recOn == true)
+    {  
+        cout << "(Re)starting recording." << endl;
+        recordingOn = true;
+        recNumFrames = 0;
+    }
+    {
+        // got an unknown command
+        fprintf(stderr, "WARNING: Unknown stereo_control command: stereoOn: %d, recOn: %d", int(msg->stereoOn), int(msg->recOn));
+    }
+    
 }
 
 void WriteVideo()
@@ -144,23 +205,14 @@ void WriteVideo()
     strftime (buffer,80,"%Y-%m-%d-%H-%M-%S",timeinfo);
 
 
-    VideoWriter recordL("videoL-" + string(buffer) + ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
-    if( !recordL.isOpened() ) {
-        printf("VideoWriter failed to open!\n");
-    }
-    VideoWriter recordR("videoR-" + string(buffer) + ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
-    if( !recordR.isOpened() ) {
-        printf("VideoWriter failed to open!\n");
-    }
-    
     int endI, firstFrame = 0;
-    if (numFrames < RINGBUFFER_SIZE)
+    if (recNumFrames < RINGBUFFER_SIZE)
     {
-        endI = numFrames;
+        endI = recNumFrames;
     } else {
         // our buffer is smaller than the full movie.
         // figure out where in the ringbuffer we are
-        firstFrame = numFrames%RINGBUFFER_SIZE+1;
+        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
         if (firstFrame > RINGBUFFER_SIZE)
         {
             firstFrame = 0;
@@ -168,8 +220,19 @@ void WriteVideo()
         
         endI = RINGBUFFER_SIZE;
         
-        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", numFrames-RINGBUFFER_SIZE);
+        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
         
+    }
+    
+    VideoWriter recordL("videoL-skip-" + std::to_string(firstFrame) + "-" + string(buffer) +
+        ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
+    if( !recordL.isOpened() ) {
+        printf("VideoWriter failed to open!\n");
+    }
+    VideoWriter recordR("videoR-skip-" + std::to_string(firstFrame) + "-" + string(buffer) +
+        ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
+    if( !recordR.isOpened() ) {
+        printf("VideoWriter failed to open!\n");
     }
     
     // write the video
@@ -184,15 +247,53 @@ void WriteVideo()
     printf("\ndone.\n");
 }
 
+void NonBlockingLcm(lcm_t *lcm)
+{
+    // setup an lcm function that won't block when we read it
+    int lcm_fd = lcm_get_fileno(lcm);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(lcm_fd, &fds);
+    
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+        0,  // seconds
+        1   // microseconds
+    };
+
+    
+    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+
+    if(0 == status) {
+        // no messages
+        //do nothing
+        
+    } else if(FD_ISSET(lcm_fd, &fds)) {
+        // LCM has events ready to be processed.
+        lcm_handle(lcm);
+    }
+
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc > 1)
+    // get input arguments
+    
+    show_display = false;
+    
+    if (argc < 2 || argc > 3)
     {
-        // FIXME: quick hack to do show_display
         show_display = true;
-    } else {
-        cout << "Pass the -v flag to show display." << endl;
-        show_display = false;
+    }
+    
+    char *stereo_control_channel_str;
+    
+    stereo_control_channel_str = argv[1];
+    
+    if (argc == 3)
+    {
+        // TODO: actually handle arguments instead of this hack
+        show_display = true;
     }
     
     dc1394error_t   err;
@@ -205,7 +306,7 @@ int main(int argc, char *argv[])
     dc1394error_t   err2;
     uint64         guid2 = 0x00b09d0100c72894; // camera2
     
-    // setup control-c handling
+    // --- setup control-c handling ---
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = control_c_handler;
@@ -213,7 +314,7 @@ int main(int argc, char *argv[])
     sigIntHandler.sa_flags = 0;
 
     sigaction(SIGINT, &sigIntHandler, NULL);
-    // end ctrl-c handling code
+    // --- end ctrl-c handling code ---
     
     // tell opencv to use only one core so that we can manage our
     // own threading without a fight
@@ -332,6 +433,9 @@ int main(int argc, char *argv[])
     lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
+    // subscribe to the stereo control channel
+    stereo_control_sub = lcmt_stereo_control_subscribe(lcm, stereo_control_channel_str, &lcm_stereo_control_handler, NULL);
+    
     Mat imgDisp;
     Mat imgDisp2;
     
@@ -399,9 +503,13 @@ int main(int argc, char *argv[])
             matR = GetFrameFormat7(camera2);
             
             // record video
-            //record << matL;
-            ringbufferL[numFrames%RINGBUFFER_SIZE] = matL;
-            ringbufferR[numFrames%RINGBUFFER_SIZE] = matR;
+            if (recordingOn == true)
+            {
+                ringbufferL[recNumFrames%RINGBUFFER_SIZE] = matL;
+                ringbufferR[recNumFrames%RINGBUFFER_SIZE] = matR;
+                
+                recNumFrames ++;
+            }
         #endif
         
         
@@ -644,7 +752,10 @@ int main(int argc, char *argv[])
         }
         //#endif
         
-        numFrames ++;    
+        numFrames ++;
+        
+        // check for new LCM messages
+        NonBlockingLcm(lcm);
             
         // compute framerate
         gettimeofday( &now, NULL );
@@ -672,16 +783,7 @@ int main(int argc, char *argv[])
     DC1394_ERR_CLN_RTN(err2,cleanup_and_exit(camera2),"Could not stop the camera 2");
 
     // close camera
-    dc1394_video_set_transmission(camera, DC1394_OFF);
-    dc1394_capture_stop(camera);
-    dc1394_camera_free(camera);
-    
-    dc1394_video_set_transmission(camera2, DC1394_OFF);
-    dc1394_capture_stop(camera2);
-    dc1394_camera_free(camera2);
-    
-    dc1394_free (d);
-    dc1394_free (d2);
+    StopCapture();
     
     //delete[] localHitPoints;
     
