@@ -125,9 +125,9 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     
     if (msg->stereo == 1)
     {
-        // TODO STEREO
+        processMap.at("stereo").StartProcess();
     } else if (msg->paramServer == 1) {
-        // TODO STEREO
+        processMap.at("stereo").StopProcess();
     }
 }
 
@@ -163,6 +163,7 @@ void* ProcessStatusThreadFunc(void *nothing)
         statMsg.windEstimator = processMap.at("windEstimator").IsAlive();
         statMsg.controller = processMap.at("controller").IsAlive();
         statMsg.logger = processMap.at("logger").IsAlive();
+        statMsg.logger = processMap.at("stereo").IsAlive();
         
         
         // send the message
@@ -234,6 +235,7 @@ int main(int argc,char** argv)
     CheckForProc("windEstimator");
     CheckForProc("controller");
     CheckForProc("logger");
+    CheckForProc("stereo");
     
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
