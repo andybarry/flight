@@ -53,8 +53,31 @@ void ProcessControlProc::StopProcess()
         return;
     }
     printf("Stopping %s, pid = %d\n", arguments[0], pid);
-    kill(pid, SIGINT);
-    pid = -1;
+    if (kill(pid, SIGINT) == 0)
+    {
+        pid = -1;
+    } else {
+        // error
+        printf("ERROR: failed to kill %s with pid = %d\n", arguments[0], pid);
+    }
+}
+
+bool ProcessControlProc::IsAlive()
+{
+    // issue a kill with a null signal for the pid
+    if (pid <= 0)
+    {
+        return false;
+    }
+    
+    if (kill(pid, 0) == 0)
+    {
+        // process exists
+        return true;
+    } else {
+    
+        return false;
+    }
 }
 
 void ProcessControlProc::PrintIO()

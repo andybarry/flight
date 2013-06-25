@@ -32,6 +32,7 @@ using namespace std;
 lcm_t * lcm;
 
 char *channelStereoControl = NULL;
+char *channelProcessReport = NULL;
 
 lcmt_process_control_subscription_t *process_control_sub;
 
@@ -41,12 +42,13 @@ uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: process-control chan-process-control chan-stereo-control config-file\n");
+        fprintf(stderr, "usage: process-control chan-process-control chan-stereo-control chan-process-report config-file\n");
         fprintf(stderr, "    chan-process-control: LCM channel with process_control messages\n");
         fprintf(stderr, "    chan-stereo-control: TODO\n");
+        fprintf(stderr, "    chan-process report: publishes process reports on this channel\n");
         fprintf(stderr, "    configfile: config file listing processes and arguments\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./process-control process_control stereo_control ../../config/processControl.conf\n");
+        fprintf(stderr, "    ./process-control process_control stereo_control process_status ../../config/processControl.conf\n");
         fprintf(stderr, "    reads LCM process-control messages and starts/stops processes based on those commands.\n");
 }
 
@@ -144,20 +146,54 @@ void CheckForProc(string procString)
     }
 }
 
+// thread that sends a status message every n seconds
+// threaded lcm reading
+void* ProcessStatusThreadFunc(void *nothing)
+{  
+    while (true)
+    {
+        // sleep for 1 second
+        sleep(1);
+        // send process status messages
+        
+        
+        // get a new lcm message
+        lcmt_process_control statMsg;
+        
+        statMsg.timestamp = getTimestampNow();
+        
+        statMsg.paramServer = processMap.at("paramServer").IsAlive();
+        statMsg.mavlinkLcmBridge = processMap.at("mavlinkLcmBridge").IsAlive();
+        statMsg.mavlinkSerial = processMap.at("mavlinkSerial").IsAlive();
+        statMsg.stateEstimator = processMap.at("stateEstimator").IsAlive();
+        statMsg.windEstimator = processMap.at("windEstimator").IsAlive();
+        statMsg.controller = processMap.at("controller").IsAlive();
+        statMsg.logger = processMap.at("logger").IsAlive();
+        
+        
+        // send the message
+        lcmt_process_control_publish (lcm, channelProcessReport, &statMsg);
+        
+        
+    }
+    return NULL;
+}
+
 int main(int argc,char** argv)
 {
     
     char *channelProcessControl = NULL;
     char *configurationFile = NULL;
 
-    if (argc!=4) {
+    if (argc!=5) {
         usage();
         exit(0);
     }
     
     channelProcessControl = argv[1];
     channelStereoControl = argv[2];
-    configurationFile = argv[3];
+    channelProcessReport = argv[3];
+    configurationFile = argv[4];
 
 
     // read the configuration file to get the processes we'll need
@@ -217,7 +253,11 @@ int main(int argc,char** argv)
 
     signal(SIGINT,sighandler);
     
-    printf("Receiving:\n\tProcess Control LCM: %s\nPublishing LCM:\n\tStereo: %s\n", channelProcessControl, channelStereoControl);
+    pthread_t processStatusThread;
+    
+    pthread_create( &processStatusThread, NULL, ProcessStatusThreadFunc, NULL);
+    
+    printf("Receiving:\n\tProcess Control LCM: %s\nPublishing LCM:\n\tStereo: %s\n\tStatus: %s\n", channelProcessControl, channelStereoControl, channelProcessReport);
 
     while (true)
     {

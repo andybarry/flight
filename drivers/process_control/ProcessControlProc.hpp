@@ -17,6 +17,7 @@ class ProcessControlProc
         pid_t StartProcess();
         void StopProcess();
         void PrintIO();
+        bool IsAlive();
         
     private:
         char **arguments;
