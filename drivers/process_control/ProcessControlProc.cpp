@@ -27,6 +27,15 @@ pid_t ProcessControlProc::StartProcess() // the first argument in processArgs mu
     if (0 == pid) {
         // this branch will execute in the child process
         // go!
+        int count = 0;
+        printf("Starting ");
+        while (arguments[count] != NULL)
+        {
+            printf(" %s", arguments[count]);
+            count ++;
+        }
+        printf("\n");
+        
         execvp (arguments[0], arguments);
 
         fprintf (stderr, "ERROR!!!! couldn't start [%s]!\n", arguments[0]);
