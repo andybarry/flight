@@ -22,10 +22,6 @@ using namespace std;
 #include "../../LCM/lcmt_process_control.h"
 #include "../../LCM/lcmt_stereo_control.h"
 
-#include "mavconn.h" // from mavconn
-    
-#include "../../mavlink-generated2/csailrlg/mavlink.h"
-
 #include "ProcessControlProc.hpp"
 #include <map>
 
@@ -37,8 +33,6 @@ char *channelProcessReport = NULL;
 lcmt_process_control_subscription_t *process_control_sub;
 
 std::map<string, ProcessControlProc> processMap;
-
-uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
