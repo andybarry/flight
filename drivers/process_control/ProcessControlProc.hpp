@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string>
 #include <pty.h>
+#include <iostream>
+#include <signal.h>
 
 using namespace std;
 
@@ -14,11 +16,13 @@ class ProcessControlProc
         ProcessControlProc(char **argumentsIn, int numArgsIn);
         pid_t StartProcess();
         void StopProcess();
+        void PrintIO();
         
     private:
         char **arguments;
         pid_t pid;
         int numArgs;
+        int my_fd;
 
 };
 

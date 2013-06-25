@@ -41,17 +41,13 @@ uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: TODOardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name output-servo-channel-name\n");
-        fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
-        fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
-        fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
-        fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
-        fprintf(stderr, "    battery-status-channel-name : LCM channel to publish battery status messages on\n");
-        fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
-        fprintf(stderr, "    output-servo-channel-name : LCM channel to publish executed servo commands on\n");
+        fprintf(stderr, "usage: process-control chan-process-control chan-stereo-control config-file\n");
+        fprintf(stderr, "    chan-process-control: LCM channel with process_control messages\n");
+        fprintf(stderr, "    chan-stereo-control: TODO\n");
+        fprintf(stderr, "    configfile: config file listing processes and arguments\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status wingeron_u servo_out\n");
-        fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages.  Also pushes servo commands to the APM and reads the executed commands.\n");
+        fprintf(stderr, "    ./process-control process_control stereo_control ../../config/processControl.conf\n");
+        fprintf(stderr, "    reads LCM process-control messages and starts/stops processes based on those commands.\n");
 }
 
 
@@ -81,67 +77,72 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     // start or stop processes based on it
     
     // the message sends the full requested state at once
-    
-    if (msg->paramServer == true)
+    //processMap.at("paramServer").PrintIO();
+    if (msg->paramServer == 1)
     {
         processMap.at("paramServer").StartProcess();
-    } else {
+    } else if (msg->paramServer == 2) {
         processMap.at("paramServer").StopProcess();
     }
     
-    if (msg->mavlinkLcmBridge == true)
+    if (msg->mavlinkLcmBridge == 1)
     {
         processMap.at("mavlinkLcmBridge").StartProcess();
-    } else {
+    } else if (msg->mavlinkLcmBridge == 2) {
         processMap.at("mavlinkLcmBridge").StopProcess();
     }
     
-    if (msg->mavlinkSerial == true)
+    if (msg->mavlinkSerial == 1)
     {
         processMap.at("mavlinkSerial").StartProcess();
-    } else {
+    } else if (msg->mavlinkSerial == 2) {
         processMap.at("mavlinkSerial").StopProcess();
     }
     
-    if (msg->stateEstimator == true)
+    if (msg->stateEstimator == 1)
     {
         processMap.at("stateEstimator").StartProcess();
-    } else {
+    } else if (msg->stateEstimator == 2) {
         processMap.at("stateEstimator").StopProcess();
     }
-    
-    if (msg->windEstimator == true)
+
+    if (msg->windEstimator == 1)
     {
         processMap.at("windEstimator").StartProcess();
-    } else {
+    } else if (msg->windEstimator == 2) {
         processMap.at("windEstimator").StopProcess();
     }
     
-    if (msg->controller == true)
+    if (msg->controller == 1)
     {
         processMap.at("controller").StartProcess();
-    } else {
+    } else if (msg->controller == 2) {
         processMap.at("controller").StopProcess();
     }
     
-    if (msg->logger == true)
+    if (msg->logger == 1)
     {
         processMap.at("logger").StartProcess();
-    } else {
+    } else if (msg->logger == 2) {
         processMap.at("logger").StopProcess();
     }
     
-    if (msg->stereo == true)
+    if (msg->stereo == 1)
     {
         // TODO STEREO
-    } else {
+    } else if (msg->paramServer == 1) {
         // TODO STEREO
     }
-    
-    
 }
 
-
+void CheckForProc(string procString)
+{
+    if (processMap.find(procString) == processMap.end())
+    {
+        fprintf(stderr, "Error: configuration file does not specifiy group for %s\n", procString.c_str());
+        exit(-1);
+    }
+}
 
 int main(int argc,char** argv)
 {
@@ -194,6 +195,15 @@ int main(int argc,char** argv)
             processMap.insert(std::pair<string, ProcessControlProc>(processGroups[i], ProcessControlProc(thisArgs, (int)length)));
         }
     }
+    
+    // now throw an error if the configuration file doesn't have all the right parts
+    CheckForProc("paramServer");
+    CheckForProc("mavlinkLcmBridge");
+    CheckForProc("mavlinkSerial");
+    CheckForProc("stateEstimator");
+    CheckForProc("windEstimator");
+    CheckForProc("controller");
+    CheckForProc("logger");
     
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");

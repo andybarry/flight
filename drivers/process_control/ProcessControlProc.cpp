@@ -22,11 +22,10 @@ pid_t ProcessControlProc::StartProcess() // the first argument in processArgs mu
     // this next line forks the program, so that means that
     // it's ok for this function to block, since it will be
     // in another program with another PID
-    int pid = forkpty(&stdin_fd, NULL, NULL, NULL);
-
+    //int pid = forkpty(&stdin_fd, NULL, NULL, NULL);
+    pid = fork();
     if (0 == pid) {
         // this branch will execute in the child process
-        
         // go!
         execvp (arguments[0], arguments);
 
@@ -41,6 +40,7 @@ pid_t ProcessControlProc::StartProcess() // the first argument in processArgs mu
         return -1;
     } else {
         // this branch will execute in the parent process
+        my_fd = stdin_fd;
         return pid;
     }
 }
@@ -52,7 +52,45 @@ void ProcessControlProc::StopProcess()
         // already stopped, don't do anything
         return;
     }
-    //kill(pid);
+    printf("Stopping %s, pid = %d\n", arguments[0], pid);
+    kill(pid, SIGINT);
+    pid = -1;
+}
+
+void ProcessControlProc::PrintIO()
+{
+    printf("printing io...\n");
+    // do non-blocking IO for this 
+    
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(my_fd, &fds);
+    
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+        0,  // seconds
+        1   // microseconds
+    };
+
+    
+    int status = select(my_fd + 1, &fds, 0, 0, &timeout);
+
+    if(0 == status) {
+        // no messages
+        //do nothing
+        printf("no data\n");
+        
+    } else if(FD_ISSET(my_fd, &fds)) {
+        // data is on the IO port
+        printf("got data...\n");
+        char buf[1024];
+        int bytes_read = read (my_fd, buf, sizeof (buf)-1);
+        if (bytes_read > 0)
+        {
+            printf("------ %s -----\n %s\n--------------------\n", arguments[0], buf);
+        }
+    }
+    
 }
 
 
