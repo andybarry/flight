@@ -18,16 +18,16 @@ LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-f
 
 
 
-all: process-lcmgl
+all: plane-health-monitor
 
-process-lcmgl: process-lcmgl.o
-	$(CC) process-lcmgl.o -o process-lcmgl $(LIBS)
+plane-health-monitor: plane-health-monitor.o
+	$(CC) plane-health-monitor.o -o plane-health-monitor $(LIBS)
 
-process-lcmgl.o: process-lcmgl.cpp
-	$(CC) $(CFLAGS) process-lcmgl.cpp
+plane-health-monitor.o: plane-health-monitor.cpp
+	$(CC) $(CFLAGS) plane-health-monitor.cpp
 
 clean:
-	rm -rf *o process-lcmgl
+	rm -rf *o plane-health-monitor
 
 
 

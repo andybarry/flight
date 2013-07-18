@@ -52,10 +52,11 @@ StringsOutStruct stringsOut;
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: process-lcmgl process-control-channel lcmgl-channel-name\n");
+        fprintf(stderr, "usage: plane-health-monitor process-control-channel log-size-channel-name\n");
         fprintf(stderr, "    process-status-channel: LCM channel name with process control messages\n");
+        fprintf(stderr, "    log-size-channel: LCM channel name with log size messages\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./process-lcmgl process_status\n");
+        fprintf(stderr, "    ./plane-health-monitor process_status log_size\n");
 }
 
 void PrintStatus()
