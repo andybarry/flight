@@ -17,6 +17,7 @@ using namespace std;
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <mutex>
 
 #include "../../LCM/lcmt_process_control.h"
 
@@ -28,8 +29,11 @@ using namespace std;
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
    
+   
 
 lcm_t * lcm;
+
+mutex mux;
 
 double obstacleXY1[2], obstacleXY2[2], obstacleHeight, obstacleBottom;
 
@@ -53,11 +57,17 @@ StringsOutStruct stringsOut;
 static void usage(void)
 {
         fprintf(stderr, "usage: process-lcmgl process-control-channel lcmgl-channel-name\n");
-        fprintf(stderr, "    process-control-channel: LCM channel name with process control messages\n");
-        fprintf(stderr, "    lcmgl-channel-name : LCM channel to publish LCMGL messages on\n");
+        fprintf(stderr, "    process-status-channel: LCM channel name with process control messages\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./process-lcmgl process_control process_lcmgl\n");
-        fprintf(stderr, "    reads optotrak LCM messages and draws the position using  LCMGL\n");
+        fprintf(stderr, "    ./process-lcmgl process_status\n");
+}
+
+void PrintStatus()
+{
+    mux.lock();
+    printf("\rPlane time: %s\t\tLogfile size: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str());
+    fflush(stdout);
+    mux.unlock();
 }
 
 
@@ -80,30 +90,43 @@ int64_t getTimestampNow()
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
-int temp = 0;
 void process_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_process_control *msg, void *user)
 {
+    mux.lock();
 
-    temp ++;
-    stringsOut.time = to_string(temp);
+    char tmbuf[64], buf[64];
     
+    // figure out what time the plane thinks it is
+    struct tm *nowtm;
+    time_t tv_sec = msg->timestamp / 1000000.0;
+    nowtm = localtime(&tv_sec);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    sprintf(buf, "%s", tmbuf);
+
+
+    stringsOut.time = buf;
+    
+    mux.unlock();
+    
+    
+    PrintStatus();
 }
+
 
 
 
 int main(int argc,char** argv)
 {
-    
+    stringsOut.time = "---";
+    stringsOut.logfilesize = "---";
     char *channelProcess = NULL;
-    char *channelLcmGl = NULL;
     
-    if (argc!=3) {
+    if (argc!=2) {
         usage();
         exit(0);
     }
 
     channelProcess = argv[1];
-    channelLcmGl = argv[2];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -116,20 +139,15 @@ int main(int argc,char** argv)
 
     signal(SIGINT,sighandler);
     
-    lcmgl = bot_lcmgl_init(lcm, channelLcmGl);
-
     
     process_sub = lcmt_process_control_subscribe(lcm, channelProcess, &process_handler, NULL);
     
-    printf("Receiving:\nProcess control: %s\nPublishing LCM:\n\tLCMGL: %s\n", channelProcess, channelLcmGl);
+    printf("Receiving:\nProcess status:\n\t%s\n\n", channelProcess);
 
     while (true)
     {
         // read the LCM channel
         lcm_handle (lcm);
-        
-        // everytime we do an lcm handle, refresh the display
-        printf("\rPlane time: %s\nLogfile size: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str());
     }
 
     return 0;

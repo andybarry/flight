@@ -80,7 +80,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
     
     // let opencv close it's windows
-    waitKey(1);
+    waitKey(5);
 
     printf("done.\n");
     
@@ -240,7 +240,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
 
     imshow("Data on video", thisImg);
     
-    waitKey(1); // must do a waitKey to get GUI events to be called
+    waitKey(5); // must do a waitKey to get GUI events to be called
 }
 
 void trajnum_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_trajectory_number *msg, void *user)
