@@ -11,7 +11,7 @@ MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
 MAVLIB=../../../mav/mavconn/build/lib
 
-CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames` -I/$(LCMDIR)
+CFLAGS=-c -std=c++0x -Wall -O3 `pkg-config --cflags lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames` -I/$(LCMDIR)
 
 LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames` $(LCMLIB)
 

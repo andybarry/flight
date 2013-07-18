@@ -41,6 +41,15 @@ BotFrames *botFrames;
 lcmt_process_control_subscription_t *process_sub;
 
 
+struct StringsOutStruct {
+    string time;
+    string logfilesize;
+};
+
+StringsOutStruct stringsOut;
+
+
+
 static void usage(void)
 {
         fprintf(stderr, "usage: process-lcmgl process-control-channel lcmgl-channel-name\n");
@@ -71,15 +80,12 @@ int64_t getTimestampNow()
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
-
+int temp = 0;
 void process_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_process_control *msg, void *user)
 {
 
-    double position[] = {0, 0, 0};
-    
-
-    bot_lcmgl_text(lcmgl, position, "hello world");
-    bot_lcmgl_switch_buffer(lcmgl);
+    temp ++;
+    stringsOut.time = to_string(temp);
     
 }
 
@@ -87,6 +93,7 @@ void process_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt
 
 int main(int argc,char** argv)
 {
+    
     char *channelProcess = NULL;
     char *channelLcmGl = NULL;
     
@@ -120,6 +127,9 @@ int main(int argc,char** argv)
     {
         // read the LCM channel
         lcm_handle (lcm);
+        
+        // everytime we do an lcm handle, refresh the display
+        printf("\rPlane time: %s\nLogfile size: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str());
     }
 
     return 0;
