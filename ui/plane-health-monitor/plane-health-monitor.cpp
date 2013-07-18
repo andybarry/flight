@@ -160,7 +160,7 @@ int main(int argc,char** argv)
     process_sub = lcmt_process_control_subscribe(lcm, channelProcess, &process_handler, NULL);
     log_size_sub = lcmt_log_size_subscribe(lcm, channelLogSize, &log_size_handler, NULL);
     
-    printf("Receiving:\n\t%s\n\t%s\n", channelProcess, channelLogSize);
+    printf("Receiving:\n\t%s\n\t%s\n--------------------------------------\n", channelProcess, channelLogSize);
 
     while (true)
     {
