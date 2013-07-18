@@ -20,6 +20,7 @@ using namespace std;
 #include <mutex>
 
 #include "../../LCM/lcmt_process_control.h"
+#include "../../LCM/lcmt_log_size.h"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
@@ -35,14 +36,9 @@ lcm_t * lcm;
 
 mutex mux;
 
-double obstacleXY1[2], obstacleXY2[2], obstacleHeight, obstacleBottom;
-
-bot_lcmgl_t* lcmgl;
-
-// bot frames global
-BotFrames *botFrames;
 
 lcmt_process_control_subscription_t *process_sub;
+lcmt_log_size_subscription_t *log_size_sub;
 
 
 struct StringsOutStruct {
@@ -65,7 +61,7 @@ static void usage(void)
 void PrintStatus()
 {
     mux.lock();
-    printf("\rPlane time: %s\t\tLogfile size: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str());
+    printf("\rPlane time: %s\t\tLogfile: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str());
     fflush(stdout);
     mux.unlock();
 }
@@ -76,6 +72,7 @@ void sighandler(int dum)
     printf("\nClosing... ");
 
     lcmt_process_control_unsubscribe(lcm, process_sub);
+    lcmt_log_size_unsubscribe(lcm, log_size_sub);
     lcm_destroy (lcm);
 
     printf("done.\n");
@@ -112,21 +109,40 @@ void process_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt
     PrintStatus();
 }
 
+void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user)
+{
 
+    mux.lock();
+    
+    char buf[500];
+    
+    // got a log size message, display it
+    sprintf(buf, "#%d, %010d", msg->log_number, msg->log_size);
+    stringsOut.logfilesize = buf;
+    
+
+
+    mux.unlock();
+    
+    
+    PrintStatus();
+}
 
 
 int main(int argc,char** argv)
 {
-    stringsOut.time = "---";
+    stringsOut.time = "-------------------";
     stringsOut.logfilesize = "---";
     char *channelProcess = NULL;
+    char *channelLogSize = NULL;
     
-    if (argc!=2) {
+    if (argc!=3) {
         usage();
         exit(0);
     }
 
     channelProcess = argv[1];
+    channelLogSize = argv[2];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -141,8 +157,9 @@ int main(int argc,char** argv)
     
     
     process_sub = lcmt_process_control_subscribe(lcm, channelProcess, &process_handler, NULL);
+    log_size_sub = lcmt_log_size_subscribe(lcm, channelLogSize, &log_size_handler, NULL);
     
-    printf("Receiving:\nProcess status:\n\t%s\n\n", channelProcess);
+    printf("Receiving:\n\t%s\n\t%s\n", channelProcess, channelLogSize);
 
     while (true)
     {
