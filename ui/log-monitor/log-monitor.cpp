@@ -111,18 +111,6 @@ int main(int argc,char** argv)
 
     signal(SIGINT,sighandler);
     
-    // get today's date now, so if it rolls over while we're still running it won't be an issue
-    time_t rawtime;
-    struct tm * timeinfo;
-    char dateString [80];
-
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-
-    strftime (dateString,80,"%Y-%m-%d",timeinfo);
-    puts (dateString);
-    
-    string lcmPrefix = "lcmlog-" + string(dateString) + ".";
     
     
     printf("Publishing: Log size:\n\t%s\n\n", channelLogSize);
@@ -131,6 +119,18 @@ int main(int argc,char** argv)
     {
         // find the logfile for today
         // formatted something like "lcmlog-2013-07-18.00"
+        
+        // get the date
+        time_t rawtime;
+        struct tm * timeinfo;
+        char dateString [80];
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        strftime (dateString,80,"%Y-%m-%d",timeinfo);
+        
+        string lcmPrefix = "lcmlog-" + string(dateString) + ".";
         
         int largestLog = -1;
         string theLog;
@@ -169,12 +169,12 @@ int main(int argc,char** argv)
         if (largestLog < 0)
         {
             // didn't find a log
-            cout << "Failed to find any logs" << endl;
+            //cout << "Failed to find any logs" << endl;
         } else {
             // found a log, get the filesize
             
             
-            cout << "Filesize of log " << theLog << " is " << GetFileSize(string(logDir) + theLog) << endl;
+            //cout << "Filesize of log " << theLog << " is " << GetFileSize(string(logDir) + theLog) << endl;
             
             // publish to LCM
             lcmt_log_size msg;

@@ -163,7 +163,7 @@ void* ProcessStatusThreadFunc(void *nothing)
         statMsg.windEstimator = processMap.at("windEstimator").IsAlive();
         statMsg.controller = processMap.at("controller").IsAlive();
         statMsg.logger = processMap.at("logger").IsAlive();
-        statMsg.logger = processMap.at("stereo").IsAlive();
+        statMsg.stereo = processMap.at("stereo").IsAlive();
         
         
         // send the message
