@@ -11,7 +11,7 @@ NUMIMG=`ls stereo_camera_calibrate/img/*.ppm | wc -l`
 echo "Writing file list..."
 
 # write out the text file
-python stereo_camera_calibrate/printImgList.py $NUMIMG > stereo_camera_calibrate/pyimglist.txt
+python stereo_camera_calibrate/printImgList.py $(( NUMIMG / 2 )) > stereo_camera_calibrate/pyimglist.txt
 
 echo "Wrote file list to stereo_camera_calibrate/pyimglist.txt"
 

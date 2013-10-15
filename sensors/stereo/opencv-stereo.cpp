@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 //#include <libusb.h> // for USB reset
 
 #include "barrymoore.hpp"
@@ -45,9 +46,10 @@ extern "C"
     #include "utils.h"
 }
 
-#define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup
+#define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup TODO: fixme for the correct framesize
 
-#define RINGBUFFER_SIZE (120*80) // number of seconds to allocate for recording * framerate
+//#define RINGBUFFER_SIZE (120*80) // number of seconds to allocate for recording * framerate
+#define RINGBUFFER_SIZE (120*50) // number of seconds to allocate for recording * framerate
 
 //#define POINT_GREY_VENDOR_ID 0x1E10
 //#define POINT_GREY_PRODUCT_ID 0x2000
@@ -93,7 +95,7 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
 
 int numFrames = 0;
 int recNumFrames = 0;
-bool recordingOn = false;
+bool recordingOn = true;
 
 dc1394_t        *d;
 dc1394camera_t  *camera;
@@ -280,10 +282,9 @@ int main(int argc, char *argv[])
     // get input arguments
     
     show_display = false;
-    
-    if (argc < 2 || argc > 3)
-    {
-        show_display = true;
+    if (argc < 2) {
+        cerr << "Did not provide at least 1 flag." << endl;
+        exit(1);
     }
     
     char *stereo_control_channel_str;
@@ -297,14 +298,14 @@ int main(int argc, char *argv[])
     }
     
     dc1394error_t   err;
-    uint64         guid = 0x00b09d0100c728a5; // camera 1
+    uint64         guid = 0x00b09d0100a01a9a; // camera 1
     
     unsigned long elapsed;
     
     // ----- cam 2 -----
     
     dc1394error_t   err2;
-    uint64         guid2 = 0x00b09d0100c72894; // camera2
+    uint64         guid2 = 0x00b09d0100a01ac5; // camera2
     
     // --- setup control-c handling ---
     struct sigaction sigIntHandler;

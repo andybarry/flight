@@ -3,7 +3,7 @@
 
 import sys
 
-for i in range(1,int(sys.argv[1])):
+for i in range(1,int(sys.argv[1]) + 1):
     print "img/cam1-%05d.ppm" % i
     print "img/cam2-%05d.ppm" % i
     

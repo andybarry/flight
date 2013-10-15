@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     dc1394camera_t  *camera;
     IplImage        *frame;
     dc1394error_t   err;
-    guint64         guid = 0x00b09d0100c728a5; //0x00b09d0100af04d8;
+    guint64         guid = 0x00b09d0100a01a9a; //0x00b09d0100af04d8;
     
     IplImage *frameArray[MAX_FRAMES];
     IplImage *frameArray2[MAX_FRAMES];
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     dc1394camera_t  *camera2;
     IplImage        *frame2;
     dc1394error_t   err2;
-    guint64         guid2 = 0x00b09d0100c72894; //0x00b09d0100a01ac5;
+    guint64         guid2 = 0x00b09d0100a01ac5; //0x00b09d0100a01ac5;
 
     d = dc1394_new ();
     if (!d)
