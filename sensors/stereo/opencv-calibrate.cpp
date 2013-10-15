@@ -52,11 +52,19 @@ extern "C"
 #define CHESS_X 9
 #define CHESS_Y 6
 
+bool singleCameraMode = false;
 
 int camera_custom_setup(dc1394camera_t *camera);
 
 int main(int argc, char *argv[])
 {
+    if (argc > 1)
+    {
+        // single camera calibration enabled
+        printf("Enabled single-camera calibration mode.\n");
+        singleCameraMode = true;
+    }
+
     dc1394_t        *d;
     dc1394camera_t  *camera;
     IplImage        *frame;
@@ -164,7 +172,12 @@ int main(int argc, char *argv[])
         // attempt checkerboard matching
         bool foundPattern = findChessboardCorners((Mat)image_left, Size(CHESS_X, CHESS_Y), corners);
         
-        foundPattern = foundPattern & findChessboardCorners((Mat)image_right, Size(CHESS_X, CHESS_Y), cornersR);
+        if (singleCameraMode == true)
+        {
+            foundPattern = foundPattern | findChessboardCorners((Mat)image_right, Size(CHESS_X, CHESS_Y), cornersR);
+        } else {
+            foundPattern = foundPattern & findChessboardCorners((Mat)image_right, Size(CHESS_X, CHESS_Y), cornersR);
+        }
         
         
         cvtColor( chessL, chessLc, CV_GRAY2BGR );

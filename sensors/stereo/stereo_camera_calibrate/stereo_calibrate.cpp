@@ -48,6 +48,10 @@
 using namespace std;
 using namespace cv;
 
+// global flags for camera calibration
+bool calibrateOnlyLeft = false;
+bool calibrateOnlyRight = false;
+
 //
 // Given a list of chessboard images, the number of corners (nx, ny)
 // on the chessboards, and a flag: useCalibrated for calibrated (0) or
@@ -74,69 +78,61 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
     vector<CvPoint2D32f> temp(n);
     CvSize imageSize = {0,0};
     // ARRAY AND VECTOR STORAGE:
-    //double M1[3][3], M2[3][3], D1[8], D2[8];
+    double M1[3][3], M2[3][3], D1[8], D2[8];
     double R[3][3], T[3], E[3][3], F[3][3];
     double Q[4][4];
     
-    Mat m1(3,3, CV_64F);
-    Mat m2(3,3, CV_64F);
-    Mat d1(1,8, CV_64F);
-    Mat d2(1,8, CV_64F);
     
-    m1.at<double>(0,0) = 198.6194578177054f;
-    m1.at<double>(0,1) = 0;
-    m1.at<double>(0,2) = 187.5;
-    
-    m1.at<double>(1,0) = 0;
-    m1.at<double>(1,1) = 198.6194578177054;
-    m1.at<double>(1,2) = 119.5;
-    
-    m1.at<double>(2,0) = 0;
-    m1.at<double>(2,1) = 0;
-    m1.at<double>(2,2) = 1;
-    
-    d1.at<double>(0) = -0.04778439940911512;
-    d1.at<double>(1) = 0.07049708157561842;
-    d1.at<double>(2) = 0;
-    d1.at<double>(3) = 0;
-    d1.at<double>(4) = -0.002955310122296933;
-    d1.at<double>(5) = 0.2618861478373317;
-    d1.at<double>(6) = 0.03796295854262224;
-    d1.at<double>(7) = 0.008647825808491771;
-
-    m2.at<double>(0,0) = 196.4226596594262;
-    m2.at<double>(0,1) = 0;
-    m2.at<double>(0,2) = 187.5;
-    
-    m2.at<double>(1,0) = 0;
-    m2.at<double>(1,1) = 196.4226596594262;
-    m2.at<double>(1,2) = 119.5;
-    
-    m2.at<double>(2,0) = 0;
-    m2.at<double>(2,1) = 0;
-    m2.at<double>(2,2) = 1;
-    
-    
-    d2.at<double>(0) = 3.006377146047796;
-    d2.at<double>(1) = -0.590649654651801;
-    d2.at<double>(2) = 0;
-    d2.at<double>(3) = 0;
-    d2.at<double>(4) = 0.3184389523055426;
-    d2.at<double>(5) = 3.477236915494405;
-    d2.at<double>(6) = 0.02556491453960398;
-    d2.at<double>(7) = 0.3297662362259657;
-    
-    #if 0
     CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
     CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
     CvMat _D1 = cvMat(1, 8, CV_64F, D1 );
     CvMat _D2 = cvMat(1, 8, CV_64F, D2 );
-    #endif
+
+    if (calibrateOnlyLeft == false && calibrateOnlyRight == false)
+    {
+        // doing full stereo calibration, so require loading camera paramters
+        printf("Doing a full stereo calibration.  Attemping to load camera paramters: M1-single.xml, D1-single.xml, M2-single.xml, and D2-single.xml...\n");
+        
+        CvMat *M1p = (CvMat *)cvLoad("M1-single.xml",NULL,NULL,NULL);
+        if (M1p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load M1-single.xml\n");
+            exit(-1);
+        } else {
+            _M1 = *M1p;
+        }
+        
+        CvMat *D1p = (CvMat *)cvLoad("D1-single.xml",NULL,NULL,NULL);
+        if (D1p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load D1-single.xml\n");
+            exit(-1);
+        } else {
+            _D1 = *D1p;
+        }
+        
+        CvMat *M2p = (CvMat *)cvLoad("M2-single.xml",NULL,NULL,NULL);
+        if (M2p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load M2-single.xml\n");
+            exit(-1);
+        } else {
+            _M2 = *M2p;
+        }
+        
+        CvMat *D2p = (CvMat *)cvLoad("D2-single.xml",NULL,NULL,NULL);
+        if (D2p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load D2-single.xml\n");
+            exit(-1);
+        } else {
+            _D2 = *D2p;
+        }
+        
+        printf("XML files loaded successfully.\n");
+    }
     
-    CvMat _M1 = m1;
-    CvMat _M2 = m2;
-    CvMat _D1 = d1;
-    CvMat _D2 = d2;
+    
     
     CvMat _R = cvMat(3, 3, CV_64F, R );
     CvMat _T = cvMat(3, 1, CV_64F, T );
@@ -145,11 +141,6 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
     CvMat _Q = cvMat(4,4, CV_64F, Q);
     
     
-cout << "m1 = " << m1 << endl;
-cout << "d1 = " << d1 << endl;
-cout << "m2 = " << m2 << endl;
-cout << "d2 = " << d2 << endl;
-
     if( displayCorners )
         cvNamedWindow( "corners", 1 );
 // READ IN THE LIST OF CHESSBOARDS:
@@ -158,6 +149,7 @@ cout << "d2 = " << d2 << endl;
         fprintf(stderr, "can not open file %s\n", imageList );
         return;
     }
+    
     for(i=0;;i++)
     {
         char buf[1024];
@@ -257,32 +249,68 @@ cout << "d2 = " << d2 << endl;
     
     
 // CALIBRATE THE STEREO CAMERAS
-    printf("Running stereo calibration ...\n");
-    fflush(stdout);
     
-     CvScalar scal;
-    for(i=0;i<8;i++)
+    // check to see if we are doing a full stereo calibration or individual calibration
+    if (calibrateOnlyLeft == true || calibrateOnlyRight == true)
     {
-        scal = cvGet1D(&_D1,i);
-        printf("val:%f \n",scal.val[0]);
-    }
+        if (calibrateOnlyLeft == true)
+        {
+            printf("Calibrating left camera...\n");
+            
+            cvCalibrateCamera2(&_objectPoints, &_imagePoints1, &_npoints, imageSize, &_M1, &_D1, NULL, NULL, CV_CALIB_RATIONAL_MODEL, cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,DBL_EPSILON) );
+            
+            cvSave("M1-single.xml",&_M1);
+            cvSave("D1-single.xml",&_D1);
+            
+            printf("Calibration saved to M1-single.xml and D1-single.xml\n");
+            
+            
+        } else {
+            printf("Calibrating right camera...\n");
+            
+            cvCalibrateCamera2(&_objectPoints, &_imagePoints2, &_npoints, imageSize, &_M2, &_D2, NULL, NULL, CV_CALIB_RATIONAL_MODEL, cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,DBL_EPSILON) );
+            
+            cvSave("M2-single.xml",&_M2);
+            cvSave("D2-single.xml",&_D2);
+            
+            printf("Calibration saved to M2-single.xml and D2-single.xml\n");
+            
+        }
+        
+        
+        
+    } else { // doing a full stereo calibration
     
     
-    cvStereoCalibrate( &_objectPoints, &_imagePoints1,
-        &_imagePoints2, &_npoints,
-        &_M1, &_D1, &_M2, &_D2,
-        imageSize, &_R, &_T, &_E, &_F,
-        cvTermCriteria(CV_TERMCRIT_ITER+
-        CV_TERMCRIT_EPS, 30, 1e-6),
-        CV_CALIB_RATIONAL_MODEL | CV_CALIB_USE_INTRINSIC_GUESS|
-            CV_CALIB_FIX_ASPECT_RATIO );
-    printf(" done\n");
-    
-     for(i=0;i<8;i++)
-    {
-        scal = cvGet1D(&_D1,i);
-        printf("val:%f \n",scal.val[0]);
-    }
+        printf("Running stereo calibration ...\n");
+        fflush(stdout);
+        
+         CvScalar scal;
+        for(i=0;i<8;i++)
+        {
+            scal = cvGet1D(&_D1,i);
+            printf("val:%f \n",scal.val[0]);
+        }
+        
+
+        
+        
+        cvStereoCalibrate( &_objectPoints, &_imagePoints1,
+            &_imagePoints2, &_npoints,
+            &_M1, &_D1, &_M2, &_D2,
+            imageSize, &_R, &_T, &_E, &_F,
+            cvTermCriteria(CV_TERMCRIT_ITER+
+            CV_TERMCRIT_EPS, 30, 1e-6),
+            CV_CALIB_RATIONAL_MODEL | CV_CALIB_USE_INTRINSIC_GUESS);//|
+//                CV_CALIB_FIX_ASPECT_RATIO );
+        printf(" done\n");
+        
+         for(i=0;i<8;i++)
+        {
+            scal = cvGet1D(&_D1,i);
+            printf("val:%f \n",scal.val[0]);
+        }
+    } // end for single or multiple camera calibration if
 // CALIBRATION QUALITY CHECK
 // because the output fundamental matrix implicitly
 // includes all the output information,
@@ -349,23 +377,38 @@ cout << "d2 = " << d2 << endl;
                 0/*CV_CALIB_ZERO_DISPARITY*/ );
             isVerticalStereo = fabs(P2[1][3]) > fabs(P2[0][3]);
     //Precompute maps for cvRemap()
-            cvInitUndistortRectifyMap(&_M1,&_D1,&_R1,&_P1,mx1,my1);
-            cvInitUndistortRectifyMap(&_M2,&_D2,&_R2,&_P2,mx2,my2);
+            if (calibrateOnlyLeft == true || calibrateOnlyRight == true)
+            {
+                cvInitUndistortMap(&_M1,&_D1,mx1,my1);
+                cvInitUndistortMap(&_M2,&_D2,mx2,my2);            
+            } else {
+                cvInitUndistortRectifyMap(&_M1,&_D1,&_R1,&_P1,mx1,my1);
+                cvInitUndistortRectifyMap(&_M2,&_D2,&_R2,&_P2,mx2,my2);
+            }
+            
+            
             
     //Save parameters
-            cvSave("M1.xml",&_M1);
-            cvSave("D1.xml",&_D1);
-            cvSave("R1.xml",&_R1);
-            cvSave("P1.xml",&_P1);
-            cvSave("M2.xml",&_M2);
-            cvSave("D2.xml",&_D2);
-            cvSave("R2.xml",&_R2);
-            cvSave("P2.xml",&_P2);
-            cvSave("Q.xml",&_Q);
-            cvSave("mx1.xml",mx1);
-            cvSave("my1.xml",my1);
-            cvSave("mx2.xml",mx2);
-            cvSave("my2.xml",my2);
+    
+            // don't resave if we're only calibrating one camera
+            if (calibrateOnlyLeft == false && calibrateOnlyRight == false)
+            {
+                printf("Saving full stereo calibration...\n");
+                cvSave("M1.xml",&_M1);
+                cvSave("D1.xml",&_D1);
+                cvSave("R1.xml",&_R1);
+                cvSave("P1.xml",&_P1);
+                cvSave("M2.xml",&_M2);
+                cvSave("D2.xml",&_D2);
+                cvSave("R2.xml",&_R2);
+                cvSave("P2.xml",&_P2);
+                cvSave("Q.xml",&_Q);
+                cvSave("mx1.xml",mx1);
+                cvSave("my1.xml",my1);
+                cvSave("mx2.xml",mx2);
+                cvSave("my2.xml",my2);
+                printf("done.\n");
+            }
 
         }
 //OR ELSE HARTLEY'S METHOD
@@ -486,19 +529,35 @@ int main(int argc, char *argv[])
     float squareSize;
     int fail = 0;
     //Check command line
-    if (argc != 5)
+    if (argc != 5 && argc != 6)
     {
         fprintf(stderr,"USAGE: %s imageList nx ny squareSize\n",argv[0]);
         fprintf(stderr,"\t imageList : Filename of the image list (string). Example : list.txt\n");
         fprintf(stderr,"\t nx : Number of horizontal squares (int > 0). Example : 9\n");
         fprintf(stderr,"\t ny : Number of vertical squares (int > 0). Example : 6\n");
         fprintf(stderr,"\t squareSize : Size of a square (float > 0). Example : 2.5\n");
+        fprintf(stderr,"\t (optional) calibrate only a single camera, L for left, R for right. Example : L\n");
         return 1;
-    } 
+    }
 
 		nx = atoi(argv[2]);
     ny = atoi(argv[3]);
     squareSize = (float)atof(argv[4]);
+
+    // check for single-camera calibration
+    if (argc == 6)
+    {
+        if (strcmp(argv[5], "L") == 0 || strcmp(argv[5], "l") == 0)
+        {
+            calibrateOnlyLeft = true;
+        } else if (strcmp(argv[5], "R") == 0 || strcmp(argv[5], "r") == 0)
+        {
+            calibrateOnlyRight = true;
+        } else {
+            fprintf(stderr,"\nError: you specified a single camera calibration but it was not \"L\" or \"R\".\n");
+            return 1;
+        }
+    }
 
     if (nx <= 0)
     {
