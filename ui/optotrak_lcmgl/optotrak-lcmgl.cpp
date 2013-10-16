@@ -291,7 +291,7 @@ int main(int argc,char** argv)
                         fprintf(stderr, "error: unable to get optotrak_obstacle.bottom from param server\n");
                     } else {
             
-                        fprintf(stderr, "\n\nInitializing obstacle at %f, %f --> %f, %f, height: %f, bottom: %f\n", obstacleXY1[0], obstacleXY1[1], obstacleXY2[0], obstacleXY2[1], obstacleHeight, obstacleBottom);
+                        fprintf(stderr, "\n\nInitializing test obstacle at %f, %f --> %f, %f, height: %f, bottom: %f\n", obstacleXY1[0], obstacleXY1[1], obstacleXY2[0], obstacleXY2[1], obstacleHeight, obstacleBottom);
                     }
                 }
             }
