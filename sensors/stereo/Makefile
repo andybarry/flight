@@ -9,11 +9,14 @@ LIBS=-fopenmp `pkg-config --libs opencv` -L/usr/local/lib -ldc1394   -lglib-2.0 
 
 all: opencv-stereo opencv-calibrate
 
-opencv-stereo: opencv-stereo.o barrymoore.o
-	$(CC) opencv-stereo.o barrymoore.o -o opencv-stereo $(LIBS)
+opencv-stereo: opencv-stereo.o barrymoore.o opencv-stereo-util.o
+	$(CC) opencv-stereo.o barrymoore.o opencv-stereo-util.o -o opencv-stereo $(LIBS)
 	
 barrymoore.o: barrymoore.cpp barrymoore.hpp
 	$(CC) $(CFLAGS) barrymoore.cpp
+	
+opencv-stereo-util.o: opencv-stereo-util.cpp opencv-stereo-util.hpp
+	$(CC) $(CFLAGS) opencv-stereo-util.cpp
 
 opencv-stereo.o: opencv-stereo.cpp barrymoore.hpp
 	$(CC) $(CFLAGS) opencv-stereo.cpp

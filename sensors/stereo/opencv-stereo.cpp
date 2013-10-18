@@ -21,6 +21,10 @@
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
 
+#include "../../externals/ConciseArgs.hpp"
+
+
+
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +32,7 @@
 
 //#include <libusb.h> // for USB reset
 
+#include "opencv-stereo-util.hpp"
 #include "barrymoore.hpp"
 
 using namespace std;
@@ -281,31 +286,39 @@ int main(int argc, char *argv[])
 {
     // get input arguments
     
-    show_display = false;
-    if (argc < 2) {
-        cerr << "Did not provide at least 1 flag." << endl;
-        exit(1);
-    }
+    string configFile = "";
     
-    char *stereo_control_channel_str;
+    ConciseArgs parser(argc, argv);
+    parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
+    parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
+    parser.parse();
+
     
-    stereo_control_channel_str = argv[1];
+    // parse the config file
+    OpenCvStereoConfig stereoConfig;
     
-    if (argc == 3)
+    if (ParseConfigFile(configFile, &stereoConfig) != true)
     {
-        // TODO: actually handle arguments instead of this hack
-        show_display = true;
+        fprintf(stderr, "Failed to parse configuration file, quitting.\n");
+        return -1;
     }
+    
+    
+    uint64 guid = stereoConfig.guidLeft;
+    uint64 guid2 = stereoConfig.guidRight;
+    
+    // start up LCM
+    lcm_t * lcm;
+    lcm = lcm_create (stereoConfig.lcmUrl.c_str());
+    bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
+    
     
     dc1394error_t   err;
-    uint64         guid = 0x00b09d0100a01a9a; // camera 1
     
     unsigned long elapsed;
     
-    // ----- cam 2 -----
-    
     dc1394error_t   err2;
-    uint64         guid2 = 0x00b09d0100a01ac5; // camera2
+    
     
     // --- setup control-c handling ---
     struct sigaction sigIntHandler;
@@ -316,6 +329,7 @@ int main(int argc, char *argv[])
 
     sigaction(SIGINT, &sigIntHandler, NULL);
     // --- end ctrl-c handling code ---
+    
     
     // tell opencv to use only one core so that we can manage our
     // own threading without a fight
@@ -389,7 +403,6 @@ int main(int argc, char *argv[])
         dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_SHUTTER, DC1394_OFF);
     #endif
 	
-    //#if SHOW_DISPLAY
     if (show_display)
     {
         namedWindow("Input", CV_WINDOW_AUTOSIZE);
@@ -405,37 +418,18 @@ int main(int argc, char *argv[])
         cvMoveWindow("Input2", 500, 100);
         cvMoveWindow("Depth", 500, 370);
     }
-    //#endif
     
     // load calibration
-
-    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat;
-
-    CvMat *Q = (CvMat *)cvLoad("calib/Q.xml",NULL,NULL,NULL);
-    CvMat *mx1 = (CvMat *)cvLoad("calib/mx1.xml",NULL,NULL,NULL);
-    CvMat *my1 = (CvMat *)cvLoad("calib/my1.xml",NULL,NULL,NULL);
-    CvMat *mx2 = (CvMat *)cvLoad("calib/mx2.xml",NULL,NULL,NULL);
-    CvMat *my2 = (CvMat *)cvLoad("calib/my2.xml",NULL,NULL,NULL);
+    OpenCvStereoCalibration stereoCalibration;
     
-    qMat = Mat(Q, true);
-    mx1Mat = Mat(mx1,true);
-    my1Mat = Mat(my1,true);
-    mx2Mat = Mat(mx2,true);
-    my2Mat = Mat(my2,true);
-    
-    Mat mx1fp, empty1, mx2fp, empty2;
-    
-    // this will convert to a fixed-point notation
-    convertMaps(mx1Mat, my1Mat, mx1fp, empty1, CV_16SC2, true);
-    convertMaps(mx2Mat, my2Mat, mx2fp, empty2, CV_16SC2, true);
-
-    // start up LCM
-    lcm_t * lcm;
-    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
-    bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
+    if (LoadCalibration(stereoConfig.calibrationDir, &stereoCalibration) != true)
+    {
+        cerr << "Error: failed to read calibration files. Quitting." << endl;
+        return -1;
+    }
     
     // subscribe to the stereo control channel
-    stereo_control_sub = lcmt_stereo_control_subscribe(lcm, stereo_control_channel_str, &lcm_stereo_control_handler, NULL);
+    stereo_control_sub = lcmt_stereo_control_subscribe(lcm, stereoConfig.stereoControlChannel.c_str(), &lcm_stereo_control_handler, NULL);
     
     Mat imgDisp;
     Mat imgDisp2;
@@ -449,9 +443,9 @@ int main(int argc, char *argv[])
     state.sadThreshold = 84;//79;
     state.sobelAdd = 0;
     
-    state.mapxL = mx1fp;
-    state.mapxR = mx2fp;
-    state.Q = qMat;
+    state.mapxL = stereoCalibration.mx1fp;
+    state.mapxR = stereoCalibration.mx2fp;
+    state.Q = stereoCalibration.qMat;
     state.show_display = show_display;
     
     Mat matL, matR;
@@ -469,14 +463,6 @@ int main(int argc, char *argv[])
     }
     printf("done.\n");
     #endif
-    //localHitPoints = new cv::vector<Point3f>[NUM_THREADS];
-    //state.localHitPoints = localHitPoints;
-    //
-    //for (int i=0; i< NUM_THREADS; i++)
-    //{
-    //    localHitPoints[i].resize(MAX_HIT_POINTS);
-    //}
-    
     
     #if USE_IMAGE
         matL = imread("left.jpg", 0);
@@ -517,7 +503,6 @@ int main(int argc, char *argv[])
         
         Mat matDisp, remapL, remapR;
         
-        //#if SHOW_DISPLAY
         if (show_display)
         {
             // we remap again here because we're just in display
@@ -532,12 +517,11 @@ int main(int argc, char *argv[])
                 depthMap = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
             }
             
-            remap(matL, remapL, mx1fp, Mat(), INTER_NEAREST);
-            remap(matR, remapR, mx2fp, Mat(), INTER_NEAREST);
+            remap(matL, remapL, stereoCalibration.mx1fp, Mat(), INTER_NEAREST);
+            remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
             
             remapL.copyTo(matDisp);
         }
-        //#endif
         
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
