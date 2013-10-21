@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sleep 10
+bot-procman-deputy -u udpm://239.255.76.67:7667?ttl=1 &
+sleep 1
+cd /home/linaro/realtime/sensors/stereo
+/home/linaro/realtime/drivers/process_control/process-control process_control stereo_control process_status_cam /home/linaro/realtime/config/processControlCam.conf &
