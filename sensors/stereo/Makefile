@@ -18,7 +18,7 @@ barrymoore.o: barrymoore.cpp barrymoore.hpp
 opencv-stereo-util.o: opencv-stereo-util.cpp opencv-stereo-util.hpp
 	$(CC) $(CFLAGS) opencv-stereo-util.cpp
 
-opencv-stereo.o: opencv-stereo.cpp barrymoore.hpp
+opencv-stereo.o: opencv-stereo.hpp opencv-stereo.cpp opencv-stereo-util.hpp barrymoore.hpp
 	$(CC) $(CFLAGS) opencv-stereo.cpp
 	
 opencv-calibrate: opencv-calibrate.o
@@ -27,7 +27,6 @@ opencv-calibrate: opencv-calibrate.o
 opencv-calibrate.o: opencv-calibrate.cpp
 	$(CC) $(CFLAGS) opencv-calibrate.cpp
     
-
 clean:
 	rm -rf *o opencv-stereo opencv-calibrate
 

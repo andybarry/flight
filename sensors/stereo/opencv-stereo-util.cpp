@@ -95,6 +95,26 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     
     configStruct->calibrationDir = calibDir;
     
+    // get the video saving directory
+    char *videoSaveDir = g_key_file_get_string(keyfile, "cameras", "videoSaveDir", NULL);
+    if (videoSaveDir == NULL)
+    {
+        // default to the current directory
+        strcpy(videoSaveDir, ".");
+    }
+    
+    configStruct->videoSaveDir = videoSaveDir;
+    
+    // get the fourcc video codec
+    char *fourcc = g_key_file_get_string(keyfile, "cameras", "fourcc", NULL);
+    if (fourcc == NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify fourcc (or I failed to read it). Parameter: cameras.fourcc\n");
+        return false;
+    }
+    
+    configStruct->fourcc = fourcc;
+    
     return true;
 }
 
@@ -174,3 +194,55 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     
     return true;
 }
+
+/**
+ * Stops capture on a camera and frees its context.
+ *
+ * @param d dc1394_t context
+ * @param camera dc1394camera_t for the camera
+ *
+ */
+void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera)
+{
+    
+    dc1394_video_set_transmission(camera, DC1394_OFF);
+    dc1394_capture_stop(camera);
+    dc1394_camera_free(camera);
+    
+    dc1394_free (dcContext);
+}
+
+/**
+ * Sets up a video writer with the given filename
+ *
+ * @param filenamePrefix prefix for the name of the video file. It will be created with a date and time appended to the name.
+ * @param frameSize size of the frames
+ * @param configStruct OpenCvStereoConfig structure for reading the directory things should be saved in
+ *
+ * @retval VideoWriter object
+ */
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct)
+{
+    // get the date and time for the filename
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [80];
+
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+
+    strftime (buffer,80,"%Y-%m-%d-%H-%M-%S",timeinfo);
+    
+    char fourcc1 = configStruct.fourcc.at(0);
+    char fourcc2 = configStruct.fourcc.at(1);
+    char fourcc3 = configStruct.fourcc.at(2);
+    char fourcc4 = configStruct.fourcc.at(3);
+    
+    VideoWriter recorder(configStruct.videoSaveDir + "/" + filenamePrefix + "-" + string(buffer) + ".avi", CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+    
+    if( !recorder.isOpened() ) {
+        printf("VideoWriter failed to open!\n");
+    }
+    return recorder;
+}
+

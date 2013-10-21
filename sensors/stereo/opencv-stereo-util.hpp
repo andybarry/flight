@@ -16,6 +16,19 @@
 #include <string>
 #include <glib.h> // for configuration files
 
+extern "C"
+{
+    #include <stdio.h>
+    #include <stdint.h>
+    #include <stdlib.h>
+    #include <inttypes.h>
+
+    #include <dc1394/dc1394.h>
+
+    #include "camera.h"
+    #include "utils.h"
+}
+
 
 using namespace std;
 using namespace cv;
@@ -28,6 +41,8 @@ struct OpenCvStereoConfig
     string lcmUrl;
     string stereoControlChannel;
     string calibrationDir;
+    string videoSaveDir;
+    string fourcc;
 };
 
 struct OpenCvStereoCalibration
@@ -41,5 +56,8 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct);
 
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration);
 
+void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
+
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct);
 
 #endif

@@ -8,63 +8,13 @@
  *
  */
 
-#include <cv.h>
-#include <highgui.h>
-#include "opencv2/legacy/legacy.hpp"
-#include <sys/time.h>
-
-#include "opencv2/opencv.hpp"
-
-#include <GL/gl.h>
-#include <lcm/lcm.h>
-#include <bot_lcmgl_client/lcmgl.h>
-#include "../../LCM/lcmt_stereo.h"
-#include "../../LCM/lcmt_stereo_control.h"
-
-#include "../../externals/ConciseArgs.hpp"
+#include "opencv-stereo.hpp"
 
 
-
-#include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-
-//#include <libusb.h> // for USB reset
-
-#include "opencv-stereo-util.hpp"
-#include "barrymoore.hpp"
-
-using namespace std;
-using namespace cv;
-
-extern "C"
-{
-    #include <stdio.h>
-    #include <stdint.h>
-    #include <stdlib.h>
-    #include <inttypes.h>
-
-    #include <dc1394/dc1394.h>
-
-    #include "camera.h"
-    #include "utils.h"
-}
-
-#define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup TODO: fixme for the correct framesize
-
-//#define RINGBUFFER_SIZE (120*80) // number of seconds to allocate for recording * framerate
-#define RINGBUFFER_SIZE (120*50) // number of seconds to allocate for recording * framerate
-
-//#define POINT_GREY_VENDOR_ID 0x1E10
-//#define POINT_GREY_PRODUCT_ID 0x2000
-
-#define BRIGHTNESS_VALUE 78
-#define EXPOSURE_VALUE 128
-
-#define USE_IMAGE 0 // set to 1 to use left.jpg and right.jpg as test images
 
 bool show_display; // set to true to show opencv images on screen
+bool enable_online_recording = false;  // set to true to enable online recording
+bool disable_stereo = false;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -78,25 +28,6 @@ int lineLeftImgPositionY = -1;
 // lcm subscription to the control channel
 lcmt_stereo_control_subscription_t *stereo_control_sub;
 
-struct RemapState
-{
-    Mat inputImage;
-    Mat outputImage;
-    Mat map1;
-    Mat map2;
-    int flags;
-};
-
-Mat GetFrameFormat7(dc1394camera_t *camera);
-
-void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
-bool ResetPointGreyCameras();
-
-int64_t getTimestampNow();
-void WriteVideo();
-
-void onMouse( int event, int x, int y, int, void* );
-void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
 
 int numFrames = 0;
 int recNumFrames = 0;
@@ -108,33 +39,7 @@ dc1394camera_t  *camera;
 dc1394_t        *d2;
 dc1394camera_t  *camera2;
 
-//cv::vector<Point3f> *localHitPoints;
-
-static void usage(void)
-{
-    fprintf(stderr, "usage: ./opencv-stereo stereo-control-channel [options]\n");
-    fprintf(stderr, "\tstereo-control-channel: lcm channel to receive start and stop commands on\n");
-    fprintf(stderr, "\t Options:\n");
-    fprintf(stderr, "\t-v: show displays for debugging (substantially slows down processing)\n\n");
-    exit(0);
-}
-
-void StopCapture()
-{
-    
-    dc1394_video_set_transmission(camera, DC1394_OFF);
-    dc1394_capture_stop(camera);
-    dc1394_camera_free(camera);
-    
-    dc1394_video_set_transmission(camera2, DC1394_OFF);
-    dc1394_capture_stop(camera2);
-    dc1394_camera_free(camera2);
-    
-    dc1394_free (d);
-    dc1394_free (d2);
-    
-    
-}
+OpenCvStereoConfig stereoConfig;
 
 /**
  * Cleanly handles and exit from a command-line
@@ -145,17 +50,18 @@ void StopCapture()
  */
 void control_c_handler(int s)
 {
-    cout << endl << "exiting via ctrl-c" << endl
-        << "\tpress ctrl+\\ to quit while writing video." << endl;
+    cout << endl << "exiting via ctrl-c" << endl;
   
-    StopCapture();
-    WriteVideo();
+    StopCapture(d, camera);
+    StopCapture(d2, camera2);
     
+    if (enable_online_recording == false)
+    {
+        cout << "\tpress ctrl+\\ to quit while writing video." << endl;
+        WriteVideo();
+    }
     
-    //delete[] localHitPoints;
-    
-    exit(1);
-
+    exit(0);
 }
 
 
@@ -175,7 +81,8 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     if (msg->stereoOn == false && msg->recOn == false)
     {
         // shut everything down and write the video out
-        StopCapture();
+        StopCapture(d, camera);
+        StopCapture(d2, camera2);
         WriteVideo();
         
     } else if (msg->stereoOn == true && msg->recOn == false)
@@ -197,62 +104,7 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     
 }
 
-void WriteVideo()
-{
-    printf("Writing video...\n");
-    
-    // get the date and time for the filename
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer [80];
 
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-
-    strftime (buffer,80,"%Y-%m-%d-%H-%M-%S",timeinfo);
-
-
-    int endI, firstFrame = 0;
-    if (recNumFrames < RINGBUFFER_SIZE)
-    {
-        endI = recNumFrames;
-    } else {
-        // our buffer is smaller than the full movie.
-        // figure out where in the ringbuffer we are
-        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
-        if (firstFrame > RINGBUFFER_SIZE)
-        {
-            firstFrame = 0;
-        }
-        
-        endI = RINGBUFFER_SIZE;
-        
-        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
-        
-    }
-    
-    VideoWriter recordL("videoL-skip-" + std::to_string(firstFrame) + "-" + string(buffer) +
-        ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferL[0].size(), false);
-    if( !recordL.isOpened() ) {
-        printf("VideoWriter failed to open!\n");
-    }
-    VideoWriter recordR("videoR-skip-" + std::to_string(firstFrame) + "-" + string(buffer) +
-        ".avi", CV_FOURCC('P','I','M','1'), 110, ringbufferR[0].size(), false);
-    if( !recordR.isOpened() ) {
-        printf("VideoWriter failed to open!\n");
-    }
-    
-    // write the video
-    for (int i=0; i<endI; i++)
-    {
-        recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
-        recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
-        
-        printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-        fflush(stdout);
-    }
-    printf("\ndone.\n");
-}
 
 void NonBlockingLcm(lcm_t *lcm)
 {
@@ -291,12 +143,11 @@ int main(int argc, char *argv[])
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
+    parser.add(enable_online_recording, "r", "online-record", "Enable online video recording.");
+    parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.parse();
-
     
     // parse the config file
-    OpenCvStereoConfig stereoConfig;
-    
     if (ParseConfigFile(configFile, &stereoConfig) != true)
     {
         fprintf(stderr, "Failed to parse configuration file, quitting.\n");
@@ -310,14 +161,11 @@ int main(int argc, char *argv[])
     // start up LCM
     lcm_t * lcm;
     lcm = lcm_create (stereoConfig.lcmUrl.c_str());
-    bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo");
     
-    
-    dc1394error_t   err;
     
     unsigned long elapsed;
     
-    dc1394error_t   err2;
+    
     
     
     // --- setup control-c handling ---
@@ -329,6 +177,10 @@ int main(int argc, char *argv[])
 
     sigaction(SIGINT, &sigIntHandler, NULL);
     // --- end ctrl-c handling code ---
+    
+    dc1394error_t   err;
+    dc1394error_t   err2;
+    
     
     
     // tell opencv to use only one core so that we can manage our
@@ -349,14 +201,6 @@ int main(int argc, char *argv[])
         {
             cerr << "Could not create dc1394 camera... quitting." << endl;
             exit(1);
-            #if 0
-            if (!ResetPointGreyCameras())
-            {
-                // failed
-                cerr << "Failed to reset USB cameras.  Quitting." << endl;
-                exit(1);
-            }
-            #endif
         }
         
         camera2 = dc1394_camera_new (d2, guid2);
@@ -372,24 +216,6 @@ int main(int argc, char *argv[])
 
         err2 = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not setup camera number 2");
-        
-        #if 0
-        // enable auto-exposure
-        // turn on the auto exposure feature
-        err = dc1394_feature_set_power(camera, DC1394_FEATURE_EXPOSURE, DC1394_ON);
-        DC1394_ERR_RTN(err,"Could not turn on the exposure feature");
-        
-        err = dc1394_feature_set_mode(camera, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
-        DC1394_ERR_RTN(err,"Could not turn on Auto-exposure");
-        
-        // enable auto-exposure
-        // turn on the auto exposure feature
-        err = dc1394_feature_set_power(camera2, DC1394_FEATURE_EXPOSURE, DC1394_ON);
-        DC1394_ERR_RTN(err,"Could not turn on the exposure feature for cam2");
-        
-        err = dc1394_feature_set_mode(camera2, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
-        DC1394_ERR_RTN(err,"Could not turn on Auto-exposure for cam2");
-        #endif
         
         // enable camera
         err = dc1394_video_set_transmission(camera, DC1394_ON);
@@ -456,10 +282,11 @@ int main(int argc, char *argv[])
     // allocate a huge buffer for video frames
     printf("Allocating ringbuffer data...\n");
     matL = GetFrameFormat7(camera);
+    matR = GetFrameFormat7(camera2);
     for (int i=0; i<RINGBUFFER_SIZE; i++)
     {
         ringbufferL[i].create(matL.size(), matL.type());
-        ringbufferR[i].create(matL.size(), matL.type());
+        ringbufferR[i].create(matR.size(), matR.type());
     }
     printf("done.\n");
     #endif
@@ -473,6 +300,17 @@ int main(int argc, char *argv[])
     struct timeval start, now;
     gettimeofday( &start, NULL );
     
+    
+    VideoWriter recordOnlyL, recordOnlyR;
+    
+    if (enable_online_recording == true)
+    {
+        // setup video writers
+        recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
+        recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig);
+    }
+    
+    
     while (quit == false) {
     
         // get the frames from the camera
@@ -481,11 +319,12 @@ int main(int argc, char *argv[])
             // we would like to match brightness every frame
             // but that would really hurt our framerate
             // match brightness every 10 frames instead
-            if (numFrames % 10 == 0)
+            if (numFrames % MATCH_BRIGHTNESS_EVERY_N_FRAMES == 0)
             {
                 MatchBrightnessSettings(camera, camera2);
             }
         
+            // capture images from the cameras
             matL = GetFrameFormat7(camera);
             matR = GetFrameFormat7(camera2);
             
@@ -521,15 +360,26 @@ int main(int argc, char *argv[])
             remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
             
             remapL.copyTo(matDisp);
-        }
+        } // end show_display
         
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
         cv::vector<Point3i> pointVector2d; // for display
         
-        
-        StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
-        
+        // do the main stereo processing
+        if (disable_stereo != true)
+        {
+            StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
+        }
+            
+        if (enable_online_recording == true)
+        {
+            // record frames
+            recordOnlyL << matL;
+            recordOnlyR << matR;
+        }
+            
+        // build an LCM message for the stereo data
         lcmt_stereo msg;
         msg.timestamp = getTimestampNow();
         msg.number_of_points = (int)pointVector3d.size();
@@ -545,7 +395,6 @@ int main(int argc, char *argv[])
             y[i] = pointVector3d[i].y;
             z[i] = pointVector3d[i].z;
             grey[i] = pointColors[i];
-            
         }
         
         msg.x = x;
@@ -554,97 +403,12 @@ int main(int argc, char *argv[])
         msg.grey = grey;
         msg.frame_number = numFrames;
         
+        // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo", &msg);
         
-        // publish points to the 3d map
-        //PublishToLcm(lcmgl, matDisp, Q, matR);
         
-        // prep disparity image for display
-        //normalize(matDisp, matDisp, 0, 256, NORM_MINMAX, CV_8S);
-        
-        // display images
-        #if USE_LCMGL
-            bot_lcmgl_push_matrix(lcmgl);
-            bot_lcmgl_point_size(lcmgl, 10.5f);
-            bot_lcmgl_begin(lcmgl, GL_POINTS);
-            
-            for (unsigned int i=0;i<pointVector3d.size();i++)
-            {
-                float x = pointVector3d[i].x;
-                float y = pointVector3d[i].y;
-                float z = pointVector3d[i].z;
-                // publish to LCM
-                
-                #if 0
-                //#if SHOW_DISPLAY
-                if (show_display)
-                {
-                 
-                     //cout << "(" << x << ", " << y << ", " << z << ")" << endl;
-                    
-                    // get the color of the pixel
-                    int x2 = pointVector2d[i].x;
-                    int y2 = pointVector2d[i].y;
-                    double factor = 2.0;
-                    //int delta = (state.blockSize-1)/2;
-                    int delta = 20;
-                   
-                    for (int row=y2-delta;row<y2+delta;row++)
-                    {
-                        int rowdelta = row-y2*factor;
-                        for (int col = x2-delta; col < x2+delta; col++)
-                        {
-                            int coldelta = col-x2*factor;
-                        
-                            uchar pxL = remapL.at<uchar>(row, col);
-                            float gray = pxL/255.0;
-                        
-                            bot_lcmgl_color3f(lcmgl, gray, gray, gray);                    
-                            bot_lcmgl_vertex3f(lcmgl, x+coldelta, -y-rowdelta, z);
-                        }
-                    }
-                }
-                //#endif
-                
-                #endif
-            
-                bot_lcmgl_vertex3f(lcmgl, z, x, -y);
-            }
-            
-            bot_lcmgl_end(lcmgl);
-            bot_lcmgl_pop_matrix(lcmgl);
-        
-         
-         
-
-            //if (numFrames%200 == 0)
-            {
-            bot_lcmgl_switch_buffer(lcmgl);
-            }
-        #endif //USE_LCMGL
-        
-        //#if SHOW_DISPLAY
         if (show_display)
         {
-            // 1b. Convert image into a GL texture:
-            int row_stride = remapL.cols; // 1*width
-            int height = remapL.rows;
-            int width = remapL.cols;
-            int gray_texid = bot_lcmgl_texture2d(lcmgl, remapL.data, remapL.cols, remapL.rows, row_stride, BOT_LCMGL_LUMINANCE,
-                                           BOT_LCMGL_UNSIGNED_BYTE,
-                                           BOT_LCMGL_COMPRESS_NONE);
-            bot_lcmgl_push_matrix(lcmgl);
-            bot_lcmgl_color3f(lcmgl, 1, 1, 1);
-            bot_lcmgl_translated(lcmgl, 0, 400, 0); // example offset
-            bot_lcmgl_texture_draw_quad(lcmgl, gray_texid,
-            0     , 0      , 0   ,
-            0     , height , 0   ,
-            -width , height , 0   ,   ///... where to put the image
-            -width , 0      , 0);  
-
-            bot_lcmgl_pop_matrix(lcmgl);
-            bot_lcmgl_switch_buffer(lcmgl);
-            
             for (unsigned int i=0;i<pointVector2d.size();i++)
             {
                 int x2 = pointVector2d[i].x;
@@ -735,7 +499,6 @@ int main(int argc, char *argv[])
                 cout << "sobelAdd = " << state.sobelAdd << endl;
             }
         }
-        //#endif
         
         numFrames ++;
         
@@ -752,7 +515,7 @@ int main(int argc, char *argv[])
         fflush(stdout);
 
         
-    }
+    } // end main while loop
 
     printf("\n\n");
     
@@ -760,17 +523,9 @@ int main(int argc, char *argv[])
     destroyWindow("Input2");
     destroyWindow("Stereo");
     
-    // stop data transmission
-    err = dc1394_video_set_transmission(camera, DC1394_OFF);
-    DC1394_ERR_CLN_RTN(err,cleanup_and_exit(camera),"Could not stop the camera");
-    
-    err2 = dc1394_video_set_transmission(camera2, DC1394_OFF);
-    DC1394_ERR_CLN_RTN(err2,cleanup_and_exit(camera2),"Could not stop the camera 2");
-
     // close camera
-    StopCapture();
-    
-    //delete[] localHitPoints;
+    StopCapture(d, camera);
+    StopCapture(d2, camera2);
     
     return 0;
 }
@@ -810,6 +565,50 @@ int64_t getTimestampNow()
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
+}
+
+
+
+void WriteVideo()
+{
+    printf("Writing video...\n");
+    
+    
+
+
+    int endI, firstFrame = 0;
+    if (recNumFrames < RINGBUFFER_SIZE)
+    {
+        endI = recNumFrames;
+    } else {
+        // our buffer is smaller than the full movie.
+        // figure out where in the ringbuffer we are
+        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
+        if (firstFrame > RINGBUFFER_SIZE)
+        {
+            firstFrame = 0;
+        }
+        
+        endI = RINGBUFFER_SIZE;
+        
+        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
+        
+    }
+    
+    VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
+    
+    VideoWriter recordR = SetupVideoWriter("videoR-skip-" + std::to_string(firstFrame), ringbufferR[0].size(), stereoConfig);
+    
+    // write the video
+    for (int i=0; i<endI; i++)
+    {
+        recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
+        recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
+        
+        printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+        fflush(stdout);
+    }
+    printf("\ndone.\n");
 }
 
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
