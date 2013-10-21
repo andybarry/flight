@@ -1,0 +1,11 @@
+struct lcmt_deltawing_u
+{
+  int64_t timestamp; 
+
+  double throttle;
+
+  double elevonL;
+  double elevonR;
+
+ 
+}

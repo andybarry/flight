@@ -23,7 +23,7 @@ using namespace std;
 #include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
-#include "../../LCM/lcmt_wingeron_u.h"
+#include "../../LCM/lcmt_deltawing_u.h"
 
 
 #include <bot_core/bot_core.h>
@@ -66,7 +66,7 @@ char *channelBatteryStatus = NULL;
 char *channelServoOutput = NULL;
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
-lcmt_wingeron_u_subscription_t *wingeron_u_sub;
+lcmt_deltawing_u_subscription_t *deltawing_u_sub;
 
 uint8_t systemID = getSystemID();
 
@@ -81,7 +81,7 @@ static void usage(void)
         fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
         fprintf(stderr, "    output-servo-channel-name : LCM channel to publish executed servo commands on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status wingeron_u servo_out\n");
+        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status deltawing_u servo_out\n");
         fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages.  Also pushes servo commands to the APM and reads the executed commands.\n");
 }
 
@@ -91,7 +91,7 @@ void sighandler(int dum)
     printf("\nClosing... ");
 
     mavlink_msg_container_t_unsubscribe(lcm, mavlink_sub);
-    lcmt_wingeron_u_unsubscribe(lcm, wingeron_u_sub);
+    lcmt_deltawing_u_unsubscribe(lcm, deltawing_u_sub);
     lcm_destroy (lcm);
 
     printf("done.\n");
@@ -111,21 +111,18 @@ int EightBitToServoCmd(int charInputIn)
     return 200/51 * charInputIn + 1000;
 }
 
-void wingeron_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_wingeron_u *msg, void *user)
+void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user)
 {
     // translate a local LCM message for servos into a message for the airplane over
     // mavlink
     
-    int aileronLeft = EightBitToServoCmd(msg->aileronLeft);
-    int aileronRight = EightBitToServoCmd(msg->aileronRight);
-    int elevator = EightBitToServoCmd(msg->elevator);
-    int rudder = EightBitToServoCmd(msg->rudder);
-    int throttleFront = EightBitToServoCmd(msg->throttleFront);
-    int throttleRear = EightBitToServoCmd(msg->throttleRear);
+    int elevonL = EightBitToServoCmd(msg->elevonL);
+    int elevonR = EightBitToServoCmd(msg->elevonR);
+    int throttle = EightBitToServoCmd(msg->throttle);
     
     mavlink_message_t mavmsg;
     
-	mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, aileronLeft, elevator, throttleFront, rudder, aileronRight, throttleRear, 1000, 1000);
+	mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, elevonL, elevonR, throttle, 1000, 1000, 1000, 1000, 1000);
 	// Publish the message on the LCM IPC bus
 	sendMAVLinkMessage(lcm, &mavmsg);
     
@@ -137,7 +134,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
     // debug -- print message
     /*
-    lcmt_wingeron_gains msg2 = ConvertFromMidiLcmToPlane(msg);
+    lcmt_deltawing_gains msg2 = ConvertFromMidiLcmToPlane(msg);
 	
 	struct timeval thisTime;
 	gettimeofday(&thisTime, NULL);
@@ -146,7 +143,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     lastMsg = msg2;
 	
 	// send via LCM
-	lcmt_wingeron_gains_publish (lcmSend, lcm_out, &msg2);
+	lcmt_deltawing_gains_publish (lcmSend, lcm_out, &msg2);
 */
     // extract the message out of the container
     mavlink_message_t mavmsg = msg->msg;
@@ -333,31 +330,28 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             mavlink_msg_servo_output_raw_decode(&mavmsg, &servomsg);
             
             // create the LCM message
-            lcmt_wingeron_u servoOutMsg;
+            lcmt_deltawing_u servoOutMsg;
             
             servoOutMsg.timestamp = getTimestampNow();
             
             /*
              * Output channels:
-             *  1: Wingeron R
-             *  2: Elevator
-             *  3: Prop 1
-             *  4: Rudder
-             *  5: Wingeron L
-             *  6: Prop 2
+             *  1: Elevon L
+             *  2: Elevon R
+             *  3: Throttle
+             *  4:
+             *  5:
+             *  6:
              *  7:
              *  8:
              */
             
-            servoOutMsg.aileronRight = servomsg.servo1_raw;
-            servoOutMsg.elevator = servomsg.servo2_raw;
-            servoOutMsg.throttleFront = servomsg.servo3_raw;
-            servoOutMsg.rudder = servomsg.servo4_raw;
-            servoOutMsg.aileronLeft = servomsg.servo5_raw;
-            servoOutMsg.throttleRear = servomsg.servo6_raw;
+            servoOutMsg.elevonL = servomsg.servo1_raw;
+            servoOutMsg.elevonR = servomsg.servo2_raw;
+            servoOutMsg.throttle = servomsg.servo3_raw;
             
             // send the lcm message
-            lcmt_wingeron_u_publish(lcm, channelServoOutput, &servoOutMsg);
+            lcmt_deltawing_u_publish(lcm, channelServoOutput, &servoOutMsg);
             
         
             break;
@@ -382,7 +376,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 int main(int argc,char** argv)
 {
     char *channelMavlink = NULL;
-    char *channelWingeronU = NULL;
+    char *channelDeltawingU = NULL;
 
     if (argc!=8) {
         usage();
@@ -394,7 +388,7 @@ int main(int argc,char** argv)
     channelBaroAirspeed = argv[3];
     channelGps = argv[4];
     channelBatteryStatus = argv[5];
-    channelWingeronU = argv[6];
+    channelDeltawingU = argv[6];
     channelServoOutput = argv[7];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
@@ -405,7 +399,7 @@ int main(int argc,char** argv)
     }
 
     mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
-    wingeron_u_sub = lcmt_wingeron_u_subscribe(lcm, channelWingeronU, &wingeron_u_handler, NULL);
+    deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm, channelDeltawingU, &deltawing_u_handler, NULL);
 
     signal(SIGINT,sighandler);
     
@@ -430,7 +424,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tWingeron u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n", channelMavlink, channelWingeronU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n", channelMavlink, channelDeltawingU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput);
 
     while (true)
     {

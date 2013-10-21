@@ -126,7 +126,7 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     if (msg->stereo == 1)
     {
         processMap.at("stereo").StartProcess();
-    } else if (msg->paramServer == 1) {
+    } else if (msg->stereo == 2) {
         processMap.at("stereo").StopProcess();
     }
 }
