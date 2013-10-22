@@ -84,127 +84,134 @@ void lcm_midi_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcm
     
     int value = 2*msg->event[2];
     
-    switch (msg->event[1])
+    // events that we want all of:
+    
+    // NONE RIGHT NOW
+    
+    
+    // events that we only want key releases of
+    if (msg->event[2] ==0)
     {
-        case 45:
-            // record button
-            if (msg->event[2] == 0)
-            {
+        switch (msg->event[1])
+        {
+            case 45:
+                // record button
                 msg2.recOn = 1;
                 msg2.stereoOn = 1;
                 lcmt_stereo_control_publish (lcm, lcm_out, &msg2);
-            }
-            
-            break;
-        case 42:
-            // stop button (the square)
-            
-            // only go on release
-            if (msg->event[2] == 0)
-            {
+                
+                break;
+            case 42:
+                // stop button (the square)
+                
                 msg2.recOn = 0;
                 msg2.stereoOn = 0;
                 lcmt_stereo_control_publish (lcm, lcm_out, &msg2);
-            }
-            break;
-            
-        case 43:
-            // rewind button
-            
-            if (msg->event[2] == 0)
-            {
+                break;
+                
+            case 43:
+                // rewind button
+                
                 msg2.recOn = 0;
                 msg2.stereoOn = 1;
                 lcmt_stereo_control_publish (lcm, lcm_out, &msg2);
-            }
+                break;
+                
+            case 32:
+                // param start
+                msgProc.paramServer = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+                
             
-            break;
-            
-        case 32:
-            // param start
-            msgProc.paramServer = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-            
-        
-        case 33:
-            msgProc.mavlinkLcmBridge = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        
-        case 34:
-            msgProc.mavlinkSerial = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 35:
-            msgProc.windEstimator = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 36:
-            msgProc.stateEstimator = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 37:
-            msgProc.controller = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 38:
-            msgProc.logger = 1;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-            
-        // --- stop buttons (the "M"s on the keypad) ---
-        case 48:
-            msgProc.paramServer = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-            
-        
-        case 49:
-            msgProc.mavlinkLcmBridge = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        
-        case 50:
-            msgProc.mavlinkSerial = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 51:
-            msgProc.windEstimator = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 52:
-            msgProc.stateEstimator = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 53:
-            msgProc.controller = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-        case 54:
-            msgProc.logger = 2;
-            lcmt_process_control_publish (lcm, processChan, &msgProc);
-            break;
-        
-            
-        
-        default:
-            // something else
-            
-            // don't send a message
+            case 33:
+                msgProc.mavlinkLcmBridge = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
             
             
-            break;
+            case 34:
+                msgProc.mavlinkSerial = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 35:
+                msgProc.windEstimator = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 36:
+                msgProc.stateEstimator = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 37:
+                msgProc.controller = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 38:
+                msgProc.logger = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+                
+            case 39:
+                msgProc.stereo = 1;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+                
+            // --- stop buttons (the "M"s on the keypad) ---
+            case 48:
+                msgProc.paramServer = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+                
+            
+            case 49:
+                msgProc.mavlinkLcmBridge = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            
+            case 50:
+                msgProc.mavlinkSerial = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 51:
+                msgProc.windEstimator = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 52:
+                msgProc.stateEstimator = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 53:
+                msgProc.controller = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 54:
+                msgProc.logger = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+            
+            case 55:
+                msgProc.stereo = 2;
+                lcmt_process_control_publish (lcm, processChan, &msgProc);
+                break;
+                
+            
+            default:
+                // something else
+                
+                // don't send a message
+                
+                
+                break;
+        }
     }
     
 }
