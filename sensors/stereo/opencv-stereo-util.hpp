@@ -60,4 +60,6 @@ void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 
 VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct);
 
+void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
+
 #endif

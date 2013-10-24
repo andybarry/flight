@@ -223,10 +223,7 @@ int main(int argc, char *argv[])
         err2 = dc1394_video_set_transmission(camera2, DC1394_ON);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
-        dc1394_feature_set_absolute_control(camera, DC1394_FEATURE_GAIN, DC1394_OFF);
-        dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_GAIN, DC1394_OFF);
-        dc1394_feature_set_absolute_control(camera, DC1394_FEATURE_SHUTTER, DC1394_OFF);
-        dc1394_feature_set_absolute_control(camera2, DC1394_FEATURE_SHUTTER, DC1394_OFF);
+        InitBrightnessSettings(camera, camera2);
     #endif
 	
     if (show_display)
@@ -296,10 +293,6 @@ int main(int argc, char *argv[])
         matR = imread("right.jpg", 0);
     #endif
     
-    // start the framerate clock
-    struct timeval start, now;
-    gettimeofday( &start, NULL );
-    
     
     VideoWriter recordOnlyL, recordOnlyR;
     
@@ -310,6 +303,12 @@ int main(int argc, char *argv[])
         recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig);
     }
     
+    // before we start, turn the cameras on and set the brightness and exposure
+    MatchBrightnessSettings(camera, camera2, true);
+    
+    // start the framerate clock
+    struct timeval start, now;
+    gettimeofday( &start, NULL );
     
     while (quit == false) {
     
@@ -478,6 +477,10 @@ int main(int argc, char *argv[])
                 case 'j':
                     state.sobelAdd -= 10;
                     break;
+                    
+                case 'm':
+                    MatchBrightnessSettings(camera, camera2, true);
+                    break;
                 
                 case '5':
                     // to show SAD boxes
@@ -611,18 +614,25 @@ void WriteVideo()
     printf("\ndone.\n");
 }
 
-void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
+/**
+ * We need to make sure the brightness settings
+ * are identical on both cameras. to do this, we
+ * read the settings off the left camera, and force
+ * the right camera to do the exact same thing.
+ * since we want auto-brightness, we do this every frame
+ *
+ * in practice, it is really important to get this right
+ * otherwise the pixel values will be totally different
+ * and stereo will not work at all
+ *
+ * @param camera1 first camera that we will read settings from it's automatic features
+ * @param camera2 camera that will we transfer settings to
+ *
+ * @param completeSet if true, will take longer but set more parameters. Useful on initialization or if brightness is expected to change a lot (indoors to outdoors)
+ *
+ */
+void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set)
 {
-    // we need to make sure the brightness settings
-    // are identical on both cameras. to do this, we
-    // read the settings off the left camera, and force
-    // the right camera to do the exact same thing.
-    // since we want auto-brightness, we do this every frame
-    
-    // in practice, it is really important to get this right
-    // otherwise the pixel values will be totally different
-    // and stereo will not work at all
-    
     
     
     #if 0
@@ -657,6 +667,45 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     
     dc1394_feature_set_value(camera2, DC1394_FEATURE_GAIN, gainVal);
     //DC1394_WRN(err,"Could not set gain");
+    
+    
+    if (complete_set == true)
+    {
+        // if this is true, we're willing to wait a while and
+        // really get this right
+        
+        uint32_t exposure_value, brightness_value;
+        
+        // enable auto exposure on camera1
+        dc1394_feature_set_mode(camera1, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_AUTO);
+        
+        dc1394_feature_set_mode(camera1, DC1394_FEATURE_BRIGHTNESS, DC1394_FEATURE_MODE_AUTO);
+        
+        // take a bunch of frames with camera1 to let it set exposure
+        for (int i=0;i<25;i++)
+        {
+            Mat img = GetFrameFormat7(camera);
+        }
+        
+        // turn off auto exposure
+        dc1394_feature_set_mode(camera1, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_MANUAL);
+        
+        dc1394_feature_set_mode(camera1, DC1394_FEATURE_BRIGHTNESS, DC1394_FEATURE_MODE_MANUAL);
+        
+        // get exposure value
+        
+        dc1394_feature_get_value(camera1, DC1394_FEATURE_EXPOSURE, &exposure_value);
+        
+        dc1394_feature_get_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightness_value);
+        
+        //cout << "exposure: " << exposure_value << " brightness: " << brightness_value << endl;
+        
+        // set exposure
+        dc1394_feature_set_value(camera2, DC1394_FEATURE_EXPOSURE, exposure_value);
+        
+        dc1394_feature_set_value(camera2, DC1394_FEATURE_BRIGHTNESS, brightness_value);
+        
+    }
     
     
     #if 0
