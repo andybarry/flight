@@ -10,6 +10,7 @@ LcmTransportPart::LcmTransportPart(mavlink_lcm_transport_t firstMessage)
 {
     channelNameLen = -1;
     receivedSoFar = 0;
+    has_been_completed_ = false;
     
     AddMessage(firstMessage);
 }
@@ -72,7 +73,38 @@ bool LcmTransportPart::DoComplete()
         dataLoc += sizeArray[i];
     }
 
+    has_been_completed_ = true;
     return true;
+}
+
+bool LcmTransportPart::IsThisTheMessageWeJustSent(string channel, const lcm_recv_buf_t *rbuf)
+{
+    // check if this message has been completed
+    if (has_been_completed_ == false)
+    {
+        return false;
+    }
+
+    // check to see if this is on the same channel
+    if (channel.compare(channelName) != 0)
+    {
+        return false;
+    }
+
+    // check to see if the data size matches
+    if ((int)rbuf->data_size != totalDataSizeSoFar)
+    {
+        return false;
+    }
+    
+    // check to see if the data matches
+    if (strcmp((char*)rbuf->data, data) == 0)
+    {
+        return true;
+    }
+
+    return false;
+    
 }
 
 LcmTransportPart::~LcmTransportPart()

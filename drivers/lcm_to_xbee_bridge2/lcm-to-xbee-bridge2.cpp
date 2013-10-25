@@ -21,7 +21,8 @@ using namespace std;
 #include <map>
 
 #include "../../mavlink-rlg/csailrlg/mavlink.h"
-
+#include <lcm/lcm_coretypes.h>
+#include <lcm/lcm.h>
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
@@ -82,6 +83,8 @@ void* serial_wait(void* serial_ptr);
 LcmTransportPart* globalHoldingArray[MAX_HOLDING_MESSAGES];
 int globalNextMessageSlot = 0;
 
+
+
 static void usage(void)
 {
         fprintf(stderr, "usage: lcm-to-xbee-bridge2 xbee-device channel1 downsample1 [channel2 downsample2] [channel3 downsample3...]\n");
@@ -131,9 +134,39 @@ int GetMessageIndex(int id)
     return -1;
 }
 
+// returns the message index if we just sent it, otherwise returns -1
+int DidWeJustSendThatMessage(string channel, const lcm_recv_buf_t *rbuf)
+{
+    for (int i=0;i<MAX_HOLDING_MESSAGES; i++)
+    {
+        if (globalHoldingArray[i] != NULL && globalHoldingArray[i]->IsThisTheMessageWeJustSent(channel, rbuf) == true)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 
 void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *userdata)
 {
+    printf("just got an lcm message.\n");
+    // we know that we will fire on every message we send,
+    // so if we just sent a message on this channel, we should ignore it.
+    int sent_ind = DidWeJustSendThatMessage(channel, rbuf);
+    if (sent_ind >= 0)
+    {
+        // we just sent this message, don't do anything
+        
+        // go ahead and zap it from the list
+        printf("just sent this message, discarding.\n");
+        delete globalHoldingArray[sent_ind];
+        return;
+    }
+
+
+    //
     // check to see if we should send this message or if it should be downsampled
     if (downsampleAmounts.at(channel) != 0 && downsampleAmounts.at(channel) > downsampleCounters.at(channel))
     {
@@ -156,7 +189,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     int payloadSize, payloadStart;
     int bufferLocation = 0;
     
-    // we cast the void* to a char so that we can do arithmetic on it
+    // we cast the void* to a char* so that we can do arithmetic on it
     char *buffer = (char*) rbuf->data;
     
     
@@ -212,7 +245,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
             payload);                       // payload data
             
         int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
-
+        printf("writing to serial port...\n");
         int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
 
         if (written != messageLength)
@@ -230,7 +263,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     
 }
 
-
+// called when we just got a message from the serial port
 void sendLcmMessage(mavlink_message_t *message)
 {
     // send this mavlink message as an LCM message
@@ -269,12 +302,18 @@ void sendLcmMessage(mavlink_message_t *message)
                 // send the message
                 
                 // send the lcm message
-
+                printf("about to send an LCM message that I got from the serial port.\n");
                 lcm_publish(lcm, globalHoldingArray[index]->channelName.c_str(), globalHoldingArray[index]->data,     
                     globalHoldingArray[index]->totalDataSizeSoFar);
                     
                 // done with this message, delete it
-                delete globalHoldingArray[index];
+
+                // check to see if this message will show up since we're also transmitting on this channel
+                if (downsampleAmounts.find(globalHoldingArray[index]->channelName) == downsampleAmounts.end())
+                {
+                    // we are not also transmitting this message, so delete it
+                    delete globalHoldingArray[index];
+                }
             }
             
             break;            

@@ -7,6 +7,7 @@
 #include <vector>
 #include "../../mavlink-rlg/csailrlg/mavlink.h"
 
+#include <lcm/lcm.h>
 
 using namespace std;
 
@@ -27,17 +28,18 @@ class LcmTransportPart {
         char data[MAX_MESSAGE_PARTS*MAVLINK_LCM_PAYLOAD_SIZE];
         
         int totalDataSizeSoFar;
-        
-        
-        
+
         void AddMessage(mavlink_lcm_transport_t mavmsg);
         
         bool DoComplete();
+
+        bool IsThisTheMessageWeJustSent(string channel, const lcm_recv_buf_t *rbuf);
         
     private:
         int channelNameLen;
         char* dataArray[MAX_MESSAGE_PARTS];
         int sizeArray[MAX_MESSAGE_PARTS];
+        bool has_been_completed_;
 };
 
 #endif
