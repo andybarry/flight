@@ -1,15 +1,16 @@
 #!/bin/bash
 #
-# useage: ./cronTimesync [timesync command]
 #
-# example: ./cronTimesync /home/linaro/timesync/build/bin/timesync -s -l /home/linaro/timesync-process-log
+# call this every minute from cron to always have a timesync running
+# crontab example: * * * * * /home/linaro/realtime/externals/timesync/cronTimesync "/home/linaro/r/home/linaro/realtime/externals/timesync/build/bin/timesync -s"
+
 
 # check for command line arguments
 if (( $# < 1 ))
 then
     echo "Error: not enough arguments"
     echo "useage: ./cronTimesync [timesync command]"
-    echo "example: ./cronTimesync \"/home/linaro/timesync/build/bin/timesync -s -l /home/linaro/timesync-process-log\""
+    echo "example: ./cronTimesync \"/home/linaro/realtime/externals/timesync/build/bin/timesync -s\""
     exit
 fi
 
