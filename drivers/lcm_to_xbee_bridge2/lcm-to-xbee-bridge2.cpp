@@ -83,6 +83,7 @@ void* serial_wait(void* serial_ptr);
 LcmTransportPart* globalHoldingArray[MAX_HOLDING_MESSAGES];
 int globalNextMessageSlot = 0;
 
+mutex holding_array_mutex;
 
 
 static void usage(void)
@@ -151,19 +152,20 @@ int DidWeJustSendThatMessage(string channel, const lcm_recv_buf_t *rbuf)
 
 void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *userdata)
 {
-    printf("just got an lcm message.\n");
     // we know that we will fire on every message we send,
     // so if we just sent a message on this channel, we should ignore it.
+    holding_array_mutex.lock();
     int sent_ind = DidWeJustSendThatMessage(channel, rbuf);
     if (sent_ind >= 0)
     {
         // we just sent this message, don't do anything
         
         // go ahead and zap it from the list
-        printf("just sent this message, discarding.\n");
         delete globalHoldingArray[sent_ind];
+        holding_array_mutex.unlock();
         return;
     }
+    holding_array_mutex.unlock();
 
 
     //
@@ -245,7 +247,6 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
             payload);                       // payload data
             
         int messageLength = mavlink_msg_to_send_buffer(serialBuffer, &mavmsg);
-        printf("writing to serial port...\n");
         int written = write(serialPort_fd, (char*)serialBuffer, messageLength);
 
         if (written != messageLength)
@@ -302,18 +303,20 @@ void sendLcmMessage(mavlink_message_t *message)
                 // send the message
                 
                 // send the lcm message
-                printf("about to send an LCM message that I got from the serial port.\n");
+                
+                holding_array_mutex.lock();
                 lcm_publish(lcm, globalHoldingArray[index]->channelName.c_str(), globalHoldingArray[index]->data,     
                     globalHoldingArray[index]->totalDataSizeSoFar);
                     
-                // done with this message, delete it
-
                 // check to see if this message will show up since we're also transmitting on this channel
-                if (downsampleAmounts.find(globalHoldingArray[index]->channelName) == downsampleAmounts.end())
+                if (downsampleAmounts.count(globalHoldingArray[index]->channelName) <= 0)
                 {
                     // we are not also transmitting this message, so delete it
                     delete globalHoldingArray[index];
                 }
+                
+                holding_array_mutex.unlock();
+                
             }
             
             break;            
