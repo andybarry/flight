@@ -15,6 +15,7 @@
 bool show_display; // set to true to show opencv images on screen
 bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
+bool show_unrectified = false;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -143,6 +144,7 @@ int main(int argc, char *argv[])
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
+    parser.add(show_unrectified, "u", "show-unrectified", "When displaying images, do not apply rectification.");
     parser.add(enable_online_recording, "r", "online-record", "Enable online video recording.");
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.parse();
@@ -425,8 +427,14 @@ int main(int argc, char *argv[])
             // draw a line for the user to show disparity
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
             
-            imshow("Input", remapL);
-            imshow("Input2", remapR);
+            if (show_unrectified == false)
+            {
+                imshow("Input", remapL);
+                imshow("Input2", remapR);
+            } else {
+                imshow("Input", matL);
+                imshow("Input2", matR);
+            }
             imshow("Stereo", matDisp);
             //imshow("Depth", depthMap);
                 
@@ -533,42 +541,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/**
- * Gets a Format7 frame from a Firefly MV USB camera.
- * The frame will be CV_8UC1 and black and white.
- *
- * @param camera the camrea
- *
- * @retval frame as an OpenCV Mat
- */
-Mat GetFrameFormat7(dc1394camera_t *camera)
-{
-    // get a frame
-    dc1394error_t err;
-    dc1394video_frame_t *frame;
 
-    err = dc1394_capture_dequeue(camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
-    DC1394_WRN(err,"Could not capture a frame");
-    
-    // make a Mat of the right size and type that we attach the the existing data
-    Mat matTmp = Mat(frame->size[1], frame->size[0], CV_8UC1, frame->image, frame->size[0]);
-    
-    // copy the data out of the ringbuffer so we can give the buffer back
-    Mat matOut = matTmp.clone();
-    
-    // release the buffer
-    err = dc1394_capture_enqueue(camera, frame);
-    DC1394_WRN(err,"releasing buffer");
-    
-    return matOut;
-}
-
-int64_t getTimestampNow()
-{
-    struct timeval thisTime;
-    gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
-}
 
 
 
@@ -614,137 +587,7 @@ void WriteVideo()
     printf("\ndone.\n");
 }
 
-/**
- * We need to make sure the brightness settings
- * are identical on both cameras. to do this, we
- * read the settings off the left camera, and force
- * the right camera to do the exact same thing.
- * since we want auto-brightness, we do this every frame
- *
- * in practice, it is really important to get this right
- * otherwise the pixel values will be totally different
- * and stereo will not work at all
- *
- * @param camera1 first camera that we will read settings from it's automatic features
- * @param camera2 camera that will we transfer settings to
- *
- * @param completeSet if true, will take longer but set more parameters. Useful on initialization or if brightness is expected to change a lot (indoors to outdoors)
- *
- */
-void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set)
-{
-    
-    
-    #if 0
-    dc1394error_t err;
 
-    //dc1394_feature_print(&features.feature[8], stdout);
-    
-    
-    // set brightness
-    dc1394_feature_set_value(camera2, features.feature[0].id, features.feature[0].value);
-    
-    // set exposure
-    dc1394_feature_set_value(camera2, features.feature[1].id, features.feature[1].value);
-    
-    // set gamma
-    dc1394_feature_set_value(camera2, features.feature[6].id, features.feature[6].value);
-    
-    // set shutter
-    dc1394_feature_set_absolute_value(camera2, features.feature[7].id, features.feature[7].abs_value);
-    #endif
-    
-    // set shutter
-    uint32_t shutterVal;
-    dc1394_feature_get_value(camera1, DC1394_FEATURE_SHUTTER, &shutterVal);
-    dc1394_feature_set_value(camera2, DC1394_FEATURE_SHUTTER, shutterVal);
-    
-    
-    
-    // set gain
-    uint32_t gainVal;
-    dc1394_feature_get_value(camera1, DC1394_FEATURE_GAIN, &gainVal);
-    
-    dc1394_feature_set_value(camera2, DC1394_FEATURE_GAIN, gainVal);
-    //DC1394_WRN(err,"Could not set gain");
-    
-    
-    if (complete_set == true)
-    {
-        // if this is true, we're willing to wait a while and
-        // really get this right
-        
-        uint32_t exposure_value, brightness_value;
-        
-        // enable auto exposure on camera1
-        dc1394_feature_set_mode(camera1, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_AUTO);
-        
-        dc1394_feature_set_mode(camera1, DC1394_FEATURE_BRIGHTNESS, DC1394_FEATURE_MODE_AUTO);
-        
-        // take a bunch of frames with camera1 to let it set exposure
-        for (int i=0;i<25;i++)
-        {
-            Mat img = GetFrameFormat7(camera);
-        }
-        
-        // turn off auto exposure
-        dc1394_feature_set_mode(camera1, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_MANUAL);
-        
-        dc1394_feature_set_mode(camera1, DC1394_FEATURE_BRIGHTNESS, DC1394_FEATURE_MODE_MANUAL);
-        
-        // get exposure value
-        
-        dc1394_feature_get_value(camera1, DC1394_FEATURE_EXPOSURE, &exposure_value);
-        
-        dc1394_feature_get_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightness_value);
-        
-        //cout << "exposure: " << exposure_value << " brightness: " << brightness_value << endl;
-        
-        // set exposure
-        dc1394_feature_set_value(camera2, DC1394_FEATURE_EXPOSURE, exposure_value);
-        
-        dc1394_feature_set_value(camera2, DC1394_FEATURE_BRIGHTNESS, brightness_value);
-        
-    }
-    
-    
-    #if 0
-    dc1394featureset_t features, features2;
-    dc1394_feature_get_all(camera1, &features);
-    
-    // set framerate
-    dc1394_feature_set_absolute_value(camera2, features.feature[15].id, features.feature[15].abs_value);
-    
-    dc1394_feature_get_all(camera2, &features2);
-    
-    
-    
-    cout << endl << dc1394_feature_get_string(features.feature[0].id) << ": " << features.feature[0].value << "/" << features2.feature[0].value << endl;
-
-    
-    // set exposure
-    cout << endl << dc1394_feature_get_string(features.feature[1].id) << ": " << features.feature[1].value << "/" << features2.feature[1].value << endl;
-
-    
-    // set gamma
-    cout << endl << dc1394_feature_get_string(features.feature[6].id) << ": " << features.feature[6].value << "/" << features2.feature[6].value << endl;
-
-    
-    // set shutter
-    cout << endl << dc1394_feature_get_string(features.feature[7].id) << ": " << features.feature[7].value << "/" << features2.feature[7].value << endl;
-    
-    // set gain
-   cout << endl << dc1394_feature_get_string(features.feature[8].id) << ": " << features.feature[8].value << "/" << features2.feature[8].value << endl;
-    
-    //cout << "---------------------------------------" << endl;
-    //dc1394_feature_print_all(&features, stdout);
-    //cout << "222222222222222222222222222222222222222222222" << endl;
-    //dc1394_feature_print_all(&features2, stdout);
-    //dc1394_feature_get_absolute_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightnessVal);
-    
-    //cout << endl << "brightness: " << brightnessVal << endl;
-    #endif
-}
 
 /* setup a mouse callback so that the user can click on an image
  * and see where the disparity line is on the other image pair

@@ -13,6 +13,8 @@
 #include "opencv2/legacy/legacy.hpp"
 #include "opencv2/opencv.hpp"
 
+#include <sys/time.h>
+
 #include <string>
 #include <glib.h> // for configuration files
 
@@ -52,6 +54,10 @@ struct OpenCvStereoCalibration
     Mat qMat;
 };
 
+Mat GetFrameFormat7(dc1394camera_t *camera);
+
+int64_t getTimestampNow();
+
 bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct);
 
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration);
@@ -61,5 +67,7 @@ void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct);
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
+
+void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set = false);
 
 #endif

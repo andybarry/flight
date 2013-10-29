@@ -88,9 +88,13 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
     CvMat _D1 = cvMat(1, 8, CV_64F, D1 );
     CvMat _D2 = cvMat(1, 8, CV_64F, D2 );
 
+    bool full_stereo_calibration = false;
+    
     if (calibrateOnlyLeft == false && calibrateOnlyRight == false)
     {
         // doing full stereo calibration, so require loading camera paramters
+        full_stereo_calibration = true;
+        
         printf("Doing a full stereo calibration.  Attemping to load camera paramters: M1-single.xml, D1-single.xml, M2-single.xml, and D2-single.xml...\n");
         
         CvMat *M1p = (CvMat *)cvLoad("M1-single.xml",NULL,NULL,NULL);
@@ -168,64 +172,74 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             break;
         imageSize = cvGetSize(img);
         imageNames[lr].push_back(buf);
-    //FIND CHESSBOARDS AND CORNERS THEREIN:
-        for( int s = 1; s <= maxScale; s++ )
+        
+        if (full_stereo_calibration || (calibrateOnlyLeft && lr == 0) || (calibrateOnlyRight && lr == 1))
         {
-            IplImage* timg = img;
-            if( s > 1 )
+        
+        //FIND CHESSBOARDS AND CORNERS THEREIN:
+            for( int s = 1; s <= maxScale; s++ )
             {
-                timg = cvCreateImage(cvSize(img->width*s,img->height*s),
-                    img->depth, img->nChannels );
-                cvResize( img, timg, CV_INTER_CUBIC );
+                IplImage* timg = img;
+                if( s > 1 )
+                {
+                    timg = cvCreateImage(cvSize(img->width*s,img->height*s),
+                        img->depth, img->nChannels );
+                    cvResize( img, timg, CV_INTER_CUBIC );
+                }
+                result = cvFindChessboardCorners( timg, cvSize(nx, ny),
+                    &temp[0], &count,
+                    CV_CALIB_CB_ADAPTIVE_THRESH |
+                    CV_CALIB_CB_NORMALIZE_IMAGE);
+                if( timg != img )
+                    cvReleaseImage( &timg );
+                if( result || s == maxScale )
+                    for( j = 0; j < count; j++ )
+                {
+                    temp[j].x /= s;
+                    temp[j].y /= s;
+                }
+                if( result )
+                    break;
             }
-            result = cvFindChessboardCorners( timg, cvSize(nx, ny),
-                &temp[0], &count,
-                CV_CALIB_CB_ADAPTIVE_THRESH |
-                CV_CALIB_CB_NORMALIZE_IMAGE);
-            if( timg != img )
-                cvReleaseImage( &timg );
-            if( result || s == maxScale )
-                for( j = 0; j < count; j++ )
+            if( displayCorners )
             {
-                temp[j].x /= s;
-                temp[j].y /= s;
+                printf("%s\n", buf);
+                IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
+                cvCvtColor( img, cimg, CV_GRAY2BGR );
+                cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
+                    count, result );
+                cvShowImage( "corners", cimg );
+                cvReleaseImage( &cimg );
+                if( cvWaitKey(0) == 27 ) //Allow ESC to quit
+                    exit(-1);
             }
+            else
+                putchar('.');
+            N = pts.size();
+            pts.resize(N + n, cvPoint2D32f(0,0));
+            active[lr].push_back((uchar)result);
+        //assert( result != 0 );
             if( result )
-                break;
+            {
+             //Calibration will suffer without subpixel interpolation
+                cvFindCornerSubPix( img, &temp[0], count,
+                    cvSize(11, 11), cvSize(-1,-1),
+                    cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
+                    30, 0.01) );
+                copy( temp.begin(), temp.end(), pts.begin() + N );
+            }
+            cvReleaseImage( &img );
         }
-        if( displayCorners )
-        {
-            printf("%s\n", buf);
-            IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
-            cvCvtColor( img, cimg, CV_GRAY2BGR );
-            cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
-                count, result );
-            cvShowImage( "corners", cimg );
-            cvReleaseImage( &cimg );
-            if( cvWaitKey(0) == 27 ) //Allow ESC to quit
-                exit(-1);
-        }
-        else
-            putchar('.');
-        N = pts.size();
-        pts.resize(N + n, cvPoint2D32f(0,0));
-        active[lr].push_back((uchar)result);
-    //assert( result != 0 );
-        if( result )
-        {
-         //Calibration will suffer without subpixel interpolation
-            cvFindCornerSubPix( img, &temp[0], count,
-                cvSize(11, 11), cvSize(-1,-1),
-                cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
-                30, 0.01) );
-            copy( temp.begin(), temp.end(), pts.begin() + N );
-        }
-        cvReleaseImage( &img );
     }
     fclose(f);
     printf("\n");
 // HARVEST CHESSBOARD 3D OBJECT POINT LIST:
-    nframes = active[0].size();//Number of good chessboads found
+    if (calibrateOnlyRight == true)
+    {
+        nframes = active[1].size();
+    } else {
+        nframes = active[0].size();//Number of good chessboads found
+    }
     printf("\nusing %d chessboards.\n", nframes);
     objectPoints.resize(nframes*n);
     for( i = 0; i < ny; i++ )
