@@ -15,6 +15,8 @@
 
 #include <sys/time.h>
 
+#include <boost/filesystem.hpp>
+
 #include <string>
 #include <glib.h> // for configuration files
 

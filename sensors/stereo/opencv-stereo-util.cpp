@@ -134,13 +134,12 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     configStruct->calibrationDir = calibDir;
     
     // get the video saving directory
-    char *videoSaveDir = g_key_file_get_string(keyfile, "cameras", "videoSaveDir", NULL);
+    const char *videoSaveDir = g_key_file_get_string(keyfile, "cameras", "videoSaveDir", NULL);
     if (videoSaveDir == NULL)
     {
         // default to the current directory
-        strcpy(videoSaveDir, ".");
+        videoSaveDir = ".";
     }
-    
     configStruct->videoSaveDir = videoSaveDir;
     
     // get the fourcc video codec
@@ -276,10 +275,19 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     char fourcc3 = configStruct.fourcc.at(2);
     char fourcc4 = configStruct.fourcc.at(3);
     
-    VideoWriter recorder(configStruct.videoSaveDir + "/" + filenamePrefix + "-" + string(buffer) + ".avi", CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+    VideoWriter recorder;
     
-    if( !recorder.isOpened() ) {
-        printf("VideoWriter failed to open!\n");
+    // check to make sure the directory exists (otherwise the videowriter
+    // will seg fault
+    if (boost::filesystem::exists(configStruct.videoSaveDir))
+    {
+        recorder.open(configStruct.videoSaveDir + "/" + filenamePrefix + "-" + string(buffer) + ".avi", CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+        if (!recorder.isOpened())
+        {
+            printf("VideoWriter failed to open!\n");
+        }
+    } else {
+        printf("Video save directory does not exist.\n");
     }
     return recorder;
 }

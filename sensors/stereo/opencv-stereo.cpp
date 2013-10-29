@@ -574,7 +574,6 @@ void WriteVideo()
     VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
     
     VideoWriter recordR = SetupVideoWriter("videoR-skip-" + std::to_string(firstFrame), ringbufferR[0].size(), stereoConfig);
-    
     // write the video
     for (int i=0; i<endI; i++)
     {
