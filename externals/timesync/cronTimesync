@@ -2,7 +2,10 @@
 #
 #
 # call this every minute from cron to always have a timesync running
-# crontab example: * * * * * /home/linaro/realtime/externals/timesync/cronTimesync "/home/linaro/r/home/linaro/realtime/externals/timesync/build/bin/timesync -s"
+# crontab example: * * * * * /home/linaro/realtime/externals/timesync/cronTimesync "/home/linaro/realtime/externals/timesync/build/bin/timesync -s"
+#
+# or for the master"
+# /home/abarry/plane/realtime/externals/timesync/cronTimesync "/home/abarry/plane/realtime/externals/timesync/build/bin/timesync -m"
 
 
 # check for command line arguments
