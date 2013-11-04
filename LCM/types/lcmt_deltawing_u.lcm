@@ -6,6 +6,8 @@ struct lcmt_deltawing_u
 
   double elevonL;
   double elevonR;
+  
+  int32_t is_autonomous;
 
  
 }

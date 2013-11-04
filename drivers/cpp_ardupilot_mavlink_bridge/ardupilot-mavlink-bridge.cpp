@@ -236,7 +236,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             
             // convert to LCM type
             mav_gps_data_t gpsMsg;
-            gpsMsg.utime = getTimestampNow();
+            //gpsMsg.utime = getTimestampNow();
+            gpsMsg.utime = pos.time_usec;
             
             gpsMsg.gps_lock = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
             
@@ -340,7 +341,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
              *  2: Elevon R
              *  3: Throttle
              *  4:
-             *  5:
+             *  5: autonmous switch
              *  6:
              *  7:
              *  8:
@@ -349,6 +350,13 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             servoOutMsg.elevonL = servomsg.servo1_raw;
             servoOutMsg.elevonR = servomsg.servo2_raw;
             servoOutMsg.throttle = servomsg.servo3_raw;
+            
+            if (servomsg.servo5_raw > 1500)
+            {
+                servoOutMsg.is_autonomous = 1;
+            } else {
+                servoOutMsg.is_autonomous = 0;
+            }
             
             // send the lcm message
             lcmt_deltawing_u_publish(lcm, channelServoOutput, &servoOutMsg);
