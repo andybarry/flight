@@ -168,6 +168,7 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     
     // update transform
     bot_frames_update_frame(botFrames, "optotrak-local", "local", &optotrakToLocal, getTimestampNow());
+    bot_frames_update_frame(botFrames, "body", "local", &optotrakToLocal, getTimestampNow()); // HUGE HACK TODO TODO WARNING HUGE HACK BE AWARE FIXME FIXME FIXME
     
     BotTrans drawTrans;
     bot_frames_get_trans(botFrames, "optotrak-local", "local", &drawTrans);
@@ -178,15 +179,6 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     bot_lcmgl_point_size(lcmgl, 10.5f);
     bot_lcmgl_begin(lcmgl, GL_QUADS);
     
-    // obstacle
-    bot_lcmgl_color3f(lcmgl, 255, 0, 0);
-    bot_lcmgl_vertex3f(lcmgl, obstacleXY1[0], obstacleXY1[1], obstacleBottom);
-    bot_lcmgl_vertex3f(lcmgl, obstacleXY1[0], obstacleXY1[1], obstacleBottom + obstacleHeight);
-    bot_lcmgl_vertex3f(lcmgl, obstacleXY2[0], obstacleXY2[1], obstacleBottom + obstacleHeight);
-    bot_lcmgl_vertex3f(lcmgl, obstacleXY2[0], obstacleXY2[1], obstacleBottom);
-    
-    bot_lcmgl_end(lcmgl);
-    
     // draw coordinate
     
     PlotLcmGlCoordinateTri(&drawTrans);
@@ -194,54 +186,6 @@ void optotrak_quat_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     
     bot_lcmgl_pop_matrix(lcmgl);
     bot_lcmgl_switch_buffer(lcmgl);
-    
-    
-    #if 0
-    // publish to LCMGL
-    bot_lcmgl_push_matrix(lcmgl);
-    bot_lcmgl_point_size(lcmgl, 10.5f);
-    bot_lcmgl_begin(lcmgl, GL_POINTS);
-    
-    // obstacle
-    bot_lcmgl_color3f(lcmgl, 255, 0, 0);
-    bot_lcmgl_vertex3f(lcmgl, obstacleXY[0], obstacleXY[1], 0);
-    bot_lcmgl_end(lcmgl);
-    
-    // origin
-    bot_lcmgl_begin(lcmgl, GL_POINTS);
-    bot_lcmgl_color3f(lcmgl, 0, 0, 255);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
-    bot_lcmgl_end(lcmgl);
-    
-    // plane
-     
-    bot_lcmgl_line_width(lcmgl, 3.0f);
-    // x
-    
-    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
-    bot_lcmgl_color3f(lcmgl, 255, 0, 0);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0]+1, xyz[1], xyz[2]);
-    bot_lcmgl_end(lcmgl);
-    
-    // y
-    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
-    bot_lcmgl_color3f(lcmgl, 0, 255, 0);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1]+1, xyz[2]);
-    bot_lcmgl_end(lcmgl);
-    
-    // z
-    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
-    bot_lcmgl_color3f(lcmgl, 0, 0, 255);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
-    bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]+1);
-    bot_lcmgl_end(lcmgl);
-    
-    
-    bot_lcmgl_pop_matrix(lcmgl);
-    bot_lcmgl_switch_buffer(lcmgl);
-    #endif
 }
 
 
@@ -274,39 +218,15 @@ int main(int argc,char** argv)
     
     // init obstacle position
     BotParam *param = bot_param_new_from_server(lcm, 0);
-    if (param != NULL) {
-        if (bot_param_get_double_array(param, "optotrak_obstacle.xy1", obstacleXY1, 2) == -1) {
-            fprintf(stderr, "error: unable to get optotrak_obstacle.xy1 from param server\n");
-            exit(1); // Don't allow usage without latlon origin.
-        } else {
-            if (bot_param_get_double_array(param, "optotrak_obstacle.xy2", obstacleXY2, 2) == -1) {
-                fprintf(stderr, "error: unable to get optotrak_obstacle.xy1 from param server\n");
-            } else {
-                if (bot_param_get_double_array(param, "optotrak_obstacle.height", &obstacleHeight, 2) == -1)
-                {
-                    fprintf(stderr, "error: unable to get optotrak_obstacle.height from param server\n");
-                } else {
-                    if (bot_param_get_double_array(param, "optotrak_obstacle.bottom", &obstacleBottom, 2) == -1)
-                    {
-                        fprintf(stderr, "error: unable to get optotrak_obstacle.bottom from param server\n");
-                    } else {
-            
-                        fprintf(stderr, "\n\nInitializing test obstacle at %f, %f --> %f, %f, height: %f, bottom: %f\n", obstacleXY1[0], obstacleXY1[1], obstacleXY2[0], obstacleXY2[1], obstacleHeight, obstacleBottom);
-                    }
-                }
-            }
-        }
-        
+    if (param == NULL) {
+        fprintf(stderr, "error: no param server\n");
+        exit(1);
+    } 
         // init frames
         botFrames = bot_frames_new(lcm, param);
         bot_frames_get_trans(botFrames, "optotrak", "local", &optotrakToLocal);
         bot_frames_get_trans(botFrames, "optotrak-local", "local", &optotrakToLocal2);
 
-    } else {
-        fprintf(stderr, "error: no param server, no optotrak_obstacle.xy\n");
-        exit(1);
-    }
-    
     optotrak_quat_sub = lcmt_optotrak_quat_subscribe(lcm, channelOptotrakQuat, &optotrak_quat_handler, NULL);
     
     printf("Receiving:\nOptotrak Quat LCM: %s\nPublishing LCM:\n\tLCMGL: %s\n", channelOptotrakQuat, channelLcmGl);
