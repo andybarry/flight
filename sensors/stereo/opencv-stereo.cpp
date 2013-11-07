@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    state.disparity = -44;
+    state.disparity = -31;
     state.sobelLimit = 180; //130
     state.blockSize = 5;
     state.sadThreshold = 84;//79;

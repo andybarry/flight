@@ -158,7 +158,16 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
     {
         char buf[1024];
         int count = 0, result=0;
-        lr = i % 2;
+        
+        if (calibrateOnlyLeft == true)
+        {
+            lr = 0;
+        } else if (calibrateOnlyRight == true)
+        {
+            lr = 1;
+        } else {
+            lr = i % 2;
+        }
         vector<CvPoint2D32f>& pts = points[lr];
         if( !fgets( buf, sizeof(buf)-3, f ))
             break;
@@ -173,63 +182,61 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
         imageSize = cvGetSize(img);
         imageNames[lr].push_back(buf);
         
-        if (full_stereo_calibration || (calibrateOnlyLeft && lr == 0) || (calibrateOnlyRight && lr == 1))
-        {
         
-        //FIND CHESSBOARDS AND CORNERS THEREIN:
-            for( int s = 1; s <= maxScale; s++ )
+    //FIND CHESSBOARDS AND CORNERS THEREIN:
+        for( int s = 1; s <= maxScale; s++ )
+        {
+            IplImage* timg = img;
+            if( s > 1 )
             {
-                IplImage* timg = img;
-                if( s > 1 )
-                {
-                    timg = cvCreateImage(cvSize(img->width*s,img->height*s),
-                        img->depth, img->nChannels );
-                    cvResize( img, timg, CV_INTER_CUBIC );
-                }
-                result = cvFindChessboardCorners( timg, cvSize(nx, ny),
-                    &temp[0], &count,
-                    CV_CALIB_CB_ADAPTIVE_THRESH |
-                    CV_CALIB_CB_NORMALIZE_IMAGE);
-                if( timg != img )
-                    cvReleaseImage( &timg );
-                if( result || s == maxScale )
-                    for( j = 0; j < count; j++ )
-                {
-                    temp[j].x /= s;
-                    temp[j].y /= s;
-                }
-                if( result )
-                    break;
+                timg = cvCreateImage(cvSize(img->width*s,img->height*s),
+                    img->depth, img->nChannels );
+                cvResize( img, timg, CV_INTER_CUBIC );
             }
-            if( displayCorners )
+            result = cvFindChessboardCorners( timg, cvSize(nx, ny),
+                &temp[0], &count,
+                CV_CALIB_CB_ADAPTIVE_THRESH |
+                CV_CALIB_CB_NORMALIZE_IMAGE);
+            if( timg != img )
+                cvReleaseImage( &timg );
+            if( result || s == maxScale )
+                for( j = 0; j < count; j++ )
             {
-                printf("%s\n", buf);
-                IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
-                cvCvtColor( img, cimg, CV_GRAY2BGR );
-                cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
-                    count, result );
-                cvShowImage( "corners", cimg );
-                cvReleaseImage( &cimg );
-                if( cvWaitKey(0) == 27 ) //Allow ESC to quit
-                    exit(-1);
+                temp[j].x /= s;
+                temp[j].y /= s;
             }
-            else
-                putchar('.');
-            N = pts.size();
-            pts.resize(N + n, cvPoint2D32f(0,0));
-            active[lr].push_back((uchar)result);
-        //assert( result != 0 );
             if( result )
-            {
-             //Calibration will suffer without subpixel interpolation
-                cvFindCornerSubPix( img, &temp[0], count,
-                    cvSize(11, 11), cvSize(-1,-1),
-                    cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
-                    30, 0.01) );
-                copy( temp.begin(), temp.end(), pts.begin() + N );
-            }
-            cvReleaseImage( &img );
+                break;
         }
+        if( displayCorners )
+        {
+            printf("%s\n", buf);
+            IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
+            cvCvtColor( img, cimg, CV_GRAY2BGR );
+            cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
+                count, result );
+            cvShowImage( "corners", cimg );
+            cvReleaseImage( &cimg );
+            if( cvWaitKey(0) == 27 ) //Allow ESC to quit
+                exit(-1);
+        }
+        else
+            putchar('.');
+        N = pts.size();
+        pts.resize(N + n, cvPoint2D32f(0,0));
+        active[lr].push_back((uchar)result);
+    //assert( result != 0 );
+        if( result )
+        {
+         //Calibration will suffer without subpixel interpolation
+            cvFindCornerSubPix( img, &temp[0], count,
+                cvSize(11, 11), cvSize(-1,-1),
+                cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,
+                30, 0.01) );
+            copy( temp.begin(), temp.end(), pts.begin() + N );
+        }
+        cvReleaseImage( &img );
+        
     }
     fclose(f);
     printf("\n");
@@ -315,7 +322,7 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             imageSize, &_R, &_T, &_E, &_F,
             cvTermCriteria(CV_TERMCRIT_ITER+
             CV_TERMCRIT_EPS, 30, 1e-6),
-            CV_CALIB_RATIONAL_MODEL | CV_CALIB_USE_INTRINSIC_GUESS);//|
+            CV_CALIB_RATIONAL_MODEL | CV_CALIB_FIX_INTRINSIC);//|
 //                CV_CALIB_FIX_ASPECT_RATIO );
         printf(" done\n");
         
@@ -476,8 +483,21 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
         BMState->uniquenessRatio=15;
         for( i = 0; i < nframes; i++ )
         {
-            IplImage* img1=cvLoadImage(imageNames[0][i].c_str(),0);
-            IplImage* img2=cvLoadImage(imageNames[1][i].c_str(),0);
+            IplImage *img1, *img2;
+            
+            if (calibrateOnlyLeft == true)
+            {
+                img1 = cvLoadImage(imageNames[0][i].c_str(),0);
+                img2 = cvLoadImage(imageNames[0][i].c_str(),0);
+            } else if (calibrateOnlyRight == true)
+            {
+                img1 = cvLoadImage(imageNames[1][i].c_str(),0);
+                img2 = cvLoadImage(imageNames[1][i].c_str(),0);
+            } else {
+                img1 = cvLoadImage(imageNames[0][i].c_str(),0);
+                img2 = cvLoadImage(imageNames[1][i].c_str(),0);
+            }
+            
             if( img1 && img2 )
             {
                 CvMat part;
