@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
         
         if (right_camera_mode || stereo_mode)
         {
-            foundPattern = foundPattern | findChessboardCorners(chessR, Size(CHESS_X, CHESS_Y), cornersR);
+            foundPattern = foundPattern & findChessboardCorners(chessR, Size(CHESS_X, CHESS_Y), cornersR);
         }
         
         if (left_camera_mode || stereo_mode)
@@ -227,6 +227,11 @@ int main(int argc, char *argv[])
 	}
 
     printf("\n\n");
+    
+    // clear out the calibration directory
+    printf("Deleting old images...\nrm calibrationImages/*.ppm\n");
+    system("rm calibrationImages/*.ppm");
+    printf("done.\n");
     
     char filename[1000];
     
