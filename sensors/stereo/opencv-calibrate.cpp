@@ -215,13 +215,25 @@ int main(int argc, char *argv[])
 		{
 		    break;
 		} else if (key == 86){
-		    // this was a good one -- save it
-		    frame_array_left[numFrames] = chessL;
-            frame_array_right[numFrames] = chessR;
-
-            printf("Saved frame %d\n", numFrames);
-            
-            numFrames ++;
+		    if (foundPattern)
+		    {
+		        // this was a good one -- save it
+		        frame_array_left[numFrames] = chessL;
+                frame_array_right[numFrames] = chessR;
+                
+                // give the user some guidence on the number
+                // of frames they should be using
+                if (stereo_mode)
+                {
+                    printf("Saved frame %d / about 10\n", numFrames);
+                } else {
+                    printf("Saved frame %d / about 20-30\n", numFrames);
+                }
+                
+                numFrames ++;
+            } else {
+                printf("Not saving frame since did not find a checkboard.\n");
+            }
 		}
 		
 	}

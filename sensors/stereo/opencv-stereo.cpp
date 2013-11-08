@@ -607,9 +607,9 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
     if (lineX >= 0)
     {
         // print out the values of the pixels where they clicked
-        cout << endl << endl << "Left px: " << (int)leftImg.at<uchar>(lineY, lineX)
-            << "\tRight px: " << (int)rightImg.at<uchar>(lineY, lineX + disparity)
-            << endl;
+        //cout << endl << endl << "Left px: " << (int)leftImg.at<uchar>(lineY, lineX)
+        //    << "\tRight px: " << (int)rightImg.at<uchar>(lineY, lineX + disparity)
+        //    << endl;
             
         line(leftImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
         line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);

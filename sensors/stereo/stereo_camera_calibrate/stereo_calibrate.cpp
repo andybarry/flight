@@ -271,7 +271,7 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
     
 // CALIBRATE THE STEREO CAMERAS
     
-    // check to see if we are doing a full stereo calibration or individual calibration
+    // check to see if we are doing a full 7stereo calibration or individual calibration
     if (calibrateOnlyLeft == true || calibrateOnlyRight == true)
     {
         if (calibrateOnlyLeft == true)
@@ -322,7 +322,16 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             imageSize, &_R, &_T, &_E, &_F,
             cvTermCriteria(CV_TERMCRIT_ITER+
             CV_TERMCRIT_EPS, 30, 1e-6),
-            CV_CALIB_RATIONAL_MODEL | CV_CALIB_FIX_INTRINSIC);//|
+            CV_CALIB_RATIONAL_MODEL 
+            //| CV_CALIB_FIX_INTRINSIC);
+             | CV_CALIB_USE_INTRINSIC_GUESS//);
+             //| CV_CALIB_SAME_FOCAL_LENGTH);
+             //| CV_CALIB_FIX_ASPECT_RATIO);
+             //| CV_CALIB_FIX_FOCAL_LENGTH);
+             | CV_CALIB_FIX_PRINCIPAL_POINT);
+//                | CV_CALIB_FIX_K1 | CV_CALIB_FIX_K2
+//                | CV_CALIB_FIX_K3 | CV_CALIB_FIX_K4
+//                | CV_CALIB_FIX_K5 | CV_CALIB_FIX_K6);//|
 //                CV_CALIB_FIX_ASPECT_RATIO );
         printf(" done\n");
         
