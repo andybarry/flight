@@ -355,7 +355,7 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
  * @param completeSet if true, will take longer but set more parameters. Useful on initialization or if brightness is expected to change a lot (indoors to outdoors)
  *
  */
-void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set)
+void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set, int force_brightness, int force_exposure)
 {
     
     
@@ -393,7 +393,7 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, b
     //DC1394_WRN(err,"Could not set gain");
     
     
-    if (complete_set == true)
+    if (complete_set == true && force_brightness == -1 && force_exposure == -1)
     {
         // if this is true, we're willing to wait a while and
         // really get this right
@@ -429,6 +429,24 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, b
         
         dc1394_feature_set_value(camera2, DC1394_FEATURE_BRIGHTNESS, brightness_value);
         
+    } else if (complete_set == true)
+    {
+        // at least one of the exposure / brightness settings is
+        // not -1
+        if (force_brightness < 0 || force_brightness > 254
+            || force_exposure < 0 || force_exposure > 254)
+        {
+            printf("Error: brightness (%d) or exposure (%d) out of range, not settting.\n", force_brightness, force_exposure);
+        } else {
+            // set the brightness and exposure
+            dc1394_feature_set_value(camera1, DC1394_FEATURE_EXPOSURE, force_exposure);
+        
+            dc1394_feature_set_value(camera1, DC1394_FEATURE_BRIGHTNESS, force_brightness);
+            
+            dc1394_feature_set_value(camera2, DC1394_FEATURE_EXPOSURE, force_exposure);
+        
+            dc1394_feature_set_value(camera2, DC1394_FEATURE_BRIGHTNESS, force_brightness);
+        }
     }
     
     

@@ -17,6 +17,9 @@ bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
 bool show_unrectified = false;
 
+int force_brightness = -1;
+int force_exposure = -1;
+
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
 Mat ringbufferR[RINGBUFFER_SIZE];
@@ -147,6 +150,8 @@ int main(int argc, char *argv[])
     parser.add(show_unrectified, "u", "show-unrectified", "When displaying images, do not apply rectification.");
     parser.add(enable_online_recording, "r", "online-record", "Enable online video recording.");
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
+    parser.add(force_brightness, "b", "force-brightness", "Force a brightness setting.");
+    parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
     parser.parse();
     
     // parse the config file
@@ -306,7 +311,7 @@ int main(int argc, char *argv[])
     }
     
     // before we start, turn the cameras on and set the brightness and exposure
-    MatchBrightnessSettings(camera, camera2, true);
+    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
     
     // start the framerate clock
     struct timeval start, now;
@@ -487,9 +492,33 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'm':
-                    MatchBrightnessSettings(camera, camera2, true);
+                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     break;
-                
+                    
+                case '1':
+                    force_brightness --;
+                    cout << "brightness: " << force_brightness << endl;
+                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    break;
+                    
+                case '2':
+                    force_brightness ++;
+                    cout << "brightness: " << force_brightness << endl;
+                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    break;
+                    
+                case '3':
+                    force_exposure --;
+                    cout << "exposure: " << force_exposure << endl;
+                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    break;
+                    
+                case '4':
+                    force_exposure ++;
+                    cout << "exposure: " << force_exposure << endl;
+                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    break;
+                    
                 case '5':
                     // to show SAD boxes
                     state.sobelLimit = 0;
