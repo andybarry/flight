@@ -144,8 +144,11 @@ void* StereoBarryMooreThreaded(void *statet)
     Mat sobelL(leftImage.rows, leftImage.cols, leftImage.depth());
     Mat sobelR(rightImage.rows, rightImage.cols, rightImage.depth());
     
-    Sobel(leftImage, sobelL, -1, 1, 1, 3, 1, 0);
-    Sobel(rightImage, sobelR, -1, 1, 1, 3, 1, 0);
+    //Sobel(leftImage, sobelL, -1, 1, 1, 3, 1, 0);
+    //Sobel(rightImage, sobelR, -1, 1, 1, 3, 1, 0);
+    
+    Laplacian(leftImage, sobelL, -1, 3);
+    Laplacian(rightImage, sobelR, -1, 3);
     
     // we will do this by looping through every block in the left image
     // (defined by blockSize) and checking for a matching value on
@@ -174,8 +177,6 @@ void* StereoBarryMooreThreaded(void *statet)
             // get the sum of absolute differences for this location
             // on both images
             int sad = GetSAD(leftImage, rightImage, sobelL, sobelR, j, i, state);
-            //int sad = GetHOG(leftImage, rightImage, j, i, state);
-            //cout << "x = " << j << " x + disparity = " << j + disparity << endl;
             // check to see if the SAD is below the threshold,
             // indicating a hit
             if (sad < sadThreshold && sad > 10)
@@ -191,12 +192,10 @@ void* StereoBarryMooreThreaded(void *statet)
                 
                 hitCounter ++;
                 
-                //#if SHOW_DISPLAY
                 if (state.show_display)
                 {
                     pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
                 }
-                //#endif
             }
         }
     }
@@ -210,31 +209,6 @@ void* StereoBarryMooreThreaded(void *statet)
     return NULL; // exit the thread
 }
 
-int GetHOG(Mat leftImage, Mat rightImage, int pxX, int pxY, BarryMooreState state)
-{
-    int disparity = state.disparity;
-    HOGDescriptor d, dR;
-    vector<float> descriptorsValues, descriptorsValuesR;
-    vector<Point> locations, locationsR;
-    leftImage = leftImage.colRange(pxX, pxX+64);
-    rightImage = rightImage.colRange(pxX+disparity, pxX+64+disparity);
-    
-    d.compute( leftImage, descriptorsValues, Size(0,0), Size(0,0), locations);
-    
-    dR.compute( rightImage, descriptorsValuesR, Size(0,0), Size(0,0), locationsR);
-
-
-    imshow("Depth", get_hogdescriptor_visu(leftImage, descriptorsValues));
-    
-    imshow("Input2", get_hogdescriptor_visu(rightImage, descriptorsValuesR));
-
-    waitKey();
-    
-    return 0;
-
-    
-    
-}
 
 /**
  * Get the sum of absolute differences for a specific pixel location and disparity
@@ -341,169 +315,7 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
         return -1;
     }    
     
-    return 100*(float)sad/(float)(sobel + state.sobelAdd);
+    //return sobel;
+    return 100*(float)sad/(float)((float)sobel/(float)state.sobelAdd);
 }
 
-Mat get_hogdescriptor_visu(Mat& origImg, vector<float>& descriptorValues)
-{   
-    Mat color_origImg;
-    cvtColor(origImg, color_origImg, CV_GRAY2RGB);
- 
-    float zoomFac = 3;
-    Mat visu;
-    resize(color_origImg, visu, Size(color_origImg.cols*zoomFac, color_origImg.rows*zoomFac));
- 
-    int blockSize       = 16;
-    int cellSize        = 8;
-    int gradientBinSize = 9;
-    float radRangeForOneBin = M_PI/(float)gradientBinSize; // dividing 180° into 9 bins, how large (in rad) is one bin?
- 
-    // prepare data structure: 9 orientation / gradient strenghts for each cell
-    int cells_in_x_dir = 64 / cellSize;
-    int cells_in_y_dir = 128 / cellSize;
-    int totalnrofcells = cells_in_x_dir * cells_in_y_dir;
-    float*** gradientStrengths = new float**[cells_in_y_dir];
-    int** cellUpdateCounter   = new int*[cells_in_y_dir];
-    for (int y=0; y<cells_in_y_dir; y++)
-    {
-        gradientStrengths[y] = new float*[cells_in_x_dir];
-        cellUpdateCounter[y] = new int[cells_in_x_dir];
-        for (int x=0; x<cells_in_x_dir; x++)
-        {
-            gradientStrengths[y][x] = new float[gradientBinSize];
-            cellUpdateCounter[y][x] = 0;
- 
-            for (int bin=0; bin<gradientBinSize; bin++)
-                gradientStrengths[y][x][bin] = 0.0;
-        }
-    }
- 
-    // nr of blocks = nr of cells - 1
-    // since there is a new block on each cell (overlapping blocks!) but the last one
-    int blocks_in_x_dir = cells_in_x_dir - 1;
-    int blocks_in_y_dir = cells_in_y_dir - 1;
- 
-    // compute gradient strengths per cell
-    int descriptorDataIdx = 0;
-    int cellx = 0;
-    int celly = 0;
- 
-    for (int blockx=0; blockx<blocks_in_x_dir; blockx++)
-    {
-        for (int blocky=0; blocky<blocks_in_y_dir; blocky++)            
-        {
-            // 4 cells per block ...
-            for (int cellNr=0; cellNr<4; cellNr++)
-            {
-                // compute corresponding cell nr
-                int cellx = blockx;
-                int celly = blocky;
-                if (cellNr==1) celly++;
-                if (cellNr==2) cellx++;
-                if (cellNr==3)
-                {
-                    cellx++;
-                    celly++;
-                }
- 
-                for (int bin=0; bin<gradientBinSize; bin++)
-                {
-                    float gradientStrength = descriptorValues[ descriptorDataIdx ];
-                    descriptorDataIdx++;
- 
-                    gradientStrengths[celly][cellx][bin] += gradientStrength;
- 
-                } // for (all bins)
- 
- 
-                // note: overlapping blocks lead to multiple updates of this sum!
-                // we therefore keep track how often a cell was updated,
-                // to compute average gradient strengths
-                cellUpdateCounter[celly][cellx]++;
- 
-            } // for (all cells)
- 
- 
-        } // for (all block x pos)
-    } // for (all block y pos)
- 
- 
-    // compute average gradient strengths
-    for (int celly=0; celly<cells_in_y_dir; celly++)
-    {
-        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
-        {
- 
-            float NrUpdatesForThisCell = (float)cellUpdateCounter[celly][cellx];
- 
-            // compute average gradient strenghts for each gradient bin direction
-            for (int bin=0; bin<gradientBinSize; bin++)
-            {
-                gradientStrengths[celly][cellx][bin] /= NrUpdatesForThisCell;
-            }
-        }
-    }
- 
- 
-    cout << "descriptorDataIdx = " << descriptorDataIdx << endl;
- 
-    // draw cells
-    for (int celly=0; celly<cells_in_y_dir; celly++)
-    {
-        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
-        {
-            int drawX = cellx * cellSize;
-            int drawY = celly * cellSize;
- 
-            int mx = drawX + cellSize/2;
-            int my = drawY + cellSize/2;
- 
-            rectangle(visu, Point(drawX*zoomFac,drawY*zoomFac), Point((drawX+cellSize)*zoomFac,(drawY+cellSize)*zoomFac), CV_RGB(100,100,100), 1);
- 
-            // draw in each cell all 9 gradient strengths
-            for (int bin=0; bin<gradientBinSize; bin++)
-            {
-                float currentGradStrength = gradientStrengths[celly][cellx][bin];
- 
-                // no line to draw?
-                if (currentGradStrength==0)
-                    continue;
- 
-                float currRad = bin * radRangeForOneBin + radRangeForOneBin/2;
- 
-                float dirVecX = cos( currRad );
-                float dirVecY = sin( currRad );
-                float maxVecLen = cellSize/2;
-                float scale = 2.5; // just a visualization scale, to see the lines better
- 
-                // compute line coordinates
-                float x1 = mx - dirVecX * currentGradStrength * maxVecLen * scale;
-                float y1 = my - dirVecY * currentGradStrength * maxVecLen * scale;
-                float x2 = mx + dirVecX * currentGradStrength * maxVecLen * scale;
-                float y2 = my + dirVecY * currentGradStrength * maxVecLen * scale;
- 
-                // draw gradient visualization
-                line(visu, Point(x1*zoomFac,y1*zoomFac), Point(x2*zoomFac,y2*zoomFac), CV_RGB(0,255,0), 1);
- 
-            } // for (all bins)
- 
-        } // for (cellx)
-    } // for (celly)
- 
- 
-    // don't forget to free memory allocated by helper data structures!
-    for (int y=0; y<cells_in_y_dir; y++)
-    {
-      for (int x=0; x<cells_in_x_dir; x++)
-      {
-           delete[] gradientStrengths[y][x];            
-      }
-      delete[] gradientStrengths[y];
-      delete[] cellUpdateCounter[y];
-    }
-    delete[] gradientStrengths;
-    delete[] cellUpdateCounter;
- 
-    return visu;
- 
-} // get_hogdescriptor_visu

@@ -237,7 +237,6 @@ int main(int argc, char *argv[])
     {
         namedWindow("Input", CV_WINDOW_AUTOSIZE);
         namedWindow("Input2", CV_WINDOW_AUTOSIZE);
-        namedWindow("Depth", CV_WINDOW_AUTOSIZE);
         namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
         
         setMouseCallback("Input", onMouse); // for drawing disparity lines
@@ -246,7 +245,6 @@ int main(int argc, char *argv[])
         cvMoveWindow("Input", 100, 100);
         cvMoveWindow("Stereo", 100, 370);
         cvMoveWindow("Input2", 500, 100);
-        cvMoveWindow("Depth", 500, 370);
     }
     
     // load calibration
@@ -267,11 +265,11 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    state.disparity = -31;
-    state.sobelLimit = 180; //130
+    state.disparity = -67;
+    state.sobelLimit = 810; //130
     state.blockSize = 5;
-    state.sadThreshold = 84;//79;
-    state.sobelAdd = 0;
+    state.sadThreshold = 64;//79;
+    state.sobelAdd = 1;
     
     state.mapxL = stereoCalibration.mx1fp;
     state.mapxR = stereoCalibration.mx2fp;
@@ -280,7 +278,6 @@ int main(int argc, char *argv[])
     
     Mat matL, matR;
     bool quit = false;
-    Mat depthMap;
     
     #if !USE_IMAGE
     // allocate a huge buffer for video frames
@@ -357,11 +354,6 @@ int main(int argc, char *argv[])
             remapL = remapLtemp;
             remapR = remapRtemp;
             
-            if (numFrames == 0)
-            {
-                depthMap = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
-            }
-            
             remap(matL, remapL, stereoCalibration.mx1fp, Mat(), INTER_NEAREST);
             remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
             
@@ -415,6 +407,7 @@ int main(int argc, char *argv[])
         
         if (show_display)
         {
+//            matDisp = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
             for (unsigned int i=0;i<pointVector2d.size();i++)
             {
                 int x2 = pointVector2d[i].x;
@@ -422,15 +415,16 @@ int main(int argc, char *argv[])
                 int sad = pointVector2d[i].z;
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
-                
-                int gray = 337.0 - state.disparity*41.0/6;
-                
-                // fill in the depth map at this point
-                circle(depthMap, Point(x2,y2), 5, gray, -1);
             }
             
             // draw a line for the user to show disparity
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
+            
+            // OMG WHAT A HACK
+            //Laplacian(matL, matDisp, -1);
+            //Laplacian(matL, matDisp, -1, 3);
+            //Sobel(matL, remapR, -1, 1, 1, 3, 2, 0);
+            
             
             if (show_unrectified == false)
             {
@@ -440,8 +434,8 @@ int main(int argc, char *argv[])
                 imshow("Input", matL);
                 imshow("Input2", matR);
             }
+            
             imshow("Stereo", matDisp);
-            //imshow("Depth", depthMap);
                 
             char key = waitKey(1);
             
@@ -476,19 +470,19 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'y':
-                    state.sadThreshold ++;
+                    state.sadThreshold += 10;
                     break;
                     
                 case 'h':
-                    state.sadThreshold --;
+                    state.sadThreshold -= 10;
                     break;
                     
                 case 'u':
-                    state.sobelAdd += 10;
+                    state.sobelAdd += 0.2;
                     break;
                     
                 case 'j':
-                    state.sobelAdd -= 10;
+                    state.sobelAdd -= 0.2;
                     break;
                     
                 case 'm':
@@ -497,25 +491,21 @@ int main(int argc, char *argv[])
                     
                 case '1':
                     force_brightness --;
-                    cout << "brightness: " << force_brightness << endl;
                     MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     break;
                     
                 case '2':
                     force_brightness ++;
-                    cout << "brightness: " << force_brightness << endl;
                     MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     break;
                     
                 case '3':
                     force_exposure --;
-                    cout << "exposure: " << force_exposure << endl;
                     MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     break;
                     
                 case '4':
                     force_exposure ++;
-                    cout << "exposure: " << force_exposure << endl;
                     MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     break;
                     
@@ -532,6 +522,8 @@ int main(int argc, char *argv[])
             
             if (key != 255)
             {
+                cout << "brightness: " << force_brightness << endl;
+                cout << "exposure: " << force_exposure << endl;
                 cout << "disparity = " << state.disparity << endl;
                 cout << "sobelLimit = " << state.sobelLimit << endl;
                 cout << "blockSize = " << state.blockSize << endl;
