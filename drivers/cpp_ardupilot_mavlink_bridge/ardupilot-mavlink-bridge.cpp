@@ -24,6 +24,7 @@ using namespace std;
 #include "../../LCM/lcmt_attitude.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_deltawing_u.h"
+#include "../../LCM/lcmt_stereo_control.h"
 
 
 #include <bot_core/bot_core.h>
@@ -64,15 +65,19 @@ char *channelBaroAirspeed = NULL;
 char *channelGps = NULL;
 char *channelBatteryStatus = NULL;
 char *channelServoOutput = NULL;
+char *channelStereoControl = NULL;
+
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
 lcmt_deltawing_u_subscription_t *deltawing_u_sub;
+
+int last_stereo_control = 0;
 
 uint8_t systemID = getSystemID();
 
 static void usage(void)
 {
-        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name output-servo-channel-name\n");
+        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name output-servo-channel-name stereo-control-channel-name\n");
         fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
         fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
         fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
@@ -80,8 +85,9 @@ static void usage(void)
         fprintf(stderr, "    battery-status-channel-name : LCM channel to publish battery status messages on\n");
         fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
         fprintf(stderr, "    output-servo-channel-name : LCM channel to publish executed servo commands on\n");
+        fprintf(stderr, "    stereo-control-channel-name : LCM channel to publish stereo control commands on\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status deltawing_u servo_out\n");
+        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status deltawing_u servo_out stereo-control\n");
         fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages.  Also pushes servo commands to the APM and reads the executed commands.\n");
 }
 
@@ -365,6 +371,20 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 servoOutMsg.video_record = 0;
             }
             
+            if (last_stereo_control != servoOutMsg.video_record)
+            {
+                // something has changed, send a new message
+                lcmt_stereo_control stereo_control_msg;
+                stereo_control_msg.timestamp = getTimestampNow();
+                stereo_control_msg.stereoOn = servoOutMsg.video_record;
+                stereo_control_msg.recOn = servoOutMsg.video_record;
+                
+                lcmt_stereo_control_publish(lcm, channelStereoControl,
+                    &stereo_control_msg);
+                    
+                last_stereo_control = servoOutMsg.video_record;
+            }
+            
             // send the lcm message
             lcmt_deltawing_u_publish(lcm, channelServoOutput, &servoOutMsg);
             
@@ -393,7 +413,7 @@ int main(int argc,char** argv)
     char *channelMavlink = NULL;
     char *channelDeltawingU = NULL;
 
-    if (argc!=8) {
+    if (argc!=9) {
         usage();
         exit(0);
     }
@@ -405,6 +425,7 @@ int main(int argc,char** argv)
     channelBatteryStatus = argv[5];
     channelDeltawingU = argv[6];
     channelServoOutput = argv[7];
+    channelStereoControl = argv[8];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
@@ -439,7 +460,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n", channelMavlink, channelDeltawingU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n", channelMavlink, channelDeltawingU, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput, channelStereoControl);
 
     while (true)
     {
