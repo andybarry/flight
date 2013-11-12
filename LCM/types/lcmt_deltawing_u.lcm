@@ -8,6 +8,8 @@ struct lcmt_deltawing_u
   double elevonR;
   
   int32_t is_autonomous;
+  
+  int32_t video_record;
 
  
 }

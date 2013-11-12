@@ -342,7 +342,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
              *  3: Throttle
              *  4:
              *  5: autonmous switch
-             *  6:
+             *  6: video record switch
              *  7:
              *  8:
              */
@@ -356,6 +356,13 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 servoOutMsg.is_autonomous = 1;
             } else {
                 servoOutMsg.is_autonomous = 0;
+            }
+            
+            if (servomsg.servo6_raw > 1500)
+            {
+                servoOutMsg.video_record = 1;
+            } else {
+                servoOutMsg.video_record = 0;
             }
             
             // send the lcm message
