@@ -47,6 +47,14 @@ struct OpenCvStereoConfig
     string calibrationDir;
     string videoSaveDir;
     string fourcc;
+    
+    int disparity;
+    int interestOperatorLimit;
+    int blockSize;
+    int sadThreshold;
+    
+    float interestOperatorDivisor;
+    
 };
 
 struct OpenCvStereoCalibration

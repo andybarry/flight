@@ -265,11 +265,20 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    state.disparity = -67;
-    state.sobelLimit = 810; //130
-    state.blockSize = 5;
-    state.sadThreshold = 64;//79;
-    state.sobelAdd = 1;
+    cout << stereoConfig.blockSize << endl;
+
+    state.disparity = stereoConfig.disparity;
+    state.sobelLimit = stereoConfig.interestOperatorLimit;
+    state.blockSize = stereoConfig.blockSize;
+    
+    if (state.blockSize > 10 || state.blockSize < 1)
+    {
+        fprintf(stderr, "Warning: block size is very large "
+            "or small (%d).  Expect trouble.\n", state.blockSize);
+    }
+    
+    state.sadThreshold = stereoConfig.sadThreshold;
+    state.sobelAdd = stereoConfig.interestOperatorDivisor;
     
     state.mapxL = stereoCalibration.mx1fp;
     state.mapxR = stereoCalibration.mx2fp;
@@ -470,11 +479,11 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'y':
-                    state.sadThreshold += 10;
+                    state.sadThreshold ++;
                     break;
                     
                 case 'h':
-                    state.sadThreshold -= 10;
+                    state.sadThreshold --;
                     break;
                     
                 case 'u':

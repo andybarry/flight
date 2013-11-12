@@ -152,6 +152,77 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     
     configStruct->fourcc = fourcc;
     
+    // get settings
+    
+    // get disparity
+    configStruct->disparity = g_key_file_get_integer(keyfile,
+        "settings", "disparity", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify disparity (or I failed to read it). Parameter: settings.disparity\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
+    // get interestOperatorLimit
+    configStruct->interestOperatorLimit =
+        g_key_file_get_integer(keyfile, "settings",
+        "interestOperatorLimit", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify interest operator limit (or I failed to read it). Parameter: settings.interestOperatorLimit\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
+    // get blockSize
+    configStruct->blockSize =
+        g_key_file_get_integer(keyfile, "settings",
+        "blockSize", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify block size (or I failed to read it). Parameter: settings.blockSize\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
+    // get sadThreshold
+    configStruct->sadThreshold =
+        g_key_file_get_integer(keyfile, "settings",
+        "sadThreshold", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify SAD threshold (or I failed to read it). Parameter: settings.sadThreshold\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
+    // get interestOperatorDivisor
+    configStruct->interestOperatorDivisor =
+        g_key_file_get_double(keyfile, "settings",
+        "interestOperatorDivisor", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify interest operator divisor (or I failed to read it). Parameter: settings.interestOperatorDivisor\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
     return true;
 }
 
