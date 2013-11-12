@@ -74,7 +74,7 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
 {
     /*
      * The way this works is that as soon as the program starts, stereo is always running.  The only thing that causes
-     * the stereo to stop running is if stereoOn is set to false AND recOn is set to false.  The we write
+     * the stereo to stop running is if stereoOn is set to false AND recOn is set to false.  Then we write
      * the video we have to disk.
      * 
      * If recOn is false but stereoOn is true, we pause the recording
@@ -82,20 +82,25 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
      */
      
     // got a control message, so parse it and figure out what we should do
-    if (msg->stereoOn == false && msg->recOn == false)
+    if (msg->stereoOn == 0 && msg->recOn == 0)
     {
         // shut everything down and write the video out
-        StopCapture(d, camera);
-        StopCapture(d2, camera2);
-        WriteVideo();
+        //StopCapture(d, camera);
+        //StopCapture(d2, camera2);
         
-    } else if (msg->stereoOn == true && msg->recOn == false)
+        if (enable_online_recording == false)
+        {
+            WriteVideo();
+        }
+        recordingOn = false;
+        
+    } else if (msg->stereoOn == 1 && msg->recOn == 0)
     {
         // pause recording if we were recording
         cout << "Recording stopped." << endl;
         recordingOn = false;
         
-    } else if (msg->stereoOn == true && msg->recOn == true)
+    } else if (msg->stereoOn == 1 && msg->recOn == 1)
     {  
         cout << "(Re)starting recording." << endl;
         recordingOn = true;
