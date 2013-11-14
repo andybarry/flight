@@ -3,9 +3,9 @@ struct lcmt_stereo_control
     int64_t  timestamp;
 
     // stereo control:
-    //  0: nominal -- record as usual
-    //  1: pause
-    //  2: stop and write to disk
+    //  0: write to disk and then restart
+    //  1: (re)start record
+    //  2: pause
         
     int8_t stereo_control;
     
