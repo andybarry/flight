@@ -73,42 +73,44 @@ void control_c_handler(int s)
 void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_control *msg, void *user)
 {
     /*
-     * The way this works is that as soon as the program starts, stereo is always running.  The only thing that causes
-     * the stereo to stop running is if stereoOn is set to false AND recOn is set to false.  Then we write
-     * the video we have to disk.
-     * 
-     * If recOn is false but stereoOn is true, we pause the recording
+     * The way this works is that as soon as
+     * the program starts, stereo is always running.
+     *
+     * stereo control:
+     *   0: write to disk and then restart
+     *   1: (re)start record
+     *   2: pause
      * 
      */
      
     // got a control message, so parse it and figure out what we should do
-    if (msg->stereoOn == 0 && msg->recOn == 0)
+    if (msg->stereo_control == 0)
     {
-        // shut everything down and write the video out
-        //StopCapture(d, camera);
-        //StopCapture(d2, camera2);
+        // write video, then start recording again
         
         if (enable_online_recording == false)
         {
             WriteVideo();
         }
-        recordingOn = false;
         
-    } else if (msg->stereoOn == 1 && msg->recOn == 0)
+        recordingOn = true;
+        recNumFrames = 0;
+        
+    } else if (msg->stereo_control == 1)
     {
-        // pause recording if we were recording
-        cout << "Recording stopped." << endl;
-        recordingOn = false;
-        
-    } else if (msg->stereoOn == 1 && msg->recOn == 1)
-    {  
+        // record
         cout << "(Re)starting recording." << endl;
         recordingOn = true;
         recNumFrames = 0;
-    }
+        
+    } else if (msg->stereo_control == 2)
     {
+        // pause recording if we were recording
+        cout << "Recording paused." << endl;
+        recordingOn = false;
+    } else {
         // got an unknown command
-        fprintf(stderr, "WARNING: Unknown stereo_control command: stereoOn: %d, recOn: %d", int(msg->stereoOn), int(msg->recOn));
+        fprintf(stderr, "WARNING: Unknown stereo_control command: %d", int(msg->stereo_control));
     }
     
 }
