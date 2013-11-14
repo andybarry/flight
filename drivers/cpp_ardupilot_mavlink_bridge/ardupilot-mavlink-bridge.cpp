@@ -376,8 +376,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 // something has changed, send a new message
                 lcmt_stereo_control stereo_control_msg;
                 stereo_control_msg.timestamp = getTimestampNow();
-                stereo_control_msg.stereoOn = servoOutMsg.video_record;
-                stereo_control_msg.recOn = servoOutMsg.video_record;
+                stereo_control_msg.stereo_control =
+                     servoOutMsg.video_record;
                 
                 lcmt_stereo_control_publish(lcm, channelStereoControl,
                     &stereo_control_msg);
