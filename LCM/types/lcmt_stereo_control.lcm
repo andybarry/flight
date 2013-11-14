@@ -1,10 +1,12 @@
 struct lcmt_stereo_control
 {
     int64_t  timestamp;
+
+    // stereo control:
+    //  0: nominal -- record as usual
+    //  1: pause
+    //  2: stop and write to disk
+        
+    int8_t stereo_control;
     
-    int8_t stereoOn;
-    int8_t recOn;
-    
-    // to write to disk, set stereoOn to false and recOn to false
-    // to pause the recording, set recOn to false and stereoOn to remain true
 }
