@@ -1,0 +1,7 @@
+struct lcmt_stereo_monitor
+{
+    int64_t  timestamp;
+    
+    
+    int32_t frame_number;
+}
