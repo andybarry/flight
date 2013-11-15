@@ -180,7 +180,7 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     }
     
     
-    // send the message via Xbee
+    
     
     // first, break up the LCM message into a few different parts (if needed)
     int channelStringLength = strlen(channel) + 1; // + 1 for the \0 at the end of the string
@@ -198,6 +198,8 @@ void message_handler(const lcm_recv_buf_t *rbuf, const char* channel, void *user
     for (int i=0; i < numMessagesNeeded; i++)
     {
         // send a message with this part of the message
+        // send the message via Xbee
+        printf("sending on %s (%d/%d)\n", channel, i+1, numMessagesNeeded);
         
         //if this is the first message, we add the channel name to it
         if (i == 0 && numMessagesNeeded == 1)
