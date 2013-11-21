@@ -1,4 +1,4 @@
-struct lcmt_stereo
+struct lcmt_stereo_old2
 {
     int64_t  timestamp;
     
