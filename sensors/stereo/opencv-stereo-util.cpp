@@ -321,16 +321,83 @@ void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera)
 }
 
 /**
- * Sets up a video writer with the given filename
+ * Gets next availible filename for a video file
  *
- * @param filenamePrefix prefix for the name of the video file. It will be created with a date and time appended to the name.
- * @param frameSize size of the frames
  * @param configStruct OpenCvStereoConfig structure for reading the directory things should be saved in
  *
- * @retval VideoWriter object
+ * @retval number of the next availible name
+ *
  */
-VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct)
-{
+int GetNextVideoNumber(OpenCvStereoConfig configStruct,
+    bool increment_number) {
+    
+    string datechar = GetDateSring();
+    
+    int max_number = 0;
+    
+    // other videos have been taken today
+    if (boost::filesystem::exists(configStruct.videoSaveDir)) {
+            
+        boost::filesystem::directory_iterator end_itr; // default construction
+                                    // yields past-the-end
+        for (boost::filesystem::directory_iterator itr(configStruct.videoSaveDir);
+            itr != end_itr; ++itr ) {
+            // iterate through the videos, keeping track
+            // of the highest number
+            
+            // munch on the filename to pull out
+            // just the ending part
+            
+            // 17 characters in 2013-11-21.01.avi
+            // or in            xxxx-xx-xx.xx.avi
+            
+            
+            string this_file = itr->path().leaf().string();
+
+            if (this_file.length() > 18) {
+
+                // might be a video file
+
+                // read the date in the string
+                string file_date = this_file.substr(
+                    this_file.length() - 17, 10);
+
+                // compare the date string and see if it
+                // is today
+                if (file_date.compare(datechar) == 0) {
+                    // matches today's date
+                    // get the number
+                    string file_number = this_file.substr(
+                        this_file.length() - 6, 2);
+                        
+                    // attempt to convert the string to a number
+                    try {
+                        int this_number = stoi(file_number);
+                        if (max_number < this_number) {
+                            max_number = this_number;
+                        }
+                    } catch (...) {
+                        // failed to convert, don't do anything
+                        // since this isn't
+                    }
+                }
+            }
+        }
+    }
+    
+    if (increment_number == true) {
+        return max_number + 1;
+    } else {
+        return max_number;
+    }
+}
+
+/**
+ * Returns the date for use in video filenames
+ *
+ * @retval string of the date in "yyyy-mm-dd" format
+ */
+string GetDateSring() {
     // get the date and time for the filename
     time_t rawtime;
     struct tm * timeinfo;
@@ -338,34 +405,55 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
 
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
+    
+    strftime (datechar, 80, "%Y-%m-%d", timeinfo);
+    
+    return datechar;
+}
 
-    strftime (datechar, 80, "%Y-%m-%d",timeinfo);
+string GetNextVideoFilename(string filenamePrefix,
+    OpenCvStereoConfig configStruct, bool increment_number) {
+    
+    // format the number string
+    char filenumber[100];
+    sprintf(filenumber, "%02d",
+        GetNextVideoNumber(configStruct, increment_number));
+    
+    return configStruct.videoSaveDir
+                + "/" + filenamePrefix + "-"
+                + GetDateSring()
+                + "." + filenumber
+                + ".avi";
+}
+
+/**
+ * Sets up a video writer with the given filename
+ *
+ 
+ * @param frameSize size of the frames
+ * @param filenamePrefix prefix for the new video filename
+ * @param configStruct OpenCvStereoConfig structure
+ *   for reading the directory things should be saved in
+ *   and other data.
+ * @param increment_number Default is true.  Set to false to
+ *   not increment the video number.  Used for stereo vision
+ *   systems if you want to have a left and right video with
+ *   the same number (ie set to false for the second writer
+ *   you initialize.)
+ *
+ * @retval VideoWriter object
+ */
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number)
+{
     
     VideoWriter recorder;
     
-    // read the filesystem to figure out how many
-    // other videos have been taken today
+    // check to make sure the directory exists (otherwise the
+    // videowriter will seg fault)
     if (boost::filesystem::exists(configStruct.videoSaveDir))
     {
-        // loop through possible file names until
-        // we find the next availible one
-        int filecounter = 0;
-        string filename;
-        do
-        {
-            // generate the next filename
-            char filenumber[100];
-            sprintf(filenumber, "%02d", filecounter);
-            
-            filename = configStruct.videoSaveDir
-                + "/" + filenamePrefix + "-"
-                + string(datechar)
-                + "." + string(filenumber) + ".avi";
-            
-            
-            filecounter ++;
-            
-        } while (boost::filesystem::exists(filename));
+        string filename = GetNextVideoFilename(filenamePrefix,
+            configStruct, increment_number);
         
         char fourcc1 = configStruct.fourcc.at(0);
         char fourcc2 = configStruct.fourcc.at(1);
@@ -373,13 +461,12 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
         char fourcc4 = configStruct.fourcc.at(3);
         
         
-        // check to make sure the directory exists (otherwise the videowriter
-        // will seg fault
-        
         recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
         if (!recorder.isOpened())
         {
             printf("VideoWriter failed to open!\n");
+        } else {
+            cout << "Opened " << filename << endl;
         }
     } else {
         printf("Video save directory does not exist.\n");

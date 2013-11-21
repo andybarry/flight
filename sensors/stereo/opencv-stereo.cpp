@@ -93,20 +93,20 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
             WriteVideo();
         }
         
-        recordingOn = true;
-        recNumFrames = 0;
+        StartRecording();
         
     } else if (msg->stereo_control == 1)
     {
         // record
         cout << "(Re)starting recording." << endl;
-        recordingOn = true;
-        recNumFrames = 0;
+        
+        StartRecording();
         
     } else if (msg->stereo_control == 2)
     {
         // pause recording if we were recording
         cout << "Recording paused." << endl;
+        
         recordingOn = false;
     } else {
         // got an unknown command
@@ -115,6 +115,14 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     
 }
 
+void StartRecording()
+{
+    // get a new filename
+    int rec_number = GetNextVideoNumber(stereoConfig);
+    
+    recordingOn = true;
+    recNumFrames = 0;
+}
 
 
 void NonBlockingLcm(lcm_t *lcm)
@@ -320,11 +328,13 @@ int main(int argc, char *argv[])
     {
         // setup video writers
         recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
-        recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig);
+        recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig, false);
     }
     
     // before we start, turn the cameras on and set the brightness and exposure
     MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+    
+    StartRecording(); // set up recording
     
     // start the framerate clock
     struct timeval start, now;
@@ -586,9 +596,6 @@ void WriteVideo()
 {
     printf("Writing video...\n");
     
-    
-
-
     int endI, firstFrame = 0;
     if (recNumFrames < RINGBUFFER_SIZE)
     {
@@ -610,7 +617,10 @@ void WriteVideo()
     
     VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
     
-    VideoWriter recordR = SetupVideoWriter("videoR-skip-" + std::to_string(firstFrame), ringbufferR[0].size(), stereoConfig);
+    VideoWriter recordR = SetupVideoWriter("videoR-skip-"
+        + std::to_string(firstFrame), ringbufferR[0].size(),
+        stereoConfig, false);
+        
     // write the video
     for (int i=0; i<endI; i++)
     {

@@ -79,6 +79,7 @@ struct RemapState
 
 bool ResetPointGreyCameras();
 
+void StartRecording();
 
 void WriteVideo();
 

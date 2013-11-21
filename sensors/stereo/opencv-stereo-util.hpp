@@ -74,7 +74,15 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
 void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 
-VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct);
+int GetNextVideoNumber(OpenCvStereoConfig configStruct,
+    bool increment_number = true);
+
+string GetDateSring();
+
+string GetNextVideoFilename(string filenamePrefix,
+    OpenCvStereoConfig configStruct, bool increment_number = true);
+
+VideoWriter SetupVideoWriter(string filename, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true);
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
 
