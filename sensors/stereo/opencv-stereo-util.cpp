@@ -334,25 +334,49 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     // get the date and time for the filename
     time_t rawtime;
     struct tm * timeinfo;
-    char buffer [80];
+    char datechar [80];
 
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
 
-    strftime (buffer,80,"%Y-%m-%d-%H-%M-%S",timeinfo);
-    
-    char fourcc1 = configStruct.fourcc.at(0);
-    char fourcc2 = configStruct.fourcc.at(1);
-    char fourcc3 = configStruct.fourcc.at(2);
-    char fourcc4 = configStruct.fourcc.at(3);
+    strftime (datechar, 80, "%Y-%m-%d",timeinfo);
     
     VideoWriter recorder;
     
-    // check to make sure the directory exists (otherwise the videowriter
-    // will seg fault
+    // read the filesystem to figure out how many
+    // other videos have been taken today
     if (boost::filesystem::exists(configStruct.videoSaveDir))
     {
-        recorder.open(configStruct.videoSaveDir + "/" + filenamePrefix + "-" + string(buffer) + ".avi", CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+        // loop through possible file names until
+        // we find the next availible one
+        int filecounter = 0;
+        string filename;
+        do
+        {
+            // generate the next filename
+            char filenumber[100];
+            sprintf(filenumber, "%02d", filecounter);
+            
+            filename = configStruct.videoSaveDir
+                + "/" + filenamePrefix + "-"
+                + string(datechar)
+                + "." + string(filenumber) + ".avi";
+            
+            
+            filecounter ++;
+            
+        } while (boost::filesystem::exists(filename));
+        
+        char fourcc1 = configStruct.fourcc.at(0);
+        char fourcc2 = configStruct.fourcc.at(1);
+        char fourcc3 = configStruct.fourcc.at(2);
+        char fourcc4 = configStruct.fourcc.at(3);
+        
+        
+        // check to make sure the directory exists (otherwise the videowriter
+        // will seg fault
+        
+        recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
         if (!recorder.isOpened())
         {
             printf("VideoWriter failed to open!\n");

@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
-        msg.frame_number = numFrames;
+        msg.frame_number = recNumFrames;
         
         // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo", &msg);
