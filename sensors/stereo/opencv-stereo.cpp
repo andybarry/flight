@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
         return -1;
     }
     
-    int inter_frame_wait = 1; // wait time in ms when displaying images
+    int file_frame_number = 0; // for playing back movies
     
     if (video_file_left.length() > 0) {
         using_video_file = true;
@@ -417,6 +417,15 @@ int main(int argc, char *argv[])
             
             Mat matL_file, matR_file;
             
+            if (file_frame_number
+                >= left_video_capture.get(CV_CAP_PROP_FRAME_COUNT)) {
+                    
+                file_frame_number = left_video_capture.get(CV_CAP_PROP_FRAME_COUNT) - 1;
+            }
+            
+            left_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number);
+            right_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number);
+            
             left_video_capture >> matL_file;
             right_video_capture >> matR_file;
             
@@ -522,11 +531,9 @@ int main(int argc, char *argv[])
             
             imshow("Stereo", matDisp);
             
-            // wait for the right amount of time if we're playing
-            // back images
-            char key = waitKey(inter_frame_wait);
+            char key = waitKey(1);
             
-            if (key != 255)
+            if (key != 255 && key != -1)
             {
                 cout << endl << key << endl;
             }
@@ -573,27 +580,37 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'm':
-                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    if (!using_video_file) {
+                        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    }
                     break;
                     
                 case '1':
                     force_brightness --;
-                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    if (!using_video_file) {
+                        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    }
                     break;
                     
                 case '2':
                     force_brightness ++;
-                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    if (!using_video_file) {
+                        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    }
                     break;
                     
                 case '3':
                     force_exposure --;
-                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    if (!using_video_file) {
+                        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    }
                     break;
                     
                 case '4':
                     force_exposure ++;
-                    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    if (!using_video_file) {
+                        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+                    }
                     break;
                     
                 case '5':
@@ -602,16 +619,26 @@ int main(int argc, char *argv[])
                     state.sadThreshold = 255;
                     break;
                     
-                case '9':
-                    inter_frame_wait ++;
+                case '.':
+                    file_frame_number ++;
                     break;
                 
-                case '0':
-                    inter_frame_wait --;
+                case ',':
+                    file_frame_number --;
+                    if (file_frame_number < 0) {
+                        file_frame_number = 0;
+                    }
                     break;
                     
-                case ' ':
-                    inter_frame_wait = 0;
+                case '>':
+                    file_frame_number += 50;
+                    break;
+                
+                case '<':
+                    file_frame_number -= 50;
+                    if (file_frame_number < 0) {
+                        file_frame_number = 0;
+                    }
                     break;
                     
                 case 'q':
@@ -619,7 +646,7 @@ int main(int argc, char *argv[])
                     break;
             }
             
-            if (key != 255)
+            if (key != 255 && key != -1)
             {
                 cout << "brightness: " << force_brightness << endl;
                 cout << "exposure: " << force_exposure << endl;
@@ -628,7 +655,7 @@ int main(int argc, char *argv[])
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
                 cout << "sobelAdd = " << state.sobelAdd << endl;
-                cout << "interframe wait = " << inter_frame_wait << endl;
+                cout << "frame_number = " << file_frame_number << endl;
             }
         }
         
