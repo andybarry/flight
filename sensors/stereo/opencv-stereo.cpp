@@ -18,6 +18,8 @@ bool show_unrectified = false;
 int force_brightness = -1;
 int force_exposure = -1;
 
+int inf_disp = -14;
+
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
 Mat ringbufferR[RINGBUFFER_SIZE];
@@ -56,10 +58,13 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl;
   
-    StopCapture(d, camera);
-    StopCapture(d2, camera2);
+    if (!using_video_file) {
+      
+        StopCapture(d, camera);
+        StopCapture(d2, camera2);
+    }
     
-    if (enable_online_recording == false)
+    if (enable_online_recording == false && !using_video_file)
     {
         cout << "\tpress ctrl+\\ to quit while writing video." << endl;
         WriteVideo();
@@ -159,6 +164,7 @@ int main(int argc, char *argv[])
     
     string configFile = "";
     string video_file_left = "", video_file_right = "";
+    int file_frame_number = 0; // for playing back movies
     
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
@@ -170,6 +176,7 @@ int main(int argc, char *argv[])
     parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
     parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
+    parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.parse();
     
     // parse the config file
@@ -196,8 +203,6 @@ int main(int argc, char *argv[])
         
         return -1;
     }
-    
-    int file_frame_number = 0; // for playing back movies
     
     if (video_file_left.length() > 0) {
         using_video_file = true;
@@ -456,11 +461,20 @@ int main(int argc, char *argv[])
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
         cv::vector<Point3i> pointVector2d; // for display
+        cv::vector<Point3i> pointVector2d_inf; // for display
         
         // do the main stereo processing
         if (disable_stereo != true)
         {
+            BarryMooreState state_inf = state;
+            state_inf.disparity = inf_disp;
+            state_inf.sadThreshold = 38;
+            
+            StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d_inf, state_inf);
+            
             StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
+            
+            
         }
             
         if (enable_online_recording == true)
@@ -502,6 +516,11 @@ int main(int argc, char *argv[])
         if (show_display)
         {
 //            matDisp = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
+
+            int blackSize = 7;
+            
+            
+
             for (unsigned int i=0;i<pointVector2d.size();i++)
             {
                 int x2 = pointVector2d[i].x;
@@ -511,13 +530,25 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
             }
             
+            for (unsigned int i=0;i<pointVector2d_inf.size();i++)
+            {
+                int x2 = pointVector2d_inf[i].x;
+                int y2 = pointVector2d_inf[i].y;
+                int sad = pointVector2d_inf[i].z;
+                rectangle(matDisp, Point(x2-blackSize,y2-blackSize), Point(x2+state.blockSize+blackSize, y2+state.blockSize+blackSize), sad,  CV_FILLED);
+                rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 0);
+            }
+            
+            
+            
             // draw a line for the user to show disparity
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
             
             // OMG WHAT A HACK
             //Laplacian(matL, matDisp, -1);
             //Laplacian(matL, matDisp, -1, 3);
-            //Sobel(matL, remapR, -1, 1, 1, 3, 2, 0);
+            //Sobel(matL, remapR, -1, 1, 0, 3, 1, 0);
+            
             
             
             if (show_unrectified == false)
@@ -641,6 +672,14 @@ int main(int argc, char *argv[])
                     }
                     break;
                     
+                case 'k':
+                    inf_disp ++;
+                    break;
+                
+                case 'l':
+                    inf_disp --;
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -651,6 +690,7 @@ int main(int argc, char *argv[])
                 cout << "brightness: " << force_brightness << endl;
                 cout << "exposure: " << force_exposure << endl;
                 cout << "disparity = " << state.disparity << endl;
+                cout << "inf_disparity = " << inf_disp << endl;
                 cout << "sobelLimit = " << state.sobelLimit << endl;
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
@@ -683,8 +723,10 @@ int main(int argc, char *argv[])
     destroyWindow("Stereo");
     
     // close camera
-    StopCapture(d, camera);
-    StopCapture(d2, camera2);
+    if (!using_video_file) {
+        StopCapture(d, camera);
+        StopCapture(d2, camera2);
+    }
     
     return 0;
 }
@@ -762,6 +804,8 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
         line(leftImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
         line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
         line(rightImg, Point(lineX + disparity, 0), Point(lineX + disparity, rightImg.rows), lineColor);
+        
+        line(rightImg, Point(lineX + inf_disp, 0), Point(lineX + inf_disp, rightImg.rows), lineColor);
         
         line(leftImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
         line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);

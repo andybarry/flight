@@ -144,8 +144,13 @@ void* StereoBarryMooreThreaded(void *statet)
     Mat sobelL(leftImage.rows, leftImage.cols, leftImage.depth());
     Mat sobelR(rightImage.rows, rightImage.cols, rightImage.depth());
     
+    // vertical and horizontal sobel
     //Sobel(leftImage, sobelL, -1, 1, 1, 3, 1, 0);
     //Sobel(rightImage, sobelR, -1, 1, 1, 3, 1, 0);
+    
+    // vertical sobel
+    //Sobel(leftImage, sobelL, -1, 1, 0, 3, 1, 0);
+    //Sobel(rightImage, sobelR, -1, 1, 0, 3, 1, 0);
     
     Laplacian(leftImage, sobelL, -1, 3);
     Laplacian(rightImage, sobelR, -1, 3);
