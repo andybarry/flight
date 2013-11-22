@@ -10,8 +10,6 @@
 
 #include "opencv-stereo.hpp"
 
-
-
 bool show_display; // set to true to show opencv images on screen
 bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
@@ -199,6 +197,8 @@ int main(int argc, char *argv[])
         return -1;
     }
     
+    int inter_frame_wait = 1; // wait time in ms when displaying images
+    
     if (video_file_left.length() > 0) {
         using_video_file = true;
     }
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
         }
         
     }
-	
+    
     if (show_display)
     {
         namedWindow("Input", CV_WINDOW_AUTOSIZE);
@@ -420,9 +420,9 @@ int main(int argc, char *argv[])
             left_video_capture >> matL_file;
             right_video_capture >> matR_file;
             
-            // convert to CV_8UC1
-            matL_file.convertTo(matL, CV_8UC1);
-            matR_file.convertTo(matR, CV_8UC1);
+            // convert from a 3 channel array to a one channel array
+            cvtColor(matL_file, matL, CV_BGR2GRAY);
+            cvtColor(matR_file, matR, CV_BGR2GRAY);
             
         }
         
@@ -521,8 +521,10 @@ int main(int argc, char *argv[])
             }
             
             imshow("Stereo", matDisp);
-                
-            char key = waitKey(1);
+            
+            // wait for the right amount of time if we're playing
+            // back images
+            char key = waitKey(inter_frame_wait);
             
             if (key != 255)
             {
@@ -600,6 +602,18 @@ int main(int argc, char *argv[])
                     state.sadThreshold = 255;
                     break;
                     
+                case '9':
+                    inter_frame_wait ++;
+                    break;
+                
+                case '0':
+                    inter_frame_wait --;
+                    break;
+                    
+                case ' ':
+                    inter_frame_wait = 0;
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -614,6 +628,7 @@ int main(int argc, char *argv[])
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
                 cout << "sobelAdd = " << state.sobelAdd << endl;
+                cout << "interframe wait = " << inter_frame_wait << endl;
             }
         }
         
