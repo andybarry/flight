@@ -184,7 +184,7 @@ void* StereoBarryMooreThreaded(void *statet)
             int sad = GetSAD(leftImage, rightImage, sobelL, sobelR, j, i, state);
             // check to see if the SAD is below the threshold,
             // indicating a hit
-            if (sad < sadThreshold && sad > 10)
+            if (sad < sadThreshold && sad >= 0)
             {
                 // add it to the vector of matches
                 // don't forget to offset it by the blockSize,
@@ -318,7 +318,7 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
     if (leftVal < sobelLimit || rightVal < sobelLimit)
     {
         return -1;
-    }    
+    }
     
     //return sobel;
     return 100*(float)sad/(float)((float)sobel/(float)state.sobelAdd);

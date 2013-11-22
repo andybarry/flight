@@ -18,7 +18,8 @@ bool show_unrectified = false;
 int force_brightness = -1;
 int force_exposure = -1;
 
-int inf_disp = -14;
+int inf_disp = -22;
+int inf_sad_add = 0;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -311,9 +312,9 @@ int main(int argc, char *argv[])
     
     if (show_display)
     {
-        namedWindow("Input", CV_WINDOW_AUTOSIZE);
-        namedWindow("Input2", CV_WINDOW_AUTOSIZE);
-        namedWindow("Stereo", CV_WINDOW_AUTOSIZE);
+        namedWindow("Input", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+        namedWindow("Input2", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+        namedWindow("Stereo", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         
         setMouseCallback("Input", onMouse); // for drawing disparity lines
         setMouseCallback("Stereo", onMouse); // for drawing disparity lines
@@ -468,7 +469,8 @@ int main(int argc, char *argv[])
         {
             BarryMooreState state_inf = state;
             state_inf.disparity = inf_disp;
-            state_inf.sadThreshold = 38;
+            state_inf.sadThreshold = state.sadThreshold + inf_sad_add;
+            //state_inf.sadThreshold = 38;
             
             StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d_inf, state_inf);
             
@@ -517,7 +519,7 @@ int main(int argc, char *argv[])
         {
 //            matDisp = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
 
-            int blackSize = 7;
+            int blackSize = 10;
             
             
 
@@ -680,6 +682,14 @@ int main(int argc, char *argv[])
                     inf_disp --;
                     break;
                     
+                case 'o':
+                    inf_sad_add --;
+                    break;
+                    
+                case 'p':
+                    inf_sad_add ++;
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -691,6 +701,7 @@ int main(int argc, char *argv[])
                 cout << "exposure: " << force_exposure << endl;
                 cout << "disparity = " << state.disparity << endl;
                 cout << "inf_disparity = " << inf_disp << endl;
+                cout << "inf_sad_add = " << inf_sad_add << endl;
                 cout << "sobelLimit = " << state.sobelLimit << endl;
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
