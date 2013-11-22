@@ -35,7 +35,9 @@ lcmt_stereo_control_subscription_t *stereo_control_sub;
 
 int numFrames = 0;
 int recNumFrames = 0;
+int video_number = -1;
 bool recordingOn = true;
+bool using_video_file = false;
 
 dc1394_t        *d;
 dc1394camera_t  *camera;
@@ -118,7 +120,7 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
 void StartRecording()
 {
     // get a new filename
-    int rec_number = GetNextVideoNumber(stereoConfig);
+    video_number = GetNextVideoNumber(stereoConfig);
     
     recordingOn = true;
     recNumFrames = 0;
@@ -158,6 +160,7 @@ int main(int argc, char *argv[])
     // get input arguments
     
     string configFile = "";
+    string video_file_left = "", video_file_right = "";
     
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
@@ -167,6 +170,8 @@ int main(int argc, char *argv[])
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.add(force_brightness, "b", "force-brightness", "Force a brightness setting.");
     parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
+    parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
+    parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
     parser.parse();
     
     // parse the config file
@@ -176,6 +181,35 @@ int main(int argc, char *argv[])
         return -1;
     }
     
+    if (video_file_left.length() > 0
+        && video_file_right.length() <= 0) {
+        
+        fprintf(stderr, "Error: for playback you must specify both "
+            "a right and left video file. (Only got a left one.)\n");
+
+        return -1;
+    }
+    
+     if (video_file_left.length() <= 0
+        && video_file_right.length() > 0) {
+        
+        fprintf(stderr, "Error: for playback you must specify both "
+            "a right and left video file. (Only got a left one.)\n");
+        
+        return -1;
+    }
+    
+    if (video_file_left.length() > 0) {
+        using_video_file = true;
+    }
+    
+    if (using_video_file && enable_online_recording)
+    {
+        cout << "Cannot record while using a video file. Ignoring -r"
+            << endl;
+            
+        enable_online_recording = false;
+    }
     
     uint64 guid = stereoConfig.guidLeft;
     uint64 guid2 = stereoConfig.guidRight;
@@ -203,13 +237,16 @@ int main(int argc, char *argv[])
     dc1394error_t   err;
     dc1394error_t   err2;
     
+    VideoCapture left_video_capture;
+    VideoCapture right_video_capture;
+    
     
     
     // tell opencv to use only one core so that we can manage our
     // own threading without a fight
     setNumThreads(1);
     
-    #if !USE_IMAGE
+    if (!using_video_file) {
         d = dc1394_new ();
         if (!d)
             cerr << "Could not create dc1394 context" << endl;
@@ -246,7 +283,26 @@ int main(int argc, char *argv[])
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
         InitBrightnessSettings(camera, camera2);
-    #endif
+    } else { // !using_video_file
+        // we are using a video file, setup the readers
+        
+        if (left_video_capture.open(video_file_left) != true) {
+            cerr << "Error: failed to open " << video_file_left
+                << endl;
+            return -1;
+        } else {
+            cout << "Opened " << video_file_left << endl;
+        }
+        
+        if (right_video_capture.open(video_file_right) != true) {
+            cerr << "Error: failed to open " << video_file_right
+                << endl;
+            return -1;
+        } else {
+            cout << "Opened " << video_file_right << endl;
+        }
+        
+    }
 	
     if (show_display)
     {
@@ -261,7 +317,6 @@ int main(int argc, char *argv[])
         cvMoveWindow("Stereo", 100, 370);
         cvMoveWindow("Input2", 500, 100);
     }
-    
     // load calibration
     OpenCvStereoCalibration stereoCalibration;
     
@@ -280,8 +335,6 @@ int main(int argc, char *argv[])
     // initilize default parameters
     BarryMooreState state;
     
-    cout << stereoConfig.blockSize << endl;
-
     state.disparity = stereoConfig.disparity;
     state.sobelLimit = stereoConfig.interestOperatorLimit;
     state.blockSize = stereoConfig.blockSize;
@@ -303,38 +356,33 @@ int main(int argc, char *argv[])
     Mat matL, matR;
     bool quit = false;
     
-    #if !USE_IMAGE
-    // allocate a huge buffer for video frames
-    printf("Allocating ringbuffer data...\n");
-    matL = GetFrameFormat7(camera);
-    matR = GetFrameFormat7(camera2);
-    for (int i=0; i<RINGBUFFER_SIZE; i++)
-    {
-        ringbufferL[i].create(matL.size(), matL.type());
-        ringbufferR[i].create(matR.size(), matR.type());
-    }
-    printf("done.\n");
-    #endif
-    
-    #if USE_IMAGE
-        matL = imread("left.jpg", 0);
-        matR = imread("right.jpg", 0);
-    #endif
-    
-    
     VideoWriter recordOnlyL, recordOnlyR;
     
-    if (enable_online_recording == true)
-    {
-        // setup video writers
-        recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
-        recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig, false);
-    }
-    
-    // before we start, turn the cameras on and set the brightness and exposure
-    MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
-    
-    StartRecording(); // set up recording
+    if (!using_video_file) {
+        // allocate a huge buffer for video frames
+        printf("Allocating ringbuffer data...\n");
+        matL = GetFrameFormat7(camera);
+        matR = GetFrameFormat7(camera2);
+        for (int i=0; i<RINGBUFFER_SIZE; i++)
+        {
+            ringbufferL[i].create(matL.size(), matL.type());
+            ringbufferR[i].create(matR.size(), matR.type());
+        }
+        printf("done.\n");
+        
+        StartRecording(); // set up recording variables
+        
+        if (enable_online_recording == true)
+        {
+            // setup video writers
+            recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
+            recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig, false);
+        }
+        
+        // before we start, turn the cameras on and set the brightness and exposure
+        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
+
+    } // using_video_file
     
     // start the framerate clock
     struct timeval start, now;
@@ -343,8 +391,7 @@ int main(int argc, char *argv[])
     while (quit == false) {
     
         // get the frames from the camera
-        #if !USE_IMAGE
-        
+        if (!using_video_file) {
             // we would like to match brightness every frame
             // but that would really hurt our framerate
             // match brightness every 10 frames instead
@@ -365,8 +412,19 @@ int main(int argc, char *argv[])
                 
                 recNumFrames ++;
             }
-        #endif
-        
+        } else {
+            // using a video file -- get the next frame
+            
+            Mat matL_file, matR_file;
+            
+            left_video_capture >> matL_file;
+            right_video_capture >> matR_file;
+            
+            // convert to CV_8UC1
+            matL_file.convertTo(matL, CV_8UC1);
+            matR_file.convertTo(matR, CV_8UC1);
+            
+        }
         
         
         Mat matDisp, remapL, remapR;
@@ -426,6 +484,7 @@ int main(int argc, char *argv[])
         msg.z = z;
         msg.grey = grey;
         msg.frame_number = recNumFrames;
+        msg.video_number = video_number;
         
         // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo", &msg);
