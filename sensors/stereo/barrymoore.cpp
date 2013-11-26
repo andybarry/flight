@@ -186,6 +186,16 @@ void* StereoBarryMooreThreaded(void *statet)
             // indicating a hit
             if (sad < sadThreshold && sad >= 0)
             {
+                // got a hit
+                
+                // now check for horizontal invariance
+                // (ie check for parts of the image that look the same as this
+                // which would indicate that this might be a false-positive)
+                
+                bool is_real = CheckHorizontalInvariance(leftImage, rightImage,
+                    sobelL, sobelR, j, i, state);
+                
+                
                 // add it to the vector of matches
                 // don't forget to offset it by the blockSize,
                 // so we match the center of the block instead
@@ -324,3 +334,24 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
     return 100*(float)sad/(float)((float)sobel/(float)state.sobelAdd);
 }
 
+/**
+ * Checks for horizontal invariance by searching near the zero-disparity region
+ * for good matches.  If we find a match, that indicates that this is likely not
+ * a true obstacle since it matches in more places than just the single-disparity
+ * check.
+ * 
+ * @param leftImage left image
+ * @param rightImage right image
+ * @param pxX row pixel location
+ * @param pxY column pixel location
+ * @param state state structure that includes a number of parameters
+ *
+ * @retval true if there is another match (so NOT an obstacle)
+ */
+bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
+    Mat sobelR, int pxX, int pxY, BarryMooreState state) {
+    
+    // TODO
+    return false;
+    
+}

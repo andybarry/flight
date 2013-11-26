@@ -66,9 +66,8 @@ Mat get_hogdescriptor_visu(Mat& origImg, vector<float>& descriptorValues);
 
 void* StereoBarryMooreThreaded(void *statet);
 
-int GetHOG(Mat leftImage, Mat rightImage, int pxX, int pxY, BarryMooreState state);
-
 int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
 
+bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
  
 #endif

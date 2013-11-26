@@ -19,7 +19,7 @@ bool display_hud = false;
 int force_brightness = -1;
 int force_exposure = -1;
 
-int inf_disp = -22;
+int inf_disp = -17;
 int inf_sad_add = 0;
 int y_offset = 0;
 
