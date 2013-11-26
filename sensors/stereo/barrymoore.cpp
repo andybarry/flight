@@ -192,24 +192,24 @@ void* StereoBarryMooreThreaded(void *statet)
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
                 
-                bool is_real = CheckHorizontalInvariance(leftImage, rightImage,
-                    sobelL, sobelR, j, i, state);
+                if (CheckHorizontalInvariance(leftImage, rightImage,
+                    sobelL, sobelR, j, i, state) == false) {
                 
-                
-                // add it to the vector of matches
-                // don't forget to offset it by the blockSize,
-                // so we match the center of the block instead
-                // of the top left corner
-                localHitPoints.push_back(Point3f(j+blockSize/2.0, i+rowOffset+blockSize/2.0, disparity));
-                
-                uchar pxL = leftImage.at<uchar>(i,j);
-                pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
-                
-                hitCounter ++;
-                
-                if (state.show_display)
-                {
-                    pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
+                    // add it to the vector of matches
+                    // don't forget to offset it by the blockSize,
+                    // so we match the center of the block instead
+                    // of the top left corner
+                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+rowOffset+blockSize/2.0, disparity));
+                    
+                    uchar pxL = leftImage.at<uchar>(i,j);
+                    pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
+                    
+                    hitCounter ++;
+                    
+                    if (state.show_display)
+                    {
+                        pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
+                    }
                 }
             }
         }
@@ -351,7 +351,83 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
 bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
     Mat sobelR, int pxX, int pxY, BarryMooreState state) {
     
-    // TODO
+    // init parameters
+    int blockSize = state.blockSize;
+    int disparity = state.zero_dist_disparity;
+    int sobelLimit = state.sobelLimit;
+    
+    // top left corner of the SAD box
+    int startX = pxX;
+    int startY = pxY;
+    
+    // bottom right corner of the SAD box
+    int endX = pxX + blockSize - 1;
+    int endY = pxY + blockSize - 1;
+    
+    int vert_offset = 1;
+    
+    // here we check a few spots:
+    //  1) the expected match at zero-disparity (10-infinity meters away)
+    //  2) inf distance, moved up 1-2 pixels
+    //  3) inf distance, moved down 1-2 pixels
+    //  4) others?
+    
+    // first check zero-disparity
+    int leftVal = 0;
+    
+    int right_val_array[400];
+    int sad_array[400];
+    int sobel_array[400];
+    
+    for (int i=0;i<400;i++) {
+        right_val_array[i] = 0;
+        sad_array[i] = 0;
+        sobel_array[i] = 0;
+    }
+    
+    int counter = 0;
+    
+    for (int i=startY;i<=endY;i++)
+    {
+        for (int j=startX;j<=endX;j++)
+        {
+            // we are now looking at a single pixel value
+            uchar pxL = leftImage.at<uchar>(i,j);
+            
+            uchar pxR_array[400], sR_array[400];
+            
+            counter = 0;
+            
+            for (int vert_offset = -8; vert_offset <= 8; vert_offset+=2) {
+                
+                for (int horz_offset = -2; horz_offset <= 2; horz_offset++) {
+                    
+                    pxR_array[counter] = rightImage.at<uchar>(i + vert_offset, j + disparity + horz_offset);
+                    sR_array[counter] = sobelR.at<uchar>(i + vert_offset, j + disparity + horz_offset);
+                    right_val_array[counter] += sR_array[counter];
+                    
+                    sad_array[counter] += abs(pxL - pxR_array[counter]);
+                    
+                    
+                    counter ++;
+                }
+            }
+            
+            uchar sL = sobelL.at<uchar>(i,j);
+            
+            leftVal += sL;
+            
+        }
+    }
+
+    for (int i = 0; i < counter; i++)
+    {
+        sobel_array[i] = leftVal + right_val_array[i];
+        if (right_val_array[i] >= sobelLimit && 100*(float)sad_array[i]/(float)((float)sobel_array[i]/(float)state.sobelAdd) < state.sadThreshold) {
+            return true;
+        }
+    }
     return false;
+    
     
 }

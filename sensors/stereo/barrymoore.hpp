@@ -14,7 +14,7 @@
 
 //#define SHOW_DISPLAY 0
 
-#define NUM_THREADS 8
+#define NUM_THREADS 1
 
 
 using namespace cv;
@@ -23,6 +23,7 @@ using namespace std;
 struct BarryMooreState
 {
     int disparity;
+    int zero_dist_disparity;
     int sobelLimit;
     int blockSize;
     int sadThreshold;

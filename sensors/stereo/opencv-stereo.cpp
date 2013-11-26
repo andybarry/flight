@@ -347,6 +347,7 @@ int main(int argc, char *argv[])
     BarryMooreState state;
     
     state.disparity = stereoConfig.disparity;
+    state.zero_dist_disparity = inf_disp;
     state.sobelLimit = stereoConfig.interestOperatorLimit;
     state.blockSize = stereoConfig.blockSize;
     
@@ -551,8 +552,8 @@ int main(int argc, char *argv[])
                 int x2 = pointVector2d_inf[i].x;
                 int y2 = pointVector2d_inf[i].y;
                 int sad = pointVector2d_inf[i].z;
-                rectangle(matDisp, Point(x2-blackSize,y2-blackSize), Point(x2+state.blockSize+blackSize, y2+state.blockSize+blackSize), sad,  CV_FILLED);
-                rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 0);
+             //   rectangle(matDisp, Point(x2-blackSize,y2-blackSize), Point(x2+state.blockSize+blackSize, y2+state.blockSize+blackSize), sad,  CV_FILLED);
+               // rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 0);
             }
             
             
@@ -707,10 +708,12 @@ int main(int argc, char *argv[])
                     
                 case 'k':
                     inf_disp ++;
+                    state.zero_dist_disparity = inf_disp;
                     break;
                 
                 case 'l':
                     inf_disp --;
+                    state.zero_dist_disparity = inf_disp;
                     break;
                     
                 case 'o':
