@@ -20,6 +20,7 @@ int force_exposure = -1;
 
 int inf_disp = -22;
 int inf_sad_add = 0;
+int y_offset = 0;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -441,6 +442,15 @@ int main(int argc, char *argv[])
             
         }
         
+        // TEMP TODO TEMP:
+        // change the Y axis of the right image for post-calibration
+        // alignment
+        
+        Mat matR2 = cv::Mat::zeros(matR.size(), matR.type());
+        matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
+        
+        matR = matR2;
+        
         
         Mat matDisp, remapL, remapR;
         
@@ -690,6 +700,17 @@ int main(int argc, char *argv[])
                     inf_sad_add ++;
                     break;
                     
+                case '[':
+                    y_offset --;
+                    if (y_offset < 0) {
+                        y_offset = 0;
+                    }
+                    break;
+                
+                case ']':
+                    y_offset ++;
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -707,6 +728,7 @@ int main(int argc, char *argv[])
                 cout << "sadThreshold = " << state.sadThreshold << endl;
                 cout << "sobelAdd = " << state.sobelAdd << endl;
                 cout << "frame_number = " << file_frame_number << endl;
+                cout << "y offset = " << y_offset << endl;
             }
         }
         
