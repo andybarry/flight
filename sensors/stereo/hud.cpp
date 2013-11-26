@@ -1,7 +1,8 @@
 #include "hud.hpp"
 
 Hud::Hud() {
-    airspeed = 0;
+    airspeed = -101;
+    frame_number = 0;
     
     scale_factor = 2;
     hud_color = Scalar(0.45, 0.95, 0.48); // green
@@ -36,15 +37,21 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     resize(color_img, hud_img, output_size);
     
     DrawAirspeed(hud_img);
+    DrawFrameNumber(hud_img);
 }
 
 void Hud::DrawAirspeed(Mat hud_img)
 {
-    char airspeed_char[100];
-    
-    sprintf(airspeed_char, "%.1f", airspeed);
-    
-    string airspeed_str = airspeed_char;
+    string airspeed_str;
+    if (airspeed > -100) {
+        char airspeed_char[100];
+        
+        sprintf(airspeed_char, "%.1f", airspeed);
+        
+        airspeed_str = airspeed_char;
+    } else {
+        airspeed_str = "---";
+    }
     
     // draw airspeed ladder box
     
@@ -87,5 +94,25 @@ void Hud::DrawAirspeed(Mat hud_img)
     
     //putText(hud_img, airspeed_str, Point(airspeed_left + box_line_width + text_gap, airspeed_top - text_gap - box_line_width + airspeed_box_height), FONT_HERSHEY_DUPLEX, 0.9, hud_color);
     
-    putText(hud_img, airspeed_str, text_orgin, FONT_HERSHEY_DUPLEX, 0.9, hud_color);
+    PutHudText(hud_img, airspeed_str, text_orgin);
+}
+
+void Hud::DrawFrameNumber(Mat hud_img) {
+    // draw the frame number in the lower right
+    
+    char frame_char[100];
+    
+    sprintf(frame_char, "F%d", frame_number);
+    
+    string frame_str = frame_char;
+    
+    Point text_origin(0.83 * hud_img.cols, 0.876*hud_img.rows);
+    
+    PutHudText(hud_img, frame_str, text_origin);
+}
+
+void Hud::PutHudText(Mat hud_img, string str_in, Point text_orgin) {
+    double hud_font_scale = 0.9;
+    
+    putText(hud_img, str_in, text_orgin, FONT_HERSHEY_DUPLEX, hud_font_scale, hud_color);
 }

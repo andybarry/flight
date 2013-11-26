@@ -580,6 +580,12 @@ int main(int argc, char *argv[])
             if (display_hud) {
                 Mat with_hud;
                 
+                if (using_video_file) {
+                    hud.SetFrameNumber(file_frame_number);
+                } else {
+                    hud.SetFrameNumber(recNumFrames);
+                }
+                
                 hud.DrawHud(matDisp, with_hud);
                 
                 imshow("Stereo", with_hud);
