@@ -35,6 +35,7 @@
 
 #include "opencv-stereo-util.hpp"
 #include "barrymoore.hpp"
+#include "hud.hpp"
 
 using namespace std;
 using namespace cv;

@@ -12,11 +12,15 @@ class Hud {
     
     private:
         float airspeed;
+        int scale_factor;
+        Scalar hud_color;
+        
+        void DrawAirspeed(Mat hud_img);
     
     public:
         Hud();
         
-        void SetAirspeed(float airspeed_in) { airspeed = airspeed_in; }
+        void SetAirspeed(float airspeed_in_mps) { airspeed = 2.23694*airspeed_in_mps; }
         
         void DrawHud(InputArray _input_image, OutputArray _output_image);
     

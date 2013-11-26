@@ -14,6 +14,7 @@ bool show_display; // set to true to show opencv images on screen
 bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
 bool show_unrectified = false;
+bool display_hud = false;
 
 int force_brightness = -1;
 int force_exposure = -1;
@@ -179,6 +180,7 @@ int main(int argc, char *argv[])
     parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
     parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
+    parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
     parser.parse();
     
     // parse the config file
@@ -227,6 +229,8 @@ int main(int argc, char *argv[])
     
     
     unsigned long elapsed;
+    
+    Hud hud;
     
     
     
@@ -572,7 +576,18 @@ int main(int argc, char *argv[])
                 imshow("Input2", matR);
             }
             
-            imshow("Stereo", matDisp);
+            
+            if (display_hud) {
+                Mat with_hud;
+                
+                hud.DrawHud(matDisp, with_hud);
+                
+                imshow("Stereo", with_hud);
+            } else {
+                imshow("Stereo", matDisp);
+            }
+                        
+            
             
             char key = waitKey(1);
             
