@@ -738,6 +738,13 @@ int main(int argc, char *argv[])
                     display_hud = !display_hud;
                     break;
                     
+                case '}':
+                    hud.SetPitchRangeOfLens(hud.GetPitchRangeOfLens() + 1);
+                    break;
+                case '{':
+                    hud.SetPitchRangeOfLens(hud.GetPitchRangeOfLens() - 1);
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -756,6 +763,7 @@ int main(int argc, char *argv[])
                 cout << "sobelAdd = " << state.sobelAdd << endl;
                 cout << "frame_number = " << file_frame_number << endl;
                 cout << "y offset = " << y_offset << endl;
+                cout << "PitchRangeOfLens = " << hud.GetPitchRangeOfLens() << endl;
             }
         }
         

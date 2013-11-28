@@ -21,6 +21,9 @@ class Hud {
         const int text_font_ = FONT_HERSHEY_DUPLEX;
         const double hud_font_scale_ = 0.9;
         float text_thickness_ = 1;
+        float pitch_range_of_lens_ = 142.0;
+        
+        float cam_angle = 90;
         
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
         
@@ -52,6 +55,9 @@ class Hud {
             q2_ = q2;
             q3_ = q3;
         }
+        
+        void SetPitchRangeOfLens(float pitch_range_of_lens) { pitch_range_of_lens_ = pitch_range_of_lens; }
+        float GetPitchRangeOfLens() { return pitch_range_of_lens_; }
         
         void SetFrameNumber(int frame_number_in) { frame_number_ = frame_number_in; }
         

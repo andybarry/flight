@@ -226,7 +226,6 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
             line(hud_img, Point(left + major_line_extra_width * is_minor, this_top), Point(left + ladder_width, this_top), hud_color_, box_line_width_ + extra_height);
             
         } else {
-            // todo
             line(hud_img, Point(left, this_top), Point(left + ladder_width + major_line_extra_width * (!is_minor), this_top), hud_color_, box_line_width_ + extra_height);
         }
         
@@ -256,26 +255,88 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
 }
 
 void Hud::DrawArtificialHorizon(Mat hud_img) {
-    // get the pitch angle in degrees
-    
-    // convert from quaternions
     
     float yaw, pitch, roll;
     
     GetEulerAngles(&yaw, &pitch, &roll);
     
-    cout << "yaw: " << yaw << " pitch: " << pitch << " roll: " << roll << endl;
+    int width = 150;
+    int center_gap = 50;
+    int text_gap = 10;
+    int tip_length = 10;
     
+    float px_per_deg = hud_img.rows / pitch_range_of_lens_;
+    int center_height = hud_img.rows/2 + pitch*px_per_deg;
+    
+    int center_delta = center_height - hud_img.rows/2;
+    
+    int left = hud_img.cols/2 - (width * sin(PI/180.0 * (roll + 90)));
+    int top = hud_img.rows/2 - (width * cos(PI/180.0 * (roll + 90))) + center_delta;
+    
+    int bottom = hud_img.rows/2 - (center_gap * cos(PI/180.0 * (roll + 90))) + center_delta;
+    int right = hud_img.cols/2 - (center_gap * sin(PI/180.0 * (roll + 90)));
+    
+    line(hud_img, Point(left, top), Point(right, bottom), hud_color_, box_line_width_);
+    
+    // draw the 90 degree tips on the lines
+    int angle_left = left + sin(PI/180.0*(roll+180)) * tip_length;
+    int angle_top = top + cos(PI/180.0*(roll+180)) * tip_length;
+    
+    line(hud_img, Point(angle_left, angle_top), Point(left, top), hud_color_, box_line_width_);
+    
+    // draw the right half of the line now
+    left = hud_img.cols/2 + (center_gap * sin(PI/180.0 * (roll + 90)));
+    top = hud_img.rows/2 + (center_gap * cos(PI/180.0 * (roll + 90))) + center_delta;
+    
+    bottom = hud_img.rows/2 + (width * cos(PI/180.0 * (roll + 90))) + center_delta;
+    right = hud_img.cols/2 + (width * sin(PI/180.0 * (roll + 90)));
+    
+    line(hud_img, Point(left, top), Point(right, bottom), hud_color_, box_line_width_);
+    
+    // draw the right have tip
+    angle_left = right + sin(PI/180.0*(roll+180)) * tip_length;
+    angle_top = bottom + cos(PI/180.0*(roll+180)) * tip_length;
+    
+    line(hud_img, Point(angle_left, angle_top), Point(right, bottom), hud_color_, box_line_width_);
+    
+    // draw the pitch label
+    string pitch_str;
+    char pitch_char[100];
+        
+    sprintf(pitch_char, "%.0f", pitch);
+    
+    pitch_str = pitch_char;
+    
+    int baseline = 0;
+    Size text_size = getTextSize(pitch_str, text_font_, hud_font_scale_, text_thickness_, &baseline);
+    
+    PutHudText(hud_img, pitch_str, Point(right + text_gap, bottom + text_size.height/3));
+    
+    // draw the roll label
+    #if 0
+    string roll_str;
+    char roll_char[100];
+        
+    sprintf(roll_char, "%.0f", roll);
+    
+    roll_str = roll_char;
+    
+    baseline = 0;
+    text_size = getTextSize(roll_str, text_font_, hud_font_scale_, text_thickness_, &baseline);
+    
+    PutHudText(hud_img, roll_str, Point(hud_img.cols/2 - text_size.width/2, center_height - baseline));
+    
+    #endif
     
 }
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
     
-    *yaw = 180/PI * atan2(2*(q0_ * q1_ + q2_ * q3_), ( 1 - 2*(q1_*q1_ + q2_ * q2_) ) );
+    *roll = 180/PI * atan2(2*(q0_ * q1_ + q2_ * q3_), ( 1 - 2*(q1_*q1_ + q2_ * q2_) ) );
     
-    *pitch = 180/PI * asin(2 * (q0_ * q2_ - q3_ * q1_ ) );
+    *pitch = -180/PI * asin(2 * (q0_ * q2_ - q3_ * q1_ ) );
     
-    *roll = 180/PI * atan2( 2* (q0_ * q3_ + q1_ * q2_), ( 1 - 2*(q2_*q2_ + q3_ * q3_) ) );
+    *yaw = 180/PI * atan2( 2* (q0_ * q3_ + q1_ * q2_), ( 1 - 2*(q2_*q2_ + q3_ * q3_) ) );
 }
 
 void Hud::DrawFrameNumber(Mat hud_img) {
