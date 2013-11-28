@@ -4,6 +4,7 @@ Hud::Hud() {
     airspeed_ = -10001;
     altitude_ = -10001;
     gps_speed_= -10001;
+    battery_voltage_ = -10001;
     gps_heading_ = 0;
     frame_number_ = 0;
     q0_ = 0;
@@ -51,6 +52,7 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     DrawArtificialHorizon(hud_img);
     DrawGpsSpeed(hud_img);
     DrawCompass(hud_img);
+    DrawBatteryVoltage(hud_img);
     
     DrawFrameNumber(hud_img);
 }
@@ -395,6 +397,26 @@ void Hud::DrawGpsSpeed(Mat hud_img) {
     Point text_origin(0.1 * hud_img.cols, 0.876*hud_img.rows);
     
     PutHudText(hud_img, gps_str, text_origin);
+    
+}
+
+void Hud::DrawBatteryVoltage(Mat hud_img) {
+    char battery_char[100];
+    
+    sprintf(battery_char, "%.1fV", battery_voltage_);
+    
+    
+    string battery_str;
+    
+    if (battery_voltage_ > -10000) {
+        battery_str = battery_char;
+    } else {
+        battery_str = "--- V";
+    }
+    
+    Point text_origin(0.83 * hud_img.cols, 0.94*hud_img.rows);
+    
+    PutHudText(hud_img, battery_str, text_origin);
     
 }
 

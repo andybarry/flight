@@ -22,6 +22,7 @@
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
+#include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
 
@@ -96,6 +97,8 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
 void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user);
+
+void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user);
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
 

@@ -13,7 +13,7 @@ using namespace std;
 class Hud {
     
     private:
-        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_;
+        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_;
         int frame_number_;
         int scale_factor_;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
@@ -36,6 +36,7 @@ class Hud {
         void DrawGpsSpeed(Mat hud_img);
         void DrawArtificialHorizon(Mat hud_img);
         void DrawCompass(Mat hud_img);
+        void DrawBatteryVoltage(Mat hud_img);
         
         void GetEulerAngles(float *yaw, float *pitch, float *roll);
     
@@ -63,6 +64,8 @@ class Hud {
         }
         
         void SetGpsHeading(float gps_heading) { gps_heading_ = gps_heading; }
+        
+        void SetBatteryVoltage(float voltage) { battery_voltage_ = voltage; }
         
         void SetPitchRangeOfLens(float pitch_range_of_lens) { pitch_range_of_lens_ = pitch_range_of_lens; }
         float GetPitchRangeOfLens() { return pitch_range_of_lens_; }

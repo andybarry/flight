@@ -137,6 +137,17 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->baro_airspeed_channel = baro_airspeed_channel;
     
+    const char *battery_status_channel = g_key_file_get_string(keyfile, "lcm", "battery_status_channel", NULL);
+    
+    if (battery_status_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify battery_status_channel (or I failed to read it). Parameter: lcm.battery_status_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        battery_status_channel = "";
+    }
+    configStruct->battery_status_channel = battery_status_channel;
+    
     const char *pose_channel = g_key_file_get_string(keyfile, "lcm", "pose_channel", NULL);
     
     if (pose_channel == NULL)

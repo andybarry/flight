@@ -40,6 +40,7 @@ lcmt_stereo_control_subscription_t *stereo_control_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
+lcmt_battery_status_subscription_t *battery_status_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 
 
@@ -322,6 +323,10 @@ int main(int argc, char *argv[])
         
         if (stereoConfig.baro_airspeed_channel.length() > 0) {
             baro_airspeed_sub = lcmt_baro_airspeed_subscribe(lcm, stereoConfig.baro_airspeed_channel.c_str(), &baro_airspeed_handler, &hud);
+        }
+        
+        if (stereoConfig.battery_status_channel.length() > 0) {
+            battery_status_sub = lcmt_battery_status_subscribe(lcm, stereoConfig.battery_status_channel.c_str(), &battery_status_handler, &hud);
         }
     }
     // load calibration
@@ -936,6 +941,12 @@ void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     Hud *hud = (Hud*)user;
     
     hud->SetAirspeed(msg->airspeed);
+}
+
+void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user) {
+    Hud *hud = (Hud*)user;
+    
+    hud->SetBatteryVoltage(msg->voltage);
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {

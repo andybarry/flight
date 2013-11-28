@@ -52,6 +52,7 @@ struct OpenCvStereoConfig
     string baro_airspeed_channel;
     string pose_channel;
     string gps_channel;
+    string battery_status_channel;
     
     int disparity;
     int interestOperatorLimit;
