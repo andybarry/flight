@@ -4,6 +4,10 @@ Hud::Hud() {
     airspeed_ = -10001;
     altitude_ = -10001;
     frame_number_ = 0;
+    q0_ = 0;
+    q1_ = 0;
+    q2_ = 0;
+    q3_ = 0;
     
     scale_factor_ = 2;
 }
@@ -41,6 +45,8 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     
     DrawAltitude(hud_img);
     DrawLadder(hud_img, altitude_, false, 20, 4);
+    
+    DrawArtificialHorizon(hud_img);
     
     DrawFrameNumber(hud_img);
 }
@@ -247,17 +253,30 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
             }            
         }
     }
+}
+
+void Hud::DrawArtificialHorizon(Mat hud_img) {
+    // get the pitch angle in degrees
     
+    // convert from quaternions
     
-    //int center = GetLadderBoxTop(hud_img) + GetLadderBoxHeight(hud_img)/2;
+    float yaw, pitch, roll;
     
-    // loop from the center down, adding lines as we go
+    GetEulerAngles(&yaw, &pitch, &roll);
     
-    
+    cout << "yaw: " << yaw << " pitch: " << pitch << " roll: " << roll << endl;
     
     
 }
 
+void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
+    
+    *yaw = 180/PI * atan2(2*(q0_ * q1_ + q2_ * q3_), ( 1 - 2*(q1_*q1_ + q2_ * q2_) ) );
+    
+    *pitch = 180/PI * asin(2 * (q0_ * q2_ - q3_ * q1_ ) );
+    
+    *roll = 180/PI * atan2( 2* (q0_ * q3_ + q1_ * q2_), ( 1 - 2*(q2_*q2_ + q3_ * q3_) ) );
+}
 
 void Hud::DrawFrameNumber(Mat hud_img) {
     // draw the frame number in the lower right

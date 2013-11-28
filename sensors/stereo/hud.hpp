@@ -8,10 +8,12 @@
 using namespace cv;
 using namespace std;
 
+#define PI 3.14159265
+
 class Hud {
     
     private:
-        float airspeed_, altitude_;
+        float airspeed_, altitude_, q0_, q1_, q2_, q3_;
         int frame_number_;
         int scale_factor_;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
@@ -26,7 +28,9 @@ class Hud {
         void DrawAltitude(Mat hud_img);
         void DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_increment, int minor_increment);
         void DrawFrameNumber(Mat hud_img);
-        //void DrawArtificialHorizon(Mat hud_img);
+        void DrawArtificialHorizon(Mat hud_img);
+        
+        void GetEulerAngles(float *yaw, float *pitch, float *roll);
     
         int GetLadderBoxTop(Mat hud_img) { return hud_img.rows * 0.394; }
         int GetLadderBoxWidth(Mat hud_img) { return hud_img.cols * 0.10; }
@@ -41,6 +45,14 @@ class Hud {
         void SetAirspeed(float airspeed_in_mps) { airspeed_
             = 2.23694*airspeed_in_mps; }
         void SetAltitude(float altitude_in_meters) { altitude_ = 3.28084*altitude_in_meters; }
+        
+        void SetOrientation(float q0, float q1, float q2, float q3) {
+            q0_ = q0;
+            q1_ = q1;
+            q2_ = q2;
+            q3_ = q3;
+        }
+        
         void SetFrameNumber(int frame_number_in) { frame_number_ = frame_number_in; }
         
         void DrawHud(InputArray _input_image, OutputArray _output_image);
