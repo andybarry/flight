@@ -13,25 +13,29 @@ using namespace std;
 class Hud {
     
     private:
-        float airspeed_, altitude_, q0_, q1_, q2_, q3_;
+        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_;
         int frame_number_;
         int scale_factor_;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
         const int box_line_width_ = 2;
         const int text_font_ = FONT_HERSHEY_DUPLEX;
         const double hud_font_scale_ = 0.9;
+        const double hud_font_scale_small_ = 0.6;
         float text_thickness_ = 1;
         float pitch_range_of_lens_ = 142.0;
         
         float cam_angle = 90;
         
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
+        void PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin);
         
         void DrawAirspeed(Mat hud_img);
         void DrawAltitude(Mat hud_img);
         void DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_increment, int minor_increment);
         void DrawFrameNumber(Mat hud_img);
+        void DrawGpsSpeed(Mat hud_img);
         void DrawArtificialHorizon(Mat hud_img);
+        void DrawCompass(Mat hud_img);
         
         void GetEulerAngles(float *yaw, float *pitch, float *roll);
     
@@ -49,12 +53,16 @@ class Hud {
             = 2.23694*airspeed_in_mps; }
         void SetAltitude(float altitude_in_meters) { altitude_ = 3.28084*altitude_in_meters; }
         
+        void SetGpsSpeed(float gps_speed_in_mps) { gps_speed_ = gps_speed_in_mps * 2.23694; }
+        
         void SetOrientation(float q0, float q1, float q2, float q3) {
             q0_ = q0;
             q1_ = q1;
             q2_ = q2;
             q3_ = q3;
         }
+        
+        void SetGpsHeading(float gps_heading) { gps_heading_ = gps_heading; }
         
         void SetPitchRangeOfLens(float pitch_range_of_lens) { pitch_range_of_lens_ = pitch_range_of_lens; }
         float GetPitchRangeOfLens() { return pitch_range_of_lens_; }

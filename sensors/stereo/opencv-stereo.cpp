@@ -22,6 +22,7 @@ int force_exposure = -1;
 int inf_disp = -17;
 int inf_sad_add = 0;
 int y_offset = 0;
+int file_frame_skip = 0;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -160,6 +161,7 @@ int main(int argc, char *argv[])
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
     parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
+    parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
     parser.parse();
     
     // parse the config file
@@ -424,14 +426,18 @@ int main(int argc, char *argv[])
             
             Mat matL_file, matR_file;
             
-            if (file_frame_number
+            if (file_frame_number - file_frame_skip
                 >= left_video_capture.get(CV_CAP_PROP_FRAME_COUNT)) {
                     
-                file_frame_number = left_video_capture.get(CV_CAP_PROP_FRAME_COUNT) - 1;
+                file_frame_number = left_video_capture.get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
             }
             
-            left_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number);
-            right_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number);
+            if (file_frame_number - file_frame_skip < 0) {
+                file_frame_number = file_frame_skip;
+            }
+            
+            left_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
+            right_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
             
             left_video_capture >> matL_file;
             right_video_capture >> matR_file;
@@ -933,8 +939,10 @@ void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {
-//    Hud *hud = (Hud*)user;
+    Hud *hud = (Hud*)user;
     
+    hud->SetGpsSpeed(msg->speed);
+    hud->SetGpsHeading(msg->heading);
 }
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {

@@ -3,6 +3,8 @@
 Hud::Hud() {
     airspeed_ = -10001;
     altitude_ = -10001;
+    gps_speed_= -10001;
+    gps_heading_ = 0;
     frame_number_ = 0;
     q0_ = 0;
     q1_ = 0;
@@ -17,8 +19,8 @@ Hud::Hud() {
  * Draws the HUD (Heads Up Display)
  * 
  * @param _input_image image to draw the HUD on
+ * @param _output_image image that is returned and contains the HUD
  * 
- * @retval image with the HUD drawn
  */
 void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     Mat input_image = _input_image.getMat();
@@ -47,6 +49,8 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     DrawLadder(hud_img, altitude_, false, 20, 4);
     
     DrawArtificialHorizon(hud_img);
+    DrawGpsSpeed(hud_img);
+    DrawCompass(hud_img);
     
     DrawFrameNumber(hud_img);
 }
@@ -99,8 +103,6 @@ void Hud::DrawAirspeed(Mat hud_img) {
     // right align the numbers in the box
     Point text_orgin(airspeed_left + airspeed_box_width - text_size.width,
         airspeed_top + airspeed_box_height - baseline);
-    
-    //putText(hud_img, airspeed_str, Point(airspeed_left + box_line_width + text_gap, airspeed_top - text_gap - box_line_width + airspeed_box_height), FONT_HERSHEY_DUPLEX, 0.9, hud_color);
     
     PutHudText(hud_img, airspeed_str, text_orgin);
 }
@@ -170,6 +172,8 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
     
     int left;
     int offset = 10;
+    int gps_gap = 10;
+    int gps_triangle_size = 10;
     int vertical_line_gap = 0.021 * hud_img.rows;
     int ladder_width = 0.0186 * hud_img.cols;
     int major_line_extra_width = 0.01 * hud_img.cols;
@@ -178,7 +182,7 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
     if (for_airspeed) {
         left = GetAirspeedLeft(hud_img) + offset + GetLadderBoxWidth(hud_img) + GetLadderArrowWidth(hud_img);
     } else {
-        left = GetAltitudeLeft(hud_img) - GetLadderArrowWidth(hud_img) - offset - ladder_width - major_line_extra_width;
+        left = GetAltitudeLeft(hud_img) - GetLadderArrowWidth(hud_img) - offset - ladder_width;
     }
     
     int text_gap = 4;
@@ -222,11 +226,12 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
         }
 
         // draw the line
+        
         if (for_airspeed) {
             line(hud_img, Point(left + major_line_extra_width * is_minor, this_top), Point(left + ladder_width, this_top), hud_color_, box_line_width_ + extra_height);
             
         } else {
-            line(hud_img, Point(left, this_top), Point(left + ladder_width + major_line_extra_width * (!is_minor), this_top), hud_color_, box_line_width_ + extra_height);
+            line(hud_img, Point(left, this_top), Point(left + ladder_width - major_line_extra_width * is_minor, this_top), hud_color_, box_line_width_ + extra_height);
         }
         
         // draw a label if this is a major
@@ -250,6 +255,18 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
                 
                 PutHudText(hud_img, this_label, text_origin);
             }            
+        }
+        
+        // if this is the airspeed, we also want to draw an arrow showing where
+        // gps speed fall
+        if (for_airspeed && gps_speed_ > -10000) {
+            int gps_left = left + ladder_width + gps_gap;
+            int gps_center = (top_px_value - gps_speed_) * value_per_px + top;
+
+            line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center + gps_triangle_size/2), hud_color_, box_line_width_);
+            
+            line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center - gps_triangle_size/2), hud_color_, box_line_width_);
+            
         }
     }
 }
@@ -308,9 +325,9 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     pitch_str = pitch_char;
     
     int baseline = 0;
-    Size text_size = getTextSize(pitch_str, text_font_, hud_font_scale_, text_thickness_, &baseline);
+    Size text_size = getTextSize(pitch_str, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
     
-    PutHudText(hud_img, pitch_str, Point(right + text_gap, bottom + text_size.height/3));
+    PutHudTextSmall(hud_img, pitch_str, Point(right + text_gap, bottom + text_size.height/3));
     
     // draw the roll label
     #if 0
@@ -355,4 +372,130 @@ void Hud::DrawFrameNumber(Mat hud_img) {
 
 void Hud::PutHudText(Mat hud_img, string str_in, Point text_orgin) {
     putText(hud_img, str_in, text_orgin, text_font_, hud_font_scale_, hud_color_);
+}
+
+void Hud::PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin) {
+    putText(hud_img, str_in, text_orgin, text_font_, hud_font_scale_small_, hud_color_);
+}
+
+void Hud::DrawGpsSpeed(Mat hud_img) {
+    char gps_char[100];
+    
+    sprintf(gps_char, "GS %.1f", gps_speed_);
+    
+    
+    string gps_str;
+    
+    if (gps_speed_ > -10000) {
+        gps_str = gps_char;
+    } else {
+        gps_str = "GS ---";
+    }
+    
+    Point text_origin(0.1 * hud_img.cols, 0.876*hud_img.rows);
+    
+    PutHudText(hud_img, gps_str, text_origin);
+    
+}
+
+void Hud::DrawCompass(Mat hud_img) {
+    float yaw, pitch, roll;
+    
+    GetEulerAngles(&yaw, &pitch, &roll);
+    
+    // yaw is our compass angle
+    int compass_center_width = hud_img.cols/2;
+    int compass_center_height = hud_img.rows * 1.10;
+    int compass_radius = 0.133 * hud_img.cols;
+    int line_size = 10;
+    int text_gap = 5;
+    int arrow_gap = 10;
+    int gps_arrow_size = 5;
+    
+    int compass_increment = 10; // in degrees
+    
+    // add labels
+    int baseline = 0;
+    Size text_size = getTextSize("N", text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+    
+    for (int degree = 0; degree < 360; degree += compass_increment) {
+        // draw the compass lines
+        
+        int this_degree = degree + yaw;
+        
+        int extra_line_width = 0;
+        int extra_line_length = 0;
+        
+        if (degree % 90 == 0) {
+            extra_line_width = 1;
+            extra_line_length = 3;
+        }
+        
+        int top = sin(PI/180.0 * this_degree) * compass_radius + compass_center_height;
+        int left = cos(PI/180.0 * this_degree) * compass_radius + compass_center_width;
+        
+        int mid_top = sin(PI/180.0 * this_degree) * (compass_radius-line_size-extra_line_length) + compass_center_height;
+        int mid_left = cos(PI/180.0 * this_degree) * (compass_radius-line_size-extra_line_length) + compass_center_width;
+        
+        
+        switch (degree) {
+            case 90:
+                PutHudTextSmall(hud_img, "N", Point(mid_left - text_size.width/2, mid_top + text_size.height + text_gap));
+                break;
+                
+            case 180:
+                PutHudTextSmall(hud_img, "E", Point(mid_left - text_size.width/2, mid_top + text_size.height + text_gap));
+                break;
+                
+            case 270:
+                PutHudTextSmall(hud_img, "S", Point(mid_left - text_size.width/2, mid_top + text_size.height + text_gap));
+                break;
+                
+            case 0:
+                PutHudTextSmall(hud_img, "W", Point(mid_left - text_size.width/2, mid_top + text_size.height + text_gap));
+                break;
+        }
+        
+        line(hud_img, Point(left, top), Point(mid_left, mid_top), hud_color_, box_line_width_ + extra_line_width);
+        
+    }
+
+    // draw the arrow on the top pointing down
+    //line(hud_img, Point(compass_center_width - line_size/2, compass_center_height - compass_radius - line_size/2 - arrow_gap), Point(compass_center_width, compass_center_height - compass_radius - arrow_gap), hud_color_, box_line_width_);
+    
+    //line(hud_img, Point(compass_center_width + line_size/2, compass_center_height - compass_radius - line_size/2 - arrow_gap), Point(compass_center_width, compass_center_height - compass_radius - arrow_gap), hud_color_, box_line_width_);
+    
+    line(hud_img, Point(compass_center_width, compass_center_height - compass_radius - line_size - arrow_gap), Point(compass_center_width, compass_center_height - compass_radius - arrow_gap), hud_color_, box_line_width_);
+    
+    // print the actual angle on the screen
+    
+    char heading_char[100];
+
+    sprintf(heading_char, "%.0f", 180-yaw);
+    
+    string heading_str = heading_char;
+    
+    baseline = 0;
+    text_size = getTextSize(heading_str, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+    
+    PutHudTextSmall(hud_img, heading_str, Point(compass_center_width - text_size.width/2, compass_center_height - compass_radius - line_size - arrow_gap - baseline));
+    
+    // draw the GPS heading as an arrow on the compass
+    float this_heading = -90 + (gps_heading_ - (180-yaw));
+    int gps_top = sin(PI/180.0 * this_heading) * (compass_radius + arrow_gap) + compass_center_height;
+    int gps_left = cos(PI/180.0 * this_heading) * (compass_radius + arrow_gap) + compass_center_width;
+    
+    int gps_mid_top = sin(PI/180.0 * (this_heading+4)) * (compass_radius + arrow_gap + gps_arrow_size) + compass_center_height;
+    int gps_mid_left = cos(PI/180.0 * (this_heading+4)) * (compass_radius + arrow_gap + gps_arrow_size) + compass_center_width;
+    
+    int gps_mid_top2 = sin(PI/180.0 * (this_heading-4)) * (compass_radius + arrow_gap + gps_arrow_size) + compass_center_height;
+    int gps_mid_left2 = cos(PI/180.0 * (this_heading-4)) * (compass_radius + arrow_gap + gps_arrow_size) + compass_center_width;
+    
+    // draw a little arrow showing where GPS heading is
+    line(hud_img, Point(gps_left, gps_top), Point(gps_mid_left, gps_mid_top), hud_color_, box_line_width_);
+    
+    line(hud_img, Point(gps_left, gps_top), Point(gps_mid_left2, gps_mid_top2), hud_color_, box_line_width_);
+    
+    
+    //line(hud_img, Point(gps_left, gps_top), Point(gps_mid_left, gps_mid_top), hud_color_, box_line_width_ + 10);
 }
