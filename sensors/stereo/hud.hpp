@@ -24,13 +24,16 @@ class Hud {
         
         void DrawAirspeed(Mat hud_img);
         void DrawAltitude(Mat hud_img);
+        void DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_increment, int minor_increment);
         void DrawFrameNumber(Mat hud_img);
-        void DrawArtificialHorizon(Mat hud_img);
+        //void DrawArtificialHorizon(Mat hud_img);
     
         int GetLadderBoxTop(Mat hud_img) { return hud_img.rows * 0.394; }
         int GetLadderBoxWidth(Mat hud_img) { return hud_img.cols * 0.10; }
         int GetLadderBoxHeight(Mat hud_img) { return hud_img.rows * 0.072; }
         int GetLadderArrowWidth(Mat hud_img) { return hud_img.cols * 0.025; }
+        int GetAirspeedLeft(Mat hud_img) { return hud_img.cols * .045; }
+        int GetAltitudeLeft(Mat hud_img) { return hud_img.cols * .833; }
     
     public:
         Hud();
