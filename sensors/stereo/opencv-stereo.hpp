@@ -21,6 +21,12 @@
 #include <lcm/lcm.h>
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
+#include "../../LCM/lcmt_baro_airspeed.h"
+#include "../../LCM/mav_gps_data_t.h"
+#include "../../LCM/mav_pose_t.h"
+
+
+#include "../../LCM/lcmt_stereo_control.h"
 
 #include "../../externals/ConciseArgs.hpp"
 
@@ -76,7 +82,7 @@ struct RemapState
     int flags;
 };
 
-
+bool NonBlockingLcm(lcm_t *lcm);
 
 bool ResetPointGreyCameras();
 
@@ -86,6 +92,14 @@ void WriteVideo();
 
 void onMouse( int event, int x, int y, int, void* );
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
+
+void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
+
+void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user);
+
+void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
+
+void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
 
 
 #endif

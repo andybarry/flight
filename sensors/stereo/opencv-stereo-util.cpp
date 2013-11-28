@@ -113,6 +113,54 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->stereoControlChannel = stereoControlChannel;
     
+    
+    const char *stereo_replay_channel = g_key_file_get_string(keyfile, "lcm", "stereo_replay_channel", NULL);
+    
+    if (stereo_replay_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify stereo_replay_channel (or I failed to read it). Parameter: lcm.stereo_replay_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        stereo_replay_channel = "";
+    }
+    configStruct->stereo_replay_channel = stereo_replay_channel;
+    
+    
+    const char *baro_airspeed_channel = g_key_file_get_string(keyfile, "lcm", "baro_airspeed_channel", NULL);
+    
+    if (baro_airspeed_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify baro_airspeed_channel (or I failed to read it). Parameter: lcm.baro_airspeed_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        baro_airspeed_channel = "";
+    }
+    configStruct->baro_airspeed_channel = baro_airspeed_channel;
+    
+    const char *pose_channel = g_key_file_get_string(keyfile, "lcm", "pose_channel", NULL);
+    
+    if (pose_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify pose_channel (or I failed to read it). Parameter: lcm.pose_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        pose_channel = "";
+    }
+    configStruct->pose_channel = pose_channel;
+    
+    const char *gps_channel = g_key_file_get_string(keyfile, "lcm", "gps_channel", NULL);
+    
+    if (gps_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify gps_channel (or I failed to read it). Parameter: lcm.gps_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        gps_channel = "";
+    }
+    configStruct->gps_channel = gps_channel;
+    
+    
+    
     char *lcmUrl = g_key_file_get_string(keyfile, "lcm", "url", NULL);
     if (lcmUrl == NULL)
     {

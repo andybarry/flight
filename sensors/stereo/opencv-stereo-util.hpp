@@ -48,6 +48,11 @@ struct OpenCvStereoConfig
     string videoSaveDir;
     string fourcc;
     
+    string stereo_replay_channel;
+    string baro_airspeed_channel;
+    string pose_channel;
+    string gps_channel;
+    
     int disparity;
     int interestOperatorLimit;
     int blockSize;

@@ -35,12 +35,20 @@ int lineLeftImgPositionY = -1;
 // lcm subscription to the control channel
 lcmt_stereo_control_subscription_t *stereo_control_sub;
 
+// subscriptions to data
+lcmt_stereo_subscription_t *stereo_replay_sub;
+mav_pose_t_subscription_t *mav_pose_t_sub;
+lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
+mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
+
 
 int numFrames = 0;
 int recNumFrames = 0;
 int video_number = -1;
 bool recordingOn = true;
 bool using_video_file = false;
+
+int file_frame_number = 0; // for playing back movies
 
 dc1394_t        *d;
 dc1394camera_t  *camera;
@@ -133,41 +141,12 @@ void StartRecording()
 }
 
 
-void NonBlockingLcm(lcm_t *lcm)
-{
-    // setup an lcm function that won't block when we read it
-    int lcm_fd = lcm_get_fileno(lcm);
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(lcm_fd, &fds);
-    
-    // wait a limited amount of time for an incoming message
-    struct timeval timeout = {
-        0,  // seconds
-        1   // microseconds
-    };
-
-    
-    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-
-    if(0 == status) {
-        // no messages
-        //do nothing
-        
-    } else if(FD_ISSET(lcm_fd, &fds)) {
-        // LCM has events ready to be processed.
-        lcm_handle(lcm);
-    }
-
-}
-
 int main(int argc, char *argv[])
 {
     // get input arguments
     
     string configFile = "";
     string video_file_left = "", video_file_right = "";
-    int file_frame_number = 0; // for playing back movies
     
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
@@ -231,8 +210,6 @@ int main(int argc, char *argv[])
     unsigned long elapsed;
     
     Hud hud;
-    
-    
     
     
     // --- setup control-c handling ---
@@ -327,6 +304,23 @@ int main(int argc, char *argv[])
         cvMoveWindow("Input", 100, 100);
         cvMoveWindow("Stereo", 100, 370);
         cvMoveWindow("Input2", 500, 100);
+        
+        // if a channel exists, subscribe to it
+        if (stereoConfig.stereo_replay_channel.length() > 0) {
+            stereo_replay_sub = lcmt_stereo_subscribe(lcm, stereoConfig.stereo_replay_channel.c_str(), &stereo_replay_handler, &hud);
+        }
+        
+        if (stereoConfig.pose_channel.length() > 0) {
+            mav_pose_t_sub = mav_pose_t_subscribe(lcm, stereoConfig.pose_channel.c_str(), &mav_pose_t_handler, &hud);
+        }
+        
+        if (stereoConfig.gps_channel.length() > 0) {
+            mav_gps_data_t_sub = mav_gps_data_t_subscribe(lcm, stereoConfig.gps_channel.c_str(), &mav_gps_data_t_handler, &hud);
+        }
+        
+        if (stereoConfig.baro_airspeed_channel.length() > 0) {
+            baro_airspeed_sub = lcmt_baro_airspeed_subscribe(lcm, stereoConfig.baro_airspeed_channel.c_str(), &baro_airspeed_handler, &hud);
+        }
     }
     // load calibration
     OpenCvStereoCalibration stereoCalibration;
@@ -339,6 +333,7 @@ int main(int argc, char *argv[])
     
     // subscribe to the stereo control channel
     stereo_control_sub = lcmt_stereo_control_subscribe(lcm, stereoConfig.stereoControlChannel.c_str(), &lcm_stereo_control_handler, NULL);
+    
     
     Mat imgDisp;
     Mat imgDisp2;
@@ -472,6 +467,10 @@ int main(int argc, char *argv[])
             remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
             
             remapL.copyTo(matDisp);
+            
+            //process LCM until there are no more messages
+            // this allows us to drop frames if we are behind
+            while (NonBlockingLcm(lcm)) {}
         } // end show_display
         
         cv::vector<Point3f> pointVector3d;
@@ -735,6 +734,10 @@ int main(int argc, char *argv[])
                     y_offset ++;
                     break;
                     
+                case 'v':
+                    display_hud = !display_hud;
+                    break;
+                    
                 case 'q':
                     quit = true;
                     break;
@@ -789,7 +792,43 @@ int main(int argc, char *argv[])
 }
 
 
+/**
+ * Processes LCM messages without blocking.
+ * 
+ * @param lcm lcm object
+ * 
+ * @retval true if processed a message
+ */
+bool NonBlockingLcm(lcm_t *lcm)
+{
+    // setup an lcm function that won't block when we read it
+    int lcm_fd = lcm_get_fileno(lcm);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(lcm_fd, &fds);
+    
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+        0,  // seconds
+        1   // microseconds
+    };
 
+    
+    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+
+    if(0 == status) {
+        // no messages
+        //do nothing
+        return false;
+        
+    } else if(FD_ISSET(lcm_fd, &fds)) {
+        // LCM has events ready to be processed.
+        lcm_handle(lcm);
+        return true;
+    }
+    return false;
+
+}
 
 
 void WriteVideo()
@@ -869,6 +908,33 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
         line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), lineColor);
     }
 }
+
+// for replaying videos, subscribe to the stereo replay channel and set the frame
+// number
+void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    
+    if (msg->frame_number > 0) {
+        file_frame_number = msg->frame_number;
+    }
+}
+
+void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user) {
+    Hud *hud = (Hud*)user;
+    
+    hud->SetAirspeed(msg->airspeed);
+}
+
+void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {
+//    Hud *hud = (Hud*)user;
+    
+}
+
+void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
+    Hud *hud = (Hud*)user;
+    
+    hud->SetAltitude(msg->pos[2]);
+}
+
 
 # if 0
 /**
