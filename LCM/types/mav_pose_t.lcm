@@ -1,0 +1,21 @@
+package mav;
+
+//note that in contrast to bot_pose_t, all values ARE IN BODY COORDINATES!
+struct pose_t
+{
+    int64_t utime;              // utime that the actual measurement took place
+
+    double pos[3];              // position x,y,z in meters in local frame (ENU coordinates)
+    double vel[3];              // velocity in m/s, expressed in body frame
+
+    double orientation[4];      // rotate vector in body coordinate frame 
+                                // (X-forward, Z-down) by this to get that vector
+                                // in local frame
+
+    double rotation_rate[3];    // angular velocity vector of the vehicle
+                                // in rad/s.  This is expressed in the body
+                                // frame.
+
+    double accel[3];            // Acceleration vector in the body frame in
+                                // m/s/s.  Does not include the gravity vector.
+}

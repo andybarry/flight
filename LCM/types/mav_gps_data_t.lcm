@@ -1,0 +1,21 @@
+package mav;
+
+struct gps_data_t
+{
+	int64_t utime; 
+
+	int32_t gps_lock;
+    double longitude;
+    double latitude;
+    double elev;
+    double horizontal_accuracy;
+    double vertical_accuracy;
+    int32_t numSatellites;
+    double speed;
+    double heading;
+    
+    //computed using enu gps linearization from origin defined in fixie.cfg
+    double xyz_pos[3];
+    
+    double gps_time;
+ }
