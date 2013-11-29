@@ -41,6 +41,7 @@ lcmt_stereo_subscription_t *stereo_replay_sub;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
+lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 
 
@@ -323,6 +324,10 @@ int main(int argc, char *argv[])
         
         if (stereoConfig.baro_airspeed_channel.length() > 0) {
             baro_airspeed_sub = lcmt_baro_airspeed_subscribe(lcm, stereoConfig.baro_airspeed_channel.c_str(), &baro_airspeed_handler, &hud);
+        }
+        
+        if (stereoConfig.servo_out_channel.length() > 0) {
+            servo_out_sub = lcmt_deltawing_u_subscribe(lcm, stereoConfig.servo_out_channel.c_str(), &servo_out_handler, &hud);
         }
         
         if (stereoConfig.battery_status_channel.length() > 0) {
@@ -947,6 +952,14 @@ void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
     Hud *hud = (Hud*)user;
     
     hud->SetBatteryVoltage(msg->voltage);
+}
+
+void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user) {
+    
+    Hud *hud = (Hud*)user;
+    
+    hud->SetServoCommands((msg->throttle - 1100) * 100/797, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
+    hud->SetAutonomous(msg->is_autonomous);
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {

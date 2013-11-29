@@ -5,6 +5,9 @@ Hud::Hud() {
     altitude_ = -10001;
     gps_speed_= -10001;
     battery_voltage_ = -10001;
+    throttle_ = 0;
+    elevonL_ = 50;
+    elevonR_ = 50;
     x_accel_ = 0;
     y_accel_ = 0;
     z_accel_ = 0;
@@ -14,7 +17,7 @@ Hud::Hud() {
     q1_ = 0;
     q2_ = 0;
     q3_ = 0;
-    
+    is_autonomous_ = 0;
 }
 
 
@@ -56,9 +59,11 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     DrawCompass(hud_img);
     DrawBatteryVoltage(hud_img);
     DrawAllAccelerationIndicators(hud_img);
-    
+    DrawThrottle(hud_img);
     
     DrawFrameNumber(hud_img);
+    DrawAutonomous(hud_img);
+    DrawCenterMark(hud_img);
 }
 
 void Hud::DrawAirspeed(Mat hud_img) {
@@ -285,8 +290,11 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     
     int width = 150;
     int center_gap = 50;
-    int text_gap = 10;
     int tip_length = 10;
+    
+    int elevon_pos_max = width * 7.0/8.0;
+    int elevon_pos_min = width * 5.0/8.0;
+    
     
     float px_per_deg = hud_img.rows / pitch_range_of_lens_;
     int center_height = hud_img.rows/2 + pitch*px_per_deg;
@@ -299,6 +307,7 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     int bottom = hud_img.rows/2 - (center_gap * cos(PI/180.0 * (roll + 90))) + center_delta;
     int right = hud_img.cols/2 - (center_gap * sin(PI/180.0 * (roll + 90)));
     
+    // draw the left half of the line
     line(hud_img, Point(left, top), Point(right, bottom), hud_color_, box_line_width_);
     
     // draw the 90 degree tips on the lines
@@ -306,6 +315,14 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     int angle_top = top + cos(PI/180.0*(roll+180)) * tip_length;
     
     line(hud_img, Point(angle_left, angle_top), Point(left, top), hud_color_, box_line_width_);
+    
+    // draw the left elevon box
+    if (elevonL_ != 0 || elevonR_ != 0) {
+        // draw the left side elevon
+        DrawElevon(hud_img, elevonL_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, true);
+        
+        DrawElevon(hud_img, elevonR_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, false);
+    }
     
     // draw the right half of the line now
     left = hud_img.cols/2 + (center_gap * sin(PI/180.0 * (roll + 90)));
@@ -322,6 +339,8 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     
     line(hud_img, Point(angle_left, angle_top), Point(right, bottom), hud_color_, box_line_width_);
     
+    #if 0
+    int text_gap = 10;
     // draw the pitch label
     string pitch_str;
     char pitch_char[100];
@@ -336,7 +355,7 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     PutHudTextSmall(hud_img, pitch_str, Point(right + text_gap, bottom + text_size.height/3));
     
     // draw the roll label
-    #if 0
+    
     string roll_str;
     char roll_char[100];
         
@@ -351,6 +370,45 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     
     #endif
     
+}
+
+void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left) {
+    
+    int max_elevon_size = 100;
+    int top_line_left, top_line_top, top_line_right, top_line_bottom;
+    
+    int sign_change = 1;
+    if (is_left == false) {
+        sign_change = -1;
+    }
+    
+    int position;
+    for (int i = 0; i < 2; i++) {
+        if (i == 0) {
+            position = position_left;
+        } else {
+            position = position_right;
+        }
+    
+        int elevon_left_side_left = hud_img.cols/2 - (position * sin(PI/180.0 * (roll + 90))) * sign_change;
+        int elevon_left_side_top = hud_img.rows/2 - (position * cos(PI/180.0 * (roll + 90))) * sign_change + center_delta;
+        
+        int elevon_left_side_right = elevon_left_side_left + sin(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
+        int elevon_left_side_bottom = elevon_left_side_top + cos(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
+        
+        if (i == 0) {
+            top_line_left = elevon_left_side_right;
+            top_line_top = elevon_left_side_bottom;
+        } else {
+            top_line_right = elevon_left_side_right;
+            top_line_bottom = elevon_left_side_bottom;
+        }
+        
+        line(hud_img, Point(elevon_left_side_left, elevon_left_side_top), Point(elevon_left_side_right, elevon_left_side_bottom), hud_color_, box_line_width_);
+    }
+    
+    // now draw the top
+    line(hud_img, Point(top_line_left, top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
 }
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
@@ -532,24 +590,26 @@ void Hud::DrawAllAccelerationIndicators(Mat hud_img) {
     int y = 0.89 * hud_img.rows;
     int z = 0.95 * hud_img.rows;
     
-    DrawAccelerationIndicator(hud_img, x, "x", x_accel_);
-    DrawAccelerationIndicator(hud_img, y, "y", y_accel_);
-    DrawAccelerationIndicator(hud_img, z, "z", z_accel_);
+    int left = 0.05 * hud_img.cols;
+    
+    int max_value = 4;
+    int min_value = -4;
+    int mark_increment = 1;
+    
+    DrawGraphIndicator(hud_img, left, x, "x", min_value, max_value, mark_increment, "+%.1fG", "-%.1fG", x_accel_, true, true);
+    DrawGraphIndicator(hud_img, left, y, "y", min_value, max_value, mark_increment, "+%.1fG", "-%.1fG", y_accel_, true, true);
+    DrawGraphIndicator(hud_img, left, z, "z", min_value, max_value, mark_increment, "+%.1fG", "-%.1fG", z_accel_, true, true);
 }
 
-void Hud::DrawAccelerationIndicator(Mat hud_img, int top, string label, float value) {
+void Hud::DrawGraphIndicator(Mat hud_img, int left, int top, string label, int min_value, int max_value, int mark_increment, string plus_format, string minus_format, float value, bool zero_in_center, bool reverse_graph_direction) {
     // draw graphs for x, y, and z acceleration
     
-    int left = 0.05 * hud_img.cols;
     
     int width = 0.19 * hud_img.cols;
     
     int height = 0.01 * hud_img.cols;
     
     int line_width = 1;
-    int max_value = 4;
-    int min_value = -4;
-    int mark_increment = 1;
     int center_line_height_extra = 2;
     int arrow_width = 10;
     int arrow_gap = 3;
@@ -586,8 +646,23 @@ void Hud::DrawAccelerationIndicator(Mat hud_img, int top, string label, float va
     // draw the arrow
     
     // figure out where the arrow should be
-    float this_delta = (max_value - min_value) - (-value - min_value);
+    int sign_change;
+    if (reverse_graph_direction) {
+        sign_change = -1;
+    } else {
+        sign_change = 1;
+    }
+    
+    float this_delta;
+    if (zero_in_center) {
+        this_delta = (max_value - min_value) - (sign_change*value - min_value);
+    } else {
+        this_delta = value - min_value;
+    }
+    
     int this_location = left + this_delta * value_per_px;
+    
+    
     
     line(hud_img, Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
     
@@ -604,9 +679,9 @@ void Hud::DrawAccelerationIndicator(Mat hud_img, int top, string label, float va
     // draw value
     char accel_char[100];
     if (value < 0) {
-        sprintf(accel_char, "-%.1fG", -value);
+        sprintf(accel_char, minus_format.c_str(), -value);
     } else {
-        sprintf(accel_char, "+%.1fG", value);
+        sprintf(accel_char, plus_format.c_str(), value);
     }
     string accel_str = accel_char;
     
@@ -615,4 +690,48 @@ void Hud::DrawAccelerationIndicator(Mat hud_img, int top, string label, float va
     
     PutHudTextSmall(hud_img, accel_str, Point(left + width + text_gap, top + text_size.height/2));
     
+}
+
+void Hud::DrawAutonomous(Mat hud_img) {
+    int top = 0.07 * hud_img.rows;
+    int left;
+    
+    string str;
+    
+    if (is_autonomous_ == 1) {
+        str = "AUTONOMOUS";
+        left = 0.70 * hud_img.cols;
+    } else {
+        str = "MANUAL";
+        left = 0.82 * hud_img.cols;
+    }
+    
+    PutHudText(hud_img, str, Point(left, top));
+}
+
+void Hud::DrawCenterMark(Mat hud_img) {
+    
+    int radius = 0.020 * hud_img.rows;
+    int line_size = 0.022 * hud_img.cols;
+    int top_line_size = 0.011 * hud_img.cols;
+    
+    // draw a circle in the center
+    circle(hud_img, Point(hud_img.cols/2, hud_img.rows/2), radius, hud_color_, box_line_width_);
+    
+    // draw the lines on both sides
+    line(hud_img, Point(hud_img.cols/2 + radius + line_size, hud_img.rows/2), Point(hud_img.cols/2 + radius, hud_img.rows/2), hud_color_, box_line_width_);
+    
+    line(hud_img, Point(hud_img.cols/2 - radius - line_size, hud_img.rows/2), Point(hud_img.cols/2 - radius, hud_img.rows/2), hud_color_, box_line_width_);
+    
+    // draw the line on the top
+    line(hud_img, Point(hud_img.cols/2, hud_img.rows/2 - top_line_size - radius), Point(hud_img.cols/2, hud_img.rows/2 - radius), hud_color_, box_line_width_);
+    
+}
+
+void Hud::DrawThrottle(Mat hud_img) {
+    
+    int left = 70;
+    int top = 50;
+    
+    DrawGraphIndicator(hud_img, left, top, "Thr", 0, 100, 25, "%.0f%%", "-%.0f%%", throttle_, false, false);
 }

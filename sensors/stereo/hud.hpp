@@ -13,7 +13,7 @@ using namespace std;
 class Hud {
     
     private:
-        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_;
+        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
         int frame_number_;
         const int scale_factor_ = 2;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
@@ -23,6 +23,8 @@ class Hud {
         const double hud_font_scale_small_ = 0.3 * scale_factor_;
         float text_thickness_ = 1;
         float pitch_range_of_lens_ = 142.0;
+        int is_autonomous_;
+        
         
         float cam_angle = 90;
         
@@ -37,9 +39,17 @@ class Hud {
         void DrawArtificialHorizon(Mat hud_img);
         void DrawCompass(Mat hud_img);
         void DrawBatteryVoltage(Mat hud_img);
-        void DrawAllAccelerationIndicators(Mat hud_img);
         
-        void DrawAccelerationIndicator(Mat hud_img, int top, string label, float value);
+        
+        void DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left);
+        
+        void DrawAutonomous(Mat hud_img);
+        
+        void DrawCenterMark(Mat hud_img);
+        void DrawThrottle(Mat hud_img);
+
+        void DrawAllAccelerationIndicators(Mat hud_img);
+        void DrawGraphIndicator(Mat hud_img, int left, int top, string label, int min_value, int max_value, int mark_increment, string plus_format, string minus_format, float value, bool zero_in_center = false, bool reverse_graph_direction = false);
         
         void GetEulerAngles(float *yaw, float *pitch, float *roll);
     
@@ -70,6 +80,14 @@ class Hud {
             x_accel_ = x/9.81;
             y_accel_ = y/9.81;
             z_accel_ = z/9.81 - 1; // minus one since normal G is 1.0
+        }
+        
+        void SetAutonomous(int autonomous) { is_autonomous_ = autonomous; }
+        
+        void SetServoCommands(float throttle, float elevonL, float elevonR) {
+            throttle_ = throttle;
+            elevonL_ = elevonL;
+            elevonR_ = 100-elevonR; // because the servos are mounted in opposite directions
         }
         
         void SetGpsHeading(float gps_heading) { gps_heading_ = gps_heading; }

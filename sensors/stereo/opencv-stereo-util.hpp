@@ -53,6 +53,7 @@ struct OpenCvStereoConfig
     string pose_channel;
     string gps_channel;
     string battery_status_channel;
+    string servo_out_channel;
     
     int disparity;
     int interestOperatorLimit;

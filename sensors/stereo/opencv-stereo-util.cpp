@@ -148,6 +148,17 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->battery_status_channel = battery_status_channel;
     
+    const char *servo_out_channel = g_key_file_get_string(keyfile, "lcm", "servo_out_channel", NULL);
+    
+    if (servo_out_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify servo_out_channel (or I failed to read it). Parameter: lcm.servo_out_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        servo_out_channel = "";
+    }
+    configStruct->servo_out_channel = servo_out_channel;
+    
     const char *pose_channel = g_key_file_get_string(keyfile, "lcm", "pose_channel", NULL);
     
     if (pose_channel == NULL)
