@@ -961,6 +961,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     
     hud->SetAltitude(msg->pos[2]);
     hud->SetOrientation(msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3]);
+    hud->SetAcceleration(msg->accel[0], msg->accel[1], msg->accel[2]);
 }
 
 

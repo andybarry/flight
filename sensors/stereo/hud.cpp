@@ -5,6 +5,9 @@ Hud::Hud() {
     altitude_ = -10001;
     gps_speed_= -10001;
     battery_voltage_ = -10001;
+    x_accel_ = 0;
+    y_accel_ = 0;
+    z_accel_ = 0;
     gps_heading_ = 0;
     frame_number_ = 0;
     q0_ = 0;
@@ -12,7 +15,6 @@ Hud::Hud() {
     q2_ = 0;
     q3_ = 0;
     
-    scale_factor_ = 2;
 }
 
 
@@ -53,6 +55,8 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     DrawGpsSpeed(hud_img);
     DrawCompass(hud_img);
     DrawBatteryVoltage(hud_img);
+    DrawAllAccelerationIndicators(hud_img);
+    
     
     DrawFrameNumber(hud_img);
 }
@@ -394,7 +398,7 @@ void Hud::DrawGpsSpeed(Mat hud_img) {
         gps_str = "GS ---";
     }
     
-    Point text_origin(0.1 * hud_img.cols, 0.876*hud_img.rows);
+    Point text_origin(0.1 * hud_img.cols, 0.75*hud_img.rows);
     
     PutHudText(hud_img, gps_str, text_origin);
     
@@ -520,4 +524,95 @@ void Hud::DrawCompass(Mat hud_img) {
     
     
     //line(hud_img, Point(gps_left, gps_top), Point(gps_mid_left, gps_mid_top), hud_color_, box_line_width_ + 10);
+}
+
+void Hud::DrawAllAccelerationIndicators(Mat hud_img) {
+    
+    int x = 0.83 * hud_img.rows;
+    int y = 0.89 * hud_img.rows;
+    int z = 0.95 * hud_img.rows;
+    
+    DrawAccelerationIndicator(hud_img, x, "x", x_accel_);
+    DrawAccelerationIndicator(hud_img, y, "y", y_accel_);
+    DrawAccelerationIndicator(hud_img, z, "z", z_accel_);
+}
+
+void Hud::DrawAccelerationIndicator(Mat hud_img, int top, string label, float value) {
+    // draw graphs for x, y, and z acceleration
+    
+    int left = 0.05 * hud_img.cols;
+    
+    int width = 0.19 * hud_img.cols;
+    
+    int height = 0.01 * hud_img.cols;
+    
+    int line_width = 1;
+    int max_value = 4;
+    int min_value = -4;
+    int mark_increment = 1;
+    int center_line_height_extra = 2;
+    int arrow_width = 10;
+    int arrow_gap = 3;
+    int arrow_height = 10;
+    int text_gap = 10;
+    
+    // draw the bottom line of the graph
+    line(hud_img, Point(left, top + height), Point(left + width, top + height), hud_color_, line_width);
+    
+    // draw the markers on either end
+    line(hud_img, Point(left, top + height), Point(left, top), hud_color_, line_width);
+    
+    line(hud_img, Point(left + width, top + height), Point(left + width, top), hud_color_, line_width);
+    
+    float value_per_px = width / float(max_value - min_value);
+    
+    int extra_line_height;
+    
+    // draw little marker lines
+    for (int i = min_value; i <= max_value; i += mark_increment) {
+        
+        int delta = max_value - min_value;
+        int this_delta = delta - (i - min_value);
+        int this_location = left + (float)this_delta * value_per_px;
+        
+        if (i == 0 || i == min_value || i == max_value) {
+            extra_line_height = center_line_height_extra;
+        } else {
+            extra_line_height = 0;
+        }
+        line(hud_img, Point(this_location, top + height), Point(this_location, top - extra_line_height), hud_color_, line_width);
+    }
+    
+    // draw the arrow
+    
+    // figure out where the arrow should be
+    float this_delta = (max_value - min_value) - (-value - min_value);
+    int this_location = left + this_delta * value_per_px;
+    
+    line(hud_img, Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
+    
+    line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
+    
+    line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), hud_color_, line_width);
+    
+    // draw label
+    int baseline = 0;
+    Size text_size = getTextSize(label, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+    
+    PutHudTextSmall(hud_img, label, Point(left - text_gap - text_size.width, top + text_size.height/2 ));
+    
+    // draw value
+    char accel_char[100];
+    if (value < 0) {
+        sprintf(accel_char, "-%.1fG", -value);
+    } else {
+        sprintf(accel_char, "+%.1fG", value);
+    }
+    string accel_str = accel_char;
+    
+    baseline = 0;
+    text_size = getTextSize(accel_str, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+    
+    PutHudTextSmall(hud_img, accel_str, Point(left + width + text_gap, top + text_size.height/2));
+    
 }

@@ -13,14 +13,14 @@ using namespace std;
 class Hud {
     
     private:
-        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_;
+        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_;
         int frame_number_;
-        int scale_factor_;
+        const int scale_factor_ = 2;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
         const int box_line_width_ = 2;
         const int text_font_ = FONT_HERSHEY_DUPLEX;
-        const double hud_font_scale_ = 0.9;
-        const double hud_font_scale_small_ = 0.6;
+        const double hud_font_scale_ = 0.45 * scale_factor_;
+        const double hud_font_scale_small_ = 0.3 * scale_factor_;
         float text_thickness_ = 1;
         float pitch_range_of_lens_ = 142.0;
         
@@ -37,6 +37,9 @@ class Hud {
         void DrawArtificialHorizon(Mat hud_img);
         void DrawCompass(Mat hud_img);
         void DrawBatteryVoltage(Mat hud_img);
+        void DrawAllAccelerationIndicators(Mat hud_img);
+        
+        void DrawAccelerationIndicator(Mat hud_img, int top, string label, float value);
         
         void GetEulerAngles(float *yaw, float *pitch, float *roll);
     
@@ -61,6 +64,12 @@ class Hud {
             q1_ = q1;
             q2_ = q2;
             q3_ = q3;
+        }
+        
+        void SetAcceleration(float x, float y, float z) {
+            x_accel_ = x/9.81;
+            y_accel_ = y/9.81;
+            z_accel_ = z/9.81 - 1; // minus one since normal G is 1.0
         }
         
         void SetGpsHeading(float gps_heading) { gps_heading_ = gps_heading; }
