@@ -79,10 +79,16 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct);
 
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration);
 
+int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long timestamp, int video_number);
+
 void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 
 int GetNextVideoNumber(OpenCvStereoConfig configStruct,
     bool increment_number = true);
+    
+int MatchVideoFile(string directory, string datestr, int match_number = -1);
+
+int GetSkipNumber(string filename);
 
 string GetDateSring();
 

@@ -23,6 +23,10 @@ int inf_disp = -17;
 int inf_sad_add = 0;
 int y_offset = 0;
 int file_frame_skip = 0;
+int current_video_number = -1;
+
+VideoCapture *left_video_capture = NULL;
+VideoCapture *right_video_capture = NULL;
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -50,6 +54,10 @@ int recNumFrames = 0;
 int video_number = -1;
 bool recordingOn = true;
 bool using_video_file = false;
+bool using_video_directory = false;
+bool using_video_from_disk = false;
+
+string video_directory = "";
 
 int file_frame_number = 0; // for playing back movies
 
@@ -72,13 +80,13 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl;
   
-    if (!using_video_file) {
+    if (!using_video_from_disk) {
       
         StopCapture(d, camera);
         StopCapture(d2, camera2);
     }
     
-    if (enable_online_recording == false && !using_video_file)
+    if (enable_online_recording == false && !using_video_from_disk)
     {
         cout << "\tpress ctrl+\\ to quit while writing video." << endl;
         WriteVideo();
@@ -161,6 +169,7 @@ int main(int argc, char *argv[])
     parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
     parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
+    parser.add(video_directory, "i", "video-directory", "Directory to search for videos in (for playback).");
     parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
     parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
@@ -193,9 +202,15 @@ int main(int argc, char *argv[])
     
     if (video_file_left.length() > 0) {
         using_video_file = true;
+        using_video_from_disk = true;
     }
     
-    if (using_video_file && enable_online_recording)
+    if (video_directory.length() > 0) {
+        using_video_directory = true;
+        using_video_from_disk = true;
+    }
+    
+    if (using_video_from_disk && enable_online_recording)
     {
         cout << "Cannot record while using a video file. Ignoring -r"
             << endl;
@@ -229,16 +244,12 @@ int main(int argc, char *argv[])
     dc1394error_t   err;
     dc1394error_t   err2;
     
-    VideoCapture left_video_capture;
-    VideoCapture right_video_capture;
-    
-    
     
     // tell opencv to use only one core so that we can manage our
     // own threading without a fight
     setNumThreads(1);
     
-    if (!using_video_file) {
+    if (!using_video_from_disk) {
         d = dc1394_new ();
         if (!d)
             cerr << "Could not create dc1394 context" << endl;
@@ -275,25 +286,30 @@ int main(int argc, char *argv[])
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
         InitBrightnessSettings(camera, camera2);
-    } else { // !using_video_file
+    } else { // !using_video_from_disk
         // we are using a video file, setup the readers
         
-        if (left_video_capture.open(video_file_left) != true) {
-            cerr << "Error: failed to open " << video_file_left
-                << endl;
-            return -1;
-        } else {
-            cout << "Opened " << video_file_left << endl;
-        }
+        left_video_capture = new VideoCapture();
+        right_video_capture = new VideoCapture();
         
-        if (right_video_capture.open(video_file_right) != true) {
-            cerr << "Error: failed to open " << video_file_right
-                << endl;
-            return -1;
-        } else {
-            cout << "Opened " << video_file_right << endl;
+        if (using_video_file) {
+            
+            if (left_video_capture->open(video_file_left) != true) {
+                cerr << "Error: failed to open " << video_file_left
+                    << endl;
+                return -1;
+            } else {
+                cout << "Opened " << video_file_left << endl;
+            }
+            
+            if (right_video_capture->open(video_file_right) != true) {
+                cerr << "Error: failed to open " << video_file_right
+                    << endl;
+                return -1;
+            } else {
+                cout << "Opened " << video_file_right << endl;
+            }
         }
-        
     }
     
     if (show_display)
@@ -377,7 +393,7 @@ int main(int argc, char *argv[])
     
     VideoWriter recordOnlyL, recordOnlyR;
     
-    if (!using_video_file) {
+    if (!using_video_from_disk) {
         // allocate a huge buffer for video frames
         printf("Allocating ringbuffer data...\n");
         matL = GetFrameFormat7(camera);
@@ -401,7 +417,7 @@ int main(int argc, char *argv[])
         // before we start, turn the cameras on and set the brightness and exposure
         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
 
-    } // using_video_file
+    } // !using_video_from_disk
     
     // start the framerate clock
     struct timeval start, now;
@@ -410,7 +426,7 @@ int main(int argc, char *argv[])
     while (quit == false) {
     
         // get the frames from the camera
-        if (!using_video_file) {
+        if (!using_video_from_disk) {
             // we would like to match brightness every frame
             // but that would really hurt our framerate
             // match brightness every 10 frames instead
@@ -434,27 +450,46 @@ int main(int argc, char *argv[])
         } else {
             // using a video file -- get the next frame
             
-            Mat matL_file, matR_file;
-            
-            if (file_frame_number - file_frame_skip
-                >= left_video_capture.get(CV_CAP_PROP_FRAME_COUNT)) {
-                    
-                file_frame_number = left_video_capture.get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
+            if (using_video_directory && current_video_number < 0) {
+                // we don't have videos yet
+                // this is probably happening because we're waiting for
+                // LCM messages to load the video
+                
+                // create an image to display that says "waiting for LCM"
+                
+                
+                matL = Mat::zeros(240, 376, CV_8UC1);
+                matR = Mat::zeros(240, 376, CV_8UC1);
+                
+                // put text on the maps
+                putText(matL, "Waiting for LCM messages...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+                putText(matR, "Waiting for LCM messages...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+                
+                
+            } else {
+                Mat matL_file, matR_file;
+                
+                if (file_frame_number - file_frame_skip
+                    >= left_video_capture->get(CV_CAP_PROP_FRAME_COUNT)) {
+                        
+                    file_frame_number = left_video_capture->get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
+                }
+                
+                if (file_frame_number - file_frame_skip < 0) {
+                    file_frame_number = file_frame_skip;
+                }
+                
+                left_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
+                right_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
+                
+                (*left_video_capture) >> matL_file;
+                (*right_video_capture) >> matR_file;
+                
+                // convert from a 3 channel array to a one channel array
+                cvtColor(matL_file, matL, CV_BGR2GRAY);
+                cvtColor(matR_file, matR, CV_BGR2GRAY);
+                
             }
-            
-            if (file_frame_number - file_frame_skip < 0) {
-                file_frame_number = file_frame_skip;
-            }
-            
-            left_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-            right_video_capture.set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-            
-            left_video_capture >> matL_file;
-            right_video_capture >> matR_file;
-            
-            // convert from a 3 channel array to a one channel array
-            cvtColor(matL_file, matL, CV_BGR2GRAY);
-            cvtColor(matR_file, matR, CV_BGR2GRAY);
             
         }
         
@@ -488,7 +523,6 @@ int main(int argc, char *argv[])
             // this allows us to drop frames if we are behind
             while (NonBlockingLcm(lcm)) {}
         } // end show_display
-        
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
         cv::vector<Point3i> pointVector2d; // for display
@@ -505,7 +539,6 @@ int main(int argc, char *argv[])
             StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d_inf, state_inf);
             
             StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
-            
             
         }
             
@@ -596,8 +629,9 @@ int main(int argc, char *argv[])
             if (display_hud) {
                 Mat with_hud;
                 
-                if (using_video_file) {
+                if (using_video_from_disk) {
                     hud.SetFrameNumber(file_frame_number);
+                    hud.SetVideoNumber(current_video_number);
                 } else {
                     hud.SetFrameNumber(recNumFrames);
                 }
@@ -660,35 +694,35 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'm':
-                    if (!using_video_file) {
+                    if (!using_video_from_disk) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '1':
                     force_brightness --;
-                    if (!using_video_file) {
+                    if (!using_video_from_disk) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '2':
                     force_brightness ++;
-                    if (!using_video_file) {
+                    if (!using_video_from_disk) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '3':
                     force_exposure --;
-                    if (!using_video_file) {
+                    if (!using_video_from_disk) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '4':
                     force_exposure ++;
-                    if (!using_video_file) {
+                    if (!using_video_from_disk) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
@@ -807,7 +841,7 @@ int main(int argc, char *argv[])
     destroyWindow("Stereo");
     
     // close camera
-    if (!using_video_file) {
+    if (!using_video_from_disk) {
         StopCapture(d, camera);
         StopCapture(d2, camera2);
     }
@@ -936,6 +970,17 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
 // for replaying videos, subscribe to the stereo replay channel and set the frame
 // number
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    
+    if (using_video_directory && msg->video_number != current_video_number && msg->video_number >= 0) {
+        // load a new video file
+        file_frame_skip = LoadVideoFileFromDir(left_video_capture, right_video_capture, video_directory, msg->timestamp, msg->video_number);
+        
+        if (file_frame_skip >= 0) {
+            current_video_number = msg->video_number;
+        } else {
+            current_video_number = -1;
+        }
+    }
     
     if (msg->frame_number > 0) {
         file_frame_number = msg->frame_number;

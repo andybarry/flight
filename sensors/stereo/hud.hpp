@@ -15,7 +15,7 @@ class Hud {
     private:
         float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
         long timestamp_;
-        int frame_number_;
+        int frame_number_, video_number_;
         const int scale_factor_ = 2;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
         const int box_line_width_ = 2;
@@ -92,6 +92,8 @@ class Hud {
             elevonL_ = elevonL;
             elevonR_ = 100-elevonR; // because the servos are mounted in opposite directions
         }
+        
+        void SetVideoNumber(int video_number) { video_number_ = video_number; }
         
         void SetGpsHeading(float gps_heading) { gps_heading_ = gps_heading; }
         

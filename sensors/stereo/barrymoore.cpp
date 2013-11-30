@@ -70,7 +70,7 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         
         //statet[i].localHitPoints = &(state.localHitPoints[i]);
 
-        // fire the thread        
+        // fire the thread      
         pthread_create( &thread[i], NULL, StereoBarryMooreThreaded, &statet[i]);
     }
     

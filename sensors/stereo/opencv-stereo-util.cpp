@@ -408,51 +408,8 @@ int GetNextVideoNumber(OpenCvStereoConfig configStruct,
     // other videos have been taken today
     if (boost::filesystem::exists(configStruct.videoSaveDir)) {
             
-        boost::filesystem::directory_iterator end_itr; // default construction
-                                    // yields past-the-end
-        for (boost::filesystem::directory_iterator itr(configStruct.videoSaveDir);
-            itr != end_itr; ++itr ) {
-            // iterate through the videos, keeping track
-            // of the highest number
-            
-            // munch on the filename to pull out
-            // just the ending part
-            
-            // 17 characters in 2013-11-21.01.avi
-            // or in            xxxx-xx-xx.xx.avi
-            
-            
-            string this_file = itr->path().leaf().string();
-
-            if (this_file.length() > 18) {
-
-                // might be a video file
-
-                // read the date in the string
-                string file_date = this_file.substr(
-                    this_file.length() - 17, 10);
-
-                // compare the date string and see if it
-                // is today
-                if (file_date.compare(datechar) == 0) {
-                    // matches today's date
-                    // get the number
-                    string file_number = this_file.substr(
-                        this_file.length() - 6, 2);
-                        
-                    // attempt to convert the string to a number
-                    try {
-                        int this_number = stoi(file_number);
-                        if (max_number < this_number) {
-                            max_number = this_number;
-                        }
-                    } catch (...) {
-                        // failed to convert, don't do anything
-                        // since this isn't
-                    }
-                }
-            }
-        }
+        max_number = MatchVideoFile(configStruct.videoSaveDir, datechar);
+        
     }
     
     if (increment_number == true) {
@@ -463,7 +420,137 @@ int GetNextVideoNumber(OpenCvStereoConfig configStruct,
 }
 
 /**
- * Returns the date for use in video filenames
+ * Searches a directory for video files of the form 
+ * video[L|R]-skip-xxx-xxxx-xx-xx.xx.avi
+ * so for example, videoL-skip-0-2013-11-16.00.avi
+ * 
+ * If you give a match_number, we will return the skip value or -1 on failure
+ * 
+ * If you do not supply a match_number, we will return the maximum video file
+ * number in the directory.
+ * 
+ * @param directory directory to search for videos
+ * @param datestr string containing date to search for (ex. 2013-11-16)
+ * @param match_number (optional).  If provided, will return the skip value for
+ *  that number.  Otherwise will return the largest video number in the
+ *  directory.
+ * 
+ * @retval if match_number, the skip value, else, the largest video number in
+ *  the directory.
+ * 
+ */
+int MatchVideoFile(string directory, string datestr, int match_number) {
+    
+    int return_number = 0;
+    
+    boost::filesystem::directory_iterator end_itr; // default construction
+                                                   // yields past-the-end
+    for (boost::filesystem::directory_iterator itr(directory);
+        itr != end_itr; ++itr ) {
+        // iterate through the videos, keeping track
+        // of the highest number
+        
+        // munch on the filename to pull out
+        // just the ending part
+        
+        // 17 characters in 2013-11-21.01.avi
+        // or in            xxxx-xx-xx.xx.avi
+        
+        
+        string this_file = itr->path().leaf().string();
+
+        if (this_file.length() > 18) {
+
+            // might be a video file
+
+            // read the date in the string
+            string file_date = this_file.substr(
+                this_file.length() - 17, 10);
+
+            // compare the date string and see if it
+            // is today
+            if (file_date.compare(datestr) == 0) {
+                // matches date
+                // get the number
+                string file_number = this_file.substr(
+                    this_file.length() - 6, 2);
+                    
+                // attempt to convert the string to a number
+                try {
+                    int this_number = stoi(file_number);
+                    
+                    if (match_number >= 0) {
+                        // if we are checking for a specific file, 
+                        // find the skip amount in that file
+                        
+                        if (match_number == this_number) {
+                            // this is the file we're searching for!
+                            return GetSkipNumber(this_file);
+                        }
+                        
+                    } else {
+                        // if we are not checking for a match, determine if this
+                        // is the max number
+                        if (return_number < this_number) {
+                            return_number = this_number;
+                        }
+                    }
+                } catch (...) {
+                    // failed to convert, don't do anything
+                    // since this isn't
+                }
+            }
+        }
+    }
+    
+    return return_number;
+}
+
+/**
+ * Reads a video filename and returns the skip number
+ * 
+ * @param filename video file name in the standard video filename format
+ *  (ex. videoL-skip-0-2013-11-16.00.avi)
+ * 
+ * @retval skip amount or -1 on failure.
+ * 
+ */
+int GetSkipNumber(string filename) {
+    
+    // videoL-skip- is 12 characters
+    string filename2 = filename.substr(12);
+    
+    
+    // now we have 226-2013-11-16.00.avi
+    
+    // need to match the first "-" and then we'll have our number
+    int dash_pos = filename2.find("-");
+    
+    if ((unsigned int)dash_pos == string::npos) {
+        // failed to find it, bail out
+        return -1;
+    }
+    
+    // get just the numbers
+    string skipstr = filename2.substr(0, dash_pos);
+    
+    // convert to an integer
+    try {
+        int this_number = stoi(skipstr);
+        
+        return this_number;
+    } catch (...) {
+        // failed to convert, don't do anything
+        // since this isn't
+        return -1;
+    }
+    
+    return -1;
+}
+
+
+/**
+ * Returns the current date for use in video filenames
  *
  * @retval string of the date in "yyyy-mm-dd" format
  */
@@ -586,8 +673,94 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     
     dc1394_feature_set_power(camera2, DC1394_FEATURE_GAMMA, DC1394_OFF);
     
+}
+
+/**
+ * LoadVideoFileFromDir loads two video files from a directory, given a video
+ * directory, a timestamp, and video number.
+ * 
+ * @param left_video_capture video capture to fill in for the left video
+ * @param left_video_capture video capture to fill in for the right video
+ * @param video_directory directory to search for video files
+ * @param timestamp timestamp to extract the date out of
+ * @param video_number video number to load
+ * 
+ * @retval frame skip amount, or -1 on failure.
+ * 
+ */
+int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long timestamp, int video_number) {
+    
+    // if the directory has a trailing "/", zap it
+    if (video_directory.back() == '/') {
+        video_directory = video_directory.substr(0, video_directory.length() - 1);
+    }
+    
+    // first, ensure the directory exists
+    if (!boost::filesystem::exists(video_directory)) {
+        cerr << "Error: directory does not exist: " << video_directory << endl;
+        return -1;
+    }
+    
+    char tmbuf[64], buf[64];
+    
+    // convert the timestamp to a date
+    struct tm *nowtm;
+    time_t tv_sec = timestamp / 1000000.0;
+    nowtm = localtime(&tv_sec);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d", nowtm);
+    sprintf(buf, "%s", tmbuf);
+
+    string datetime = buf;
+    
+    int skip_amount = MatchVideoFile(video_directory, datetime, video_number);
+    
+    
+    // format the video number as a two-decimal value
+    char filenumber[100];
+    sprintf(filenumber, "%02d", video_number);
+    string video_number_str = filenumber;
+    
+    // now we have the full filename
+    string left_video = video_directory + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
+        + "." + video_number_str + ".avi";
+        
+    string right_video = video_directory + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
+        + "." + video_number_str + ".avi";
+    
+    // attempt to create video capture objects
+    
+    if (!left_video_capture) {
+        left_video_capture = new VideoCapture();
+    } else {
+        left_video_capture->release();
+    }
+    
+    if (!right_video_capture) {
+        right_video_capture = new VideoCapture();
+    } else {
+        right_video_capture->release();
+    }
+    
+    cout << endl << "Loading:" << endl << "\t" << left_video << endl << "\t" << right_video << endl;
+    
+    left_video_capture->open(left_video);
+    if (!left_video_capture->isOpened()) {
+        cerr << "Error: failed to load " << left_video << endl;
+        return -1;
+    }
+    
+    right_video_capture->open(right_video);
+    if (!right_video_capture->isOpened()) {
+        cerr << "Error: failed to load " << right_video << endl;
+        return -1;
+    }
+    
+    
+    return skip_amount;
+    
     
 }
+
 
 
 /**

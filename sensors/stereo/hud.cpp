@@ -13,6 +13,7 @@ Hud::Hud() {
     z_accel_ = 0;
     gps_heading_ = 0;
     frame_number_ = 0;
+    video_number_ = -1;
     q0_ = 0;
     q1_ = 0;
     q2_ = 0;
@@ -426,11 +427,15 @@ void Hud::DrawFrameNumber(Mat hud_img) {
     
     char frame_char[100];
     
-    sprintf(frame_char, "F%d", frame_number_);
+    if (video_number_ >= 0) {
+        sprintf(frame_char, "F%02d.%d", video_number_, frame_number_);
+    } else {
+        sprintf(frame_char, "F%d", frame_number_);
+    }
     
     string frame_str = frame_char;
     
-    Point text_origin(0.83 * hud_img.cols, 0.866*hud_img.rows);
+    Point text_origin(0.76 * hud_img.cols, 0.866*hud_img.rows);
     
     PutHudText(hud_img, frame_str, text_origin);
 }
@@ -477,7 +482,7 @@ void Hud::DrawBatteryVoltage(Mat hud_img) {
         battery_str = "--- V";
     }
     
-    Point text_origin(0.83 * hud_img.cols, 0.93*hud_img.rows);
+    Point text_origin(0.76 * hud_img.cols, 0.93*hud_img.rows);
     
     PutHudText(hud_img, battery_str, text_origin);
     
