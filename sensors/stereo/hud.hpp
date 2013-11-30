@@ -14,6 +14,7 @@ class Hud {
     
     private:
         float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
+        long timestamp_;
         int frame_number_;
         const int scale_factor_ = 2;
         const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
@@ -39,6 +40,8 @@ class Hud {
         void DrawArtificialHorizon(Mat hud_img);
         void DrawCompass(Mat hud_img);
         void DrawBatteryVoltage(Mat hud_img);
+        
+        void DrawDateTime(Mat hud_img);
         
         
         void DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left);
@@ -99,7 +102,11 @@ class Hud {
         
         void SetFrameNumber(int frame_number_in) { frame_number_ = frame_number_in; }
         
+        void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
+        
         void DrawHud(InputArray _input_image, OutputArray _output_image);
+        
+        
     
     
     

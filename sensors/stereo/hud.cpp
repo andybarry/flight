@@ -60,6 +60,7 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     DrawBatteryVoltage(hud_img);
     DrawAllAccelerationIndicators(hud_img);
     DrawThrottle(hud_img);
+    DrawDateTime(hud_img);
     
     DrawFrameNumber(hud_img);
     DrawAutonomous(hud_img);
@@ -429,7 +430,7 @@ void Hud::DrawFrameNumber(Mat hud_img) {
     
     string frame_str = frame_char;
     
-    Point text_origin(0.83 * hud_img.cols, 0.876*hud_img.rows);
+    Point text_origin(0.83 * hud_img.cols, 0.866*hud_img.rows);
     
     PutHudText(hud_img, frame_str, text_origin);
 }
@@ -476,7 +477,7 @@ void Hud::DrawBatteryVoltage(Mat hud_img) {
         battery_str = "--- V";
     }
     
-    Point text_origin(0.83 * hud_img.cols, 0.94*hud_img.rows);
+    Point text_origin(0.83 * hud_img.cols, 0.93*hud_img.rows);
     
     PutHudText(hud_img, battery_str, text_origin);
     
@@ -734,4 +735,31 @@ void Hud::DrawThrottle(Mat hud_img) {
     int top = 50;
     
     DrawGraphIndicator(hud_img, left, top, "Thr", 0, 100, 25, "%.0f%%", "-%.0f%%", throttle_, false, false);
+}
+
+void Hud::DrawDateTime(Mat hud_img) {
+    
+    int left = 1 * hud_img.cols;
+    int top = 1 * hud_img.rows;
+    
+    int text_gap = 1;
+    
+    char tmbuf[64], buf[64];
+    
+    // figure out what time the plane thinks it is
+    struct tm *nowtm;
+    time_t tv_sec = timestamp_ / 1000000.0;
+    nowtm = localtime(&tv_sec);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    sprintf(buf, "%s", tmbuf);
+
+
+    string datetime = buf;
+    
+    // put the date/time on the frame
+    int baseline = 0;
+    Size text_size = getTextSize(datetime, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+    
+    PutHudTextSmall(hud_img, datetime, Point(left - text_size.width - text_gap, top - text_size.height + baseline));
+    
 }
