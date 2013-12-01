@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
     unsigned long elapsed;
     
     Hud hud;
+    hud.SetClutterLevel(0);
     
     
     // --- setup control-c handling ---
@@ -786,6 +787,14 @@ int main(int argc, char *argv[])
                     
                 case 'v':
                     display_hud = !display_hud;
+                    break;
+                
+                case 'c':
+                    hud.SetClutterLevel(hud.GetClutterLevel() + 1);
+                    break;
+                
+                case 'C':
+                    hud.SetClutterLevel(hud.GetClutterLevel() - 1);
                     break;
                     
                 case '}':

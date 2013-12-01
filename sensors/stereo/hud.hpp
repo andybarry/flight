@@ -25,6 +25,7 @@ class Hud {
         float text_thickness_ = 1;
         float pitch_range_of_lens_ = 142.0;
         int is_autonomous_;
+        int clutter_level_;
         
         
         float cam_angle = 90;
@@ -92,6 +93,9 @@ class Hud {
             elevonL_ = elevonL;
             elevonR_ = 100-elevonR; // because the servos are mounted in opposite directions
         }
+        
+        int GetClutterLevel() { return clutter_level_; }
+        void SetClutterLevel(int clutter_level) { clutter_level_ = clutter_level; }
         
         void SetVideoNumber(int video_number) { video_number_ = video_number; }
         

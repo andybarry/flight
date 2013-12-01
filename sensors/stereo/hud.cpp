@@ -19,6 +19,7 @@ Hud::Hud() {
     q2_ = 0;
     q3_ = 0;
     is_autonomous_ = 0;
+    clutter_level_ = 10;
 }
 
 
@@ -49,23 +50,43 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     
     resize(color_img, hud_img, output_size);
     
-    DrawAirspeed(hud_img);
-    DrawLadder(hud_img, airspeed_, true, 10, 2);
+    if (clutter_level_ > 0) {
+        DrawAirspeed(hud_img);
+        DrawLadder(hud_img, airspeed_, true, 10, 2);
+        
+        DrawAltitude(hud_img);
+        DrawLadder(hud_img, altitude_, false, 20, 4);
+        
+        DrawCenterMark(hud_img);
+        
+    }    
     
-    DrawAltitude(hud_img);
-    DrawLadder(hud_img, altitude_, false, 20, 4);
+    if (clutter_level_ > 1) {
+        DrawGpsSpeed(hud_img);
+        DrawAutonomous(hud_img);
+        DrawFrameNumber(hud_img);
+        DrawBatteryVoltage(hud_img);
+        DrawDateTime(hud_img);
+        
+    }
     
-    DrawArtificialHorizon(hud_img);
-    DrawGpsSpeed(hud_img);
-    DrawCompass(hud_img);
-    DrawBatteryVoltage(hud_img);
-    DrawAllAccelerationIndicators(hud_img);
-    DrawThrottle(hud_img);
-    DrawDateTime(hud_img);
+    if (clutter_level_ > 2) {
+        DrawArtificialHorizon(hud_img);
+        DrawThrottle(hud_img);
+    }
     
-    DrawFrameNumber(hud_img);
-    DrawAutonomous(hud_img);
-    DrawCenterMark(hud_img);
+    if (clutter_level_ > 3) {
+        DrawAllAccelerationIndicators(hud_img);
+    }
+    
+    
+    if (clutter_level_ > 4) {
+        DrawCompass(hud_img);
+    }
+    
+    
+    
+    
 }
 
 void Hud::DrawAirspeed(Mat hud_img) {
