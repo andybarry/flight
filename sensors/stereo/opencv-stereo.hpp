@@ -93,7 +93,10 @@ void StartRecording();
 void WriteVideo();
 
 void onMouse( int event, int x, int y, int, void* );
+void onMouseStereo( int event, int x, int y, int, void* hud);
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
+
+void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size);
 
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 

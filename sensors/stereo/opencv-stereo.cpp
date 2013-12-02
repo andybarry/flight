@@ -319,12 +319,19 @@ int main(int argc, char *argv[])
         namedWindow("Input2", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         namedWindow("Stereo", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         
-        setMouseCallback("Input", onMouse); // for drawing disparity lines
-        setMouseCallback("Stereo", onMouse); // for drawing disparity lines
+        namedWindow("Left Block", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+        namedWindow("Right Block", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+    
+    
         
-        cvMoveWindow("Input", 100, 100);
-        cvMoveWindow("Stereo", 100, 370);
-        cvMoveWindow("Input2", 500, 100);
+        setMouseCallback("Input", onMouse); // for drawing disparity lines
+        setMouseCallback("Stereo", onMouseStereo, &hud); // for drawing disparity lines
+        
+        moveWindow("Input", 100, 100);
+        moveWindow("Stereo", 100, 370);
+        moveWindow("Input2", 500, 100);
+        moveWindow("Left Block", 500, 370);
+        moveWindow("Right Block", 1000, 370);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
@@ -604,8 +611,12 @@ int main(int argc, char *argv[])
              //   rectangle(matDisp, Point(x2-blackSize,y2-blackSize), Point(x2+state.blockSize+blackSize, y2+state.blockSize+blackSize), sad,  CV_FILLED);
                // rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 0);
             }
+
             
-            
+            // draw pixel blocks
+            if (lineLeftImgPosition >= 0 && lineLeftImgPositionY >= 0) {
+                DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize/2, state.disparity, state.blockSize);
+            }
             
             // draw a line for the user to show disparity
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
@@ -643,6 +654,8 @@ int main(int argc, char *argv[])
             } else {
                 imshow("Stereo", matDisp);
             }
+            
+            
                         
             
             
@@ -954,8 +967,27 @@ void onMouse( int event, int x, int y, int flags, void* )
     }
 }
 
-void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity)
-{
+/* setup a mouse callback so that the user can click on an image
+ * and see where the disparity line is on the other image pair
+ */
+void onMouseStereo( int event, int x, int y, int flags, void* hud) {
+    Hud *hud_in = (Hud*) hud;
+    
+    if( flags & CV_EVENT_FLAG_LBUTTON)
+    {
+        // paint a line on the image they clicked on
+        if (display_hud) {
+            // check for scaling on the hud
+            lineLeftImgPosition = x / hud_in->GetImageScaling();
+            lineLeftImgPositionY = y / hud_in->GetImageScaling();
+        } else {
+            lineLeftImgPosition = x;
+            lineLeftImgPositionY = y;
+        }
+    }
+}
+
+void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity) {
     int lineColor = 128;
     if (lineX >= 0)
     {
@@ -974,6 +1006,44 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
         line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
         line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), lineColor);
     }
+}
+
+/**
+ * Displays a very zoomed in version of the two pixel blocks being looked at
+ * 
+ * @param left_image the left image
+ * @param right_image the right image
+ * @param location Point(left,top) -- pixel location of the left/top point on
+ *  the left image of the box
+ * @param disparity disparity between the images
+ * @param block_size size of the pixel block to highlight
+ * 
+ */
+void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size) {
+    if (left + block_size > left_image.cols || top+block_size > left_image.rows
+        || left + block_size > right_image.cols || top+block_size > right_image.rows
+        || left + disparity < 0) { // remember, disparity can be negative
+        
+        // invalid spot
+        
+        return;
+    }
+    
+    Mat left_block = left_image.rowRange(top, top+block_size).colRange(left, left+block_size);
+    Mat right_block = right_image.rowRange(top, top+block_size).colRange(left+disparity, left+disparity+block_size);
+    
+    // make the blocks visible by making them huge
+    const int scale_factor = 100;
+    
+    Size output_size = Size(block_size * scale_factor, block_size * scale_factor);
+    resize(left_block, left_block, output_size, 0, 0, INTER_NEAREST);
+    resize(right_block, right_block, output_size, 0, 0, INTER_NEAREST);
+    
+    imshow("Left Block", left_block);
+    imshow("Right Block", right_block);
+    
+    
+    
 }
 
 // for replaying videos, subscribe to the stereo replay channel and set the frame

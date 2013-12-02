@@ -108,6 +108,8 @@ class Hud {
         
         void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
         
+        int GetImageScaling() { return scale_factor_; }
+        
         void DrawHud(InputArray _input_image, OutputArray _output_image);
         
         

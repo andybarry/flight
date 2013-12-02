@@ -192,8 +192,7 @@ void* StereoBarryMooreThreaded(void *statet)
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
                 
-                if (CheckHorizontalInvariance(leftImage, rightImage,
-                    sobelL, sobelR, j, i, state) == false) {
+                //if (CheckHorizontalInvariance(leftImage, rightImage, sobelL, sobelR, j, i, state) == false) {
                 
                     // add it to the vector of matches
                     // don't forget to offset it by the blockSize,
@@ -210,7 +209,7 @@ void* StereoBarryMooreThreaded(void *statet)
                     {
                         pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
                     }
-                }
+                //} // check horizontal invariance
             }
         }
     }
