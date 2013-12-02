@@ -237,12 +237,16 @@ int main(int argc, char *argv[])
             }
 		} else if (key == 'b') {
             force_brightness ++;
+            cout << "Brightness: " << force_brightness;
         } else if (key == 'B') {
             force_brightness --;
+            cout << "Brightness: " << force_brightness;
         } else if (key == 'e') {
             force_exposure ++;
+            cout << "Exposure: " << force_exposure;
         } else if (key == 'E') {
             force_exposure --;
+            cout << "Exposure: " << force_exposure;
         }
     
 		

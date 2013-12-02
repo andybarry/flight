@@ -16,19 +16,17 @@ class Hud {
         float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
         long timestamp_;
         int frame_number_, video_number_;
-        const int scale_factor_ = 2;
-        const Scalar hud_color_ = Scalar(0.45, 0.95, 0.48); // green
-        const int box_line_width_ = 2;
-        const int text_font_ = FONT_HERSHEY_DUPLEX;
-        const double hud_font_scale_ = 0.45 * scale_factor_;
-        const double hud_font_scale_small_ = 0.3 * scale_factor_;
-        float text_thickness_ = 1;
-        float pitch_range_of_lens_ = 142.0;
+        int scale_factor_;
+        Scalar hud_color_ ;
+        int box_line_width_;
+        int text_font_;
+        double hud_font_scale_;
+        double hud_font_scale_small_;
+        float text_thickness_;
+        float pitch_range_of_lens_;
         int is_autonomous_;
         int clutter_level_;
         
-        
-        float cam_angle = 90;
         
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
         void PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin);

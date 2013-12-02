@@ -1,6 +1,15 @@
 #include "hud.hpp"
 
 Hud::Hud() {
+    scale_factor_ = 2;
+    hud_color_ = Scalar(0.45, 0.95, 0.48); // green
+    box_line_width_ = 2;
+    text_font_ = FONT_HERSHEY_DUPLEX;
+    hud_font_scale_ = 0.45 * scale_factor_;
+    hud_font_scale_small_ = 0.3 * scale_factor_;
+    text_thickness_ = 1;
+    pitch_range_of_lens_ = 142.0;
+
     airspeed_ = -10001;
     altitude_ = -10001;
     gps_speed_= -10001;

@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
         && video_file_right.length() > 0) {
         
         fprintf(stderr, "Error: for playback you must specify both "
-            "a right and left video file. (Only got a left one.)\n");
+            "a right and left video file. (Only got a right one.)\n");
         
         return -1;
     }
