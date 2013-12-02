@@ -25,6 +25,7 @@
 bool left_camera_mode = false;
 bool right_camera_mode = false;
 bool stereo_mode = true;
+int force_brightness = -1, force_exposure = -1;
 
 int camera_custom_setup(dc1394camera_t *camera);
 
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
     if (left_camera_mode || stereo_mode)
     {
         InitBrightnessSettings(camera, camera2);
-        MatchBrightnessSettings(camera, camera2, true);
+        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
     } else {
         // use the right camera as the master for brightness
         // since we're calibrating that one
@@ -234,7 +235,16 @@ int main(int argc, char *argv[])
             } else {
                 printf("Not saving frame since did not find a checkboard.\n");
             }
-		}
+		} else if (key == 'b') {
+            force_brightness ++;
+        } else if (key == 'B') {
+            force_brightness --;
+        } else if (key == 'e') {
+            force_exposure ++;
+        } else if (key == 'E') {
+            force_exposure --;
+        }
+    
 		
 	}
 
