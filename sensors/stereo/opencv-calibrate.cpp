@@ -35,13 +35,14 @@ int main(int argc, char *argv[])
     // get input arguments
     
     OpenCvStereoConfig stereo_config;
-    
     string config_file = "";
     
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(left_camera_mode, "l", "left-camera", "Calibrate just the left camera.");
     parser.add(right_camera_mode, "r", "right-camera", "Calibrate just the right camera.");
+    parser.add(force_brightness, "b", "brightness", "set brightness to this level");
+    parser.add(force_exposure, "e", "exposure", "set exposure to this level");
     parser.parse();
     
     // parse the config file
@@ -148,12 +149,13 @@ int main(int argc, char *argv[])
     Mat cornersL, cornersR;
     
     int i;
+    
     while (numFrames < MAX_FRAMES) {
 
         Mat chessL, chessR;
     
         // each loop dump a bunch of frames to clear the buffer
-        MatchBrightnessSettings(camera, camera2);
+        MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
         for (i=0;i<10;i++)
         {
             if (left_camera_mode || stereo_mode)
@@ -209,7 +211,6 @@ int main(int argc, char *argv[])
 		// page up: 654365
 		// page down: 65366
 		// b: 98
-		
 		char key = waitKey();
 		//printf("%d\n", (int)key);
 		if (key == 98)
@@ -235,21 +236,19 @@ int main(int argc, char *argv[])
             } else {
                 printf("Not saving frame since did not find a checkboard.\n");
             }
-		} else if (key == 'b') {
-            force_brightness ++;
-            cout << "Brightness: " << force_brightness;
-        } else if (key == 'B') {
-            force_brightness --;
-            cout << "Brightness: " << force_brightness;
-        } else if (key == 'e') {
-            force_exposure ++;
-            cout << "Exposure: " << force_exposure;
+		} else if (key == 'W') {
+            force_brightness +=20;
+            cout << "Brightness: " << force_brightness << "\n";
+        } else if (key == 'w') {
+            force_brightness -=20;
+            cout << "Brightness: " << force_brightness << "\n";
         } else if (key == 'E') {
-            force_exposure --;
-            cout << "Exposure: " << force_exposure;
+            force_exposure +=20;
+            cout << "Exposure: " << force_exposure << "\n";
+        } else if (key == 'e') {
+            force_exposure -=20;
+            cout << "Exposure: " << force_exposure << "\n";
         }
-    
-		
 	}
 
     printf("\n\n");
