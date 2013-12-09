@@ -12,10 +12,6 @@
 #include <cv.h>
 #include <iostream>
 
-//#define SHOW_DISPLAY 0
-
-#define NUM_THREADS 1
-
 
 using namespace cv;
 using namespace std;
@@ -46,19 +42,34 @@ struct BarryMooreStateThreaded
 {
     BarryMooreState state;
     
-    Mat leftImage;
-    Mat rightImage;
+    Mat remapped_left;
+    Mat remapped_right;
+    
+    Mat laplacian_left;
+    Mat laplacian_right;
+    
     cv::vector<Point3f> *pointVector3d;
     cv::vector<Point3i> *pointVector2d;
     cv::vector<uchar> *pointColors;
-    //cv::vector<Point3f> *localHitPoints;
+
+    int row_start;
+    int row_end;
     
-    int rowOffset;
+    
+};
+
+struct RemapThreadState {
+    Mat leftImage;
+    Mat rightImage;
+    
+    Mat sub_remapped_left_image;
+    Mat sub_remapped_right_image;
+    
+    Mat sub_laplacian_left;
+    Mat sub_laplacian_right;
     
     Mat submapxL;
-    
     Mat submapxR;
-    
 };
 
 void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state);
@@ -66,6 +77,8 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
 Mat get_hogdescriptor_visu(Mat& origImg, vector<float>& descriptorValues);
 
 void* StereoBarryMooreThreaded(void *statet);
+
+void* RemapThreaded(void *remap_state);
 
 int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
 

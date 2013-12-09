@@ -10,8 +10,18 @@
 
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
-// values near the edges of images.  Comment for a small speedup.
-#define USE_SAFTEY_CHECKS 0
+// values near the edges of images.  Set to 0 for a small speedup.
+#define USE_SAFTEY_CHECKS 1
+
+#define NUM_THREADS 8
+#define NUM_REMAP_THREADS 8
+
+#define INVARIANCE_CHECK_VERT_OFFSET_MIN (-8)
+#define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
+#define INVARIANCE_CHECK_VERT_OFFSET_INCREMENT 2
+
+#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
+#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
 
 
 /**
@@ -38,6 +48,66 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
     // split things up so we can parallelize
     int rows = leftImage.rows;
     
+    // first parallelize remaping
+    pthread_t remap_threads[NUM_REMAP_THREADS+1];
+    RemapThreadState remap_states[NUM_REMAP_THREADS+1];
+    
+    // we split these arrays up and send them into each
+    // thread so at the end, each thread has written to the
+    // appropriate spot in the array
+    Mat remapped_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
+    Mat remapped_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
+    
+    Mat laplacian_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
+    Mat laplacian_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
+    
+    for (int i = 0; i< NUM_REMAP_THREADS; i++) {
+        
+        int start = rows/NUM_REMAP_THREADS*i;
+        int end = rows/NUM_REMAP_THREADS*(i+1);
+    
+        remap_states[i].leftImage = leftImage;
+        remap_states[i].rightImage = rightImage;
+        
+        // send in a subset of the map
+        remap_states[i].submapxL = state.mapxL.rowRange(start, end);
+        remap_states[i].submapxR = state.mapxR.rowRange(start, end);
+        
+        // send in subsets of the arrays to be filled in
+        remap_states[i].sub_remapped_left_image = remapped_left.rowRange(start, end);
+        
+        remap_states[i].sub_remapped_right_image = remapped_right.rowRange(start, end);
+        
+        remap_states[i].sub_laplacian_left = laplacian_left.rowRange(start, end);
+        remap_states[i].sub_laplacian_right = laplacian_right.rowRange(start, end);
+        
+        // fire the remap thread
+        pthread_create(&remap_threads[i], NULL, RemapThreaded, &remap_states[i]);
+    }
+    
+    
+    // wait for all remapping threads to finish
+    // and join the remapped pieces back together
+    for (int i=0;i<NUM_REMAP_THREADS;i++)
+    {
+        pthread_join(remap_threads[i], NULL);
+
+        /*
+        remapped_left.push_back(remap_states[i].sub_remaped_left_image);
+        remapped_right.push_back(remap_states[i].sub_remaped_right_image);
+        
+        laplacian_left.push_back(remap_states[i].sub_laplacian_left);
+        laplacian_right.push_back(remap_states[i].sub_laplacian_right);
+        */
+    }
+    
+    // now we have fully remapped both images
+    //imshow("Left Block", laplacian_left);
+    //imshow("Right Block", laplacian_right);
+    
+    
+    
+    
     pthread_t thread[NUM_THREADS+1];
     
     BarryMooreStateThreaded statet[NUM_THREADS+1];
@@ -56,20 +126,18 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         
         // send in the whole image because each thread needs
         // the entire image to do its small remapping job
-        statet[i].leftImage = leftImage; 
-        statet[i].rightImage = rightImage;
+        statet[i].remapped_left = remapped_left; 
+        statet[i].remapped_right = remapped_right;
+        
+        statet[i].laplacian_left = laplacian_left;
+        statet[i].laplacian_right = laplacian_right;
         
         statet[i].pointVector3d = &pointVector3dArray[i];
         statet[i].pointVector2d = &pointVector2dArray[i];
         statet[i].pointColors = &pointColorsArray[i];
-        statet[i].rowOffset = start;
+        statet[i].row_start = start;
+        statet[i].row_end = end;
         
-         // send in a subset of the map
-        statet[i].submapxL = state.mapxL.rowRange(start, end);
-        statet[i].submapxR = state.mapxR.rowRange(start, end);
-        
-        //statet[i].localHitPoints = &(state.localHitPoints[i]);
-
         // fire the thread      
         pthread_create( &thread[i], NULL, StereoBarryMooreThreaded, &statet[i]);
     }
@@ -98,13 +166,36 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
         
         pointColors->insert( pointColors->end(), pointColorsArray[i].begin(), pointColorsArray[i].end() );
         
-        //#if SHOW_DISPLAY
         if (state.show_display)
         {
             pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
         }
-        //#endif
     }
+}
+
+/**
+ * Thread that remaps images
+ *
+ */
+void* RemapThreaded(void *x) {
+    // do remapping
+    
+    RemapThreadState *remap_state = (RemapThreadState*) x;
+    
+    // remap this part of the image
+    
+    remap(remap_state->leftImage, remap_state->sub_remapped_left_image, remap_state->submapxL, Mat(), INTER_NEAREST);
+    remap(remap_state->rightImage, remap_state->sub_remapped_right_image, remap_state->submapxR, Mat(), INTER_NEAREST);
+    
+    // apply interest filtering to this part of the image
+    // apply a sobel filter on everything
+    
+    Laplacian(remap_state->sub_remapped_left_image, remap_state->sub_laplacian_left, -1, 3);
+    Laplacian(remap_state->sub_remapped_right_image, remap_state->sub_laplacian_right, -1, 3);
+    
+    
+    // exit the thread
+    return NULL;
 }
 
 /**
@@ -121,39 +212,19 @@ void* StereoBarryMooreThreaded(void *statet)
 
     BarryMooreStateThreaded *x = (BarryMooreStateThreaded*) statet;
     
-    Mat leftImageUnremapped = x->leftImage;
-    Mat rightImageUnremapped = x->rightImage;
+    Mat leftImage = x->remapped_left;
+    Mat rightImage = x->remapped_right;
+    Mat laplacian_left = x->laplacian_left;
+    Mat laplacian_right = x->laplacian_right;
+    
     cv::vector<Point3f> *pointVector3d = x->pointVector3d;
     cv::vector<Point3i> *pointVector2d = x->pointVector2d;
     cv::vector<uchar> *pointColors = x->pointColors;
-    //cv::vector<Point3f> &localHitPoints = *(x->localHitPoints);
-    //localHitPoints.clear();
     
-    int rowOffset = x->rowOffset;
+    int row_start = x->row_start;
+    int row_end = x->row_end;
     
     BarryMooreState state = x->state;
-    
-    // remap this part of the image
-    
-    Mat leftImage, rightImage;
-    
-    remap(leftImageUnremapped, leftImage, x->submapxL, Mat(), INTER_NEAREST);
-    remap(rightImageUnremapped, rightImage, x->submapxR, Mat(), INTER_NEAREST);
-    
-    // apply a sobel filter on everything
-    Mat sobelL(leftImage.rows, leftImage.cols, leftImage.depth());
-    Mat sobelR(rightImage.rows, rightImage.cols, rightImage.depth());
-    
-    // vertical and horizontal sobel
-    //Sobel(leftImage, sobelL, -1, 1, 1, 3, 1, 0);
-    //Sobel(rightImage, sobelR, -1, 1, 1, 3, 1, 0);
-    
-    // vertical sobel
-    //Sobel(leftImage, sobelL, -1, 1, 0, 3, 1, 0);
-    //Sobel(rightImage, sobelR, -1, 1, 0, 3, 1, 0);
-    
-    Laplacian(leftImage, sobelL, -1, 3);
-    Laplacian(rightImage, sobelR, -1, 3);
     
     // we will do this by looping through every block in the left image
     // (defined by blockSize) and checking for a matching value on
@@ -175,13 +246,13 @@ void* StereoBarryMooreThreaded(void *statet)
     
     int hitCounter = 0;
     
-    for (int i=0; i < leftImage.rows; i+=blockSize)
+    for (int i=row_start; i < row_end; i+=blockSize)
     {
         for (int j=startJ; j < stopJ; j+=blockSize)
         {
             // get the sum of absolute differences for this location
             // on both images
-            int sad = GetSAD(leftImage, rightImage, sobelL, sobelR, j, i, state);
+            int sad = GetSAD(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state);
             // check to see if the SAD is below the threshold,
             // indicating a hit
             if (sad < sadThreshold && sad >= 0)
@@ -192,13 +263,13 @@ void* StereoBarryMooreThreaded(void *statet)
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
                 
-                //if (CheckHorizontalInvariance(leftImage, rightImage, sobelL, sobelR, j, i, state) == false) {
+                //if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
                 
                     // add it to the vector of matches
                     // don't forget to offset it by the blockSize,
                     // so we match the center of the block instead
                     // of the top left corner
-                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+rowOffset+blockSize/2.0, disparity));
+                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, disparity));
                     
                     uchar pxL = leftImage.at<uchar>(i,j);
                     pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
@@ -207,7 +278,7 @@ void* StereoBarryMooreThreaded(void *statet)
                     
                     if (state.show_display)
                     {
-                        pointVector2d->push_back(Point3i(j, i+rowOffset, sad));
+                        pointVector2d->push_back(Point3i(j, i, sad));
                     }
                 //} // check horizontal invariance
             }
@@ -363,8 +434,6 @@ bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
     int endX = pxX + blockSize - 1;
     int endY = pxY + blockSize - 1;
     
-    int vert_offset = 1;
-    
     // here we check a few spots:
     //  1) the expected match at zero-disparity (10-infinity meters away)
     //  2) inf distance, moved up 1-2 pixels
@@ -397,9 +466,13 @@ bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
             
             counter = 0;
             
-            for (int vert_offset = -8; vert_offset <= 8; vert_offset+=2) {
+            for (int vert_offset = INVARIANCE_CHECK_VERT_OFFSET_MIN;
+                vert_offset <= INVARIANCE_CHECK_VERT_OFFSET_MAX;
+                vert_offset+= INVARIANCE_CHECK_VERT_OFFSET_INCREMENT) {
                 
-                for (int horz_offset = -2; horz_offset <= 2; horz_offset++) {
+                for (int horz_offset = INVARIANCE_CHECK_HORZ_OFFSET_MIN;
+                    horz_offset <= INVARIANCE_CHECK_HORZ_OFFSET_MAX;
+                    horz_offset++) {
                     
                     pxR_array[counter] = rightImage.at<uchar>(i + vert_offset, j + disparity + horz_offset);
                     sR_array[counter] = sobelR.at<uchar>(i + vert_offset, j + disparity + horz_offset);

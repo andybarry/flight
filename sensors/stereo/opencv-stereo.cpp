@@ -357,7 +357,8 @@ int main(int argc, char *argv[])
         if (stereoConfig.battery_status_channel.length() > 0) {
             battery_status_sub = lcmt_battery_status_subscribe(lcm, stereoConfig.battery_status_channel.c_str(), &battery_status_handler, &hud);
         }
-    }
+    } // show display
+    
     // load calibration
     OpenCvStereoCalibration stereoCalibration;
     
@@ -505,10 +506,10 @@ int main(int argc, char *argv[])
         // change the Y axis of the right image for post-calibration
         // alignment
         
-        Mat matR2 = cv::Mat::zeros(matR.size(), matR.type());
-        matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
+        //Mat matR2 = cv::Mat::zeros(matR.size(), matR.type());
+        //matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
         
-        matR = matR2;
+        //matR = matR2;
         
         
         Mat matDisp, remapL, remapR;
@@ -531,6 +532,7 @@ int main(int argc, char *argv[])
             // this allows us to drop frames if we are behind
             while (NonBlockingLcm(lcm)) {}
         } // end show_display
+        
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
         cv::vector<Point3i> pointVector2d; // for display
@@ -539,13 +541,6 @@ int main(int argc, char *argv[])
         // do the main stereo processing
         if (disable_stereo != true)
         {
-            BarryMooreState state_inf = state;
-            state_inf.disparity = inf_disp;
-            state_inf.sadThreshold = state.sadThreshold + inf_sad_add;
-            //state_inf.sadThreshold = 38;
-            
-            StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d_inf, state_inf);
-            
             StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
             
         }
@@ -588,11 +583,6 @@ int main(int argc, char *argv[])
         
         if (show_display)
         {
-//            matDisp = Mat::zeros(matL.rows, matL.cols, CV_8UC1);
-
-            int blackSize = 10;
-            
-            
 
             for (unsigned int i=0;i<pointVector2d.size();i++)
             {
@@ -602,16 +592,6 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
             }
-            
-            for (unsigned int i=0;i<pointVector2d_inf.size();i++)
-            {
-                int x2 = pointVector2d_inf[i].x;
-                int y2 = pointVector2d_inf[i].y;
-                int sad = pointVector2d_inf[i].z;
-             //   rectangle(matDisp, Point(x2-blackSize,y2-blackSize), Point(x2+state.blockSize+blackSize, y2+state.blockSize+blackSize), sad,  CV_FILLED);
-               // rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 0);
-            }
-
             
             // draw pixel blocks
             if (lineLeftImgPosition >= 0 && lineLeftImgPositionY >= 0) {
