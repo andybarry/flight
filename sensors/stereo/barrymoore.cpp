@@ -23,8 +23,12 @@
 BarryMoore::BarryMoore() {
     // init worker threads
     
+    
+    
     for (int i = 0; i < NUM_THREADS; i++) {
         // start all the worker threads
+        
+        SetIsWorking(i, false);
         
         BarryMooreThreadStarter this_starter;
         
@@ -34,7 +38,7 @@ BarryMoore::BarryMoore() {
         this_starter.thread_number = i;
         this_starter.data_mutex = &(data_mutexes_[i]);
         this_starter.done_cv = &(done_cv_[i]);
-        this_starter.cv_worker_go = &cv_worker_go_;
+        this_starter.cv_worker_go = &cv_worker_go_[i];
         this_starter.parent = this;
         
         // data is not yet ready
@@ -66,15 +70,18 @@ void* BarryMoore::WorkerThread(void *x) {
 
     // signal a successful start
     cout << "worker " << thread_number << " notifying" << endl;
-    done_cv->notify_one();
+    done_cv->notify_all();
     
 
     while (true) {
         
         // wait on the condition variable for the go signal
-        unique_lock<mutex> this_lock(*data_mutex);
+        unique_lock<mutex> locker(*data_mutex);
         cout << "worker " << thread_number << " waiting" << endl;
-        cv_worker_go->wait(this_lock);
+        
+        while (parent->GetIsWorking(thread_number) == false) { // protect against spurious wakeups
+            cv_worker_go->wait(locker);
+        }
         
         cout << "worker " << thread_number << " going!!" << endl;
         // if we're here, there's work to be done
@@ -91,7 +98,8 @@ void* BarryMoore::WorkerThread(void *x) {
         }
         
         // done, signal the waiting main thread
-        done_cv->notify_one();
+        parent->SetIsWorking(thread_number, false);
+        done_cv->notify_all();
         
     }
     
@@ -155,15 +163,21 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         
         // alert the waiting worker thread that data is ready
         is_remapping_[i] = true;
-        cv_worker_go_.notify_all();
+        SetIsWorking(i, true);
+        cout << "telling thread " << i << " to go" << endl;
+        cv_worker_go_[i].notify_all();
     }
     
     
     // wait for all remapping threads to finish
-    // and join the remapped pieces back together
     for (int i=0;i<NUM_THREADS;i++)
     {
-        running_mutexes_[i].lock();
+        unique_lock<mutex> locker(data_mutexes_[i]);
+        cout << "waiting for " << i << endl;
+        while (GetIsWorking(i) == true) { // protect against spurious wakeups
+            done_cv_[i].wait(locker);
+        }
+        cout << "done waiting for " << i << endl;
     }
     
     
@@ -172,7 +186,7 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     imshow("Right Block", laplacian_right);
     
     
-    
+    ///////////////////////////////////////////////
     #if 0
     cv::vector<Point3f> pointVector3dArray[NUM_THREADS+1];
     cv::vector<Point3i> pointVector2dArray[NUM_THREADS+1];

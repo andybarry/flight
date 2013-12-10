@@ -91,6 +91,7 @@ class BarryMoore {
         
         pthread_t worker_pool_[NUM_THREADS+1];
         bool is_remapping_[NUM_THREADS+1];
+        bool is_working_[NUM_THREADS+1];
         
         BarryMooreStateThreaded thread_states_[NUM_THREADS+1];
         RemapThreadState remap_thread_states_[NUM_THREADS+1];
@@ -98,7 +99,7 @@ class BarryMoore {
         mutex running_mutexes_[NUM_THREADS+1];
         mutex data_mutexes_[NUM_THREADS+1];
         
-        condition_variable cv_worker_go_;
+        condition_variable cv_worker_go_[NUM_THREADS+1];
         condition_variable done_cv_[NUM_THREADS+1];
         
         
@@ -111,7 +112,9 @@ class BarryMoore {
         BarryMooreStateThreaded* GetThreadedState(int i) {
             return &(thread_states_[i]);
         }
-        
+        bool GetIsWorking(int i) { return is_working_[i]; }
+        void SetIsWorking(int i, bool is_working) { is_working_[i] = is_working; }
+                
         RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
         
 };
@@ -121,6 +124,7 @@ struct BarryMooreThreadStarter {
     mutex *data_mutex;
     condition_variable *done_cv;
     condition_variable *cv_worker_go;
+    bool *is_working;
     
     BarryMoore *parent;
 };
