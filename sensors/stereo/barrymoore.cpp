@@ -11,7 +11,7 @@
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Set to 0 for a small speedup.
-#define USE_SAFTEY_CHECKS 1
+#define USE_SAFTEY_CHECKS 0
 
 #define NUM_THREADS 8
 #define NUM_REMAP_THREADS 8
@@ -262,7 +262,7 @@ void* StereoBarryMooreThreaded(void *statet)
                 // now check for horizontal invariance
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
-                
+    
                 if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
                 
                     // add it to the vector of matches
@@ -300,6 +300,8 @@ void* StereoBarryMooreThreaded(void *statet)
  *
  * @param leftImage left image
  * @param rightImage right image
+ * @param laplacianL laplacian-fitlered left image
+ * @param laplacianR laplacian-filtered right image
  * @param pxX row pixel location
  * @param pxY column pixel location
  * @param state state structure that includes a number of parameters
@@ -307,7 +309,7 @@ void* StereoBarryMooreThreaded(void *statet)
  * @retval scaled sum of absolute differences for this block -- 
  *      the value is the sum/numberOfPixels
  */
-int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state)
+int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state)
 {
     // init parameters
     int blockSize = state.blockSize;
@@ -378,14 +380,27 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
     
     for (int i=startY;i<=endY;i++)
     {
+        // get a pointer for this row
+        /*uchar *this_rowL = leftImage.ptr<uchar>(i);
+        uchar *this_rowR = rightImage.ptr<uchar>(i);
+        
+        uchar *this_row_laplacianL = laplacianL.ptr<uchar>(i);
+        uchar *this_row_laplacianR = laplacianR.ptr<uchar>(i);
+        */
         for (int j=startX;j<=endX;j++)
         {
             // we are now looking at a single pixel value
             uchar pxL = leftImage.at<uchar>(i,j);
             uchar pxR = rightImage.at<uchar>(i,j + disparity);
             
-            uchar sL = sobelL.at<uchar>(i,j);
-            uchar sR = sobelR.at<uchar>(i,j + disparity);
+            uchar sL = laplacianL.at<uchar>(i,j);
+            uchar sR = laplacianR.at<uchar>(i,j + disparity);
+            
+            //uchar pxL = this_rowL[j];
+            //uchar pxR = this_rowR[j + disparity];
+            
+            //uchar sL = this_row_laplacianL[j];//laplacianL.at<uchar>(i,j);
+            //uchar sR = this_row_laplacianR[j + disparity]; //laplacianR.at<uchar>(i,j + disparity);
             
             leftVal += sL;
             rightVal += sR;
@@ -393,7 +408,7 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
             sad += abs(pxL - pxR);
         }
     }
-    int sobel = leftVal + rightVal;
+    int laplacian_value = leftVal + rightVal;
     
     if (leftVal < sobelLimit || rightVal < sobelLimit)
     {
@@ -401,7 +416,7 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int p
     }
     
     //return sobel;
-    return 100*(float)sad/(float)((float)sobel/(float)state.sobelAdd);
+    return 100*(float)sad/(float)((float)laplacian_value/(float)state.sobelAdd);
 }
 
 /**

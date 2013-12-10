@@ -13,6 +13,8 @@
 #include <iostream>
 
 
+#include <sys/time.h>
+
 using namespace cv;
 using namespace std;
 
@@ -80,7 +82,7 @@ void* StereoBarryMooreThreaded(void *statet);
 
 void* RemapThreaded(void *remap_state);
 
-int GetSAD(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
+int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
 
 bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
  
