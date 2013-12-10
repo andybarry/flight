@@ -330,8 +330,8 @@ int main(int argc, char *argv[])
         moveWindow("Input", 100, 100);
         moveWindow("Stereo", 100, 370);
         moveWindow("Input2", 500, 100);
-        moveWindow("Left Block", 500, 370);
-        moveWindow("Right Block", 1000, 370);
+        moveWindow("Left Block", 900, 100);
+        moveWindow("Right Block", 1400, 100);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
@@ -595,9 +595,9 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
             }
-            
+
             // draw pixel blocks
-            if (lineLeftImgPosition >= 0 && lineLeftImgPositionY >= 0) {
+            if (lineLeftImgPosition >= 0 && lineLeftImgPositionY > 1) {
                 DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize/2, state.disparity, state.blockSize);
             }
             

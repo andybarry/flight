@@ -98,6 +98,9 @@ class BarryMoore {
         mutex running_mutexes_[NUM_THREADS+1];
         mutex data_mutexes_[NUM_THREADS+1];
         
+        condition_variable cv_worker_go_;
+        condition_variable done_cv_[NUM_THREADS+1];
+        
         
     public:
         BarryMoore();
@@ -115,9 +118,9 @@ class BarryMoore {
 
 struct BarryMooreThreadStarter {
     int thread_number;
-    mutex *thread_running_mutex;
     mutex *data_mutex;
-    condition_variable *ready_cv;
+    condition_variable *done_cv;
+    condition_variable *cv_worker_go;
     
     BarryMoore *parent;
 };

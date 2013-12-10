@@ -11,7 +11,7 @@
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Set to 0 for a small speedup.
-#define USE_SAFTEY_CHECKS 0
+#define USE_SAFTEY_CHECKS 1
 
 #define INVARIANCE_CHECK_VERT_OFFSET_MIN (-8)
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
@@ -29,17 +29,16 @@ BarryMoore::BarryMoore() {
         BarryMooreThreadStarter this_starter;
         
         mutex cv_wait_mutex;
-        condition_variable ready_cv;
         unique_lock<std::mutex> my_lock(cv_wait_mutex);
         
         this_starter.thread_number = i;
-        this_starter.thread_running_mutex = &(running_mutexes_[i]);
         this_starter.data_mutex = &(data_mutexes_[i]);
-        this_starter.ready_cv = &ready_cv;
+        this_starter.done_cv = &(done_cv_[i]);
+        this_starter.cv_worker_go = &cv_worker_go_;
         this_starter.parent = this;
         
         // data is not yet ready
-        data_mutexes_[i].lock();
+        //data_mutexes_[i].lock();
         
         // start the thread
 
@@ -48,7 +47,9 @@ BarryMoore::BarryMoore() {
         // don't exit until all threads are running (otherwise the thread
         // stater object will go out of scope and potentiall cause issues)
         
-        ready_cv.wait(my_lock);
+        cout << "waiting on worker " << i << endl;
+        done_cv_[i].wait(my_lock);
+        cout << "got a notification from worker " << i << endl;
     }
 }
 
@@ -56,22 +57,25 @@ void* BarryMoore::WorkerThread(void *x) {
 
     BarryMooreThreadStarter *statet = (BarryMooreThreadStarter*) x;
 
-    mutex *thread_running = statet->thread_running_mutex;
     mutex *data_mutex = statet->data_mutex;
     int thread_number = statet->thread_number;
+    condition_variable *cv_worker_go = statet->cv_worker_go;
+    condition_variable *done_cv = statet->done_cv;
     
     BarryMoore *parent = statet->parent;
 
     // signal a successful start
     cout << "worker " << thread_number << " notifying" << endl;
-    statet->ready_cv->notify_one();
+    done_cv->notify_one();
     
 
     while (true) {
-        // get my mutex
-        cout << "worker " << thread_number << " waiting..." << endl;
-        thread_running->lock();
-        data_mutex->lock();
+        
+        // wait on the condition variable for the go signal
+        unique_lock<mutex> this_lock(*data_mutex);
+        cout << "worker " << thread_number << " waiting" << endl;
+        cv_worker_go->wait(this_lock);
+        
         cout << "worker " << thread_number << " going!!" << endl;
         // if we're here, there's work to be done
         
@@ -86,8 +90,9 @@ void* BarryMoore::WorkerThread(void *x) {
             parent->RunStereoBarryMoore(parent->GetThreadedState(thread_number));
         }
         
-        // done, unlock the mutex
-        thread_running->unlock();
+        // done, signal the waiting main thread
+        done_cv->notify_one();
+        
     }
     
     return NULL;
@@ -150,8 +155,7 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         
         // alert the waiting worker thread that data is ready
         is_remapping_[i] = true;
-        running_mutexes_[i].unlock();
-        data_mutexes_[i].unlock();
+        cv_worker_go_.notify_all();
     }
     
     
