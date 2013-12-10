@@ -428,6 +428,9 @@ int main(int argc, char *argv[])
 
     } // !using_video_from_disk
     
+    // spool up worker threads
+    BarryMoore barry_moore_stereo;
+    
     // start the framerate clock
     struct timeval start, now;
     gettimeofday( &start, NULL );
@@ -541,7 +544,7 @@ int main(int argc, char *argv[])
         // do the main stereo processing
         if (disable_stereo != true)
         {
-            StereoBarryMoore(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
+            barry_moore_stereo.ProcessImages(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
             
         }
             

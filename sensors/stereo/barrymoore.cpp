@@ -13,9 +13,6 @@
 // values near the edges of images.  Set to 0 for a small speedup.
 #define USE_SAFTEY_CHECKS 0
 
-#define NUM_THREADS 8
-#define NUM_REMAP_THREADS 8
-
 #define INVARIANCE_CHECK_VERT_OFFSET_MIN (-8)
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
 #define INVARIANCE_CHECK_VERT_OFFSET_INCREMENT 2
@@ -23,6 +20,78 @@
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
 
+BarryMoore::BarryMoore() {
+    // init worker threads
+    
+    for (int i = 0; i < NUM_THREADS; i++) {
+        // start all the worker threads
+        
+        BarryMooreThreadStarter this_starter;
+        
+        mutex cv_wait_mutex;
+        condition_variable ready_cv;
+        unique_lock<std::mutex> my_lock(cv_wait_mutex);
+        
+        this_starter.thread_number = i;
+        this_starter.thread_running_mutex = &(running_mutexes_[i]);
+        this_starter.data_mutex = &(data_mutexes_[i]);
+        this_starter.ready_cv = &ready_cv;
+        this_starter.parent = this;
+        
+        // data is not yet ready
+        data_mutexes_[i].lock();
+        
+        // start the thread
+
+        pthread_create(&(worker_pool_[i]), NULL, WorkerThread, &this_starter);
+        
+        // don't exit until all threads are running (otherwise the thread
+        // stater object will go out of scope and potentiall cause issues)
+        
+        ready_cv.wait(my_lock);
+    }
+}
+
+void* BarryMoore::WorkerThread(void *x) {
+
+    BarryMooreThreadStarter *statet = (BarryMooreThreadStarter*) x;
+
+    mutex *thread_running = statet->thread_running_mutex;
+    mutex *data_mutex = statet->data_mutex;
+    int thread_number = statet->thread_number;
+    
+    BarryMoore *parent = statet->parent;
+
+    // signal a successful start
+    cout << "worker " << thread_number << " notifying" << endl;
+    statet->ready_cv->notify_one();
+    
+
+    while (true) {
+        // get my mutex
+        cout << "worker " << thread_number << " waiting..." << endl;
+        thread_running->lock();
+        data_mutex->lock();
+        cout << "worker " << thread_number << " going!!" << endl;
+        // if we're here, there's work to be done
+        
+        // see if that work is remapping or stereo processing
+        if (parent->GetIsRemapping(thread_number)) {
+            
+            // run remapping
+            parent->RunRemapping(parent->GetRemapState(thread_number));
+        
+        } else {
+            // run the stereo processing
+            parent->RunStereoBarryMoore(parent->GetThreadedState(thread_number));
+        }
+        
+        // done, unlock the mutex
+        thread_running->unlock();
+    }
+    
+    return NULL;
+}
 
 /**
  * Runs the fast, single-disparity stereo algorithm.  Returns a
@@ -34,12 +103,12 @@
  * @param state set of configuration parameters for the function.
  *      You can change these on each run of the function if you'd like.
  */
-void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state)
-{
+void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
+
     Mat leftImage = _leftImage.getMat();
     Mat rightImage = _rightImage.getMat();
     
-    // make sure that the inputs are of the right type.
+    // make sure that the inputs are of the right type
     CV_Assert(leftImage.type() == CV_8UC1 && rightImage.type() == CV_8UC1);
     
     // we want to use the sum-of-absolute-differences (SAD) algorithm
@@ -49,8 +118,6 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
     int rows = leftImage.rows;
     
     // first parallelize remaping
-    pthread_t remap_threads[NUM_REMAP_THREADS+1];
-    RemapThreadState remap_states[NUM_REMAP_THREADS+1];
     
     // we split these arrays up and send them into each
     // thread so at the end, each thread has written to the
@@ -61,57 +128,48 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
     Mat laplacian_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
     Mat laplacian_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
     
-    for (int i = 0; i< NUM_REMAP_THREADS; i++) {
+    for (int i = 0; i < NUM_THREADS; i++) {
         
-        int start = rows/NUM_REMAP_THREADS*i;
-        int end = rows/NUM_REMAP_THREADS*(i+1);
+        int start = rows/NUM_THREADS*i;
+        int end = rows/NUM_THREADS*(i+1);
     
-        remap_states[i].leftImage = leftImage;
-        remap_states[i].rightImage = rightImage;
+        remap_thread_states_[i].leftImage = leftImage;
+        remap_thread_states_[i].rightImage = rightImage;
         
         // send in a subset of the map
-        remap_states[i].submapxL = state.mapxL.rowRange(start, end);
-        remap_states[i].submapxR = state.mapxR.rowRange(start, end);
+        remap_thread_states_[i].submapxL = state.mapxL.rowRange(start, end);
+        remap_thread_states_[i].submapxR = state.mapxR.rowRange(start, end);
         
         // send in subsets of the arrays to be filled in
-        remap_states[i].sub_remapped_left_image = remapped_left.rowRange(start, end);
+        remap_thread_states_[i].sub_remapped_left_image = remapped_left.rowRange(start, end);
         
-        remap_states[i].sub_remapped_right_image = remapped_right.rowRange(start, end);
+        remap_thread_states_[i].sub_remapped_right_image = remapped_right.rowRange(start, end);
         
-        remap_states[i].sub_laplacian_left = laplacian_left.rowRange(start, end);
-        remap_states[i].sub_laplacian_right = laplacian_right.rowRange(start, end);
+        remap_thread_states_[i].sub_laplacian_left = laplacian_left.rowRange(start, end);
+        remap_thread_states_[i].sub_laplacian_right = laplacian_right.rowRange(start, end);
         
-        // fire the remap thread
-        pthread_create(&remap_threads[i], NULL, RemapThreaded, &remap_states[i]);
+        // alert the waiting worker thread that data is ready
+        is_remapping_[i] = true;
+        running_mutexes_[i].unlock();
+        data_mutexes_[i].unlock();
     }
     
     
     // wait for all remapping threads to finish
     // and join the remapped pieces back together
-    for (int i=0;i<NUM_REMAP_THREADS;i++)
+    for (int i=0;i<NUM_THREADS;i++)
     {
-        pthread_join(remap_threads[i], NULL);
-
-        /*
-        remapped_left.push_back(remap_states[i].sub_remaped_left_image);
-        remapped_right.push_back(remap_states[i].sub_remaped_right_image);
-        
-        laplacian_left.push_back(remap_states[i].sub_laplacian_left);
-        laplacian_right.push_back(remap_states[i].sub_laplacian_right);
-        */
+        running_mutexes_[i].lock();
     }
     
+    
     // now we have fully remapped both images
-    //imshow("Left Block", laplacian_left);
-    //imshow("Right Block", laplacian_right);
+    imshow("Left Block", laplacian_left);
+    imshow("Right Block", laplacian_right);
     
     
     
-    
-    pthread_t thread[NUM_THREADS+1];
-    
-    BarryMooreStateThreaded statet[NUM_THREADS+1];
-    
+    #if 0
     cv::vector<Point3f> pointVector3dArray[NUM_THREADS+1];
     cv::vector<Point3i> pointVector2dArray[NUM_THREADS+1];
     cv::vector<uchar> pointColorsArray[NUM_THREADS+1];
@@ -171,16 +229,14 @@ void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<
             pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
         }
     }
+    #endif
 }
 
 /**
- * Thread that remaps images
+ * Function (for running in a thread) that remaps images
  *
  */
-void* RemapThreaded(void *x) {
-    // do remapping
-    
-    RemapThreadState *remap_state = (RemapThreadState*) x;
+void BarryMoore::RunRemapping(RemapThreadState *remap_state) {
     
     // remap this part of the image
     
@@ -192,14 +248,11 @@ void* RemapThreaded(void *x) {
     
     Laplacian(remap_state->sub_remapped_left_image, remap_state->sub_laplacian_left, -1, 3);
     Laplacian(remap_state->sub_remapped_right_image, remap_state->sub_laplacian_right, -1, 3);
-    
-    
-    // exit the thread
-    return NULL;
+
 }
 
 /**
- * Thread that actually does the work for the BarryMoore algorithm.
+ * Function that actually does the work for the BarryMoore algorithm.
  *
  * @param statet all the parameters are set
  *          as a BarryMooreStateThreaded struct.
@@ -207,25 +260,23 @@ void* RemapThreaded(void *x) {
  * @retval will always be NULL since the real values are passed
  *      back in the vector that is in statet.
  */
-void* StereoBarryMooreThreaded(void *statet)
+void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
 {
 
-    BarryMooreStateThreaded *x = (BarryMooreStateThreaded*) statet;
+    Mat leftImage = statet->remapped_left;
+    Mat rightImage = statet->remapped_right;
+    Mat laplacian_left = statet->laplacian_left;
+    Mat laplacian_right = statet->laplacian_right;
     
-    Mat leftImage = x->remapped_left;
-    Mat rightImage = x->remapped_right;
-    Mat laplacian_left = x->laplacian_left;
-    Mat laplacian_right = x->laplacian_right;
+    cv::vector<Point3f> *pointVector3d = statet->pointVector3d;
+    cv::vector<Point3i> *pointVector2d = statet->pointVector2d;
+    cv::vector<uchar> *pointColors = statet->pointColors;
     
-    cv::vector<Point3f> *pointVector3d = x->pointVector3d;
-    cv::vector<Point3i> *pointVector2d = x->pointVector2d;
-    cv::vector<uchar> *pointColors = x->pointColors;
+    int row_start = statet->row_start;
+    int row_end = statet->row_end;
     
-    int row_start = x->row_start;
-    int row_end = x->row_end;
-    
-    BarryMooreState state = x->state;
-    
+    BarryMooreState state = statet->state;
+
     // we will do this by looping through every block in the left image
     // (defined by blockSize) and checking for a matching value on
     // the right image
@@ -291,7 +342,6 @@ void* StereoBarryMooreThreaded(void *statet)
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
     }
     
-    return NULL; // exit the thread
 }
 
 
@@ -309,7 +359,7 @@ void* StereoBarryMooreThreaded(void *statet)
  * @retval scaled sum of absolute differences for this block -- 
  *      the value is the sum/numberOfPixels
  */
-int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state)
+int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state)
 {
     // init parameters
     int blockSize = state.blockSize;
@@ -433,7 +483,7 @@ int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int px
  *
  * @retval true if there is another match (so NOT an obstacle)
  */
-bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
+bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
     Mat sobelR, int pxX, int pxY, BarryMooreState state) {
     
     // init parameters

@@ -11,9 +11,11 @@
 #include "opencv2/opencv.hpp"
 #include <cv.h>
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
 
-
-#include <sys/time.h>
+#define NUM_THREADS 2
+//#define NUM_REMAP_THREADS 8
 
 using namespace cv;
 using namespace std;
@@ -40,8 +42,7 @@ struct BarryMooreState
     //cv::vector<Point3f> *localHitPoints; // this is an array of cv::vector<Point3f>'s
 };
 
-struct BarryMooreStateThreaded
-{
+struct BarryMooreStateThreaded {
     BarryMooreState state;
     
     Mat remapped_left;
@@ -74,16 +75,52 @@ struct RemapThreadState {
     Mat submapxR;
 };
 
-void StereoBarryMoore(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+class BarryMoore {
+    private:
+        void RunStereoBarryMoore(BarryMooreStateThreaded *statet);
 
-Mat get_hogdescriptor_visu(Mat& origImg, vector<float>& descriptorValues);
+        void RunRemapping(RemapThreadState *remap_state);
 
-void* StereoBarryMooreThreaded(void *statet);
+        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
 
-void* RemapThreaded(void *remap_state);
+        bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
+        
+        // this must be static so the threading won't have to
+        // deal with the implicit 'this' variable
+        static void* WorkerThread(void *x);
+        
+        pthread_t worker_pool_[NUM_THREADS+1];
+        bool is_remapping_[NUM_THREADS+1];
+        
+        BarryMooreStateThreaded thread_states_[NUM_THREADS+1];
+        RemapThreadState remap_thread_states_[NUM_THREADS+1];
+        
+        mutex running_mutexes_[NUM_THREADS+1];
+        mutex data_mutexes_[NUM_THREADS+1];
+        
+        
+    public:
+        BarryMoore();
+        
+        void ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+        
+        bool GetIsRemapping(int i) { return is_remapping_[i]; }
+        BarryMooreStateThreaded* GetThreadedState(int i) {
+            return &(thread_states_[i]);
+        }
+        
+        RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
+        
+};
 
-int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
+struct BarryMooreThreadStarter {
+    int thread_number;
+    mutex *thread_running_mutex;
+    mutex *data_mutex;
+    condition_variable *ready_cv;
+    
+    BarryMoore *parent;
+};
 
-bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
  
 #endif
