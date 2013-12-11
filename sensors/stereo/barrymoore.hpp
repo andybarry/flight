@@ -14,7 +14,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define NUM_THREADS 2
+#define NUM_THREADS 8
 //#define NUM_REMAP_THREADS 8
 
 using namespace cv;
@@ -92,6 +92,7 @@ class BarryMoore {
         pthread_t worker_pool_[NUM_THREADS+1];
         bool is_remapping_[NUM_THREADS+1];
         bool is_working_[NUM_THREADS+1];
+        bool is_ready_[NUM_THREADS+1];
         
         BarryMooreStateThreaded thread_states_[NUM_THREADS+1];
         RemapThreadState remap_thread_states_[NUM_THREADS+1];
@@ -114,6 +115,9 @@ class BarryMoore {
         }
         bool GetIsWorking(int i) { return is_working_[i]; }
         void SetIsWorking(int i, bool is_working) { is_working_[i] = is_working; }
+        
+        bool GetIsReady(int i) { return is_ready_[i]; }
+        void SetIsReady(int i, bool is_ready) { is_ready_[i] = is_ready; }
                 
         RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
         
