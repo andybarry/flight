@@ -72,6 +72,7 @@ void* BarryMoore::WorkerThread(void *x) {
         }
         
         // if we don't already have the mutex, get it
+        cout << "[thread " << thread_number << "] locking" << endl;
         data_mutex->lock();
         
         cout << "[thread " << thread_number << "] going" << endl;
@@ -274,20 +275,21 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
 
 void BarryMoore::StartWorkerThread(int i, ThreadWorkType work_type) {
 
-    
     work_type_[i] = work_type;
     
     SetHasNewData(i, true);
     
     data_mutexes_[i].unlock();
+    
+    cout << "[main] notifying [" << i << "]" << endl;
     cv_new_data_[i].notify_all();
     
 }
 
 void BarryMoore::SyncWorkerThreads() {
 
-    for (int i=0;i<NUM_THREADS;i++)
-    {
+    cout << "[main] in sync workers" << endl;
+    for (int i=0;i<NUM_THREADS;i++) {
         mutex temp;
         unique_lock<mutex> locker(temp);
         
@@ -298,6 +300,7 @@ void BarryMoore::SyncWorkerThreads() {
         }
         data_mutexes_[i].lock();
     }
+    cout << "[main] leaving sync workers" << endl;
 }
 
 /**
