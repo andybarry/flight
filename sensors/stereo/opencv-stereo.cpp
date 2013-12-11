@@ -321,6 +321,8 @@ int main(int argc, char *argv[])
         
         namedWindow("Left Block", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         namedWindow("Right Block", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+        
+        namedWindow("Debug 1", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
     
     
         

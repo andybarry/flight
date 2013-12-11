@@ -20,6 +20,9 @@
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
 
+BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
+
+
 BarryMoore::BarryMoore() {
     // init worker threads
     
@@ -28,33 +31,18 @@ BarryMoore::BarryMoore() {
     for (int i = 0; i < NUM_THREADS; i++) {
         // start all the worker threads
         
-        SetIsWorking(i, false);
-        SetIsReady(i, false);
+        SetHasNewData(i, false);
+        data_mutexes_[i].lock();
         
-        BarryMooreThreadStarter this_starter;
-        
-        // lock this mutex so the thread doesn't
-        // issue an I'm done notification until we're
-        // waiting for it (the thread waits for us)
-        unique_lock<std::mutex> my_lock(data_mutexes_[i]);
-        
-        this_starter.thread_number = i;
-        this_starter.data_mutex = &(data_mutexes_[i]);
-        this_starter.done_cv = &(done_cv_[i]);
-        this_starter.cv_worker_go = &cv_worker_go_[i];
-        this_starter.main_is_ready_mutex = &(main_is_ready_mutex_[i]);
-        this_starter.parent = this;
+        thread_starter[i].thread_number = i;
+        thread_starter[i].data_mutex = &(data_mutexes_[i]);
+        thread_starter[i].cv_new_data = &(cv_new_data_[i]);
+        thread_starter[i].cv_thread_finish = &(cv_thread_finish_[i]);
+        thread_starter[i].parent = this;
         
         // start the thread
-        pthread_create(&(worker_pool_[i]), NULL, WorkerThread, &this_starter);
+        pthread_create(&(worker_pool_[i]), NULL, WorkerThread, &thread_starter[i]);
         
-        // don't exit until all threads are running (otherwise the thread
-        // stater object will go out of scope and potentially cause issues)
-        
-        while (GetIsReady(i) == false) {
-            cout << "[main] waiting on start for " << i << endl;
-            done_cv_[i].wait(my_lock);
-        }
     }
 }
 
@@ -63,63 +51,63 @@ void* BarryMoore::WorkerThread(void *x) {
     BarryMooreThreadStarter *statet = (BarryMooreThreadStarter*) x;
 
     mutex *data_mutex = statet->data_mutex;
-    mutex *main_is_ready_mutex = statet->main_is_ready_mutex;
     int thread_number = statet->thread_number;
-    condition_variable *cv_worker_go = statet->cv_worker_go;
-    condition_variable *done_cv = statet->done_cv;
+    condition_variable *cv_new_data = statet->cv_new_data;
+    condition_variable *cv_thread_finish = statet->cv_thread_finish;
     
     BarryMoore *parent = statet->parent;
 
-    // signal a successful start
-    {
-        // lock this mutex so that this thread will
-        // wait for the main thread to be ready before
-        // we send the "I'm done" signal
-        lock_guard<mutex> lk(*data_mutex);
-        
-        parent->SetIsReady(thread_number, true);
-        done_cv->notify_all();
-    }
     
 
     while (true) {
         
-        // wait on the condition variable for the go signal
-        // note that this locks the data_mutex
-        unique_lock<mutex> locker(*data_mutex);
+        // wait on the condition variable for
+        // "has new data"
+        mutex temp;
+        unique_lock<mutex> locker(temp);
         
         cout << "[thread " << thread_number << "] waiting" << endl;
-        while (parent->GetIsWorking(thread_number) == false) { // protect against spurious wakeups
-            cv_worker_go->wait(locker);
+        while (parent->GetHasNewData(thread_number) == false) {
+            cv_new_data->wait(locker);
         }
-        data_mutex->unlock();
+        
+        // if we don't already have the mutex, get it
+        data_mutex->lock();
+        
+        cout << "[thread " << thread_number << "] going" << endl;
+        
+        parent->SetHasNewData(thread_number, false);
+        
+        
         
         // if we're here, there's work to be done
         cout << "[thread " << thread_number << "] running" << endl;
             
         // see if that work is remapping or stereo processing
-        if (parent->GetIsRemapping(thread_number)) {
-            
-            // run remapping
-            parent->RunRemapping(parent->GetRemapState(thread_number));
-        
-        } else {
-            // run the stereo processing
-            parent->RunStereoBarryMoore(parent->GetThreadedState(thread_number));
+        switch (parent->GetWorkType(thread_number)) {
+            case REMAP:
+                parent->RunRemapping(parent->GetRemapState(thread_number));
+                break;
+                
+            case INTEREST_OP:
+                parent->RunInterestOp(parent->GetInterestOpState(thread_number));
+                break;
+                                
+            case STEREO:
+                parent->RunStereoBarryMoore(parent->GetThreadedState(thread_number));
+                break;
+                
+            default:
+                cerr << "Warning: unknown thread work type." << endl;
+                break;
         }
         
         // done, signal the waiting main thread
+
+        cv_thread_finish->notify_all();
         
-        // send the "I'm done" signal
-        {
-            // ensure that we don't continue until the main thread is ready
-            // to get our notification of completion
-            lock_guard<mutex> lk2(*main_is_ready_mutex);
-            parent->SetIsWorking(thread_number, false);
-            cout << "[thread " << thread_number << "] notifying done" << endl;
-            done_cv->notify_all();
-            
-        }
+        data_mutex->unlock();
+
         cout << "[thread " << thread_number << "] done" << endl;
         
     }
@@ -140,7 +128,7 @@ void* BarryMoore::WorkerThread(void *x) {
 void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
     
     cout << "[main] entering process images" << endl;
-
+    
     Mat leftImage = _leftImage.getMat();
     Mat rightImage = _rightImage.getMat();
     
@@ -161,20 +149,15 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     Mat remapped_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
     Mat remapped_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
     
-    Mat laplacian_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
-    Mat laplacian_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
-    
-    
-    unique_lock<mutex> locker_main[NUM_THREADS+1];
     
     
     for (int i = 0; i < NUM_THREADS; i++) {
         
         int start = rows/NUM_THREADS*i;
         int end = rows/NUM_THREADS*(i+1);
-    
-        remap_thread_states_[i].leftImage = leftImage;
-        remap_thread_states_[i].rightImage = rightImage;
+        
+        remap_thread_states_[i].left_image = leftImage;
+        remap_thread_states_[i].right_image = rightImage;
         
         // send in a subset of the map
         remap_thread_states_[i].submapxL = state.mapxL.rowRange(start, end);
@@ -185,54 +168,48 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         
         remap_thread_states_[i].sub_remapped_right_image = remapped_right.rowRange(start, end);
         
-        remap_thread_states_[i].sub_laplacian_left = laplacian_left.rowRange(start, end);
-        remap_thread_states_[i].sub_laplacian_right = laplacian_right.rowRange(start, end);
+        StartWorkerThread(i, REMAP);
         
-        cout << "[main] locking data_mutexes_[" << i << "]" << endl;
-        // alert the waiting worker thread that data is ready
-        {
-            // lock the data mutex. this will be locked by the thread
-            // until the thread is ready to get new
-            // data (ensuring that we wait here until
-            // the thread is ready and waiting for a notification)
-            lock_guard<mutex> lk(data_mutexes_[i]);
-            
-            // also lock the mutex that will make the thread wait until we're
-            // ready to go on (it won't notify completion until we're ready)
-            locker_main[i] = unique_lock<mutex>(main_is_ready_mutex_[i]);
-            
-            is_remapping_[i] = true;
-            SetIsWorking(i, true);
-            cout << "[main] notifying " << i << endl;
-            cv_worker_go_[i].notify_all();
-        }
     }
+    cout << "[main] all remap threads started" << endl;
     
     
     // wait for all remapping threads to finish
-    for (int i=0;i<NUM_THREADS;i++)
-    {
+    SyncWorkerThreads();
+    
+    cout << "[main] all remap threads finished" << endl;
+    
+    Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
+    Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
+    
+    for (int i = 0; i < NUM_THREADS; i++) {
         
-        while (GetIsWorking(i) == true) { // protect against spurious wakeups
-            cout << "[main] waiting on " << i << endl;
-            done_cv_[i].wait(locker_main[i]);
-        }
-        main_is_ready_mutex_[i].unlock();
-        cout << "[main] got " << i << " remap" << endl;
+        int start = rows/NUM_THREADS*i;
+        int end = rows/NUM_THREADS*(i+1);
         
-        cout << "[main] trying a fast lock check..." << endl;
-        main_is_ready_mutex_[i].lock();
-        cout << "[main] got a fast lock check..." << endl;
-        main_is_ready_mutex_[i].unlock();
+        interest_op_states_[i].left_image = remapped_left;
+        interest_op_states_[i].right_image = remapped_right;
+        
+        // send in subsets of the arrays to be filled in
+        
+        interest_op_states_[i].sub_laplacian_left = laplacian_left.rowRange(start, end);
+        interest_op_states_[i].sub_laplacian_right = laplacian_right.rowRange(start, end);
+        
+        interest_op_states_[i].row_start = start;
+        interest_op_states_[i].row_end = end;
+        
+        
+        StartWorkerThread(i, INTEREST_OP);
         
     }
-    cout << "[main] got all remaps" << endl;
     
+    SyncWorkerThreads();
     
     // now we have fully remapped both images
-    //imshow("Left Block", laplacian_left);
-    //imshow("Right Block", laplacian_right);
+    imshow("Left Block", remapped_right);
+    imshow("Right Block", laplacian_right);
     
+    cout << "[main] imshow2 ok" << endl;
     
     cv::vector<Point3f> pointVector3dArray[NUM_THREADS+1];
     cv::vector<Point3i> pointVector2dArray[NUM_THREADS+1];
@@ -264,38 +241,11 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         
         
         // fire the worker thread
-        {
-            // lock the data mutex. this will be locked
-            // until the thread is ready to get new
-            // data (ensuring that we wait to notify until
-            // the thread is ready for it)
-            cout << "[main] locking data_mutexes_[" << i << "]" << endl;
-            lock_guard<mutex> lk(data_mutexes_[i]);
-            cout << "[main] locked data_mutexes_[" << i << "]" << endl;
-            
-            // also lock the mutex that will make the thread wait until we're
-            // ready to go on (won't notify completion until we're ready)
-            cout << "[main] locking main_is_ready_mutex_[" << i << "]" << endl;
-            locker_main[i] = unique_lock<mutex>(main_is_ready_mutex_[i]);
-            cout << "[main] locked main_is_ready_mutex_[" << i << "]" << endl;
-            
-            
-            is_remapping_[i] = false;
-            SetIsWorking(i, true);
-            cout << "[main] notifying " << i << " for stereo" << endl;
-            cv_worker_go_[i].notify_all();
-        }
+        StartWorkerThread(i, STEREO);
     }
     
     // wait for all the threads to come back
-    for (int i=0;i<NUM_THREADS;i++)
-    {
-        while (GetIsWorking(i) == true) { // protect against spurious wakeups
-            done_cv_[i].wait(locker_main[i]);
-        }
-        cout << "[main] got " << i << " stereo" << endl;
-    }
-    
+    SyncWorkerThreads();
     
     int numPoints = 0;
     // compute the required size of our return vector
@@ -319,6 +269,35 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
             pointVector2d->insert( pointVector2d->end(), pointVector2dArray[i].begin(), pointVector2dArray[i].end() );
         }
     }
+    
+}
+
+void BarryMoore::StartWorkerThread(int i, ThreadWorkType work_type) {
+
+    
+    work_type_[i] = work_type;
+    
+    SetHasNewData(i, true);
+    
+    data_mutexes_[i].unlock();
+    cv_new_data_[i].notify_all();
+    
+}
+
+void BarryMoore::SyncWorkerThreads() {
+
+    for (int i=0;i<NUM_THREADS;i++)
+    {
+        mutex temp;
+        unique_lock<mutex> locker(temp);
+        
+        while (GetHasNewData(i) == true) {
+        
+            // wait for the thread to finish
+            cv_thread_finish_[i].wait(locker);
+        }
+        data_mutexes_[i].lock();
+    }
 }
 
 /**
@@ -329,15 +308,20 @@ void BarryMoore::RunRemapping(RemapThreadState *remap_state) {
     
     // remap this part of the image
     
-    remap(remap_state->leftImage, remap_state->sub_remapped_left_image, remap_state->submapxL, Mat(), INTER_NEAREST);
-    remap(remap_state->rightImage, remap_state->sub_remapped_right_image, remap_state->submapxR, Mat(), INTER_NEAREST);
+    remap(remap_state->left_image, remap_state->sub_remapped_left_image, remap_state->submapxL, Mat(), INTER_NEAREST);
+    remap(remap_state->right_image, remap_state->sub_remapped_right_image, remap_state->submapxR, Mat(), INTER_NEAREST);
     
-    // apply interest filtering to this part of the image
-    // apply a sobel filter on everything
     
-    Laplacian(remap_state->sub_remapped_left_image, remap_state->sub_laplacian_left, -1, 3);
-    Laplacian(remap_state->sub_remapped_right_image, remap_state->sub_laplacian_right, -1, 3);
+    
+}
 
+void BarryMoore::RunInterestOp(InterestOpState *interest_state) {
+
+    // apply interest operator
+    Laplacian(interest_state->left_image.rowRange(interest_state->row_start, interest_state->row_end), interest_state->sub_laplacian_left, -1, 3, 1, 0, BORDER_DEFAULT);
+    
+    Laplacian(interest_state->right_image.rowRange(interest_state->row_start, interest_state->row_end), interest_state->sub_laplacian_right, -1, 3, 1, 0, BORDER_DEFAULT);
+    
 }
 
 /**
