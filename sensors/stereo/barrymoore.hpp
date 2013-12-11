@@ -97,7 +97,7 @@ class BarryMoore {
         BarryMooreStateThreaded thread_states_[NUM_THREADS+1];
         RemapThreadState remap_thread_states_[NUM_THREADS+1];
         
-        mutex running_mutexes_[NUM_THREADS+1];
+        mutex main_is_ready_mutex_[NUM_THREADS+1];
         mutex data_mutexes_[NUM_THREADS+1];
         
         condition_variable cv_worker_go_[NUM_THREADS+1];
@@ -126,6 +126,7 @@ class BarryMoore {
 struct BarryMooreThreadStarter {
     int thread_number;
     mutex *data_mutex;
+    mutex *main_is_ready_mutex;
     condition_variable *done_cv;
     condition_variable *cv_worker_go;
     bool *is_working;
