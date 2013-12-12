@@ -14,7 +14,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define NUM_THREADS 2
+#define NUM_THREADS 8
 //#define NUM_REMAP_THREADS 8
 
 using namespace cv;
@@ -121,6 +121,8 @@ class BarryMoore {
         
         condition_variable cv_new_data_[NUM_THREADS+1];
         condition_variable cv_thread_finish_[NUM_THREADS+1];
+        
+        unique_lock<mutex> lockers_[NUM_THREADS+1];
         
         
     public:

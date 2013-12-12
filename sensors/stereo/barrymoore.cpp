@@ -31,8 +31,9 @@ BarryMoore::BarryMoore() {
     for (int i = 0; i < NUM_THREADS; i++) {
         // start all the worker threads
         
-        SetHasNewData(i, false);
+        
         data_mutexes_[i].lock();
+        SetHasNewData(i, false);
         
         thread_starter[i].thread_number = i;
         thread_starter[i].data_mutex = &(data_mutexes_[i]);
@@ -40,8 +41,10 @@ BarryMoore::BarryMoore() {
         thread_starter[i].cv_thread_finish = &(cv_thread_finish_[i]);
         thread_starter[i].parent = this;
         
+        lockers_[i] = unique_lock<mutex>(data_mutexes_[i], std::defer_lock);
+        
         // start the thread
-        pthread_create(&(worker_pool_[i]), NULL, WorkerThread, &thread_starter[i]);
+        pthread_create(&(worker_pool_[i]), NULL, WorkerThread, &(thread_starter[i]));
         
     }
 }
@@ -56,33 +59,33 @@ void* BarryMoore::WorkerThread(void *x) {
     condition_variable *cv_thread_finish = statet->cv_thread_finish;
     
     BarryMoore *parent = statet->parent;
-
     
+    unique_lock<mutex> locker(*data_mutex, std::defer_lock);
 
     while (true) {
         
         // wait on the condition variable for
         // "has new data"
-        mutex temp;
-        unique_lock<mutex> locker(temp);
+        data_mutex->lock();
+        //cout << "[thread locked]" << endl;
         
-        cout << "[thread " << thread_number << "] waiting" << endl;
+        //cout << "[thread " << thread_number << "] waiting" << endl;
         while (parent->GetHasNewData(thread_number) == false) {
+            //cout << "[thread " << thread_number << "] inside while loop" << endl;
+            //cout << "[thread " << thread_number << "] ready for notifictaions" << endl;
+            //cout << "[thread unlocked]" << endl;
             cv_new_data->wait(locker);
+            //cout << "[thread locked]" << endl;
+            //cout << "[thread " << thread_number << "] after wait in while loop" << endl;
         }
         
         // if we don't already have the mutex, get it
-        cout << "[thread " << thread_number << "] locking" << endl;
-        data_mutex->lock();
         
-        cout << "[thread " << thread_number << "] going" << endl;
+        //cout << "[thread " << thread_number << "] going" << endl;
         
-        parent->SetHasNewData(thread_number, false);
-        
-        
-        
+
         // if we're here, there's work to be done
-        cout << "[thread " << thread_number << "] running" << endl;
+        //cout << "[thread " << thread_number << "] running" << endl;
             
         // see if that work is remapping or stereo processing
         switch (parent->GetWorkType(thread_number)) {
@@ -105,11 +108,13 @@ void* BarryMoore::WorkerThread(void *x) {
         
         // done, signal the waiting main thread
 
-        cv_thread_finish->notify_all();
+        parent->SetHasNewData(thread_number, false);
+        cv_thread_finish->notify_one();
         
         data_mutex->unlock();
+        //cout << "[thread unlocked]" << endl;
 
-        cout << "[thread " << thread_number << "] done" << endl;
+        //cout << "[thread " << thread_number << "] done" << endl;
         
     }
     
@@ -128,7 +133,7 @@ void* BarryMoore::WorkerThread(void *x) {
  */
 void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
     
-    cout << "[main] entering process images" << endl;
+    //cout << "[main] entering process images" << endl;
     
     Mat leftImage = _leftImage.getMat();
     Mat rightImage = _rightImage.getMat();
@@ -172,13 +177,13 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         StartWorkerThread(i, REMAP);
         
     }
-    cout << "[main] all remap threads started" << endl;
+    //cout << "[main] all remap threads started" << endl;
     
     
     // wait for all remapping threads to finish
     SyncWorkerThreads();
     
-    cout << "[main] all remap threads finished" << endl;
+    //cout << "[main] all remap threads finished" << endl;
     
     Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
     Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
@@ -201,22 +206,21 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         
         
         StartWorkerThread(i, INTEREST_OP);
-        
     }
     
     SyncWorkerThreads();
     
     // now we have fully remapped both images
-    imshow("Left Block", remapped_right);
-    imshow("Right Block", laplacian_right);
+    //imshow("Left Block", remapped_right);
+    //imshow("Right Block", laplacian_right);
     
-    cout << "[main] imshow2 ok" << endl;
+    //cout << "[main] imshow2 ok" << endl;
     
     cv::vector<Point3f> pointVector3dArray[NUM_THREADS+1];
     cv::vector<Point3i> pointVector2dArray[NUM_THREADS+1];
     cv::vector<uchar> pointColorsArray[NUM_THREADS+1];
     
-    cout << "[main] firing worker threads..." << endl;
+    //cout << "[main] firing worker threads..." << endl;
     for (int i=0;i<NUM_THREADS;i++)
     {
         
@@ -247,6 +251,8 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     
     // wait for all the threads to come back
     SyncWorkerThreads();
+    
+    //cout << "[main] got all stereo" << endl;
     
     int numPoints = 0;
     // compute the required size of our return vector
@@ -280,27 +286,31 @@ void BarryMoore::StartWorkerThread(int i, ThreadWorkType work_type) {
     SetHasNewData(i, true);
     
     data_mutexes_[i].unlock();
-    
-    cout << "[main] notifying [" << i << "]" << endl;
-    cv_new_data_[i].notify_all();
-    
+    //cout << "[main unlocked]" << endl;
+        
+        
+    //cout << "[main] notifying [" << i << "]" << endl;
+    cv_new_data_[i].notify_one();
 }
 
 void BarryMoore::SyncWorkerThreads() {
 
-    cout << "[main] in sync workers" << endl;
+    //cout << "[main] in sync workers" << endl;
     for (int i=0;i<NUM_THREADS;i++) {
-        mutex temp;
-        unique_lock<mutex> locker(temp);
+    
+        //cout << "[main] trying for lock [" << i << "]" << endl;
+        data_mutexes_[i].lock();
+        //cout << "[main locked]" << endl;
         
         while (GetHasNewData(i) == true) {
-        
+            //cout << "[main] waiting on [" << i << "]" << endl;
             // wait for the thread to finish
-            cv_thread_finish_[i].wait(locker);
+            //cout << "[main unlocked]" << endl;
+            cv_thread_finish_[i].wait(lockers_[i]);
+            //cout << "[main locked]" << endl;
         }
-        data_mutexes_[i].lock();
     }
-    cout << "[main] leaving sync workers" << endl;
+    //cout << "[main] leaving sync workers" << endl;
 }
 
 /**
@@ -573,7 +583,7 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
     
     // bottom right corner of the SAD box
     int endX = pxX + blockSize - 1;
-    int endY = pxY + blockSize - 1;
+    int endY = pxY + blockSize - 1; // TODO: check for out-of-image issues with disparity + endX + horz_offset
     
     // here we check a few spots:
     //  1) the expected match at zero-disparity (10-infinity meters away)
