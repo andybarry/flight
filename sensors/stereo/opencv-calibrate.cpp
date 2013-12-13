@@ -135,12 +135,13 @@ int main(int argc, char *argv[])
     if (left_camera_mode || stereo_mode)
     {
     	namedWindow("Input Left", CV_WINDOW_AUTOSIZE);
+    	moveWindow("Input Left", 100, 100);
     }
     
     if (right_camera_mode || stereo_mode)
     {
     	namedWindow("Input Right", CV_WINDOW_AUTOSIZE);
-    	moveWindow("Input Right", 500, 100);
+    	moveWindow("Input Right", 478, 100);
     }
 	
 	
@@ -255,7 +256,10 @@ int main(int argc, char *argv[])
     
     // clear out the calibration directory
     printf("Deleting old images...\nrm calibrationImages/*.ppm\n");
-    system("rm calibrationImages/*.ppm");
+    int retval = system("rm calibrationImages/*.ppm");
+    if (retval != 0) {
+        printf("Warning: Deleting images may have failed.\n");
+    }
     printf("done.\n");
     
     char filename[1000];
