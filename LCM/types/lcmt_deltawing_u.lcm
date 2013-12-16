@@ -10,8 +10,6 @@ struct lcmt_deltawing_u
   int8_t is_autonomous;
   
   int8_t video_record;
-  
-  int8_t beep;
 
  
 }
