@@ -17,14 +17,17 @@
 
 
 #include "../../LCM/lcmt_stereo.h"
-#include "../../LCM/lcmt_stereo_old.h"
+#include "../../LCM/lcmt_stereo_old2.h"
 
 
 using namespace std;
 
+int g_v_number = 0;
+int last_frame_number = 0;
+
 lcm_t * lcm;
 
-lcmt_stereo_old_subscription_t * stereo_old_sub;
+lcmt_stereo_old2_subscription_t * stereo_old2_sub;
 
 char *channelStereo = NULL;
 
@@ -42,7 +45,7 @@ void sighandler(int dum)
 {
     printf("\nClosing... ");
 
-    lcmt_stereo_old_unsubscribe(lcm, stereo_old_sub);
+    lcmt_stereo_old2_unsubscribe(lcm, stereo_old2_sub);
     
     lcm_destroy (lcm);
     
@@ -59,7 +62,7 @@ int64_t getTimestampNow()
 }
 
 
-void stereo_old_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_old *msg, void *user)
+void stereo_old2_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_old2 *msg, void *user)
 {
     // republish messages
     // make a new message
@@ -74,8 +77,15 @@ void stereo_old_handler(const lcm_recv_buf_t *rbuf, const char* channel, const l
     
     newMsg.grey = msg->grey;
     
-    // add the frame number
-    newMsg.frame_number = numFrames;
+    newMsg.frame_number = msg->frame_number;
+    
+    // figure out the video number
+    if (msg->frame_number < last_frame_number) {
+        g_v_number ++;
+    }
+    
+    last_frame_number = msg->frame_number;
+    newMsg.video_number = g_v_number;
     
     // send the message
     lcmt_stereo_publish(lcm, channelStereo, &newMsg);
@@ -104,7 +114,7 @@ int main(int argc,char** argv)
         return 1;
     }
 
-    stereo_old_sub = lcmt_stereo_old_subscribe (lcm, channelStereoOld, &stereo_old_handler, NULL);
+    stereo_old2_sub = lcmt_stereo_old2_subscribe (lcm, channelStereoOld, &stereo_old2_handler, NULL);
 
     signal(SIGINT,sighandler);
 
