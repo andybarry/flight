@@ -1,0 +1,8 @@
+struct lcmt_beep
+{
+  int64_t timestamp; 
+
+  int8_t beep;
+
+ 
+}
