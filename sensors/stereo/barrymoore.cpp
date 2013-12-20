@@ -517,26 +517,26 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     for (int i=startY;i<=endY;i++)
     {
         // get a pointer for this row
-        /*uchar *this_rowL = leftImage.ptr<uchar>(i);
+        uchar *this_rowL = leftImage.ptr<uchar>(i);
         uchar *this_rowR = rightImage.ptr<uchar>(i);
         
         uchar *this_row_laplacianL = laplacianL.ptr<uchar>(i);
         uchar *this_row_laplacianR = laplacianR.ptr<uchar>(i);
-        */
+        
         for (int j=startX;j<=endX;j++)
         {
             // we are now looking at a single pixel value
-            uchar pxL = leftImage.at<uchar>(i,j);
+            /*uchar pxL = leftImage.at<uchar>(i,j);
             uchar pxR = rightImage.at<uchar>(i,j + disparity);
             
             uchar sL = laplacianL.at<uchar>(i,j);
             uchar sR = laplacianR.at<uchar>(i,j + disparity);
+            */
+            uchar pxL = this_rowL[j];
+            uchar pxR = this_rowR[j + disparity];
             
-            //uchar pxL = this_rowL[j];
-            //uchar pxR = this_rowR[j + disparity];
-            
-            //uchar sL = this_row_laplacianL[j];//laplacianL.at<uchar>(i,j);
-            //uchar sR = this_row_laplacianR[j + disparity]; //laplacianR.at<uchar>(i,j + disparity);
+            uchar sL = this_row_laplacianL[j];//laplacianL.at<uchar>(i,j);
+            uchar sR = this_row_laplacianR[j + disparity]; //laplacianR.at<uchar>(i,j + disparity);
             
             leftVal += sL;
             rightVal += sR;
