@@ -5,7 +5,7 @@
 # crontab example: * * * * * /home/linaro/realtime/externals/timesync/cronTimesync "/home/linaro/realtime/externals/timesync/build/bin/timesync -s -p 10000"
 #
 # or for the master"
-# /home/abarry/plane/realtime/externals/timesync/cronTimesync "/home/abarry/plane/realtime/externals/timesync/build/bin/timesync -m"
+# /home/abarry/plane/realtime/externals/timesync/cronTimesync "/home/abarry/plane/realtime/externals/timesync/build/bin/timesync -m -p 10000"
 
 
 # check for command line arguments
