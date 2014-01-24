@@ -96,7 +96,9 @@ void control_c_handler(int s)
 }
 
 
-
+/**
+ * Handles LCM control messages.  Is called when an LCM message is received on the channel.
+ */
 void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_control *msg, void *user)
 {
     /*
@@ -142,6 +144,9 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     
 }
 
+/**
+ * Sets up variables to start recording on the next frame.
+ */
 void StartRecording()
 {
     // get a new filename
@@ -895,7 +900,9 @@ bool NonBlockingLcm(lcm_t *lcm)
 
 }
 
-
+/**
+ * Writes video to disk.  Handles an overflow of the ringbuffer gracefully.
+ */
 void WriteVideo()
 {
     printf("Writing video...\n");
@@ -939,7 +946,8 @@ void WriteVideo()
 
 
 
-/* setup a mouse callback so that the user can click on an image
+/**
+ * Mouse callback so that the user can click on an image
  * and see where the disparity line is on the other image pair
  */
 void onMouse( int event, int x, int y, int flags, void* )
@@ -952,7 +960,8 @@ void onMouse( int event, int x, int y, int flags, void* )
     }
 }
 
-/* setup a mouse callback so that the user can click on an image
+/**
+ * Mouse callback for the stereo image so that the user can click on an image
  * and see where the disparity line is on the other image pair
  */
 void onMouseStereo( int event, int x, int y, int flags, void* hud) {
@@ -972,6 +981,16 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
     }
 }
 
+/**
+ * Draws lines on the images for stereo debugging.
+ * 
+ * @param leftImg left image
+ * @param rightImg right image
+ * @param stereoImg stereo image
+ * @param lineX x position of the line to draw
+ * @param lineY y position of the line to draw
+ * @param disparity disparity move the line on the right image over by
+ */
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity) {
     int lineColor = 128;
     if (lineX >= 0)
