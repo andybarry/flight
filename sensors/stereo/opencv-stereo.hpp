@@ -98,6 +98,8 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
 
 void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size);
 
+Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
 void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user);

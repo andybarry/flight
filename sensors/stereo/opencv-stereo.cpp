@@ -56,6 +56,7 @@ bool recordingOn = true;
 bool using_video_file = false;
 bool using_video_directory = false;
 bool using_video_from_disk = false;
+bool full_stereo = false;
 
 string video_directory = "";
 
@@ -164,6 +165,8 @@ int main(int argc, char *argv[])
     string configFile = "";
     string video_file_left = "", video_file_right = "";
     
+    StereoBM *stereo_bm;
+    
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
@@ -178,6 +181,7 @@ int main(int argc, char *argv[])
     parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
     parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
+    parser.add(full_stereo, "z", "full-stereo", "Process images with full stereo (only valid with -d)");
     parser.parse();
     
     // parse the config file
@@ -318,8 +322,8 @@ int main(int argc, char *argv[])
         }
     }
     
-    if (show_display)
-    {
+    if (show_display) {
+        
         namedWindow("Input", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         namedWindow("Input2", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         namedWindow("Stereo", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
@@ -328,6 +332,7 @@ int main(int argc, char *argv[])
         namedWindow("Right Block", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
         
         namedWindow("Debug 1", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+        namedWindow("Debug 2", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
     
     
         
@@ -339,6 +344,9 @@ int main(int argc, char *argv[])
         moveWindow("Input2", 500, 100);
         moveWindow("Left Block", 900, 100);
         moveWindow("Right Block", 1400, 100);
+        
+        moveWindow("Debug 1", 900, 370);
+        moveWindow("Debug 2", 1400, 370);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
@@ -364,6 +372,12 @@ int main(int argc, char *argv[])
         if (stereoConfig.battery_status_channel.length() > 0) {
             battery_status_sub = lcmt_battery_status_subscribe(lcm, stereoConfig.battery_status_channel.c_str(), &battery_status_handler, &hud);
         }
+        
+        if (full_stereo) {
+            // init the opencv stereo objects
+            stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
+        }
+        
     } // show display
     
     // load calibration
@@ -524,8 +538,7 @@ int main(int argc, char *argv[])
         
         Mat matDisp, remapL, remapR;
         
-        if (show_display)
-        {
+        if (show_display) {
             // we remap again here because we're just in display
             Mat remapLtemp(matL.rows, matL.cols, matL.depth());
             Mat remapRtemp(matR.rows, matR.cols, matR.depth());
@@ -549,14 +562,14 @@ int main(int argc, char *argv[])
         cv::vector<Point3i> pointVector2d_inf; // for display
         
         // do the main stereo processing
-        if (disable_stereo != true)
-        {
+        if (disable_stereo != true) {
+            
             barry_moore_stereo.ProcessImages(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
             
         }
             
-        if (enable_online_recording == true)
-        {
+        if (enable_online_recording == true) {
+            
             // record frames
             recordOnlyL << matL;
             recordOnlyR << matR;
@@ -572,8 +585,8 @@ int main(int argc, char *argv[])
         float z[msg.number_of_points];
         uchar grey[msg.number_of_points];
         
-        for (unsigned int i=0;i<pointVector3d.size();i++)
-        {
+        for (unsigned int i=0;i<pointVector3d.size();i++) {
+            
             x[i] = pointVector3d[i].x;
             y[i] = pointVector3d[i].y;
             z[i] = pointVector3d[i].z;
@@ -591,11 +604,9 @@ int main(int argc, char *argv[])
         lcmt_stereo_publish(lcm, "stereo", &msg);
         
         
-        if (show_display)
-        {
+        if (show_display) {
 
-            for (unsigned int i=0;i<pointVector2d.size();i++)
-            {
+            for (unsigned int i=0;i<pointVector2d.size();i++) {
                 int x2 = pointVector2d[i].x;
                 int y2 = pointVector2d[i].y;
                 int sad = pointVector2d[i].z;
@@ -618,8 +629,8 @@ int main(int argc, char *argv[])
             
             
             
-            if (show_unrectified == false)
-            {
+            if (show_unrectified == false) {
+                
                 imshow("Input", remapL);
                 imshow("Input2", remapR);
             } else {
@@ -646,7 +657,28 @@ int main(int argc, char *argv[])
             }
             
             
-                        
+            // check for doing full opencv stereo processing
+            if (full_stereo) {
+                
+                // perform stereo processing on these images
+                
+                Mat disparity_bm;
+                (*stereo_bm)(remapL, remapR, disparity_bm);
+                
+                Mat disp8;
+                disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
+                
+                // display the disparity map
+                imshow("Debug 1", disp8);
+                
+                
+                // display the disparity map from single-disparity stereo
+                Mat single_disp_mat = WriteDisparityMap(&pointVector2d, state);
+                
+                imshow("Debug 2", single_disp_mat);
+                
+                
+            }
             
             
             char key = waitKey(1);
@@ -1011,6 +1043,39 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
         line(rightImg, Point(0, lineY), Point(rightImg.cols, lineY), lineColor);
     }
 }
+
+/**
+ * Writes a disparity map in the style of a normal stereo vision system
+ * 
+ * @param pointVector2d output from stereo algorithm
+ * @param state BarryMooreState used to process stereo
+ * 
+ * @retval a Mat that contains the single disparity map.  It is CV_8UC1 and
+ *      sized 376x240.
+ */
+Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
+    // init the mat as all black
+    
+    Mat disp = Mat::zeros(240, 376, CV_8UC1);
+    
+    
+    // now write squares based on block size and location
+    
+    for (int i=0; i<(int)pointVector2d->size(); i++) {
+        
+        // for each spot, fill a box of the right size
+        
+        int x = pointVector2d->at(i).x;
+        int y = pointVector2d->at(i).y;
+        
+        rectangle(disp, Point(x, y), Point(x + state.blockSize, y + state.blockSize), 128, CV_FILLED);
+        
+    }
+
+    return disp;
+}
+
+
 
 /**
  * Displays a very zoomed in version of the two pixel blocks being looked at

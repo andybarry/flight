@@ -912,3 +912,4 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, b
     //cout << endl << "brightness: " << brightnessVal << endl;
     #endif
 }
+
