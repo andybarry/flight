@@ -668,8 +668,14 @@ int main(int argc, char *argv[])
                 Mat disp8;
                 disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
                 
+                // now strip out the values that are not at our disparity, so we can make a fair comparision
+                // (and show the losses that come with our sparser technique)
+                Mat in_range;
+                inRange(disp8, 100, 140, in_range); // HACK HACK HACK TODO TODO
+                // MAKE THIS REAL NUMBERS NOT JUST MADE UP FOR TESTING (but to be fair, it looks right and good!)
+                
                 // display the disparity map
-                imshow("Debug 1", disp8);
+                imshow("Debug 1", in_range);
                 
                 
                 // display the disparity map from single-disparity stereo
