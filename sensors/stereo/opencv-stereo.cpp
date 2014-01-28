@@ -663,7 +663,13 @@ int main(int argc, char *argv[])
                 // perform stereo processing on these images
                 
                 Mat disparity_bm;
-                (*stereo_bm)(remapL, remapR, disparity_bm);
+                (*stereo_bm)(remapL, remapR, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
+                
+                cout << disparity_bm;
+                
+                // divide each value by 16 to get true disparity values
+                Mat true_disparity = disparity_bm / 16.;
+                
                 
                 Mat disp8;
                 disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
@@ -671,8 +677,7 @@ int main(int argc, char *argv[])
                 // now strip out the values that are not at our disparity, so we can make a fair comparision
                 // (and show the losses that come with our sparser technique)
                 Mat in_range;
-                inRange(disp8, 100, 140, in_range); // HACK HACK HACK TODO TODO
-                // MAKE THIS REAL NUMBERS NOT JUST MADE UP FOR TESTING (but to be fair, it looks right and good!)
+                inRange(true_disparity, state.disparity-5, state.disparity+5, in_range);
                 
                 // display the disparity map
                 imshow("Debug 1", in_range);
@@ -684,7 +689,7 @@ int main(int argc, char *argv[])
                 imshow("Debug 2", single_disp_mat);
                 
                 
-            }
+            } // full_stereo
             
             
             char key = waitKey(1);
