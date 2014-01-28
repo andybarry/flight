@@ -665,6 +665,9 @@ int main(int argc, char *argv[])
                 Mat disparity_bm;
                 (*stereo_bm)(remapL, remapR, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
                 
+                //Mat disp8;
+                //disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
+                
                 
                 // now strip out the values that are not at our disparity, so we can make a fair comparision
                 // (and show the losses that come with our sparser technique)
@@ -673,7 +676,7 @@ int main(int argc, char *argv[])
                 
                 // display the disparity map
                 imshow("Debug 1", in_range);
-                
+                //imshow("Debug 1", disp8);
                 
                 // display the disparity map from single-disparity stereo
                 Mat single_disp_mat = WriteDisparityMap(&pointVector2d, state);
