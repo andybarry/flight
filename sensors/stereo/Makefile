@@ -7,7 +7,7 @@ CFLAGS=-c -Wall -O3 -std=c++0x -fopenmp `pkg-config --cflags opencv bot2-lcmgl-c
 
 LIBS=-fopenmp `pkg-config --libs opencv` -L/usr/local/lib -ldc1394   -lglib-2.0 -L /usr/local/lib -L /usr/local/lib/libdc1394.so -L /usr/local/lib/liblcm.so -lgthread-2.0 -lrt -lglib-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -pthread -lboost_system -lboost_filesystem -Wl,-rpath -Wl,/usr/local/lib/firefly-mv-utils `pkg-config --libs bot2-lcmgl-client`
 
-all: opencv-stereo opencv-calibrate
+all: opencv-stereo opencv-calibrate opencv-cam-calib-test
 
 opencv-stereo: opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o
 	$(CC) opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o -o opencv-stereo $(LIBS)
@@ -29,6 +29,12 @@ opencv-calibrate: opencv-calibrate.o opencv-stereo-util.o
     
 opencv-calibrate.o: opencv-calibrate.cpp
 	$(CC) $(CFLAGS) opencv-calibrate.cpp
+	
+opencv-cam-calib-test: opencv-cam-calib-test.o opencv-stereo-util.o
+	$(CC) opencv-cam-calib-test.o opencv-stereo-util.o -o opencv-cam-calib-test $(LIBS)
+    
+opencv-cam-calib-test.o: opencv-cam-calib-test.cpp
+	$(CC) $(CFLAGS) opencv-cam-calib-test.cpp
     
 clean:
 	rm -rf *o opencv-stereo opencv-calibrate

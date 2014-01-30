@@ -324,7 +324,7 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             CV_TERMCRIT_EPS, 30, 1e-7),
             CV_CALIB_RATIONAL_MODEL 
             | CV_CALIB_FIX_INTRINSIC);
-            // + CV_CALIB_USE_INTRINSIC_GUESS//);
+            // | CV_CALIB_USE_INTRINSIC_GUESS);
              //| CV_CALIB_SAME_FOCAL_LENGTH);
              //| CV_CALIB_FIX_ASPECT_RATIO);
              //| CV_CALIB_FIX_FOCAL_LENGTH);
