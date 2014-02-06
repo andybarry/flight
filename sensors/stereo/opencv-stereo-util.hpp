@@ -54,8 +54,10 @@ struct OpenCvStereoConfig
     string gps_channel;
     string battery_status_channel;
     string servo_out_channel;
+    string optotrak_channel;
     
     int disparity;
+    int infiniteDisparity;
     int interestOperatorLimit;
     int blockSize;
     int sadThreshold;
@@ -97,7 +99,7 @@ string GetNextVideoFilename(string filenamePrefix,
 
 VideoWriter SetupVideoWriter(string filename, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true);
 
-void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2);
+void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma = false);
 
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set = false, int force_brightness = -1, int force_exposure = -1);
 

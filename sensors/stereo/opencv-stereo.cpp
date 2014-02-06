@@ -19,7 +19,6 @@ bool display_hud = false;
 int force_brightness = -1;
 int force_exposure = -1;
 
-int inf_disp = -17;
 int inf_sad_add = 0;
 int y_offset = 0;
 int file_frame_skip = 0;
@@ -47,6 +46,9 @@ lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
 lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
+lcmt_optotrak_subscription_t *optotrak_sub;
+
+float last_optotrak_y;
 
 
 int numFrames = 0;
@@ -57,6 +59,9 @@ bool using_video_file = false;
 bool using_video_directory = false;
 bool using_video_from_disk = false;
 bool full_stereo = false;
+bool use_optotrak = false;
+
+mutex optotrak_mutex;
 
 string video_directory = "";
 
@@ -164,8 +169,10 @@ int main(int argc, char *argv[])
     
     string configFile = "";
     string video_file_left = "", video_file_right = "";
+    bool enable_gamma = false;
     
-    StereoBM *stereo_bm;
+    StereoBM *stereo_bm = NULL;
+    Mat single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
     
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
@@ -182,6 +189,8 @@ int main(int argc, char *argv[])
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
     parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
     parser.add(full_stereo, "z", "full-stereo", "Process images with full stereo (only valid with -d)");
+    parser.add(use_optotrak, "o", "optotrak", "Use Optotrak to build a depth map.");
+    parser.add(enable_gamma, "g", "enable-gamma", "Turn gamma on for both cameras.");
     parser.parse();
     
     // parse the config file
@@ -289,13 +298,13 @@ int main(int argc, char *argv[])
         err2 = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not setup camera number 2");
         
-        // enable camera
+        // enable cameraTODO
         err = dc1394_video_set_transmission(camera, DC1394_ON);
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
         err2 = dc1394_video_set_transmission(camera2, DC1394_ON);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
-        InitBrightnessSettings(camera, camera2);
+        InitBrightnessSettings(camera, camera2, enable_gamma);
     } else { // !using_video_from_disk
         // we are using a video file, setup the readers
         
@@ -373,6 +382,10 @@ int main(int argc, char *argv[])
             battery_status_sub = lcmt_battery_status_subscribe(lcm, stereoConfig.battery_status_channel.c_str(), &battery_status_handler, &hud);
         }
         
+        if (use_optotrak && stereoConfig.optotrak_channel.length() > 0) {
+            optotrak_sub = lcmt_optotrak_subscribe(lcm, stereoConfig.optotrak_channel.c_str(), &optotrak_handler, &last_optotrak_y);
+        }
+        
         if (full_stereo) {
             // init the opencv stereo objects
             stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
@@ -400,7 +413,7 @@ int main(int argc, char *argv[])
     BarryMooreState state;
     
     state.disparity = stereoConfig.disparity;
-    state.zero_dist_disparity = inf_disp;
+    state.zero_dist_disparity = stereoConfig.infiniteDisparity;
     state.sobelLimit = stereoConfig.interestOperatorLimit;
     state.blockSize = stereoConfig.blockSize;
     
@@ -620,7 +633,7 @@ int main(int argc, char *argv[])
             }
             
             // draw a line for the user to show disparity
-            DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity);
+            DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity, state.zero_dist_disparity);
             
             // OMG WHAT A HACK
             //Laplacian(matL, matDisp, -1);
@@ -663,10 +676,10 @@ int main(int argc, char *argv[])
                 // perform stereo processing on these images
                 
                 Mat disparity_bm;
-                (*stereo_bm)(remapL, remapR, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
+                (*stereo_bm)(remapL, remapR, disparity_bm); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
                 
-                //Mat disp8;
-                //disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
+                Mat disp8;
+                disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
                 
                 
                 // now strip out the values that are not at our disparity, so we can make a fair comparision
@@ -675,16 +688,32 @@ int main(int argc, char *argv[])
                 inRange(disparity_bm, abs(state.disparity)-1, abs(state.disparity)+1, in_range);
                 
                 // display the disparity map
-                imshow("Debug 1", in_range);
-                //imshow("Debug 1", disp8);
+                //imshow("Debug 1", in_range);
+                imshow("Debug 1", disp8);
                 
+                
+                
+                
+            } // full_stereo
+            
+            if (!use_optotrak) {
+            
                 // display the disparity map from single-disparity stereo
                 Mat single_disp_mat = WriteDisparityMap(&pointVector2d, state);
                 
                 imshow("Debug 2", single_disp_mat);
                 
+            } else {
+                // we're using the motion capture system to simulate building a depth map from the
+                // real data
                 
-            } // full_stereo
+                if (last_optotrak_y > -100) {
+                    
+                    single_disp_mat = WriteDisparityMap(&pointVector2d, state, 255*(5000-last_optotrak_y)/5000, single_disp_mat);
+                    
+                    imshow("Debug 2", single_disp_mat);
+                }
+            }
             
             
             char key = waitKey(1);
@@ -717,6 +746,9 @@ int main(int argc, char *argv[])
                     
                 case 'b':
                     state.blockSize --;
+                    if (state.blockSize < 1) {
+                        state.blockSize = 1;
+                    }
                     break;
                     
                 case 'y':
@@ -798,13 +830,11 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'k':
-                    inf_disp ++;
-                    state.zero_dist_disparity = inf_disp;
+                    state.zero_dist_disparity ++;
                     break;
                 
                 case 'l':
-                    inf_disp --;
-                    state.zero_dist_disparity = inf_disp;
+                    state.zero_dist_disparity --;
                     break;
                     
                 case 'o':
@@ -845,6 +875,18 @@ int main(int argc, char *argv[])
                     hud.SetPitchRangeOfLens(hud.GetPitchRangeOfLens() - 1);
                     break;
                     
+                case 'z':
+                    full_stereo = !full_stereo;
+                    if (!stereo_bm) {
+                        // init the opencv stereo objects
+                        stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
+                    }
+                    break;
+                
+                case 'Z':
+                    single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
+                    break;
+                
                 case 'q':
                     quit = true;
                     break;
@@ -855,7 +897,7 @@ int main(int argc, char *argv[])
                 cout << "brightness: " << force_brightness << endl;
                 cout << "exposure: " << force_exposure << endl;
                 cout << "disparity = " << state.disparity << endl;
-                cout << "inf_disparity = " << inf_disp << endl;
+                cout << "inf_disparity = " << state.zero_dist_disparity << endl;
                 cout << "inf_sad_add = " << inf_sad_add << endl;
                 cout << "sobelLimit = " << state.sobelLimit << endl;
                 cout << "blockSize = " << state.blockSize << endl;
@@ -1022,14 +1064,16 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
 /**
  * Draws lines on the images for stereo debugging.
  * 
- * @param leftImg left image
  * @param rightImg right image
  * @param stereoImg stereo image
  * @param lineX x position of the line to draw
  * @param lineY y position of the line to draw
  * @param disparity disparity move the line on the right image over by
+ * @param inf_disparity disparity corresponding to "infinite distance"
+ *  used to filter out false-positives.  Usually availible in
+ *   state.zero_dist_disparity.
  */
-void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity) {
+void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity, int inf_disparity) {
     int lineColor = 128;
     if (lineX >= 0)
     {
@@ -1042,7 +1086,7 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
         line(stereoImg, Point(lineX, 0), Point(lineX, leftImg.rows), lineColor);
         line(rightImg, Point(lineX + disparity, 0), Point(lineX + disparity, rightImg.rows), lineColor);
         
-        line(rightImg, Point(lineX + inf_disp, 0), Point(lineX + inf_disp, rightImg.rows), lineColor);
+        line(rightImg, Point(lineX + inf_disparity, 0), Point(lineX + inf_disparity, rightImg.rows), lineColor);
         
         line(leftImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
         line(stereoImg, Point(0, lineY), Point(leftImg.cols, lineY), lineColor);
@@ -1055,14 +1099,20 @@ void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, i
  * 
  * @param pointVector2d output from stereo algorithm
  * @param state BarryMooreState used to process stereo
+ * @param pixel_value value to fill in this round of pixels, from 0 to 255
+ *  @default 128
+ * @param existing_map provide this if you want to write on top of an existing
+ *  image.  Must be 376x240, CV_8UC1.
+ *  @default Mat::zeros(240, 376, CV_8UC1);
  * 
  * @retval a Mat that contains the single disparity map.  It is CV_8UC1 and
  *      sized 376x240.
  */
-Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
+Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state, int pixel_value, Mat existing_map) {
+    
     // init the mat as all black
     
-    Mat disp = Mat::zeros(240, 376, CV_8UC1);
+    //Mat disp = Mat::zeros(240, 376, CV_8UC1);
     
     
     // now write squares based on block size and location
@@ -1074,11 +1124,11 @@ Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state)
         int x = pointVector2d->at(i).x;
         int y = pointVector2d->at(i).y;
         
-        rectangle(disp, Point(x, y), Point(x + state.blockSize, y + state.blockSize), 128, CV_FILLED);
+        rectangle(existing_map, Point(x, y), Point(x + state.blockSize, y + state.blockSize), pixel_value, CV_FILLED);
         
     }
 
-    return disp;
+    return existing_map;
 }
 
 
@@ -1176,6 +1226,31 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAcceleration(msg->accel[0], msg->accel[1], msg->accel[2]);
     
     hud->SetTimestamp(msg->utime);
+}
+
+void optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_optotrak *msg, void *user) {
+    
+    float *last_optotrak_y = (float*) user;
+    
+    optotrak_mutex.lock();
+    /*cout << "in optotrak handler2" << endl;
+    last_optotrak_msg->timestamp = msg->timestamp;
+    last_optotrak_msg->number_rigid_bodies = msg->number_rigid_bodies;
+    
+    //for (int i=0; i < msg->number_rigid_bodies; i++) {
+        cout << "in optotrak handler3" << endl;
+        last_optotrak_msg->x = msg->x;
+        last_optotrak_msg->y = msg->y;
+        last_optotrak_msg->z = msg->z;
+        
+        last_optotrak_msg->yaw = msg->yaw;
+        last_optotrak_msg->pitch = msg->pitch;
+        last_optotrak_msg->roll = msg->roll;
+    //}
+    */
+    *last_optotrak_y = msg->y[0];
+    optotrak_mutex.unlock();
+    //cout << "in optotrak handler4" << endl;
 }
 
 

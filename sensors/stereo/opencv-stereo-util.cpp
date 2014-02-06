@@ -159,6 +159,17 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->servo_out_channel = servo_out_channel;
     
+    const char *optotrak_channel = g_key_file_get_string(keyfile, "lcm", "optotrak_channel", NULL);
+    
+    if (optotrak_channel == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify optotrak_channel (or I failed to read it). Parameter: lcm.optotrak_channel\n");
+        
+        // this is not a fatal error, don't bail out
+        optotrak_channel = "";
+    }
+    configStruct->optotrak_channel = optotrak_channel;
+    
     const char *pose_channel = g_key_file_get_string(keyfile, "lcm", "pose_channel", NULL);
     
     if (pose_channel == NULL)
@@ -231,6 +242,18 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     if (gerror != NULL)
     {
         fprintf(stderr, "Error: configuration file does not specify disparity (or I failed to read it). Parameter: settings.disparity\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
+    configStruct->infiniteDisparity = g_key_file_get_integer(keyfile,
+        "settings", "infiniteDisparity", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify infinite disparity (or I failed to read it). Parameter: settings.infiniteDisparity\n");
         
         g_error_free(gerror);
         
@@ -631,7 +654,7 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     return recorder;
 }
 
-void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
+void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma)
 {
     // set absolute control to off
     dc1394_feature_set_absolute_control(camera1, DC1394_FEATURE_GAIN, DC1394_OFF);
@@ -657,7 +680,11 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     
     dc1394_feature_set_mode(camera1, DC1394_FEATURE_FRAME_RATE, DC1394_FEATURE_MODE_AUTO);
     
-    dc1394_feature_set_power(camera1, DC1394_FEATURE_GAMMA, DC1394_OFF);
+    if (enable_gamma) {
+        dc1394_feature_set_power(camera1, DC1394_FEATURE_GAMMA, DC1394_ON);
+    } else {
+        dc1394_feature_set_power(camera1, DC1394_FEATURE_GAMMA, DC1394_OFF);
+    }
     
     // for camera 2 (slave on brightness settings), set everything
     // to manual except framerate
@@ -671,7 +698,11 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2)
     
     dc1394_feature_set_mode(camera2, DC1394_FEATURE_FRAME_RATE, DC1394_FEATURE_MODE_AUTO);
     
-    dc1394_feature_set_power(camera2, DC1394_FEATURE_GAMMA, DC1394_OFF);
+    if (enable_gamma) {
+        dc1394_feature_set_power(camera2, DC1394_FEATURE_GAMMA, DC1394_ON);
+    } else {
+        dc1394_feature_set_power(camera2, DC1394_FEATURE_GAMMA, DC1394_OFF);
+    }
     
 }
 

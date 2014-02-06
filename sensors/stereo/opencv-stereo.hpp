@@ -16,11 +16,14 @@
 #include "opencv2/legacy/legacy.hpp"
 #include <sys/time.h>
 
+#include <mutex>
+
 #include "opencv2/opencv.hpp"
 
 #include <lcm/lcm.h>
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
+#include "../../LCM/lcmt_optotrak.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_deltawing_u.h"
@@ -94,11 +97,11 @@ void WriteVideo();
 
 void onMouse( int event, int x, int y, int, void* );
 void onMouseStereo( int event, int x, int y, int, void* hud);
-void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity);
+void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity, int inf_disparity);
 
 void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size);
 
-Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state, int pixel_value = 128, Mat existing_map = Mat::zeros(240, 376, CV_8UC1));
 
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
@@ -111,6 +114,8 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
+
+void optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_optotrak *msg, void *user);
 
 
 #endif
