@@ -1,0 +1,16 @@
+LCM/*.c
+LCM/*.h
+LCM/*.o
+LCM/*.py
+LCM/LCMtypes.jar
+LCM/lcmtypes
+LCM/lib
+LCM/mav
+*.o
+controllers/constant-control/constant-control
+drivers/process_control/process-control
+estimators/cpp_wind/wind-estimator
+sensors/stereo/opencv-calibrate
+sensors/stereo/opencv-cam-calib-test
+sensors/stereo/opencv-stereo
+ui/plane-health-monitor/plane-health-monitor

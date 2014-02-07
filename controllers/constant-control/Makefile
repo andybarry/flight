@@ -9,7 +9,7 @@ LCMLIB=../../LCM/lib/libtypes.a
 
 MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
-MAVLIB=/home/linaro/mav/mavconn/build/lib
+MAVLIB=/home/$$USER/mav/mavconn/build/lib
 
 CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm bot2-core bot2-param-client` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes -I../../../mav/mavlink/build/include/v1.0/ -I../../../mav/mavconn/src/
 
