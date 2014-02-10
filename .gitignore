@@ -4,7 +4,6 @@ LCM/*.o
 LCM/*.py
 LCM/LCMtypes.jar
 LCM/lcmtypes
-LCM/lib
 LCM/mav
 *.o
 controllers/constant-control/constant-control

@@ -22,13 +22,10 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &sigIntHandler, NULL);
     // --- end ctrl-c handling code ---
 
-    double M1[3][3], M2[3][3], D1[8], D2[8];
+    
+    Mat m1_mat, d1_mat, m2_mat, d2_mat;
     
     
-    CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
-    CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
-    CvMat _D1 = cvMat(1, 8, CV_64F, D1 );
-    CvMat _D2 = cvMat(1, 8, CV_64F, D2 );
 
     OpenCvStereoConfig stereo_config;
     string config_file = "";
@@ -65,7 +62,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M1-single.xml\n");
             exit(-1);
         } else {
-            _M1 = *M1p;
+            m1_mat = Mat(M1p, true);
         }
         
         CvMat *D1p = (CvMat *)cvLoad("stereo_camera_calibrate/D1-single.xml",NULL,NULL,NULL);
@@ -74,11 +71,12 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D1-single.xml\n");
             exit(-1);
         } else {
-            _D1 = *D1p;
+            d1_mat = Mat(D1p, true);
         }
     }
     printf("done.\n");
     
+
     if (right_camera_on) {
         printf("Attemping to load camera paramters:\n\tstereo_camera_calibrate/M2-single.xml\n\tstereo_camera_calibrate/D2-single.xml\n");
     
@@ -88,7 +86,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M2-single.xml\n");
             exit(-1);
         } else {
-            _M2 = *M2p;
+            m2_mat = Mat(M2p, true);
         }
         
         CvMat *D2p = (CvMat *)cvLoad("stereo_camera_calibrate/D2-single.xml",NULL,NULL,NULL);
@@ -97,10 +95,11 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D2-single.xml\n");
             exit(-1);
         } else {
-            _D2 = *D2p;
+            d2_mat = Mat(D2p, true);
         }
     }
     printf("done.\n");
+    
     
     printf("XML files loaded successfully.\n");
     
@@ -158,6 +157,7 @@ int main(int argc, char *argv[]) {
     
     // ------------ end load cameras ------------
     
+    InitBrightnessSettings(camera, camera2);
     
     // now we've loaded the calibrations, start showing images!
     
@@ -172,6 +172,7 @@ int main(int argc, char *argv[]) {
     	moveWindow("Input Right", 478, 100);
     }
     
+    MatchBrightnessSettings(camera, camera2, true);
     
     while (true) {
         // grab frames
@@ -181,8 +182,12 @@ int main(int argc, char *argv[]) {
         if (left_camera_on) {
             left = GetFrameFormat7(camera);
             
+            // use calibration to undistort image
+            Mat left_ud;
+            undistort(left, left_ud, m1_mat, d1_mat);
+            
             // display
-            imshow("Input Left", left);
+            imshow("Input Left", left_ud);
         }
         
         if (right_camera_on) {
@@ -190,6 +195,14 @@ int main(int argc, char *argv[]) {
             
             imshow("Input Right", right);
         }
+        
+        char key = waitKey(1);
+        
+         //switch (key) {
+           // case 'q':
+             //   state.disparity --;
+               // break;
+//        }
     }
     
     
