@@ -13,5 +13,6 @@
 #include "../../externals/ConciseArgs.hpp"
 
 void control_c_handler(int s);
+void CleanUp();
 
 #endif

@@ -165,16 +165,24 @@ int main(int argc, char *argv[]) {
     if (left_camera_on) {
     	namedWindow("Input Left", CV_WINDOW_AUTOSIZE);
     	moveWindow("Input Left", 100, 100);
+    	
+    	namedWindow("Undistort Left", CV_WINDOW_AUTOSIZE);
+    	moveWindow("Undistort Left", 100, 369);
     }
     
     if (right_camera_on) {
     	namedWindow("Input Right", CV_WINDOW_AUTOSIZE);
     	moveWindow("Input Right", 478, 100);
+    	
+    	namedWindow("Undistort Right", CV_WINDOW_AUTOSIZE);
+    	moveWindow("Undistort Right", 478, 369);
     }
     
     MatchBrightnessSettings(camera, camera2, true);
     
-    while (true) {
+    bool done = false;
+    
+    while (done == false) {
         // grab frames
         
         Mat left, right;
@@ -187,27 +195,48 @@ int main(int argc, char *argv[]) {
             undistort(left, left_ud, m1_mat, d1_mat);
             
             // display
-            imshow("Input Left", left_ud);
+            imshow("Input Left", left);
+            
+            imshow("Undistort Left", left_ud);
         }
         
         if (right_camera_on) {
             right = GetFrameFormat7(camera2);
+            // use calibration to undistort image
+            Mat right_ud;
+            undistort(right, right_ud, m2_mat, d2_mat);
             
             imshow("Input Right", right);
+            
+            imshow("Undistort Right", right_ud);
         }
         
-        char key = waitKey(1);
+        char key = waitKey(5);
         
-         //switch (key) {
-           // case 'q':
-             //   state.disparity --;
-               // break;
-//        }
+         switch (key) {
+            case 'q':
+                done = true;
+                break;
+        }
     }
     
     
+    CleanUp();
+    
     return 0;
     
+}
+
+
+void CleanUp() {
+    if (left_camera_on) {
+      
+        StopCapture(d, camera);
+    }
+    
+    if (right_camera_on) {
+        StopCapture(d2, camera2);
+    }
 }
 
 
@@ -222,14 +251,7 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl;
   
-    if (left_camera_on) {
-      
-        StopCapture(d, camera);
-    }
-    
-    if (right_camera_on) {
-        StopCapture(d2, camera2);
-    }
+    CleanUp();
     
     
     exit(0);
