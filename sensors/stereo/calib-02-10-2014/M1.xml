@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<M1-single type_id="opencv-matrix">
+<M1 type_id="opencv-matrix">
   <rows>3</rows>
   <cols>3</cols>
   <dt>d</dt>
   <data>
     1.8730669330635774e+02 0. 1.9626962552902100e+02 0.
-    1.8585999123080319e+02 1.1547701730452162e+02 0. 0. 1.</data></M1-single>
+    1.8585999123080319e+02 1.1547701730452162e+02 0. 0. 1.</data></M1>
 </opencv_storage>
