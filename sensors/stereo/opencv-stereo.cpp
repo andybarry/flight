@@ -354,8 +354,8 @@ int main(int argc, char *argv[])
         moveWindow("Left Block", 900, 100);
         moveWindow("Right Block", 1400, 100);
         
-        moveWindow("Debug 1", 900, 370);
-        moveWindow("Debug 2", 1400, 370);
+        moveWindow("Debug 1", 500, 370);
+        moveWindow("Debug 2", 900, 370);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
@@ -885,6 +885,18 @@ int main(int argc, char *argv[])
                 
                 case 'Z':
                     single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
+                    break;
+                    
+                case 'S':
+                    // take a screen cap of the left and right images
+                    // useful for putting into a stereo tuner
+                    printf("\nWriting left.ppm...");
+                    imwrite("left.ppm", remapL);
+                
+                    printf("\nWriting right.ppm...");
+                    imwrite("right.ppm", remapR);
+                    
+                    printf("\ndone.");
                     break;
                 
                 case 'q':

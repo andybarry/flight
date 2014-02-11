@@ -630,27 +630,37 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     
     // check to make sure the directory exists (otherwise the
     // videowriter will seg fault)
-    if (boost::filesystem::exists(configStruct.videoSaveDir))
+    if (!boost::filesystem::exists(configStruct.videoSaveDir))
     {
-        string filename = GetNextVideoFilename(filenamePrefix,
-            configStruct, increment_number);
+        // directory does not exist, create it
+        cout << "Warning: video save directory does not exist, creating it." << endl;
         
-        char fourcc1 = configStruct.fourcc.at(0);
-        char fourcc2 = configStruct.fourcc.at(1);
-        char fourcc3 = configStruct.fourcc.at(2);
-        char fourcc4 = configStruct.fourcc.at(3);
-        
-        
-        recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
-        if (!recorder.isOpened())
-        {
-            printf("VideoWriter failed to open!\n");
+        if (boost::filesystem::create_directory(configStruct.videoSaveDir)) {
+            cout << "Sucessfully created directory: " << configStruct.videoSaveDir << endl;
         } else {
-            cout << "Opened " << filename << endl;
+            cout << "Warning: failed to create video save directory, attempting to proceed with the current directory." << endl;
+            
+            configStruct.videoSaveDir = ".";
         }
-    } else {
-        printf("Video save directory does not exist.\n");
     }
+    
+    string filename = GetNextVideoFilename(filenamePrefix,
+        configStruct, increment_number);
+    
+    char fourcc1 = configStruct.fourcc.at(0);
+    char fourcc2 = configStruct.fourcc.at(1);
+    char fourcc3 = configStruct.fourcc.at(2);
+    char fourcc4 = configStruct.fourcc.at(3);
+    
+    
+    recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+    if (!recorder.isOpened())
+    {
+        printf("VideoWriter failed to open!\n");
+    } else {
+        cout << "Opened " << filename << endl;
+    }
+    
     return recorder;
 }
 
@@ -728,7 +738,7 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
     
     // first, ensure the directory exists
     if (!boost::filesystem::exists(video_directory)) {
-        cerr << "Error: directory does not exist: " << video_directory << endl;
+        cerr << "Warning: directory does not exist: " << video_directory << endl;
         return -1;
     }
     
