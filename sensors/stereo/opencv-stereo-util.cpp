@@ -828,7 +828,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
     
     if (image.isContinuous()) {
     
-        image.addref();
         msg.data = image.ptr();
         
         msg.size = image.cols * image.rows;
@@ -837,7 +836,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
         
         // send the image over lcm
         bot_core_image_t_publish(lcm, channel.c_str(), &msg);
-        image.release();
     } else {
         cout << "Image not continuous. LCM transport not implemented." << endl;
     }
