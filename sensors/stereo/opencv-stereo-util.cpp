@@ -803,6 +803,47 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
 }
 
 
+/**
+ * Send an image over LCM (useful for viewing in a
+ * headless configuration
+ *
+ * @param lcm already initialized lcm object
+ * @param image the image to send
+ * @param channel channel name to send over
+ *
+ */
+void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
+    
+    // create LCM message
+    bot_core_image_t msg;
+    
+    msg.utime = getTimestampNow();
+    
+    msg.width = image.cols;
+    msg.height = image.rows;
+    msg.row_stride = image.cols;
+    
+    msg.pixelformat = 1497715271; // see bot_core_iamge_t.lcm --> PIXEL_FORMAT_GRAY; // TODO: detect this
+    
+    
+    if (image.isContinuous()) {
+    
+        image.addref();
+        msg.data = image.ptr();
+        
+        msg.size = image.cols * image.rows;
+        
+        msg.nmetadata = 0;
+        
+        // send the image over lcm
+        bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+        image.release();
+    } else {
+        cout << "Image not continuous. LCM transport not implemented." << endl;
+    }
+}
+
+
 
 /**
  * We need to make sure the brightness settings

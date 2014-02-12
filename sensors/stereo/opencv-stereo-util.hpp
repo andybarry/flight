@@ -20,6 +20,8 @@
 #include <string>
 #include <glib.h> // for configuration files
 
+#include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
+
 extern "C"
 {
     #include <stdio.h>
@@ -102,5 +104,7 @@ VideoWriter SetupVideoWriter(string filename, Size frameSize, OpenCvStereoConfig
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma = false);
 
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set = false, int force_brightness = -1, int force_exposure = -1);
+
+void SendImageOverLcm(lcm_t* lcm, string channel, Mat image);
 
 #endif

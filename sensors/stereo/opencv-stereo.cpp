@@ -465,6 +465,17 @@ int main(int argc, char *argv[])
     // spool up worker threads
     BarryMoore barry_moore_stereo;
     
+    // grab a few frames and send them over LCM for the user
+    // to verify that everything is working
+    for (int i = 0; i < 100; i++) {
+    
+        matL = GetFrameFormat7(camera);
+        SendImageOverLcm(lcm, "stereo_image_left", matL);
+        
+        matR = GetFrameFormat7(camera2);
+        SendImageOverLcm(lcm, "stereo_image_right", matR);
+    }
+    
     // start the framerate clock
     struct timeval start, now;
     gettimeofday( &start, NULL );
@@ -618,7 +629,7 @@ int main(int argc, char *argv[])
         
         
         if (show_display) {
-
+        
             for (unsigned int i=0;i<pointVector2d.size();i++) {
                 int x2 = pointVector2d[i].x;
                 int y2 = pointVector2d[i].y;
