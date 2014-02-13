@@ -60,6 +60,7 @@ bool using_video_directory = false;
 bool using_video_from_disk = false;
 bool full_stereo = false;
 bool use_optotrak = false;
+bool quiet_mode = false;
 
 mutex optotrak_mutex;
 
@@ -182,6 +183,7 @@ int main(int argc, char *argv[])
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.add(force_brightness, "b", "force-brightness", "Force a brightness setting.");
     parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
+    parser.add(quiet_mode, "q", "quiet", "Reduce text output.");
     parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
     parser.add(video_directory, "i", "video-directory", "Directory to search for videos in (for playback).");
@@ -467,6 +469,7 @@ int main(int argc, char *argv[])
     
     // grab a few frames and send them over LCM for the user
     // to verify that everything is working
+    printf("Sending init images over LCM...\n");
     for (int i = 0; i < 100; i++) {
     
         matL = GetFrameFormat7(camera);
@@ -475,6 +478,7 @@ int main(int argc, char *argv[])
         matR = GetFrameFormat7(camera2);
         SendImageOverLcm(lcm, "stereo_image_right", matR);
     }
+    printf("done.\n");
     
     // start the framerate clock
     struct timeval start, now;
@@ -936,15 +940,17 @@ int main(int argc, char *argv[])
         
         // check for new LCM messages
         NonBlockingLcm(lcm);
+        
+        if (quiet_mode == false || numFrames % 100 == 0) {
+            // compute framerate
+            gettimeofday( &now, NULL );
             
-        // compute framerate
-        gettimeofday( &now, NULL );
-        
-        elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - 
-        (start.tv_usec / 1000 + start.tv_sec * 1000);
-        
-        printf("\r%d frames (%lu ms) - %4.1f fps | %4.1f ms/frame", numFrames, elapsed, (float)numFrames/elapsed * 1000, elapsed/(float)numFrames);
-        fflush(stdout);
+            elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - 
+            (start.tv_usec / 1000 + start.tv_sec * 1000);
+            
+            printf("\r%d frames (%lu ms) - %4.1f fps | %4.1f ms/frame", numFrames, elapsed, (float)numFrames/elapsed * 1000, elapsed/(float)numFrames);
+            fflush(stdout);
+        }
 
         
     } // end main while loop
