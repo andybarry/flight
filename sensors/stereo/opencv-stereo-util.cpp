@@ -25,6 +25,22 @@ Mat GetFrameFormat7(dc1394camera_t *camera)
     err = dc1394_capture_dequeue(camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
     DC1394_WRN(err,"Could not capture a frame");
     
+    if (err != 0) {
+        cout << "Warning: failed to capture a frame, returning black frame." << endl;
+        
+        // attempt release the buffer
+        if (frame) {
+            err = dc1394_capture_enqueue(camera, frame);
+            DC1394_WRN(err,"releasing buffer after failure");
+        }
+        
+        // we're totally done, we don't have a frame
+        // maybe USB disconnect? Anyway, return a black
+        // frame so we won't crash everything else
+        // and pray that things will get better soon
+        return Mat::zeros(240, 376, CV_8UC1);
+    }
+    
     // make a Mat of the right size and type that we attach the the existing data
     Mat matTmp = Mat(frame->size[1], frame->size[0], CV_8UC1, frame->image, frame->size[0]);
     
