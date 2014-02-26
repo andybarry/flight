@@ -2,7 +2,7 @@
 #
 #
 # call this every minute from cron to always have a timesync running
-# crontab example: * * * * * /home/linaro/realtime/externals/timesync/cronTimesync "/home/linaro/realtime/externals/timesync/build/bin/timesync -s -p 10000"
+# crontab example: * * * * * /home/$USER/realtime/externals/timesync/cronTimesync "/home/$USER/realtime/externals/timesync/build/bin/timesync -s -p 10000"
 #
 # or for the master"
 # /home/abarry/plane/realtime/externals/timesync/cronTimesync "/home/abarry/plane/realtime/externals/timesync/build/bin/timesync -m -p 10000"
@@ -13,7 +13,7 @@ if (( $# < 1 ))
 then
     echo "Error: not enough arguments"
     echo "useage: ./cronTimesync [timesync command]"
-    echo "example: ./cronTimesync \"/home/linaro/realtime/externals/timesync/build/bin/timesync -s\""
+    echo "example: ./cronTimesync \"/home/$USER/realtime/externals/timesync/build/bin/timesync -s\""
     exit
 fi
 
