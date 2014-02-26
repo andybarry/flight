@@ -1,5 +1,7 @@
 #!/bin/bash
 
+make clean
+
 # clean up java stuff
 rm -r lcmtypes
 

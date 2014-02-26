@@ -1,0 +1,39 @@
+--- mavlink_message_t.h.old	2014-02-25 16:04:50.942431049 -0800
++++ mavlink_message_t.h	2014-02-25 16:05:55.911858859 -0800
+@@ -16,18 +16,24 @@
+ extern "C" {
+ #endif
+ 
+-typedef struct _mavlink_message_t mavlink_message_t;
+-struct _mavlink_message_t
+-{
+-    int16_t    checksum;
+-    int8_t     magic;
+-    int8_t     len;
+-    int8_t     seq;
+-    int8_t     sysid;
+-    int8_t     compid;
+-    int8_t     msgid;
+-    int64_t    payload64[33];
+-};
++
++// -------
++// Patch to make the LCM and mavlink messages work with each other
++#include "../mavlink-generated2/ardupilotmega/mavlink.h"
++
++//typedef struct _mavlink_message_t mavlink_message_t;
++//struct _mavlink_message_t
++//{
++//    int16_t    checksum;
++//    int8_t     magic;
++//    int8_t     len;
++//    int8_t     seq;
++//    int8_t     sysid;
++//    int8_t     compid;
++//    int8_t     msgid;
++//    int64_t    payload64[33];
++//};
++// -------
+ 
+ mavlink_message_t   *mavlink_message_t_copy(const mavlink_message_t *p);
+ void mavlink_message_t_destroy(mavlink_message_t *p);
