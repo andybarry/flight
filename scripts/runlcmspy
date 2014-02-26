@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+export CLASSPATH=$CLASSPATH:/home/linaro/realtime/LCM/LCMtypes.jar:/home/linaro/Fixie/build/share/java/lcmtypes_mav-lcmtypes.jar:/home/linaro/Fixie/build/share/java/lcmtypes_mav_estimator.jar
+
+lcm-spy
