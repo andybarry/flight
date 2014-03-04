@@ -1,0 +1,10 @@
+
+[Desktop Entry]
+Version=1.0
+Name=lcm-spy
+Comment=lcm-spy
+Exec=/home/linaro/scripts/runlcmspy
+Icon=/home/linaro/scripts/lcm-spy.svg
+Terminal=false
+Type=Application
+Categories=Utility;Application;

@@ -1,0 +1,11 @@
+
+[Desktop Entry]
+Version=1.0
+Name=bot-procman-sheriff
+Comment=bot-procman-sheriff
+Exec=bot-procman-sheriff /home/linaro/realtime/config/flight-wifi.cfg
+Icon=/home/linaro/scripts/procman.svg
+Terminal=false
+Type=Application
+Categories=Utility;Application;
+Name[C]=procman-sherif.desktop
