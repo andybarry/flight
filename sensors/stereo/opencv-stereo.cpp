@@ -249,7 +249,6 @@ int main(int argc, char *argv[])
     unsigned long elapsed;
     
     Hud hud;
-    hud.SetClutterLevel(0);
     
     
     // --- setup control-c handling ---
@@ -469,17 +468,19 @@ int main(int argc, char *argv[])
     
     // grab a few frames and send them over LCM for the user
     // to verify that everything is working
-    printf("Sending init images over LCM...\n");
-    for (int i = 0; i < 100; i++) {
-    
-        matL = GetFrameFormat7(camera);
-        SendImageOverLcm(lcm, "stereo_image_left", matL);
+    if (!using_video_from_disk) {
+        printf("Sending init images over LCM...\n");
+        for (int i = 0; i < 100; i++) {
         
-        matR = GetFrameFormat7(camera2);
-        SendImageOverLcm(lcm, "stereo_image_right", matR);
+            matL = GetFrameFormat7(camera);
+            SendImageOverLcm(lcm, "stereo_image_left", matL);
+            
+            matR = GetFrameFormat7(camera2);
+            SendImageOverLcm(lcm, "stereo_image_right", matR);
+        }
+        printf("done.\n");
     }
-    printf("done.\n");
-    
+        
     // start the framerate clock
     struct timeval start, now;
     gettimeofday( &start, NULL );

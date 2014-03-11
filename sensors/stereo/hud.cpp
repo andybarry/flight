@@ -303,13 +303,26 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
         // if this is the airspeed, we also want to draw an arrow showing where
         // gps speed fall
         if (for_airspeed && gps_speed_ > -10000) {
+            
             int gps_left = left + ladder_width + gps_gap;
             int gps_center = (top_px_value - gps_speed_) * value_per_px + top;
+            
+            // check to see if GPS speed is offscale high
+            if (gps_center < top) {
+                
+                // off scale high
+                
+                // draw and upwards facing arrow at the top
+                line(hud_img, Point(gps_left, top + gps_triangle_size/2), Point(gps_left + gps_triangle_size/2, top), hud_color_, box_line_width_);
+                
+                line(hud_img, Point(gps_left + gps_triangle_size, top + gps_triangle_size/2), Point(gps_left + gps_triangle_size/2, top), hud_color_, box_line_width_);
+                
+            } else {
 
-            line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center + gps_triangle_size/2), hud_color_, box_line_width_);
-            
-            line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center - gps_triangle_size/2), hud_color_, box_line_width_);
-            
+                line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center + gps_triangle_size/2), hud_color_, box_line_width_);
+                
+                line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center - gps_triangle_size/2), hud_color_, box_line_width_);
+            }
         }
     }
 }
