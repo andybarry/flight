@@ -711,13 +711,43 @@ void Hud::DrawGraphIndicator(Mat hud_img, int left, int top, string label, int m
     
     int this_location = left + this_delta * value_per_px;
     
-    
-    
-    line(hud_img, Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
-    
-    line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
-    
-    line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), hud_color_, line_width);
+    // figure out if we're off-scale high
+    if (this_location > left + width) {
+        // off-scale high
+        
+        // draw an arrow like this >
+        
+        // top of the arrow 
+        line(hud_img, Point(left + width + arrow_height/3, top - arrow_gap - arrow_width/2), Point(left + width + arrow_height/3 - arrow_height, top - arrow_gap - arrow_width), hud_color_, line_width);
+        
+        // bottom of the arrow
+        line(hud_img, Point(left + width + arrow_height/3, top - arrow_gap - arrow_width/2), Point(left + width + arrow_height/3 - arrow_height, top - arrow_gap), hud_color_, line_width);
+        
+        // vertical line of the arrow
+        //line(hud_img, Point(left + width - arrow_height, top - arrow_gap - arrow_width), Point(left + width - arrow_height, top - arrow_gap), hud_color_, line_width);
+        
+    } else if (this_location < left) {
+        // off-scale low
+        
+        // draw an arrow like this <
+        
+        // top of the arrow 
+        line(hud_img, Point(left - arrow_height/3, top - arrow_gap - arrow_width/2), Point(left - arrow_height/3 + arrow_height, top - arrow_gap - arrow_width), hud_color_, line_width);
+        
+        // bottom of the arrow
+        line(hud_img, Point(left - arrow_height/3, top - arrow_gap - arrow_width/2), Point(left - arrow_height/3 + arrow_height, top - arrow_gap), hud_color_, line_width);
+        
+    } else {
+        
+        // right side of the arrow
+        line(hud_img, Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
+        
+        // left side of the arrow
+        line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location, top - arrow_gap), hud_color_, line_width);
+        
+        // top of the arrow
+        line(hud_img, Point(this_location - arrow_width/2, top - arrow_gap - arrow_height), Point(this_location + arrow_width/2, top - arrow_gap - arrow_height), hud_color_, line_width);
+    }
     
     // draw label
     int baseline = 0;

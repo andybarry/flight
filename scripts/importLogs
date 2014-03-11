@@ -6,8 +6,19 @@ VIDEODIR=$HOME/video/rlg/4-delta-wing-era
 
 LOGDIR=$HOME/rlg/logs
 
+# check for a flag that the user might want their own date
+while getopts d flag; do
+    case $flag in
+        d)
+            echo "Enter the date in YYYY-MM-DD format:"
+            read DATESTR
+            ;;
+    esac
+done
 
-DATESTR=`date "+%Y-%m-%d"`
+if [ -z "$DATESTR" ]; then
+    DATESTR=`date "+%Y-%m-%d"`
+fi
 
 # query the user for the name of the directory
 
