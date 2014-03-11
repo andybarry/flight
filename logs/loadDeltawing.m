@@ -89,6 +89,27 @@ gps.gps_time = gpsValues(:,14);
 gps.logtime = gpsValues(:,15);
 
 
+%#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+%#[
+%#1- timestamp
+%#2- throttle
+%#3- elevonL
+%#4- elevonR
+%#5- is_autonomous
+%#6- video_record
+%#7- log_timestamp
+%#]
+
+u.utime = servo_out(:,1);
+u.throttle = servo_out(:,2);
+u.elevonL = servo_out(:,3);
+u.elevonR = servo_out(:,4);
+u.is_autonomous = servo_out(:,5);
+u.video_record = servo_out(:,6);
+u.logtime = servo_out(:,7);
+
+
+
 % 
 % stereo
 % if (exist('stereo'))
@@ -162,3 +183,113 @@ if (exist('wingeron_x_quat'))
   optotrak.logtime = wingeron_x_quat(:,10);
 
 end
+
+
+
+%{
+
+#attitude  <class 'ins_t.ins_t'> :
+#[
+#1- utime
+#2- device_time
+#3- gyro(3)
+#6- mag(3)
+#9- accel(3)
+#12- quat(4)
+#16- pressure
+#17- rel_alt
+#18- log_timestamp
+#]
+
+#baro-airspeed  <class 'lcmt_baro_airspeed.lcmt_baro_airspeed'> :
+#[
+#1- utime
+#2- airspeed
+#3- baro_altitude
+#4- temperature
+#5- log_timestamp
+#]
+
+#wind-groundspeed  <class 'lcmt_wind_groundspeed.lcmt_wind_groundspeed'> :
+#[
+#1- utime
+#2- airspeed
+#3- estimatedGroundSpeed
+#4- wind_x
+#5- wind_y
+#6- wind_z
+#7- log_timestamp
+#]
+
+#STATE_ESTIMATOR_POSE  <class 'pose_t.pose_t'> :
+#[
+#1- utime
+#2- pos(3)
+#5- vel(3)
+#8- orientation(4)
+#12- rotation_rate(3)
+#15- accel(3)
+#18- log_timestamp
+#]
+
+#wingeron_u  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#[
+#1- timestamp
+#2- throttle
+#3- elevonL
+#4- elevonR
+#5- is_autonomous
+#6- video_record
+#7- log_timestamp
+#]
+
+#stereo  <class 'lcmt_stereo.lcmt_stereo'> :
+#[
+#1- timestamp
+#2- number_of_points
+#3- frame_number
+#4- video_number
+#5- x(0)
+#5- y(0)
+#5- z(0)
+#5- log_timestamp
+#]
+
+#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#[
+#1- timestamp
+#2- throttle
+#3- elevonL
+#4- elevonR
+#5- is_autonomous
+#6- video_record
+#7- log_timestamp
+#]
+
+#gps  <class 'gps_data_t.gps_data_t'> :
+#[
+#1- utime
+#2- gps_lock
+#3- longitude
+#4- latitude
+#5- elev
+#6- horizontal_accuracy
+#7- vertical_accuracy
+#8- numSatellites
+#9- speed
+#10- heading
+#11- xyz_pos(3)
+#14- gps_time
+#15- log_timestamp
+#]
+
+#battery-status  <class 'lcmt_battery_status.lcmt_battery_status'> :
+#[
+#1- timestamp
+#2- voltage
+#3- amps_now
+#4- milliamp_hours_total
+#5- percent_remaining
+#6- log_timestamp
+#]
+%}

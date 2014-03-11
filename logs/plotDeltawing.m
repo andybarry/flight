@@ -31,6 +31,12 @@ xlabel('Log time (s)');
 ylabel('Airspeed');
 legend('Altitude', 'Airspeed');
 
+figure(2)
+plot(u.logtime, u.throttle);
+xlabel('Time (s)')
+ylabel('Throttle (pulse ms)');
+
+
 figure(3)
 plot(est.logtime, est.rotation_rate.z);
 xlabel('Time (s)');
