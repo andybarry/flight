@@ -1,13 +1,16 @@
 
 % load the log
 
-%dir = 'sync/2013-11-05-delta-crash/';
+%dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 
-dir_prefix = '/home/abarry/rlg/logs/';
+dir = '2014-02-12-crash-on-takeoff/';
+filename = 'lcmlog_2014_02_12_02.mat';
 
-dir = [ dir_prefix '2013-11-16-outside-obstacles/' ];
-filename = 'lcmlog_2013_11_16_02.mat';
+
+
+dir_prefix = '/home/abarry/rlg/logs/';
+dir = [ dir_prefix dir ];
 
 loadDeltawing
 
@@ -23,17 +26,21 @@ ylabel('Altitude');
 hold on
 
 plot(baro.logtime, baro.airspeed.*.44704,'r');
-plot(baro.logtime, smooth(baro.airspeed.*.44704),'k');
 title('Airspeed');
 xlabel('Log time (s)');
 ylabel('Airspeed');
 legend('Altitude', 'Airspeed');
 
 figure(3)
-plot(est.logtime, est.rotation_rate.z)
+plot(est.logtime, est.rotation_rate.z);
+xlabel('Time (s)');
+ylabel('Rotation rate Z');
 
 figure(4);
 plot(gps.logtime, gps.x);
+plot(est.logtime, est.rotation_rate.z);
+xlabel('Time (s)');
+ylabel('GPS X-axis');
 
 figure(5)
 plot3(gps.x, gps.y, gps.z)
