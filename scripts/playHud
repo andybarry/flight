@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# play HUD given an argument for a logfile
+# usage: ./playHud <lcm-log>
+
+
+
+
+REALTIME=$HOME/realtime
+
+lcm-logplayer-gui $1 &
+
+$REALTIME/sensors/stereo/opencv-stereo -c $REALTIME/sensors/stereo/aaazzz.conf -i `dirname $1`/onboard -d &
+
