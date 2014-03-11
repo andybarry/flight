@@ -12,6 +12,15 @@ cd lib
 ln -s libtypes.a libplanerlg.a
 cd ..
 
+echo "----------------------------"
+echo "Patching mavlink_message_t.h"
+echo "----------------------------"
+
+echo "patch mavlink_message_t.h < mavlink_message.patch"
+patch mavlink_message_t.h < mavlink_message.patch
+
+
+
 export CLASSPATH="`pkg-config --variable=classpath lcm-java`:."
 
 echo "---------------------------"

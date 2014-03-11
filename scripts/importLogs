@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# automatically create directories for a new log
+
+VIDEODIR=$HOME/video/rlg/4-delta-wing-era
+
+LOGDIR=$HOME/rlg/logs
+
+
+DATESTR=`date "+%Y-%m-%d"`
+
+# query the user for the name of the directory
+
+echo "Please enter the name:"
+echo -n "$DATESTR-"
+read DIRNAME
+
+echo "Creating directories..."
+echo "$VIDEODIR/$DATESTR-$DIRNAME"
+mkdir $VIDEODIR/$DATESTR-$DIRNAME
+
+echo "$LOGDIR/$DATESTR-$DIRNAME/onboard"
+mkdir  -p $LOGDIR/$DATESTR-$DIRNAME/onboard
+
+echo "Creating symlinks..."
+echo "$VIDEODIR/$DATESTR-$DIRNAME -> $LOGDIR/$DATESTR-$DIRNAME/ground-vids"
+ln -s $VIDEODIR/$DATESTR-$DIRNAME $LOGDIR/$DATESTR-$DIRNAME/ground-vids
+
+echo "$LOGDIR/$DATESTR-$DIRNAME/onboard -> $VIDEODIR/$DATESTR-$DIRNAME/onboard"
+ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard $VIDEODIR/$DATESTR-$DIRNAME/onboard

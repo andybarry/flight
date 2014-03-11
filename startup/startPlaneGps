@@ -1,8 +1,8 @@
 #!/bin/bash
 
 sleep 15
-/home/linaro/realtime/drivers/lcm_to_xbee_bridge2/lcm-to-xbee-bridge2 /dev/ttyUSB0 STATE_ESTIMATOR_POSE 300 process_status 0 log_size 0 battery-status 100 TIMESYNC 0 stereo_monitor 0 &
-sleep 1
+#/home/linaro/realtime/drivers/lcm_to_xbee_bridge2/lcm-to-xbee-bridge2 /dev/ttyUSB0 STATE_ESTIMATOR_POSE 300 process_status 0 log_size 0 battery-status 100 TIMESYNC 0 stereo_monitor 0 &
+#sleep 1
 /home/linaro/realtime/drivers/process_control/process-control process_control stereo_control process_status /home/linaro/realtime/config/processControl.conf &
 sleep 1
 /home/linaro/realtime/ui/log-monitor/log-monitor log_size /home/linaro/ &

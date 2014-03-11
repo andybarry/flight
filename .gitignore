@@ -38,3 +38,7 @@ sensors/stereo/stereo_camera_calibrate/my2.xml
 sensors/stereo/stereo_camera_calibrate/pyimglist.txt
 sensors/stereo/stereo_camera_calibrate/stereo_calibrate
 *.avi
+docs/*.aux
+docs/*.log
+docs/*.out
+docs/*.pdf
