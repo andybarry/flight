@@ -7,6 +7,7 @@ LCM/lcmtypes
 LCM/mav
 LCM/lib/libplanerlg.a
 LCM/lib/libtypes.a
+LCM/*.pyc
 *.o
 *~
 controllers/constant-control/constant-control

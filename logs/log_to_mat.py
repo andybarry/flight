@@ -203,7 +203,14 @@ fname = args[0]
 lcm_packages = [ "botlcm"]
 outFname = fname
 outFname = outFname.replace(".", "_")
-outFname = outFname.replace("-", "_")
+
+# only replace -'s with _'s in the filename
+outDir = os.path.dirname(outFname)
+outFile = os.path.basename(outFname)
+
+outFname = os.path.join(outDir, outFile.replace("-", "_"))
+#outFname = outFname.replace("-", "_")
+
 outFname = outFname + ".mat"
 printFname = "stdout"
 printFile = sys.stdout

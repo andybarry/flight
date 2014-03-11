@@ -4,7 +4,9 @@
 %dir = 'sync/2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 
-dir = '/home/abarry/rlg/logs/2013-11-16-outside-obstacles/';
+dir_prefix = '/home/abarry/rlg/logs/';
+
+dir = [ dir_prefix '2013-11-16-outside-obstacles/' ];
 filename = 'lcmlog_2013_11_16_02.mat';
 
 loadDeltawing
