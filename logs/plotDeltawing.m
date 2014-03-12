@@ -14,11 +14,18 @@ dir = [ dir_prefix dir ];
 
 loadDeltawing
 
+
+% get start and end times
+[throttle_start, throttle_end] = FindActiveTimes(u.logtime, u.throttle, 1700);
+
+% get altitude start and end times
+[alt_start, alt_end] = FindActiveTimes(baro.logtime, baro.altitude, 7);
 % now plot relevant things
 
 figure(1)
 clf
 plot(baro.logtime, baro.altitude);
+xlim([start_times(1) - 1, end_times(end) + 1]);
 title('Barometric Altitude');
 xlabel('Log time (s)');
 ylabel('Altitude');
@@ -33,6 +40,7 @@ legend('Altitude', 'Airspeed');
 
 figure(2)
 plot(u.logtime, u.throttle);
+xlim([start_times(1) - 1, end_times(end) + 1]);
 xlabel('Time (s)')
 ylabel('Throttle (pulse ms)');
 
