@@ -99,7 +99,7 @@ string GetDateSring();
 string GetNextVideoFilename(string filenamePrefix,
     OpenCvStereoConfig configStruct, bool increment_number = true);
 
-VideoWriter SetupVideoWriter(string filename, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true);
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true, bool is_color = false);
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma = false);
 

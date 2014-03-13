@@ -15,6 +15,7 @@ bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
 bool show_unrectified = false;
 bool display_hud = false;
+bool record_hud = false;
 
 int force_brightness = -1;
 int force_exposure = -1;
@@ -172,6 +173,8 @@ int main(int argc, char *argv[])
     string video_file_left = "", video_file_right = "";
     bool enable_gamma = false;
     
+    bool record_hud_setup = false;
+    
     StereoBM *stereo_bm = NULL;
     Mat single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
     
@@ -189,6 +192,7 @@ int main(int argc, char *argv[])
     parser.add(video_directory, "i", "video-directory", "Directory to search for videos in (for playback).");
     parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
+    parser.add(record_hud, "x", "record-hud", "Record the HUD display.");
     parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
     parser.add(full_stereo, "z", "full-stereo", "Process images with full stereo (only valid with -d)");
     parser.add(use_optotrak, "o", "optotrak", "Use Optotrak to build a depth map.");
@@ -435,7 +439,7 @@ int main(int argc, char *argv[])
     Mat matL, matR;
     bool quit = false;
     
-    VideoWriter recordOnlyL, recordOnlyR;
+    VideoWriter recordOnlyL, recordOnlyR, record_hud_writer;
     
     if (!using_video_from_disk) {
         // allocate a huge buffer for video frames
@@ -563,6 +567,7 @@ int main(int argc, char *argv[])
         //matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
         
         //matR = matR2;
+
         
         
         Mat matDisp, remapL, remapR;
@@ -679,6 +684,20 @@ int main(int argc, char *argv[])
                 }
                 
                 hud.DrawHud(matDisp, with_hud);
+                
+                if (record_hud) {
+                    // put this frame into the HUD recording
+                    
+                    if (!record_hud_setup) {
+                        record_hud_writer = SetupVideoWriter("HUD", with_hud.size(), stereoConfig, true, true);
+                        record_hud_setup = true;
+                    }
+                    
+                    Mat write_hud;
+                    with_hud.convertTo(write_hud, CV_8UC3, 255.0);
+                    
+                    record_hud_writer << write_hud;
+                }
                 
                 imshow("Stereo", with_hud);
             } else {
@@ -913,6 +932,12 @@ int main(int argc, char *argv[])
                     imwrite("right.ppm", remapR);
                     
                     printf("\ndone.");
+                    break;
+                    
+                case 'V':
+                    // record the HUD
+                    record_hud = true;
+                    record_hud_setup = false;
                     break;
                 
                 case 'q':

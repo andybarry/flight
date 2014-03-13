@@ -636,10 +636,12 @@ string GetNextVideoFilename(string filenamePrefix,
  *   systems if you want to have a left and right video with
  *   the same number (ie set to false for the second writer
  *   you initialize.)
+ * @param is_color true if it is color
+ *  @default false
  *
  * @retval VideoWriter object
  */
-VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number)
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number, bool is_color)
 {
     
     VideoWriter recorder;
@@ -668,13 +670,14 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     char fourcc3 = configStruct.fourcc.at(2);
     char fourcc4 = configStruct.fourcc.at(3);
     
+    cout << "4cc: " << fourcc1 << endl;
     
-    recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, false);
+    recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, is_color);
     if (!recorder.isOpened())
     {
         printf("VideoWriter failed to open!\n");
     } else {
-        cout << "Opened " << filename << endl;
+        cout << endl << "Opened " << filename << endl;
     }
     
     return recorder;
