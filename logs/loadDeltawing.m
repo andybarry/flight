@@ -184,6 +184,12 @@ if (exist('wingeron_x_quat'))
 
 end
 
+% get the run number
+log.number = filename(end-5:end-4);
+
+mypath = strsplit([dir filename], '/');
+log.name = mypath{end-1};
+
 
 
 %{
