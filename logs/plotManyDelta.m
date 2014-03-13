@@ -34,17 +34,16 @@ for i=1:length(files)
     % get interseting times for altitude
     [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
     
-    [AX, H1, H2] = plotyy(baro.logtime, baro.altitude * 3.28084, u.logtime, u.throttle);
-    xlim(AX(1), [start_times(1)- 10, end_times(end)+20]);
-    xlim(AX(2), [start_times(1)- 10, end_times(end)+20]);
-    xlabel('Time (s)');
+    [AX, H1, H2] = plotyy(baro.logtime, baro.altitude * 3.28084, u.logtime, ServoPercent(u.throttle));
+    
+    %hold on
+    %plot(est.logtime, est.pos.z*3.28084, 'r');
+    
     ylabel('Altitude (ft)');
-    ylabel(AX(2), 'Throttle (ms pulse)')
-    title([log.name '.' log.number]);
-    grid on
     
+    SetupPlotScript
     
-    saveasAll([log_save_dir log.name '-' log.number '-alt'], 15, AX)
+    %saveasAll([log_save_dir log.name '-' log.number '-alt'], 15, AX)
     
 end
 
@@ -70,19 +69,131 @@ for i=1:length(files)
     totalG = [imu.accel.x, imu.accel.y, imu.accel.z];
     totalG = sqrt(sum(abs(totalG).^2,2))/9.8;
     
-    [AX, H1, H2] = plotyy(imu.logtime, totalG, u.logtime, u.throttle);
-    xlim(AX(1), [start_times(1)- 10, end_times(end)+20]);
-    xlim(AX(2), [start_times(1)- 10, end_times(end)+20]);
-    xlabel('Time (s)');
-    ylabel('Accel (x)');
-    ylabel(AX(2), 'Accel (y)')
-    title([log.name '.' log.number]);
-    hold on
-    plot([0 1e5], [1 1], 'k')
+    [AX, H1, H2] = plotyy(imu.logtime, totalG, u.logtime, ServoPercent(u.throttle));
     
-    grid on
+    ylabel('Acceleration, All Axes (G)');
+    
+    SetupPlotScript
     
     saveasAll([log_save_dir log.name '-' log.number '-accel'], 15, AX)
     
+end
+
+%% gyro
+
+for i=1:length(files)
+    
+    dir = dir_prefix;
+    filename = files{i};
+    % load log files
+    loadDeltawing
+    
+    
+    % ok, we've got the log file, make plots!
+    
+    figure(i)
+    clf
+    % get interseting times for altitude
+    [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
+    
+    
+    [AX, H1, H2] = plotyy(imu.logtime, imu.gyro.x, u.logtime, ServoPercent(u.throttle));
+    
+    ylabel('Gyro X-axis (rad/sec)');
+    
+    SetupPlotScript
+    
+    saveasAll([log_save_dir log.name '-' log.number '-gyro'], 15, AX)
     
 end
+
+%% GPS
+
+
+for i=1:length(files)
+    
+    dir = dir_prefix;
+    filename = files{i};
+    % load log files
+    loadDeltawing
+    
+    
+    % ok, we've got the log file, make plots!
+    
+    figure(i)
+    clf
+    % get interseting times for altitude
+    [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
+    
+    
+    [AX, H1, H2] = plotyy(gps.logtime, gps.z, u.logtime, ServoPercent(u.throttle));
+    
+    ylabel('GPS Z-axis (m)');
+    
+    SetupPlotScript
+    
+    saveasAll([log_save_dir log.name '-' log.number '-gps-z'], 15, AX)
+    
+end
+
+
+%% battery
+
+for i=1:length(files)
+    
+    dir = dir_prefix;
+    filename = files{i};
+    % load log files
+    loadDeltawing
+    
+    
+    % ok, we've got the log file, make plots!
+    
+    figure(i)
+    clf
+    % get interseting times for altitude
+    [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
+    
+    
+    [AX, H1, H2] = plotyy(battery.logtime, battery.voltage, u.logtime, ServoPercent(u.throttle));
+    
+    ylabel('Battery Voltage (V)');
+    
+    SetupPlotScript
+    
+    %saveasAll([log_save_dir log.name '-' log.number '-battery'], 15, AX)
+    
+end
+
+
+%% airspeed
+
+for i=1:length(files)
+    
+    dir = dir_prefix;
+    filename = files{i};
+    % load log files
+    loadDeltawing
+    
+    
+    % ok, we've got the log file, make plots!
+    
+    figure(i)
+    clf
+    % get interseting times for altitude
+    [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
+    
+    
+    [AX, H1, H2] = plotyy(baro.logtime, baro.airspeed*2.23694, u.logtime, ServoPercent(u.throttle));
+    
+    ylabel('Airspeed (MPH)');
+    
+    SetupPlotScript
+    
+    saveasAll([log_save_dir log.name '-' log.number '-airspeed'], 15, AX)
+    
+end
+
+
+
+
