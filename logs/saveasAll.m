@@ -13,6 +13,12 @@ function saveasAll(filename, fontsize, axis_array)
             axis_array(1) = gca;
         end
         
+        hlegend = findobj(gcf,'Type','axes','Tag','legend');
+        
+        if (exist('hlegned'))
+            set(hlegend,'FontSize', fontsize) 
+        end
+        
         for i=1:length(axis_array)
             xlhand = get(axis_array(i),'xlabel');
             set(xlhand, 'fontsize', fontsize);
@@ -24,6 +30,19 @@ function saveasAll(filename, fontsize, axis_array)
             set(thand, 'fontsize', fontsize);
 
             set(axis_array(i), 'FontSize', fontsize);
+        end
+        
+    end
+    
+    [pathstr, file] = fileparts(filename);
+    
+    if (strcmp(pathstr, '') == 0)
+        % there is a directory
+        
+        % create it if it doesn't exist
+        if (exist(pathstr) ~= 7)
+            disp(['Creating directory ' pathstr])
+            mkdir(pathstr)
         end
     end
 

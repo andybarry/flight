@@ -43,7 +43,7 @@ for i=1:length(files)
     
     SetupPlotScript
     
-    %saveasAll([log_save_dir log.name '-' log.number '-alt'], 15, AX)
+    saveasAll([log_save_dir log.name '/' log.number '-alt'], 15, AX)
     
 end
 
@@ -75,7 +75,7 @@ for i=1:length(files)
     
     SetupPlotScript
     
-    saveasAll([log_save_dir log.name '-' log.number '-accel'], 15, AX)
+    saveasAll([log_save_dir log.name '/' log.number '-accel'], 15, AX)
     
 end
 
@@ -103,7 +103,7 @@ for i=1:length(files)
     
     SetupPlotScript
     
-    saveasAll([log_save_dir log.name '-' log.number '-gyro'], 15, AX)
+    saveasAll([log_save_dir log.name '/' log.number '-gyro'], 15, AX)
     
 end
 
@@ -126,13 +126,13 @@ for i=1:length(files)
     [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
     
     
-    [AX, H1, H2] = plotyy(gps.logtime, gps.z, u.logtime, ServoPercent(u.throttle));
+    [AX, H1, H2] = plotyy(gps.logtime, gps.speed*2.23694, u.logtime, ServoPercent(u.throttle));
     
-    ylabel('GPS Z-axis (m)');
+    ylabel('GPS Speed (MPH)');
     
     SetupPlotScript
     
-    saveasAll([log_save_dir log.name '-' log.number '-gps-z'], 15, AX)
+    saveasAll([log_save_dir log.name '/' log.number '-gps-speed'], 15, AX)
     
 end
 
@@ -186,11 +186,65 @@ for i=1:length(files)
     
     [AX, H1, H2] = plotyy(baro.logtime, baro.airspeed*2.23694, u.logtime, ServoPercent(u.throttle));
     
-    ylabel('Airspeed (MPH)');
+    ylabel('Speed (MPH)');
+    
+    hold on
+    plot(gps.logtime, gps.speed*2.23694, 'r')
+    ylim(AX(1), [0 45])
+    
+    hlegend = legend('Airspeed', 'GPS');
     
     SetupPlotScript
     
-    saveasAll([log_save_dir log.name '-' log.number '-airspeed'], 15, AX)
+    
+    
+    saveasAll([log_save_dir log.name '/' log.number '-airspeed'], 15, AX)
+    
+end
+
+%% stereo
+
+for i=1:length(files)
+    
+    dir = dir_prefix;
+    filename = files{i};
+    % load log files
+    loadDeltawing
+    
+    
+    % ok, we've got the log file, make plots!
+    
+    figure(i)
+    clf
+    % get interseting times for altitude
+    [start_times, end_times] = FindActiveTimes(baro.logtime, baro.altitude, mean(baro.altitude) + 3);
+    
+    
+    thistime = (stereo.utime - stereo.utime(1)) / 1e6;
+    
+    framerate = 1./diff(thistime);
+    
+    %[AX, H1, H2] = plotyy(thistime(2:end), framerate, u.logtime, ServoPercent(u.throttle));
+    
+    plot(thistime(2:end), framerate, 'x');
+    title([log.name '.' log.number]);
+
+    
+    xlim([start_times(1)- 10, end_times(end)+20]);
+    
+    xlabel('Time (s)')
+    ylabel('Framerate (fps)');
+    grid on
+    
+    hold on
+    plot([0 thistime(end)], [100 100], 'k');
+   
+    
+
+    
+    %SetupPlotScript
+    
+    saveasAll([log_save_dir log.name '/' log.number '-stereo-framerate'], 15)
     
 end
 

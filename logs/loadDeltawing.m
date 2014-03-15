@@ -110,30 +110,42 @@ u.logtime = servo_out(:,7);
 
 
 
-% 
+
 % stereo
-% if (exist('stereo'))
-%   stereoVals = stereo;
-%   clear stereo
-% 
-%   stereo.timestamp = stereoVals(:,1);
-%   stereo.number_of_points = stereoVals(:,2);
-%   stereo.frame_number = stereoVals(:,3);
-% 
-%   if (size(stereo, 2) < 6)
-%     if we got no stereo hits, the array won't be initialized
-%     stereo.x = [];
-%     stereo.y = [];
-%     stereo.z = [];
-%     stereo.logtime = stereoVals(:,4);
-%   else
-%     stereo.x = stereoVals(:,4);
-%     stereo.y = stereoVals(:,5);
-%     stereo.z = stereoVals(:,6);
-%     stereo.logtime = stereoVals(:,7);
-%   end
-% end
-%  
+% #stereo  <class 'lcmt_stereo.lcmt_stereo'> :
+% #[
+% #1- timestamp
+% #2- number_of_points
+% #3- frame_number
+% #4- video_number
+% #5- x(0)
+% #5- y(0)
+% #5- z(0)
+% #5- log_timestamp
+% #]
+if (exist('stereo'))
+  stereoVals = stereo;
+  clear stereo
+
+  stereo.utime = stereoVals(:,1);
+  stereo.number_of_points = stereoVals(:,2);
+  stereo.frame_number = stereoVals(:,3);
+  stereo.video_number = stereoVals(:,4);
+
+  if (size(stereoVals, 2) < 6)
+    % if we got no stereo hits, the array won't be initialized
+    stereo.x = [];
+    stereo.y = [];
+    stereo.z = [];
+    stereo.logtime = stereoVals(:,5);
+  else
+    stereo.x = []; % TODO
+    stereo.y = []; % TODO
+    stereo.z = []; % TODO
+    stereo.logtime = stereoVals(:,5);
+  end
+end
+ 
 
 
 
