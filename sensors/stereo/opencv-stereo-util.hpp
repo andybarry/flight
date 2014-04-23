@@ -21,6 +21,7 @@
 #include <glib.h> // for configuration files
 
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
+#include "../../LCM/lcmt_stereo.h"
 
 extern "C"
 {
@@ -64,6 +65,9 @@ struct OpenCvStereoConfig
     int blockSize;
     int sadThreshold;
     
+    int displayOffsetX;
+    int displayOffsetY;
+    
     float interestOperatorDivisor;
     
 };
@@ -73,6 +77,9 @@ struct OpenCvStereoCalibration
     Mat mx1fp;
     Mat mx2fp;
     Mat qMat;
+    
+    Mat M1;
+    Mat D1;
 };
 
 Mat GetFrameFormat7(dc1394camera_t *camera);
@@ -106,5 +113,9 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set = false, int force_brightness = -1, int force_exposure = -1);
 
 void SendImageOverLcm(lcm_t* lcm, string channel, Mat image);
+
+void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_out);
+
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Scalar color = Scalar(0, 0, 255));
 
 #endif

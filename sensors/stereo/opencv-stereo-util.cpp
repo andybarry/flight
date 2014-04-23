@@ -179,7 +179,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     
     if (optotrak_channel == NULL)
     {
-        fprintf(stderr, "Warning: configuration file does not specify optotrak_channel (or I failed to read it). Parameter: lcm.optotrak_channel\n");
+        //fprintf(stderr, "Warning: configuration file does not specify optotrak_channel (or I failed to read it). Parameter: lcm.optotrak_channel\n");
         
         // this is not a fatal error, don't bail out
         optotrak_channel = "";
@@ -248,6 +248,27 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     
     configStruct->fourcc = fourcc;
+    
+    configStruct->displayOffsetX = g_key_file_get_integer(keyfile,
+        "display", "offset_x", &gerror);
+    if (gerror != NULL)
+    {
+        // no need to get upset, this is an optional parameter
+        configStruct->displayOffsetX = 0;
+        g_error_free(gerror);
+        gerror = NULL;
+    }
+    
+    configStruct->displayOffsetY = g_key_file_get_integer(keyfile,
+        "display", "offset_y", &gerror);
+    if (gerror != NULL)
+    {
+        // no need to get upset, this is an optional parameter
+        configStruct->displayOffsetY = 0;
+        g_error_free(gerror);
+        gerror = NULL;
+    }
+    
     
     // get settings
     
@@ -348,7 +369,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
  */
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration)
 {
-    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat;
+    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat;
 
     CvMat *Q = (CvMat *)cvLoad((calibrationDir + "/Q.xml").c_str(),NULL,NULL,NULL);
     
@@ -390,6 +411,22 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
         return false;
     }
     
+    CvMat *m1 = (CvMat *)cvLoad((calibrationDir + "/M1.xml").c_str(),NULL,NULL,NULL);
+    
+    if (m1 == NULL)
+    {
+        cerr << "Error: failed to read " << calibrationDir << "/M1.xml." << endl;
+        return false;
+    }
+    
+    CvMat *d1 = (CvMat *)cvLoad((calibrationDir + "/D1.xml").c_str(),NULL,NULL,NULL);
+    
+    if (m1 == NULL)
+    {
+        cerr << "Error: failed to read " << calibrationDir << "/D1.xml." << endl;
+        return false;
+    }
+    
     
     
     qMat = Mat(Q, true);
@@ -397,6 +434,9 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     my1Mat = Mat(my1,true);
     mx2Mat = Mat(mx2,true);
     my2Mat = Mat(my2,true);
+    
+    m1Mat = Mat(m1,true);
+    d1Mat = Mat(d1,true);
     
     Mat mx1fp, empty1, mx2fp, empty2;
     
@@ -407,6 +447,9 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     stereoCalibration->qMat = qMat;
     stereoCalibration->mx1fp = mx1fp;
     stereoCalibration->mx2fp = mx2fp;
+    
+    stereoCalibration->M1 = m1Mat;
+    stereoCalibration->D1 = d1Mat;
     
     
     return true;
@@ -858,6 +901,53 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
     } else {
         cout << "Image not continuous. LCM transport not implemented." << endl;
     }
+}
+
+/**
+ * Takes an lcm_stereo message and produces a vector of Point3fs corresponding to the points contained
+ * in the message
+ * 
+ * @param msg lcm_stereo message
+ * @param points_out vector<Point3f> where the points will be placed.
+ */
+void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_out)
+{
+    for (int i=0; i<msg->number_of_points; i++)
+    {
+        points_out->push_back(Point3f(msg->x[i], msg->y[i], msg->z[i]));
+    }
+}
+
+/**
+ * Draws 3D points onto a 2D image when given the camera calibration.
+ * 
+ * @param camera_image image to draw onto
+ * @param points_list_in vector<Point3f> of 3D points to draw. Likely obtained from Get3DPointsFromStereoMsg
+ * @param cam_mat_m camera calibration matrix (usually M1.xml)
+ * @param cam_mat_d distortion calibration matrix (usually D1.xml)
+ * @param color color to draw the boxes
+ */
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Scalar color)
+{
+    vector<Point3f> &points_list = *points_list_in;
+    
+    if (points_list.size() <= 0)
+    {
+        cout << "Draw3DPointsOnimage: zero sized points list" << endl;
+        return;
+    }
+    
+    vector<Point2f> img_points_list;
+
+    projectPoints(points_list, Mat::zeros(3, 1, CV_32F), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
+    
+    // now draw the points onto the image
+    for (int i=0; i<int(img_points_list.size()); i++)
+    {
+        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
+            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), color, CV_FILLED);
+    }
+    
 }
 
 
