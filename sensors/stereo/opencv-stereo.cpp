@@ -353,14 +353,14 @@ int main(int argc, char *argv[])
         setMouseCallback("Input", onMouse); // for drawing disparity lines
         setMouseCallback("Stereo", onMouseStereo, &hud); // for drawing disparity lines
         
-        moveWindow("Input", 100, 100);
-        moveWindow("Stereo", 100, 370);
-        moveWindow("Input2", 500, 100);
-        moveWindow("Left Block", 900, 100);
-        moveWindow("Right Block", 1400, 100);
+        moveWindow("Input", stereoConfig.displayOffsetX + 100, stereoConfig.displayOffsetY + 100);
+        moveWindow("Stereo", stereoConfig.displayOffsetX + 100, stereoConfig.displayOffsetY + 370);
+        moveWindow("Input2", stereoConfig.displayOffsetX + 500, stereoConfig.displayOffsetY + 100);
+        moveWindow("Left Block", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 100);
+        moveWindow("Right Block", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 100);
         
-        moveWindow("Debug 1", 500, 370);
-        moveWindow("Debug 2", 900, 370);
+        moveWindow("Debug 1", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 370);
+        moveWindow("Debug 2", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 370);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {

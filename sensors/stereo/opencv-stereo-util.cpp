@@ -179,7 +179,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     
     if (optotrak_channel == NULL)
     {
-        fprintf(stderr, "Warning: configuration file does not specify optotrak_channel (or I failed to read it). Parameter: lcm.optotrak_channel\n");
+        //fprintf(stderr, "Warning: configuration file does not specify optotrak_channel (or I failed to read it). Parameter: lcm.optotrak_channel\n");
         
         // this is not a fatal error, don't bail out
         optotrak_channel = "";
@@ -248,6 +248,27 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     
     configStruct->fourcc = fourcc;
+    
+    configStruct->displayOffsetX = g_key_file_get_integer(keyfile,
+        "display", "offset_x", &gerror);
+    if (gerror != NULL)
+    {
+        // no need to get upset, this is an optional parameter
+        configStruct->displayOffsetX = 0;
+        g_error_free(gerror);
+        gerror = NULL;
+    }
+    
+    configStruct->displayOffsetY = g_key_file_get_integer(keyfile,
+        "display", "offset_y", &gerror);
+    if (gerror != NULL)
+    {
+        // no need to get upset, this is an optional parameter
+        configStruct->displayOffsetY = 0;
+        g_error_free(gerror);
+        gerror = NULL;
+    }
+    
     
     // get settings
     
