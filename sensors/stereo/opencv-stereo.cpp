@@ -16,6 +16,8 @@ bool disable_stereo = false;
 bool show_unrectified = false;
 bool display_hud = false;
 bool record_hud = false;
+bool visualize_stereo_hits = true;
+lcmt_stereo *stereo_lcm_msg = NULL; // for use in visualizing stereo hits recorded on the fly
 
 int force_brightness = -1;
 int force_exposure = -1;
@@ -672,6 +674,20 @@ int main(int argc, char *argv[])
                 imshow("Input2", matR);
             }
             
+            if (visualize_stereo_hits == true && stereo_lcm_msg != NULL) {
+                
+                // loop through the stereo message and draw boxes on screen
+                for (auto i = 0; i < stereo_lcm_msg->number_of_points; i++) {
+                    
+                    // transform the point from 3D space back onto the image's 2D space
+                    vector<Point3f> lcm_points;
+                    Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
+                    
+                    Draw3DPointsOnImage(matDisp, &lcm_points, stereoCalibration.M1, stereoCalibration.D1);
+                }
+                
+            }
+            
             
             if (display_hud) {
                 Mat with_hud;
@@ -1244,6 +1260,16 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     if (msg->frame_number > 0) {
         file_frame_number = msg->frame_number;
     }
+    
+    // in addition to displaying the right frame, optionally visualize the hits recorded during flight
+        
+    // if there is an old stereo message, delete it so we don't leak memory
+    if (stereo_lcm_msg) {
+        delete stereo_lcm_msg;
+    }
+    
+    // record the message for use later
+    stereo_lcm_msg = lcmt_stereo_copy(msg);
 }
 
 void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user) {
