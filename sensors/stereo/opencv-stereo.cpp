@@ -359,8 +359,8 @@ int main(int argc, char *argv[])
         moveWindow("Left Block", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 100);
         moveWindow("Right Block", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 100);
         
-        moveWindow("Debug 1", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 370);
-        moveWindow("Debug 2", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 370);
+        moveWindow("Debug 1", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 670);
+        moveWindow("Debug 2", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 670);
         
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
