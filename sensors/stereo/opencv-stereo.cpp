@@ -476,13 +476,19 @@ int main(int argc, char *argv[])
     // to verify that everything is working
     if (!using_video_from_disk) {
         printf("Sending init images over LCM...\n");
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 5; i++) {
         
             matL = GetFrameFormat7(camera);
             SendImageOverLcm(lcm, "stereo_image_left", matL);
             
             matR = GetFrameFormat7(camera2);
             SendImageOverLcm(lcm, "stereo_image_right", matR);
+            
+            // don't send these too fast, otherwise we'll flood the ethernet link
+            // and not actually be helpful
+            
+            // wait one second
+            sleep(1000);
         }
         printf("done.\n");
     }
@@ -537,12 +543,14 @@ int main(int argc, char *argv[])
             } else {
                 Mat matL_file, matR_file;
                 
+                // make sure we don't run off the end of the video file and crash
                 if (file_frame_number - file_frame_skip
                     >= left_video_capture->get(CV_CAP_PROP_FRAME_COUNT)) {
                         
                     file_frame_number = left_video_capture->get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
                 }
                 
+                // make sure we don't try to play before the file starts
                 if (file_frame_number - file_frame_skip < 0) {
                     file_frame_number = file_frame_skip;
                 }
@@ -976,7 +984,7 @@ int main(int argc, char *argv[])
                 cout << "y offset = " << y_offset << endl;
                 cout << "PitchRangeOfLens = " << hud.GetPitchRangeOfLens() << endl;
             }
-        }
+        } // end show_display
         
         numFrames ++;
         
