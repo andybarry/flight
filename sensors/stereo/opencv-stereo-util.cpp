@@ -713,8 +713,6 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     char fourcc3 = configStruct.fourcc.at(2);
     char fourcc4 = configStruct.fourcc.at(3);
     
-    cout << "4cc: " << fourcc1 << endl;
-    
     recorder.open(filename, CV_FOURCC(fourcc1, fourcc2, fourcc3, fourcc4), 30, frameSize, is_color);
     if (!recorder.isOpened())
     {
@@ -791,7 +789,7 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
  * @retval frame skip amount, or -1 on failure.
  * 
  */
-int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long timestamp, int video_number) {
+int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long long timestamp, int video_number) {
     
     // if the directory has a trailing "/", zap it
     if (video_directory.back() == '/') {

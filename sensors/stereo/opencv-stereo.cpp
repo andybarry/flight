@@ -488,7 +488,7 @@ int main(int argc, char *argv[])
             // and not actually be helpful
             
             // wait one second
-            sleep(1000);
+            sleep(1);
         }
         printf("done.\n");
     }
