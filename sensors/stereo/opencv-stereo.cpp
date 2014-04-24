@@ -1097,8 +1097,10 @@ void WriteVideo()
         recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
         recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
         
-        printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-        fflush(stdout);
+        if (quiet_mode == false || i % 100 == 0) {
+            printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+            fflush(stdout);
+        }
     }
     printf("\ndone.\n");
 }
