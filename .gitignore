@@ -23,6 +23,7 @@ externals/timesync/lcmtypes
 ui/log-monitor/log-monitor
 ui/stereo-monitor/stereo-monitor
 *.ppm
+*.pgm
 sensors/stereo/stereo_camera_calibrate/D1.xml
 sensors/stereo/stereo_camera_calibrate/D2.xml
 sensors/stereo/stereo_camera_calibrate/M1.xml

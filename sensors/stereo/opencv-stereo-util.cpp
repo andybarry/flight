@@ -246,8 +246,19 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         fprintf(stderr, "Error: configuration file does not specify fourcc (or I failed to read it). Parameter: cameras.fourcc\n");
         return false;
     }
-    
     configStruct->fourcc = fourcc;
+    
+    // get the fourcc video codec
+    bool usePGM = g_key_file_get_boolean(keyfile, "cameras", "usePGM", &gerror);
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify usePGM (or I failed to read it). Parameter: cameras.usePGM\n");
+        g_error_free(gerror);
+        return false;
+    }
+    configStruct->usePGM = usePGM;
+    
+    
     
     configStruct->displayOffsetX = g_key_file_get_integer(keyfile,
         "display", "offset_x", &gerror);
@@ -476,12 +487,14 @@ void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera)
  * Gets next availible filename for a video file
  *
  * @param configStruct OpenCvStereoConfig structure for reading the directory things should be saved in
+ *  Default: false
+ * @param increment_number true if we should increment video number
+ *  Default: true
  *
  * @retval number of the next availible name
  *
  */
-int GetNextVideoNumber(OpenCvStereoConfig configStruct,
-    bool increment_number) {
+int GetNextVideoNumber(OpenCvStereoConfig configStruct, bool increment_number) {
     
     string datechar = GetDateSring();
     
@@ -490,7 +503,7 @@ int GetNextVideoNumber(OpenCvStereoConfig configStruct,
     // other videos have been taken today
     if (boost::filesystem::exists(configStruct.videoSaveDir)) {
             
-        max_number = MatchVideoFile(configStruct.videoSaveDir, datechar);
+        max_number = MatchVideoFile(configStruct.videoSaveDir,  datechar, !configStruct.usePGM);
         
     }
     
@@ -513,6 +526,7 @@ int GetNextVideoNumber(OpenCvStereoConfig configStruct,
  * 
  * @param directory directory to search for videos
  * @param datestr string containing date to search for (ex. 2013-11-16)
+ * @param using_avi if true, match for .avi, otherwise without that (ie for a directory)
  * @param match_number (optional).  If provided, will return the skip value for
  *  that number.  Otherwise will return the largest video number in the
  *  directory.
@@ -521,7 +535,7 @@ int GetNextVideoNumber(OpenCvStereoConfig configStruct,
  *  the directory.
  * 
  */
-int MatchVideoFile(string directory, string datestr, int match_number) {
+int MatchVideoFile(string directory, string datestr, bool using_avi, int match_number) {
     
     int return_number = 0;
     
@@ -529,33 +543,41 @@ int MatchVideoFile(string directory, string datestr, int match_number) {
                                                    // yields past-the-end
     for (boost::filesystem::directory_iterator itr(directory);
         itr != end_itr; ++itr ) {
+        
         // iterate through the videos, keeping track
         // of the highest number
         
         // munch on the filename to pull out
-        // just the ending part
+        // just the ending part if using_avi
         
         // 17 characters in 2013-11-21.01.avi
         // or in            xxxx-xx-xx.xx.avi
         
+        int avi_offset; 
+        if (using_avi) {
+            avi_offset = 0;
+        } else {
+            avi_offset = -4; // everything is 4 characters less since we don't have ".avi" at the end
+        }
         
         string this_file = itr->path().leaf().string();
-
-        if (this_file.length() > 18) {
-
+        
+        if (int(this_file.length()) > 18 + avi_offset) {
+        
             // might be a video file
 
             // read the date in the string
             string file_date = this_file.substr(
-                this_file.length() - 17, 10);
-
+                this_file.length() - (17 + avi_offset), 10);
+                
             // compare the date string and see if it
             // is today
             if (file_date.compare(datestr) == 0) {
+            
                 // matches date
                 // get the number
                 string file_number = this_file.substr(
-                    this_file.length() - 6, 2);
+                    this_file.length() - (6 + avi_offset), 2);
                     
                 // attempt to convert the string to a number
                 try {
@@ -658,10 +680,16 @@ string GetNextVideoFilename(string filenamePrefix,
     sprintf(filenumber, "%02d",
         GetNextVideoNumber(configStruct, increment_number));
     
-    return configStruct.videoSaveDir
+    string retstring = configStruct.videoSaveDir
                 + "/" + filenamePrefix + "-"
                 + GetDateSring()
                 + "." + filenumber;
+                
+    if (!configStruct.usePGM) {
+        return retstring + ".avi";
+    } else {
+        return retstring;
+    }
 }
 
 /**
@@ -693,8 +721,6 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     string filename = GetNextVideoFilename(filenamePrefix,
         configStruct, increment_number);
         
-    filename = filename + ".avi";
-    
     char fourcc1 = configStruct.fourcc.at(0);
     char fourcc2 = configStruct.fourcc.at(1);
     char fourcc3 = configStruct.fourcc.at(2);
@@ -760,16 +786,17 @@ string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct
     
     
     // make a new directory for a bunch of images
-    string filename = GetNextVideoFilename(dirnamePrefix, configStruct, increment_number);
+    string dirpath = GetNextVideoFilename(dirnamePrefix, configStruct, increment_number);
         
-    if (boost::filesystem::create_directory(filename)) {
-        cout << "Successfully created directory: " << filename << endl;
+    
+    if (boost::filesystem::create_directory(dirpath)) {
+        cout << "Successfully created directory: " << dirpath << endl;
     } else {
-        cout << "Warning: failed to create directory: " << filename << ", attempting to proceed with the current directory." << endl;
+        cout << "Warning: failed to create directory: " << dirpath << ", attempting to proceed with the default save directory." << endl;
         
         return configStruct.videoSaveDir;
     }
-    return configStruct.videoSaveDir + "/" + filename;
+    return dirpath;
 }
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma)
@@ -861,7 +888,7 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
 
     string datetime = buf;
     
-    int skip_amount = MatchVideoFile(video_directory, datetime, video_number);
+    int skip_amount = MatchVideoFile(video_directory, datetime, true, video_number);
     
     
     // format the video number as a two-decimal value

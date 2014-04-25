@@ -1062,13 +1062,8 @@ bool NonBlockingLcm(lcm_t *lcm)
 /**
  * Writes video to disk.  Handles an overflow of the ringbuffer gracefully.
  * 
- * @param use_pgm set to true to output in a lossless pgm format (many images).
- *  Set to false to use videos with the codec specified in the fourcc line in
- *  the configuration file.  NOTE: even with Y800 as the fourcc, you will experience
- *  loss in the encoding due to OpenCV's conversion to an from a BGR format.  Using
- *  PGM is highly recommended!
  */
-void WriteVideo(bool use_pgm)
+void WriteVideo()
 {
     printf("Writing video...\n");
     
@@ -1091,7 +1086,8 @@ void WriteVideo(bool use_pgm)
         
     }
     
-    if (use_pgm) {
+    if (stereoConfig.usePGM) {
+        printf("Using PGM format...\n");
         
         string video_l_dir = SetupVideoWriterPGM("videoL-skip-" + std::to_string(firstFrame), stereoConfig, true);
         
@@ -1100,12 +1096,20 @@ void WriteVideo(bool use_pgm)
         // write the video
         for (int i = 0; i < endI; i++) {
 
-            boost::format formatter = boost::format("-image%05d.pgm") % i;
-            string im_name = formatter.str();
-
-            imwrite( video_l_dir + im_name, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
+            boost::format formatter_left = boost::format("/left%05d.pgm") % i;
+            string im_name_left = formatter_left.str();
             
-            imwrite( video_r_dir + im_name, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
+            boost::format formatter_right = boost::format("/right%05d.pgm") % i;
+            string im_name_right = formatter_right.str();
+
+            imwrite( video_l_dir + im_name_left, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
+            
+            imwrite( video_r_dir + im_name_right, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
+            
+            if (quiet_mode == false || i % 100 == 0) {
+                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+                fflush(stdout);
+            }
         }
         
         
@@ -1130,15 +1134,6 @@ void WriteVideo(bool use_pgm)
     }
     printf("\ndone.\n");
 }
-
-/**
- * Writes video to disk in a PGM format.  Handles an overflow of the ringbuffer gracefully.
- */
-void WriteVideoPGM() {
-    
-}
-    
-
 
 /**
  * Mouse callback so that the user can click on an image

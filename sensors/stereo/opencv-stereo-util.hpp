@@ -51,6 +51,8 @@ struct OpenCvStereoConfig
     string videoSaveDir;
     string fourcc;
     
+    bool usePGM;
+    
     string stereo_replay_channel;
     string baro_airspeed_channel;
     string pose_channel;
@@ -94,10 +96,9 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
 
 void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 
-int GetNextVideoNumber(OpenCvStereoConfig configStruct,
-    bool increment_number = true);
-    
-int MatchVideoFile(string directory, string datestr, int match_number = -1);
+int GetNextVideoNumber(OpenCvStereoConfig configStruct, bool increment_number = true);
+
+int MatchVideoFile(string directory, string datestr, bool using_avi = false, int match_number = -1);
 
 int GetSkipNumber(string filename);
 

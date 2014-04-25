@@ -95,7 +95,7 @@ bool ResetPointGreyCameras();
 
 void StartRecording();
 
-void WriteVideo(bool use_pgm = true);
+void WriteVideo();
 
 void onMouse( int event, int x, int y, int, void* );
 void onMouseStereo( int event, int x, int y, int, void* hud);
