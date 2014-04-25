@@ -751,7 +751,7 @@ string CheckOrCreateDirectory(string dir) {
  * @retval directory path to use for saving images
  * 
  */
-string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct) {
+string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct, bool increment_number) {
     
     // make or use parent directory
     
@@ -760,7 +760,7 @@ string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct
     
     
     // make a new directory for a bunch of images
-    string filename = GetNextVideoFilename(dirnamePrefix, configStruct, true);
+    string filename = GetNextVideoFilename(dirnamePrefix, configStruct, increment_number);
         
     if (boost::filesystem::create_directory(filename)) {
         cout << "Successfully created directory: " << filename << endl;

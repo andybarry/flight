@@ -41,6 +41,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "boost/format.hpp"
+
 
 //#include <libusb.h> // for USB reset
 
@@ -93,7 +95,7 @@ bool ResetPointGreyCameras();
 
 void StartRecording();
 
-void WriteVideo();
+void WriteVideo(bool use_pgm = true);
 
 void onMouse( int event, int x, int y, int, void* );
 void onMouseStereo( int event, int x, int y, int, void* hud);

@@ -1061,8 +1061,14 @@ bool NonBlockingLcm(lcm_t *lcm)
 
 /**
  * Writes video to disk.  Handles an overflow of the ringbuffer gracefully.
+ * 
+ * @param use_pgm set to true to output in a lossless pgm format (many images).
+ *  Set to false to use videos with the codec specified in the fourcc line in
+ *  the configuration file.  NOTE: even with Y800 as the fourcc, you will experience
+ *  loss in the encoding due to OpenCV's conversion to an from a BGR format.  Using
+ *  PGM is highly recommended!
  */
-void WriteVideo()
+void WriteVideo(bool use_pgm)
 {
     printf("Writing video...\n");
     
@@ -1085,27 +1091,53 @@ void WriteVideo()
         
     }
     
-    string pgm_dir = SetupVideoWriterPGM("video-skip-" + std::to_string(firstFrame),stereoConfig);
-    /* TODO
-    VideoWriter recordR = SetupVideoWriter("videoR-skip-"
-        + std::to_string(firstFrame), ringbufferR[0].size(),
-        stereoConfig, false);
+    if (use_pgm) {
         
-    // write the video
-    for (int i=0; i<endI; i++)
-    {
-        recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
-        recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
+        string video_l_dir = SetupVideoWriterPGM("videoL-skip-" + std::to_string(firstFrame), stereoConfig, true);
         
-        if (quiet_mode == false || i % 100 == 0) {
-            printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-            fflush(stdout);
+        string video_r_dir = SetupVideoWriterPGM("videoR-skip-" + std::to_string(firstFrame), stereoConfig, false);
+        
+        // write the video
+        for (int i = 0; i < endI; i++) {
+
+            boost::format formatter = boost::format("-image%05d.pgm") % i;
+            string im_name = formatter.str();
+
+            imwrite( video_l_dir + im_name, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
+            
+            imwrite( video_r_dir + im_name, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
+        }
+        
+        
+    } else {
+        VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
+        
+        VideoWriter recordR = SetupVideoWriter("videoR-skip-"
+            + std::to_string(firstFrame), ringbufferR[0].size(),
+            stereoConfig, false);
+            
+        // write the video
+        for (int i=0; i<endI; i++)
+        {
+            recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
+            recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
+            
+            if (quiet_mode == false || i % 100 == 0) {
+                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+                fflush(stdout);
+            }
         }
     }
-    * */
     printf("\ndone.\n");
 }
 
+/**
+ * Writes video to disk in a PGM format.  Handles an overflow of the ringbuffer gracefully.
+ */
+void WriteVideoPGM() {
+    
+}
+    
 
 
 /**

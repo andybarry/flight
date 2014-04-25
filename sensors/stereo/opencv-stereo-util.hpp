@@ -110,7 +110,7 @@ string CheckOrCreateDirectory(string dir);
 
 VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true, bool is_color = false);
 
-string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct);
+string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct, bool increment_number = true);
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma = false);
 
