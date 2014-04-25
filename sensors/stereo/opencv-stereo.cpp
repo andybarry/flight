@@ -27,8 +27,13 @@ int y_offset = 0;
 int file_frame_skip = 0;
 int current_video_number = -1;
 
+
+// objects for loading video files
 VideoCapture *left_video_capture = NULL;
 VideoCapture *right_video_capture = NULL;
+string left_pgm_dir;
+string right_pgm_dir;
+
 
 // allocate a huge array for a ringbuffer
 Mat ringbufferL[RINGBUFFER_SIZE];
@@ -460,8 +465,11 @@ int main(int argc, char *argv[])
         if (enable_online_recording == true)
         {
             // setup video writers
-            recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
-            recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig, false);
+            
+            OpenCvStereoConfig configTemp = stereoConfig;
+            configTemp.usePGM = false;
+            recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), configTemp);
+            recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), configTemp, false);
         }
         
         // before we start, turn the cameras on and set the brightness and exposure
@@ -541,29 +549,14 @@ int main(int argc, char *argv[])
                 
                 
             } else {
-                Mat matL_file, matR_file;
                 
-                // make sure we don't run off the end of the video file and crash
-                if (file_frame_number - file_frame_skip
-                    >= left_video_capture->get(CV_CAP_PROP_FRAME_COUNT)) {
-                        
-                    file_frame_number = left_video_capture->get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
+                // we have video, load the files
+                
+                if (stereoConfig.usePGM) {
+                    GetNextVideoFramePgm(dirname, matL, matR);
+                } else {
+                    GetNextVideoFrameAvi(left_video_capture, right_video_capture, matL, matR);
                 }
-                
-                // make sure we don't try to play before the file starts
-                if (file_frame_number - file_frame_skip < 0) {
-                    file_frame_number = file_frame_skip;
-                }
-                
-                left_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-                right_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-                
-                (*left_video_capture) >> matL_file;
-                (*right_video_capture) >> matR_file;
-                
-                // convert from a 3 channel array to a one channel array
-                cvtColor(matL_file, matL, CV_BGR2GRAY);
-                cvtColor(matR_file, matR, CV_BGR2GRAY);
                 
             }
             
@@ -713,7 +706,9 @@ int main(int argc, char *argv[])
                     // put this frame into the HUD recording
                     
                     if (!record_hud_setup) {
-                        record_hud_writer = SetupVideoWriter("HUD", with_hud.size(), stereoConfig, true, true);
+                        OpenCvStereoConfig configTemp = stereoConfig;
+                        configTemp.usePGM = false;
+                        record_hud_writer = SetupVideoWriter("HUD", with_hud.size(), configTemp, true, true);
                         record_hud_setup = true;
                     }
                     
@@ -1286,7 +1281,12 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     
     if (using_video_directory && msg->video_number != current_video_number && msg->video_number >= 0) {
         // load a new video file
-        file_frame_skip = LoadVideoFileFromDir(left_video_capture, right_video_capture, video_directory, msg->timestamp, msg->video_number);
+        
+        if (stereoConfig.usePGM) {
+            
+        } else {
+            file_frame_skip = LoadVideoFileFromDir(left_video_capture, right_video_capture, video_directory, msg->timestamp, msg->video_number);
+        }
         
         if (file_frame_skip >= 0) {
             current_video_number = msg->video_number;

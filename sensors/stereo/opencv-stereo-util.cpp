@@ -852,19 +852,19 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
 }
 
 /**
- * LoadVideoFileFromDir loads two video files from a directory, given a video
- * directory, a timestamp, and video number.
+ * Gets video filesnames for loading the videos
  * 
- * @param left_video_capture video capture to fill in for the left video
- * @param left_video_capture video capture to fill in for the right video
- * @param video_directory directory to search for video files
- * @param timestamp timestamp to extract the date out of
- * @param video_number video number to load
+ * @param left_video string to place  the left video filename into
+ * @param right_video string to place the right video filename into
+ * @param video_directory directory vidoe files are in
+ * @param timestamp timestamp for extracting the date for the video filename
+ * @param video_number requested video number
+ * @param using_avi true if we should search for ".avi" videos, false if we should search for directories with pgm images.
  * 
- * @retval frame skip amount, or -1 on failure.
+ * @retval skip amount or -1 on failure to find the video.
  * 
  */
-int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long long timestamp, int video_number) {
+int GetVideoFilenamesForLoading(string &left_video, string &right_video, string video_directory, long long timestamp, int video_number, bool using_avi) {
     
     // if the directory has a trailing "/", zap it
     if (video_directory.back() == '/') {
@@ -888,7 +888,7 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
 
     string datetime = buf;
     
-    int skip_amount = MatchVideoFile(video_directory, datetime, true, video_number);
+    int skip_amount = MatchVideoFile(video_directory, datetime, using_avi, video_number);
     
     
     // format the video number as a two-decimal value
@@ -897,11 +897,45 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
     string video_number_str = filenumber;
     
     // now we have the full filename
-    string left_video = video_directory + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
-        + "." + video_number_str + ".avi";
+    left_video = video_directory + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
+        + "." + video_number_str;
         
-    string right_video = video_directory + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
-        + "." + video_number_str + ".avi";
+    right_video = video_directory + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
+        + "." + video_number_str;
+        
+    if (using_avi) {
+        
+        left_video += ".avi";
+        right_video += ".avi";
+    }
+        
+    return skip_amount;
+}
+
+/**
+ * LoadVideoFileFromDir loads two video files from a directory, given a video
+ * directory, a timestamp, and video number.
+ * 
+ * @param left_video_capture video capture to fill in for the left video
+ * @param left_video_capture video capture to fill in for the right video
+ * @param video_directory directory to search for video files
+ * @param timestamp timestamp to extract the date out of
+ * @param video_number video number to load
+ * 
+ * @retval frame skip amount, or -1 on failure.
+ * 
+ */
+int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long long timestamp, int video_number) {
+    
+    string left_video, right_video;
+    
+    int skip_amount = GetVideoFilenamesForLoading(left_video, right_video, video_directory, timestamp, video_number, true);
+    
+    if (skip_amount < 0) {
+        cout << "Error getting video filesnames, not loading videos." << endl;
+        return -1;
+    }
+    
     
     // attempt to create video capture objects
     
@@ -933,6 +967,23 @@ int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_v
     
     
     return skip_amount;
+    
+    
+}
+
+int InitPGMLoading(string video_directory, long long timestamp, int video_number) {
+    
+    string left_video, right_video;
+    
+    int skip_amount = GetVideoFilenamesForLoading(left_video, right_video, video_directory, timestamp, video_number, false);
+    
+    if (skip_amount < 0) {
+        cout << "Error getting video filesnames, not loading videos." << endl;
+        return -1;
+    }
+    
+    // TODO TODO TODO
+    
     
     
 }
@@ -1025,6 +1076,59 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
     }
     
 }
+
+
+
+
+void GetNextVideoFrameAvi(VideoCapture left_video_capture, VideoCapture right_video_capture, Mat matL, Mat matR,
+    int file_frame_number, int file_frame_skip) {
+        
+    Mat matL_file, matR_file;
+
+    // make sure we don't run off the end of the video file and crash
+    if (file_frame_number - file_frame_skip
+        >= left_video_capture->get(CV_CAP_PROP_FRAME_COUNT)) {
+            
+        file_frame_number = left_video_capture->get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
+    }
+
+    // make sure we don't try to play before the file starts
+    if (file_frame_number - file_frame_skip < 0) {
+        file_frame_number = file_frame_skip;
+    }
+
+    left_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
+    right_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
+
+    (*left_video_capture) >> matL_file;
+    (*right_video_capture) >> matR_file;
+
+    // convert from a 3 channel array to a one channel array
+    cvtColor(matL_file, matL, CV_BGR2GRAY);
+    cvtColor(matR_file, matR, CV_BGR2GRAY);
+
+}
+
+void GetNextVideoFramePgm(string left_pgm_dir, string right_pgm_dir, Mat matL, Mat matR,
+    int file_frame_number, int file_frame_skip) {
+    
+    // format the frame number as a 5-character number
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

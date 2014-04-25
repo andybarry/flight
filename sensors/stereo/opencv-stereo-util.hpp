@@ -123,4 +123,10 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
 
 void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Scalar color = Scalar(0, 0, 255));
 
+void GetNextVideoFrameAvi(VideoCapture left_video_capture, VideoCapture right_video_capture, Mat matL, Mat matR,
+    int file_frame_number, int file_frame_skip);
+    
+void GetNextVideoFramePgm(string left_pgm_dir, string right_pgm_dir, Mat matL, Mat matR,
+    int file_frame_number, int file_frame_skip);
+
 #endif
