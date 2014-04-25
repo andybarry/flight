@@ -49,6 +49,7 @@
 #include "opencv-stereo-util.hpp"
 #include "barrymoore.hpp"
 #include "hud.hpp"
+#include "RecordingManager.hpp"
 
 using namespace std;
 using namespace cv;
@@ -72,8 +73,6 @@ using namespace std;
 using namespace cv;
 
 #define MAX_HIT_POINTS 320*240/25 // this is the most hits we can get with our setup TODO: fixme for the correct framesize
-
-#define RINGBUFFER_SIZE (120*50) // number of seconds to allocate for recording * framerate
 
 
 #define USE_IMAGE 0 // set to 1 to use left.jpg and right.jpg as test images

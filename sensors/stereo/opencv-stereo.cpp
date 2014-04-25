@@ -11,7 +11,6 @@
 #include "opencv-stereo.hpp"
 
 bool show_display; // set to true to show opencv images on screen
-bool enable_online_recording = false;  // set to true to enable online recording
 bool disable_stereo = false;
 bool show_unrectified = false;
 bool display_hud = false;
@@ -27,13 +26,7 @@ int y_offset = 0;
 int file_frame_skip = 0;
 int current_video_number = -1;
 
-VideoCapture *left_video_capture = NULL;
-VideoCapture *right_video_capture = NULL;
-
-// allocate a huge array for a ringbuffer
-Mat ringbufferL[RINGBUFFER_SIZE];
-Mat ringbufferR[RINGBUFFER_SIZE];
-
+RecordingManager recording_manager;
 
 // global for where we are drawing a line on the image
 int lineLeftImgPosition = -1;
@@ -55,19 +48,11 @@ float last_optotrak_y;
 
 
 int numFrames = 0;
-int recNumFrames = 0;
-int video_number = -1;
-bool recordingOn = true;
-bool using_video_file = false;
-bool using_video_directory = false;
-bool using_video_from_disk = false;
 bool full_stereo = false;
 bool use_optotrak = false;
 bool quiet_mode = false;
 
 mutex optotrak_mutex;
-
-string video_directory = "";
 
 int file_frame_number = 0; // for playing back movies
 
@@ -90,17 +75,14 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl;
   
-    if (!using_video_from_disk) {
+    if (!recording_manager.GetUsingVideoFromDisk()) {
       
         StopCapture(d, camera);
         StopCapture(d2, camera2);
     }
     
-    if (enable_online_recording == false && !using_video_from_disk)
-    {
-        cout << "\tpress ctrl+\\ to quit while writing video." << endl;
-        WriteVideo();
-    }
+    cout << "\tpress ctrl+\\ to quit while writing video." << endl;
+    recording_manager.FlushBufferToDisk();
     
     exit(0);
 }
@@ -127,43 +109,29 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     {
         // write video, then start recording again
         
-        if (enable_online_recording == false)
-        {
-            WriteVideo();
-        }
-        
-        StartRecording();
+        recording_manager.FlushBufferToDisk();
+        recording_manager.BeginNewRecording();
         
     } else if (msg->stereo_control == 1)
     {
         // record
         cout << "(Re)starting recording." << endl;
         
-        StartRecording();
+        
+        recording_manager.BeginNewRecording();
         
     } else if (msg->stereo_control == 2)
     {
         // pause recording if we were recording
         cout << "Recording paused." << endl;
         
-        recordingOn = false;
+        recording_manager.SetRecordingOn(false);
+        
     } else {
         // got an unknown command
         fprintf(stderr, "WARNING: Unknown stereo_control command: %d", int(msg->stereo_control));
     }
     
-}
-
-/**
- * Sets up variables to start recording on the next frame.
- */
-void StartRecording()
-{
-    // get a new filename
-    video_number = GetNextVideoNumber(stereoConfig);
-    
-    recordingOn = true;
-    recNumFrames = 0;
 }
 
 
@@ -172,10 +140,8 @@ int main(int argc, char *argv[])
     // get input arguments
     
     string configFile = "";
-    string video_file_left = "", video_file_right = "";
+    string video_file_left = "", video_file_right = "", video_directory = "";
     bool enable_gamma = false;
-    
-    bool record_hud_setup = false;
     
     StereoBM *stereo_bm = NULL;
     Mat single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
@@ -184,7 +150,6 @@ int main(int argc, char *argv[])
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
     parser.add(show_unrectified, "u", "show-unrectified", "When displaying images, do not apply rectification.");
-    parser.add(enable_online_recording, "r", "online-record", "Enable online video recording.");
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.add(force_brightness, "b", "force-brightness", "Force a brightness setting.");
     parser.add(force_exposure, "e", "force-exposure", "Force an exposure setting.");
@@ -226,23 +191,24 @@ int main(int argc, char *argv[])
         return -1;
     }
     
+    // attempt to load video files / directories
     if (video_file_left.length() > 0) {
-        using_video_file = true;
-        using_video_from_disk = true;
+        if (recording_manager.LoadVideoFiles(video_file_left, video_file_right) != true) {
+            // don't have videos, bail out.
+            return -1;
+        }
     }
-    
+
     if (video_directory.length() > 0) {
-        using_video_directory = true;
-        using_video_from_disk = true;
+        if (recording_manager.SetPlaybackVideoDirectory(video_directory) != true) {
+            // bail
+            return -1;
+        }
     }
     
-    if (using_video_from_disk && enable_online_recording)
-    {
-        cout << "Cannot record while using a video file. Ignoring -r"
-            << endl;
-            
-        enable_online_recording = false;
-    }
+    recording_manager.SetQuietMode(quiet_mode);
+        
+    
     
     uint64 guid = stereoConfig.guidLeft;
     uint64 guid2 = stereoConfig.guidRight;
@@ -275,7 +241,7 @@ int main(int argc, char *argv[])
     // own threading without a fight
     setNumThreads(1);
     
-    if (!using_video_from_disk) {
+    if (!recording_manager.GetUsingVideoFromDisk()) {
         d = dc1394_new ();
         if (!d)
             cerr << "Could not create dc1394 context" << endl;
@@ -312,30 +278,6 @@ int main(int argc, char *argv[])
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
         
         InitBrightnessSettings(camera, camera2, enable_gamma);
-    } else { // !using_video_from_disk
-        // we are using a video file, setup the readers
-        
-        left_video_capture = new VideoCapture();
-        right_video_capture = new VideoCapture();
-        
-        if (using_video_file) {
-            
-            if (left_video_capture->open(video_file_left) != true) {
-                cerr << "Error: failed to open " << video_file_left
-                    << endl;
-                return -1;
-            } else {
-                cout << "Opened " << video_file_left << endl;
-            }
-            
-            if (right_video_capture->open(video_file_right) != true) {
-                cerr << "Error: failed to open " << video_file_right
-                    << endl;
-                return -1;
-            } else {
-                cout << "Opened " << video_file_right << endl;
-            }
-        }
     }
     
     if (show_display) {
@@ -441,40 +383,19 @@ int main(int argc, char *argv[])
     Mat matL, matR;
     bool quit = false;
     
-    VideoWriter recordOnlyL, recordOnlyR, record_hud_writer;
+    VideoWriter record_hud_writer;
     
-    if (!using_video_from_disk) {
-        // allocate a huge buffer for video frames
-        printf("Allocating ringbuffer data...\n");
+    if (!recording_manager.GetUsingVideoFromDisk()) {
         matL = GetFrameFormat7(camera);
         matR = GetFrameFormat7(camera2);
-        for (int i=0; i<RINGBUFFER_SIZE; i++)
-        {
-            ringbufferL[i].create(matL.size(), matL.type());
-            ringbufferR[i].create(matR.size(), matR.type());
-        }
-        printf("done.\n");
         
-        StartRecording(); // set up recording variables
-        
-        if (enable_online_recording == true)
-        {
-            // setup video writers
-            recordOnlyL = SetupVideoWriter("videoL-online", matL.size(), stereoConfig);
-            recordOnlyR = SetupVideoWriter("videoR-online", matR.size(), stereoConfig, false);
-        }
+        recording_manager.Init(stereoConfig, matL, matR);
         
         // before we start, turn the cameras on and set the brightness and exposure
         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
-
-    } // !using_video_from_disk
-    
-    // spool up worker threads
-    BarryMoore barry_moore_stereo;
-    
-    // grab a few frames and send them over LCM for the user
-    // to verify that everything is working
-    if (!using_video_from_disk) {
+        
+        // grab a few frames and send them over LCM for the user
+        // to verify that everything is working
         printf("Sending init images over LCM...\n");
         for (int i = 0; i < 5; i++) {
         
@@ -491,8 +412,12 @@ int main(int argc, char *argv[])
             sleep(1);
         }
         printf("done.\n");
-    }
-        
+
+    } // !recording_manager.GetUsingVideoFromDisk()
+    
+    // spool up worker threads
+    BarryMoore barry_moore_stereo;
+    
     // start the framerate clock
     struct timeval start, now;
     gettimeofday( &start, NULL );
@@ -500,7 +425,7 @@ int main(int argc, char *argv[])
     while (quit == false) {
     
         // get the frames from the camera
-        if (!using_video_from_disk) {
+        if (!recording_manager.GetUsingVideoFromDisk()) {
             // we would like to match brightness every frame
             // but that would really hurt our framerate
             // match brightness every 10 frames instead
@@ -514,59 +439,11 @@ int main(int argc, char *argv[])
             matR = GetFrameFormat7(camera2);
             
             // record video
-            if (recordingOn == true)
-            {
-                ringbufferL[recNumFrames%RINGBUFFER_SIZE] = matL;
-                ringbufferR[recNumFrames%RINGBUFFER_SIZE] = matR;
-                
-                recNumFrames ++;
-            }
+            recording_manager.AddFrames(matL, matR);
+            
         } else {
             // using a video file -- get the next frame
-            
-            if (using_video_directory && current_video_number < 0) {
-                // we don't have videos yet
-                // this is probably happening because we're waiting for
-                // LCM messages to load the video
-                
-                // create an image to display that says "waiting for LCM"
-                
-                
-                matL = Mat::zeros(240, 376, CV_8UC1);
-                matR = Mat::zeros(240, 376, CV_8UC1);
-                
-                // put text on the maps
-                putText(matL, "Waiting for LCM messages...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
-                putText(matR, "Waiting for LCM messages...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
-                
-                
-            } else {
-                Mat matL_file, matR_file;
-                
-                // make sure we don't run off the end of the video file and crash
-                if (file_frame_number - file_frame_skip
-                    >= left_video_capture->get(CV_CAP_PROP_FRAME_COUNT)) {
-                        
-                    file_frame_number = left_video_capture->get(CV_CAP_PROP_FRAME_COUNT) - 1 + file_frame_skip;
-                }
-                
-                // make sure we don't try to play before the file starts
-                if (file_frame_number - file_frame_skip < 0) {
-                    file_frame_number = file_frame_skip;
-                }
-                
-                left_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-                right_video_capture->set(CV_CAP_PROP_POS_FRAMES, file_frame_number - file_frame_skip);
-                
-                (*left_video_capture) >> matL_file;
-                (*right_video_capture) >> matR_file;
-                
-                // convert from a 3 channel array to a one channel array
-                cvtColor(matL_file, matL, CV_BGR2GRAY);
-                cvtColor(matR_file, matR, CV_BGR2GRAY);
-                
-            }
-            
+            recording_manager.GetPlaybackFrame(matL, matR);
         }
         
         // TEMP TODO TEMP:
@@ -612,13 +489,6 @@ int main(int argc, char *argv[])
             
         }
             
-        if (enable_online_recording == true) {
-            
-            // record frames
-            recordOnlyL << matL;
-            recordOnlyR << matR;
-        }
-            
         // build an LCM message for the stereo data
         lcmt_stereo msg;
         msg.timestamp = getTimestampNow();
@@ -641,12 +511,11 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
-        msg.frame_number = recNumFrames;
-        msg.video_number = video_number;
+        msg.frame_number = recording_manager.GetRecFrameNumber();
+        msg.video_number = recording_manager.GetRecVideoNumber();
         
         // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo", &msg);
-        
         
         if (show_display) {
         
@@ -700,27 +569,13 @@ int main(int argc, char *argv[])
             if (display_hud) {
                 Mat with_hud;
                 
-                if (using_video_from_disk) {
-                    hud.SetFrameNumber(file_frame_number);
-                    hud.SetVideoNumber(current_video_number);
-                } else {
-                    hud.SetFrameNumber(recNumFrames);
-                }
+                recording_manager.SetHudNumbers(hud);
                 
                 hud.DrawHud(matDisp, with_hud);
                 
                 if (record_hud) {
                     // put this frame into the HUD recording
-                    
-                    if (!record_hud_setup) {
-                        record_hud_writer = SetupVideoWriter("HUD", with_hud.size(), stereoConfig, true, true);
-                        record_hud_setup = true;
-                    }
-                    
-                    Mat write_hud;
-                    with_hud.convertTo(write_hud, CV_8UC3, 255.0);
-                    
-                    record_hud_writer << write_hud;
+                    recording_manager.RecFrameHud(with_hud);
                 }
                 
                 imshow("Stereo", with_hud);
@@ -827,35 +682,35 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'm':
-                    if (!using_video_from_disk) {
+                    if (!recording_manager.GetUsingVideoFromDisk()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '1':
                     force_brightness --;
-                    if (!using_video_from_disk) {
+                    if (!recording_manager.GetUsingVideoFromDisk()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '2':
                     force_brightness ++;
-                    if (!using_video_from_disk) {
+                    if (!recording_manager.GetUsingVideoFromDisk()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '3':
                     force_exposure --;
-                    if (!using_video_from_disk) {
+                    if (!recording_manager.GetUsingVideoFromDisk()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '4':
                     force_exposure ++;
-                    if (!using_video_from_disk) {
+                    if (!recording_manager.GetUsingVideoFromDisk()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
@@ -961,7 +816,6 @@ int main(int argc, char *argv[])
                 case 'V':
                     // record the HUD
                     record_hud = true;
-                    record_hud_setup = false;
                     break;
                 
                 case 'q':
@@ -1003,7 +857,7 @@ int main(int argc, char *argv[])
         }
 
         
-    } // end main while loop
+    } // end main while loopi
 
     printf("\n\n");
     
@@ -1012,7 +866,7 @@ int main(int argc, char *argv[])
     destroyWindow("Stereo");
     
     // close camera
-    if (!using_video_from_disk) {
+    if (!recording_manager.GetUsingVideoFromDisk()) {
         StopCapture(d, camera);
         StopCapture(d2, camera2);
     }
@@ -1057,82 +911,6 @@ bool NonBlockingLcm(lcm_t *lcm)
     }
     return false;
 
-}
-
-/**
- * Writes video to disk.  Handles an overflow of the ringbuffer gracefully.
- * 
- */
-void WriteVideo()
-{
-    printf("Writing video...\n");
-    
-    int endI, firstFrame = 0;
-    if (recNumFrames < RINGBUFFER_SIZE)
-    {
-        endI = recNumFrames;
-    } else {
-        // our buffer is smaller than the full movie.
-        // figure out where in the ringbuffer we are
-        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
-        if (firstFrame > RINGBUFFER_SIZE)
-        {
-            firstFrame = 0;
-        }
-        
-        endI = RINGBUFFER_SIZE;
-        
-        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
-        
-    }
-    
-    if (stereoConfig.usePGM) {
-        printf("Using PGM format...\n");
-        
-        string video_l_dir = SetupVideoWriterPGM("videoL-skip-" + std::to_string(firstFrame), stereoConfig, true);
-        
-        string video_r_dir = SetupVideoWriterPGM("videoR-skip-" + std::to_string(firstFrame), stereoConfig, false);
-        
-        // write the video
-        for (int i = 0; i < endI; i++) {
-
-            boost::format formatter_left = boost::format("/left%05d.pgm") % i;
-            string im_name_left = formatter_left.str();
-            
-            boost::format formatter_right = boost::format("/right%05d.pgm") % i;
-            string im_name_right = formatter_right.str();
-
-            imwrite( video_l_dir + im_name_left, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
-            
-            imwrite( video_r_dir + im_name_right, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
-            
-            if (quiet_mode == false || i % 100 == 0) {
-                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-                fflush(stdout);
-            }
-        }
-        
-        
-    } else {
-        VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
-        
-        VideoWriter recordR = SetupVideoWriter("videoR-skip-"
-            + std::to_string(firstFrame), ringbufferR[0].size(),
-            stereoConfig, false);
-            
-        // write the video
-        for (int i=0; i<endI; i++)
-        {
-            recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
-            recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
-            
-            if (quiet_mode == false || i % 100 == 0) {
-                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-                fflush(stdout);
-            }
-        }
-    }
-    printf("\ndone.\n");
 }
 
 /**
@@ -1284,20 +1062,8 @@ void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int 
 // number
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
     
-    if (using_video_directory && msg->video_number != current_video_number && msg->video_number >= 0) {
-        // load a new video file
-        file_frame_skip = LoadVideoFileFromDir(left_video_capture, right_video_capture, video_directory, msg->timestamp, msg->video_number);
-        
-        if (file_frame_skip >= 0) {
-            current_video_number = msg->video_number;
-        } else {
-            current_video_number = -1;
-        }
-    }
-    
-    if (msg->frame_number > 0) {
-        file_frame_number = msg->frame_number;
-    }
+    recording_manager.SetPlaybackVideoNumber(msg->video_number, msg->timestamp);
+    recording_manager.SetPlaybackFrameNumber(msg->frame_number);
     
     // in addition to displaying the right frame, optionally visualize the hits recorded during flight
         

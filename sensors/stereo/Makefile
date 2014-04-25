@@ -9,8 +9,8 @@ LIBS=-fopenmp `pkg-config --libs opencv` -L/usr/local/lib -ldc1394   -lglib-2.0 
 
 all: opencv-stereo opencv-calibrate opencv-cam-calib-test
 
-opencv-stereo: opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o
-	$(CC) opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o -o opencv-stereo $(LIBS)
+opencv-stereo: opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o RecordingManager.o
+	$(CC) opencv-stereo.o barrymoore.o opencv-stereo-util.o hud.o RecordingManager.o -o opencv-stereo $(LIBS)
 	
 barrymoore.o: barrymoore.cpp barrymoore.hpp
 	$(CC) $(CFLAGS) barrymoore.cpp
@@ -18,10 +18,13 @@ barrymoore.o: barrymoore.cpp barrymoore.hpp
 opencv-stereo-util.o: opencv-stereo-util.cpp opencv-stereo-util.hpp
 	$(CC) $(CFLAGS) opencv-stereo-util.cpp
 	
+RecordingManager.o: RecordingManager.cpp RecordingManager.hpp opencv-stereo-util.o
+	$(CC) $(CFLAGS) RecordingManager.cpp
+	
 hud.o: hud.cpp hud.hpp
 	$(CC) $(CFLAGS) hud.cpp
 
-opencv-stereo.o: opencv-stereo.hpp opencv-stereo.cpp opencv-stereo-util.hpp barrymoore.hpp
+opencv-stereo.o: opencv-stereo.hpp opencv-stereo.cpp opencv-stereo-util.hpp barrymoore.hpp RecordingManager.hpp
 	$(CC) $(CFLAGS) opencv-stereo.cpp
 	
 opencv-calibrate: opencv-calibrate.o opencv-stereo-util.o

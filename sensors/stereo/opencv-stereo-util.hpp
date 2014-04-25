@@ -92,26 +92,8 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct);
 
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration);
 
-int LoadVideoFileFromDir(VideoCapture *left_video_capture, VideoCapture *right_video_capture, string video_directory, long long timestamp, int video_number);
-
 void StopCapture(dc1394_t *dcContext, dc1394camera_t *camera);
 
-int GetNextVideoNumber(OpenCvStereoConfig configStruct, bool increment_number = true);
-
-int MatchVideoFile(string directory, string datestr, bool using_avi = false, int match_number = -1);
-
-int GetSkipNumber(string filename);
-
-string GetDateSring();
-
-string GetNextVideoFilename(string filenamePrefix,
-    OpenCvStereoConfig configStruct, bool increment_number = true);
-
-string CheckOrCreateDirectory(string dir);
-
-VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number = true, bool is_color = false);
-
-string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct, bool increment_number = true);
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma = false);
 
