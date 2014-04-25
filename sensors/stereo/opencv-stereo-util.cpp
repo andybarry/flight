@@ -661,8 +661,7 @@ string GetNextVideoFilename(string filenamePrefix,
     return configStruct.videoSaveDir
                 + "/" + filenamePrefix + "-"
                 + GetDateSring()
-                + "." + filenumber
-                + ".avi";
+                + "." + filenumber;
 }
 
 /**
@@ -684,29 +683,17 @@ string GetNextVideoFilename(string filenamePrefix,
  *
  * @retval VideoWriter object
  */
-VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number, bool is_color)
-{
+VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereoConfig configStruct, bool increment_number, bool is_color) {
     
     VideoWriter recorder;
     
-    // check to make sure the directory exists (otherwise the
-    // videowriter will seg fault)
-    if (!boost::filesystem::exists(configStruct.videoSaveDir))
-    {
-        // directory does not exist, create it
-        cout << "Warning: video save directory does not exist, creating it." << endl;
-        
-        if (boost::filesystem::create_directory(configStruct.videoSaveDir)) {
-            cout << "Sucessfully created directory: " << configStruct.videoSaveDir << endl;
-        } else {
-            cout << "Warning: failed to create video save directory, attempting to proceed with the current directory." << endl;
-            
-            configStruct.videoSaveDir = ".";
-        }
-    }
+    // note that this is only a local change to configStruct!
+    configStruct.videoSaveDir = CheckOrCreateDirectory(configStruct.videoSaveDir);
     
     string filename = GetNextVideoFilename(filenamePrefix,
         configStruct, increment_number);
+        
+    filename = filename + ".avi";
     
     char fourcc1 = configStruct.fourcc.at(0);
     char fourcc2 = configStruct.fourcc.at(1);
@@ -722,6 +709,67 @@ VideoWriter SetupVideoWriter(string filenamePrefix, Size frameSize, OpenCvStereo
     }
     
     return recorder;
+}
+
+/**
+ * Checks to see if a directory exists.  If it does, returns, otherwise
+ * creates the directory.
+ * 
+ * @param dir directory path
+ * 
+ * @retval directory path to use.  Will be the directory requested unless
+ *  we failed to create that directory.
+ * 
+ */
+string CheckOrCreateDirectory(string dir) {
+    // check to make sure the directory exists (otherwise the
+    // videowriter will seg fault)
+    if (!boost::filesystem::exists(dir))
+    {
+        // directory does not exist, create it
+        cout << "Warning: video save directory does not exist, creating it." << endl;
+        
+        if (boost::filesystem::create_directory(dir)) {
+            cout << "Successfully created directory: " << dir << endl;
+            return dir;
+        } else {
+            cout << "Warning: failed to create video save directory, attempting to proceed with the current directory." << endl;
+            
+            // note that this is only a local change to configStruct!
+            return ".";
+        }
+    }
+    return dir;
+}
+
+/**
+ * Sets up the system to write .pgm files into a directory named in a nice way.
+ * 
+ * @param dirnamePrefix prefix for the save directory
+ * @param configStruct OpenCvStereoConfig struct, used for configStruct.videoSaveDir
+ * 
+ * @retval directory path to use for saving images
+ * 
+ */
+string SetupVideoWriterPGM(string dirnamePrefix, OpenCvStereoConfig configStruct) {
+    
+    // make or use parent directory
+    
+    // note that this is only a local change to configStruct!
+    configStruct.videoSaveDir = CheckOrCreateDirectory(configStruct.videoSaveDir);
+    
+    
+    // make a new directory for a bunch of images
+    string filename = GetNextVideoFilename(dirnamePrefix, configStruct, true);
+        
+    if (boost::filesystem::create_directory(filename)) {
+        cout << "Successfully created directory: " << filename << endl;
+    } else {
+        cout << "Warning: failed to create directory: " << filename << ", attempting to proceed with the current directory." << endl;
+        
+        return configStruct.videoSaveDir;
+    }
+    return configStruct.videoSaveDir + "/" + filename;
 }
 
 void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool enable_gamma)

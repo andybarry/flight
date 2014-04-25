@@ -1085,8 +1085,8 @@ void WriteVideo()
         
     }
     
-    VideoWriter recordL = SetupVideoWriter("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), stereoConfig);
-    
+    string pgm_dir = SetupVideoWriterPGM("video-skip-" + std::to_string(firstFrame),stereoConfig);
+    /* TODO
     VideoWriter recordR = SetupVideoWriter("videoR-skip-"
         + std::to_string(firstFrame), ringbufferR[0].size(),
         stereoConfig, false);
@@ -1102,6 +1102,7 @@ void WriteVideo()
             fflush(stdout);
         }
     }
+    * */
     printf("\ndone.\n");
 }
 
