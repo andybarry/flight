@@ -543,7 +543,6 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
     
 }
 
-
 /**
  * Send an image over LCM (useful for viewing in a
  * headless configuration
@@ -631,7 +630,6 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
     }
     
 }
-
 
 
 /**

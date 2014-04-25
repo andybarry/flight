@@ -576,6 +576,7 @@ int main(int argc, char *argv[])
                 if (record_hud) {
                     // put this frame into the HUD recording
                     recording_manager.RecFrameHud(with_hud);
+                    
                 }
                 
                 imshow("Stereo", with_hud);
@@ -1061,7 +1062,6 @@ void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int 
 // for replaying videos, subscribe to the stereo replay channel and set the frame
 // number
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-    
     recording_manager.SetPlaybackVideoNumber(msg->video_number, msg->timestamp);
     recording_manager.SetPlaybackFrameNumber(msg->frame_number);
     
