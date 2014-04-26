@@ -12,6 +12,8 @@ RecordingManager::RecordingManager() {
     
     left_video_capture_ = NULL;
     right_video_capture_ = NULL;
+    
+    init_ok_ = false;
 
 }
 
@@ -26,8 +28,20 @@ RecordingManager::~RecordingManager() {
     }
 }
 
-void RecordingManager::Init(OpenCvStereoConfig stereo_config, Mat image_left, Mat image_right) {
+void RecordingManager::Init(OpenCvStereoConfig stereo_config) {
+
     stereo_config_ = stereo_config;
+    init_ok_ = true;
+    
+}
+
+bool RecordingManager::InitRecording(Mat image_left, Mat image_right) {
+    
+    if (init_ok_ != true) {
+        cerr << "Error: You must call Init() before using RecordingManager." << endl;
+        return false;
+    }
+    
     recNumFrames = 0;
     
     // allocate a huge buffer for video frames
@@ -43,6 +57,8 @@ void RecordingManager::Init(OpenCvStereoConfig stereo_config, Mat image_left, Ma
     printf("done.\n");
     
     BeginNewRecording();
+    
+    return true;
     
 }
 
@@ -226,6 +242,11 @@ string RecordingManager::SetupVideoWriterPGM(string dirnamePrefix, bool incremen
  */
 bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_right) {
     
+    if (init_ok_ != true) {
+        cerr << "Error: You must call Init() before using RecordingManager." << endl;
+        return false;
+    }
+    
     using_video_from_disk_ = true;
     
     // determine if we are using pgm files or avi files
@@ -250,7 +271,7 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
         }
         
         if (left_video_capture_->open(video_file_left) != true) {
-            cerr << "Error: failed to open " << video_file_left
+            cerr << endl << "Error: failed to open " << video_file_left
                 << endl;
             return false;
         } else {
@@ -258,7 +279,7 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
         }
         
         if (right_video_capture_->open(video_file_right) != true) {
-            cerr << "Error: failed to open " << video_file_right
+            cerr << endl << "Error: failed to open " << video_file_right
                 << endl;
             return false;
         } else {
@@ -539,6 +560,8 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
 
     string datetime = buf;
     
+    cout << "loadvideofilefromdir " << stereo_config_.usePGM << endl;
+    
     int skip_amount = MatchVideoFile(video_directory_, datetime, stereo_config_.usePGM, video_number);
     
     
@@ -549,10 +572,16 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
     
     // now we have the full filename
     string left_video = video_directory_ + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
-        + "." + video_number_str + ".avi";
+        + "." + video_number_str;
+        
         
     string right_video = video_directory_ + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
-        + "." + video_number_str + ".avi";
+        + "." + video_number_str;
+        
+    if (stereo_config_.usePGM == false) {
+        left_video += ".avi";
+        right_video += ".avi";
+    }
     
     // attempt to create video capture objects
     if (LoadVideoFiles(left_video, right_video) == true) {
@@ -586,6 +615,8 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
 int RecordingManager::MatchVideoFile(string directory, string datestr, bool using_pgm, int match_number) {
     
     int return_number = 0;
+    
+    cout << endl << "match video file: " << directory << "////" << match_number << true << endl;
     
     boost::filesystem::directory_iterator end_itr; // default construction
                                                    // yields past-the-end

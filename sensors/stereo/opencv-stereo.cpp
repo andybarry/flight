@@ -383,13 +383,18 @@ int main(int argc, char *argv[])
     Mat matL, matR;
     bool quit = false;
     
+    recording_manager.Init(stereoConfig);
+    
     VideoWriter record_hud_writer;
     
     if (recording_manager.UsingLiveCameras()) {
         matL = GetFrameFormat7(camera);
         matR = GetFrameFormat7(camera2);
         
-        recording_manager.Init(stereoConfig, matL, matR);
+        if (recording_manager.InitRecording(matL, matR) != true) {
+            // failed to init recording, things are going bad.  bail.
+            return -1;
+        }
         
         // before we start, turn the cameras on and set the brightness and exposure
         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);

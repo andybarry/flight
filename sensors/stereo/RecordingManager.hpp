@@ -18,7 +18,9 @@ class RecordingManager {
         RecordingManager();
         ~RecordingManager();
         
-        void Init(OpenCvStereoConfig stereo_config, Mat image_left, Mat image_right);
+        void Init(OpenCvStereoConfig stereo_config);
+        
+        bool InitRecording(Mat image_left, Mat image_right);
         
         void AddFrames(Mat image_left, Mat image_right);
         
@@ -99,6 +101,7 @@ class RecordingManager {
         int file_frame_skip_;
         
         bool quiet_mode_;
+        bool init_ok_;
 };
 
 
