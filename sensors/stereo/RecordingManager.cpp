@@ -560,8 +560,6 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
 
     string datetime = buf;
     
-    cout << "loadvideofilefromdir " << stereo_config_.usePGM << endl;
-    
     int skip_amount = MatchVideoFile(video_directory_, datetime, stereo_config_.usePGM, video_number);
     
     
@@ -615,8 +613,6 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
 int RecordingManager::MatchVideoFile(string directory, string datestr, bool using_pgm, int match_number) {
     
     int return_number = 0;
-    
-    cout << endl << "match video file: " << directory << "////" << match_number << true << endl;
     
     boost::filesystem::directory_iterator end_itr; // default construction
                                                    // yields past-the-end
