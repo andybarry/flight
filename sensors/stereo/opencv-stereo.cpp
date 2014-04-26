@@ -75,14 +75,14 @@ void control_c_handler(int s)
 {
     cout << endl << "exiting via ctrl-c" << endl;
   
-    if (!recording_manager.GetUsingVideoFromDisk()) {
+    if (recording_manager.UsingLiveCameras()) {
       
         StopCapture(d, camera);
         StopCapture(d2, camera2);
+        
+        cout << "\tpress ctrl+\\ to quit while writing video." << endl;
+        recording_manager.FlushBufferToDisk();
     }
-    
-    cout << "\tpress ctrl+\\ to quit while writing video." << endl;
-    recording_manager.FlushBufferToDisk();
     
     exit(0);
 }
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
     // own threading without a fight
     setNumThreads(1);
     
-    if (!recording_manager.GetUsingVideoFromDisk()) {
+    if (recording_manager.UsingLiveCameras()) {
         d = dc1394_new ();
         if (!d)
             cerr << "Could not create dc1394 context" << endl;
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
     
     VideoWriter record_hud_writer;
     
-    if (!recording_manager.GetUsingVideoFromDisk()) {
+    if (recording_manager.UsingLiveCameras()) {
         matL = GetFrameFormat7(camera);
         matR = GetFrameFormat7(camera2);
         
@@ -396,7 +396,9 @@ int main(int argc, char *argv[])
         
         // grab a few frames and send them over LCM for the user
         // to verify that everything is working
-        printf("Sending init images over LCM...\n");
+        printf("Sending init images over LCM... ");
+        fflush(stdout);
+        
         for (int i = 0; i < 5; i++) {
         
             matL = GetFrameFormat7(camera);
@@ -409,11 +411,14 @@ int main(int argc, char *argv[])
             // and not actually be helpful
             
             // wait one second
+            printf(".");
+            fflush(stdout);
+            
             sleep(1);
         }
-        printf("done.\n");
+        printf(" done.\n");
 
-    } // !recording_manager.GetUsingVideoFromDisk()
+    } // recording_manager.UsingLiveCameras()
     
     // spool up worker threads
     BarryMoore barry_moore_stereo;
@@ -425,7 +430,7 @@ int main(int argc, char *argv[])
     while (quit == false) {
     
         // get the frames from the camera
-        if (!recording_manager.GetUsingVideoFromDisk()) {
+        if (recording_manager.UsingLiveCameras()) {
             // we would like to match brightness every frame
             // but that would really hurt our framerate
             // match brightness every 10 frames instead
@@ -683,35 +688,35 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'm':
-                    if (!recording_manager.GetUsingVideoFromDisk()) {
+                    if (recording_manager.UsingLiveCameras()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '1':
                     force_brightness --;
-                    if (!recording_manager.GetUsingVideoFromDisk()) {
+                    if (recording_manager.UsingLiveCameras()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '2':
                     force_brightness ++;
-                    if (!recording_manager.GetUsingVideoFromDisk()) {
+                    if (recording_manager.UsingLiveCameras()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '3':
                     force_exposure --;
-                    if (!recording_manager.GetUsingVideoFromDisk()) {
+                    if (recording_manager.UsingLiveCameras()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
                     
                 case '4':
                     force_exposure ++;
-                    if (!recording_manager.GetUsingVideoFromDisk()) {
+                    if (recording_manager.UsingLiveCameras()) {
                         MatchBrightnessSettings(camera, camera2, true, force_brightness, force_exposure);
                     }
                     break;
@@ -867,7 +872,7 @@ int main(int argc, char *argv[])
     destroyWindow("Stereo");
     
     // close camera
-    if (!recording_manager.GetUsingVideoFromDisk()) {
+    if (recording_manager.UsingLiveCameras()) {
         StopCapture(d, camera);
         StopCapture(d2, camera2);
     }

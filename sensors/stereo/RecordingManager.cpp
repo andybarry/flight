@@ -31,16 +31,19 @@ void RecordingManager::Init(OpenCvStereoConfig stereo_config, Mat image_left, Ma
     recNumFrames = 0;
     
     // allocate a huge buffer for video frames
-    printf("Allocating ringbuffer data...\n");
+    printf("Allocating ringbuffer data... ");
+    fflush(stdout);
+    
     for (int i=0; i<RINGBUFFER_SIZE; i++)
     {
         ringbufferL[i].create(image_left.size(), image_left.type());
         ringbufferR[i].create(image_right.size(), image_right.type());
     }
     
+    printf("done.\n");
+    
     BeginNewRecording();
     
-    printf("done.\n");
 }
 
 /**
@@ -69,77 +72,74 @@ void RecordingManager::AddFrames(Mat image_left, Mat image_right) {
 
 void RecordingManager::FlushBufferToDisk() {
 
-    if (GetUsingVideoFromDisk()) {
     
-        printf("Writing video...\n");
-        
-        int endI, firstFrame = 0;
-        if (recNumFrames < RINGBUFFER_SIZE)
+    printf("Writing video...\n");
+    
+    int endI, firstFrame = 0;
+    if (recNumFrames < RINGBUFFER_SIZE)
+    {
+        endI = recNumFrames;
+    } else {
+        // our buffer is smaller than the full movie.
+        // figure out where in the ringbuffer we are
+        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
+        if (firstFrame > RINGBUFFER_SIZE)
         {
-            endI = recNumFrames;
-        } else {
-            // our buffer is smaller than the full movie.
-            // figure out where in the ringbuffer we are
-            firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
-            if (firstFrame > RINGBUFFER_SIZE)
-            {
-                firstFrame = 0;
-            }
-            
-            endI = RINGBUFFER_SIZE;
-            
-            printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
-            
+            firstFrame = 0;
         }
         
-        if (stereo_config_.usePGM) {
-            printf("Using PGM format...\n");
-            
-            string video_l_dir = SetupVideoWriterPGM("videoL-skip-" + std::to_string(firstFrame), true);
-            
-            string video_r_dir = SetupVideoWriterPGM("videoR-skip-" + std::to_string(firstFrame), false);
-            
-            // write the video
-            for (int i = 0; i < endI; i++) {
-
-                boost::format formatter_left = boost::format("/left%05d.pgm") % i;
-                string im_name_left = formatter_left.str();
-                
-                boost::format formatter_right = boost::format("/right%05d.pgm") % i;
-                string im_name_right = formatter_right.str();
-
-                imwrite( video_l_dir + im_name_left, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
-                
-                imwrite( video_r_dir + im_name_right, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
-                
-                if (quiet_mode_ == false || i % 100 == 0) {
-                    printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-                    fflush(stdout);
-                }
-            }
-            
-            
-        } else {
-            VideoWriter recordL = SetupVideoWriterAVI("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), true);
-            
-            VideoWriter recordR = SetupVideoWriterAVI("videoR-skip-"
-                + std::to_string(firstFrame), ringbufferR[0].size(), false);
-                
-            // write the video
-            for (int i=0; i<endI; i++)
-            {
-                recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
-                recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
-                
-                if (quiet_mode_ == false || i % 100 == 0) {
-                    printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
-                    fflush(stdout);
-                }
-            }
-        }
-        printf("\ndone.\n");
+        endI = RINGBUFFER_SIZE;
+        
+        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
+        
     }
     
+    if (stereo_config_.usePGM) {
+        printf("Using PGM format...\n");
+        
+        string video_l_dir = SetupVideoWriterPGM("videoL-skip-" + std::to_string(firstFrame), true);
+        
+        string video_r_dir = SetupVideoWriterPGM("videoR-skip-" + std::to_string(firstFrame), false);
+        
+        // write the video
+        for (int i = 0; i < endI; i++) {
+
+            boost::format formatter_left = boost::format("/left%05d.pgm") % i;
+            string im_name_left = formatter_left.str();
+            
+            boost::format formatter_right = boost::format("/right%05d.pgm") % i;
+            string im_name_right = formatter_right.str();
+
+            imwrite( video_l_dir + im_name_left, ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE]);
+            
+            imwrite( video_r_dir + im_name_right, ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE]);
+            
+            if (quiet_mode_ == false || i % 100 == 0) {
+                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+                fflush(stdout);
+            }
+        }
+        
+        
+    } else {
+        VideoWriter recordL = SetupVideoWriterAVI("videoL-skip-" + std::to_string(firstFrame), ringbufferL[0].size(), true);
+        
+        VideoWriter recordR = SetupVideoWriterAVI("videoR-skip-"
+            + std::to_string(firstFrame), ringbufferR[0].size(), false);
+            
+        // write the video
+        for (int i=0; i<endI; i++)
+        {
+            recordL << ringbufferL[(i+firstFrame)%RINGBUFFER_SIZE];
+            recordR << ringbufferR[(i+firstFrame)%RINGBUFFER_SIZE];
+            
+            if (quiet_mode_ == false || i % 100 == 0) {
+                printf("\rWriting video: (%.1f%%) -- %d/%d frames", (float)(i+1)/endI*100, i+1, endI);
+                fflush(stdout);
+            }
+        }
+    }
+    printf("\ndone.\n");
 }
 
 
@@ -402,8 +402,7 @@ string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_p
     
     // format the number string
     char filenumber[100];
-    sprintf(filenumber, "%02d",
-        GetNextVideoNumber(use_pgm, increment_number));
+    sprintf(filenumber, "%02d", GetNextVideoNumber(use_pgm, increment_number));
     
     string retstring = stereo_config_.videoSaveDir
                 + "/" + filename_prefix + "-"
@@ -421,10 +420,9 @@ string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_p
 /**
  * Gets next availible filename for a video file
  *
- * @param configStruct OpenCvStereoConfig structure for reading the directory things should be saved in
- *  Default: false
+ * @param use_pgm true if we should search for directories of PGM files, false if
+ *  using AVI files.
  * @param increment_number true if we should increment video number
- *  Default: true
  *
  * @retval number of the next availible name
  *
@@ -435,11 +433,13 @@ int RecordingManager::GetNextVideoNumber(bool use_pgm, bool increment_number) {
     
     int max_number = 0;
     
-    // other videos have been taken today
     if (boost::filesystem::exists(stereo_config_.videoSaveDir)) {
             
         max_number = MatchVideoFile(stereo_config_.videoSaveDir,  datechar, use_pgm);
         
+    } else {
+        cerr << "Warning: attemtped to find video files in " << stereo_config_.videoSaveDir <<
+            " but that directory does not exist." << endl;
     }
     
     if (increment_number == true) {
@@ -450,7 +450,7 @@ int RecordingManager::GetNextVideoNumber(bool use_pgm, bool increment_number) {
 }
 
 void RecordingManager::SetHudNumbers(Hud hud) {
-    if (GetUsingVideoFromDisk()) {
+    if (!UsingLiveCameras()) {
     
         hud.SetFrameNumber(file_frame_number_);
         hud.SetVideoNumber(current_video_number_);
@@ -565,7 +565,7 @@ int RecordingManager::LoadVideoFileFromDirAVI(long long timestamp, int video_num
  *  the directory.
  * 
  */
-int RecordingManager::MatchVideoFile(string directory, string datestr, bool using_avi, int match_number) {
+int RecordingManager::MatchVideoFile(string directory, string datestr, bool using_pgm, int match_number) {
     
     int return_number = 0;
     
@@ -584,10 +584,10 @@ int RecordingManager::MatchVideoFile(string directory, string datestr, bool usin
         // or in            xxxx-xx-xx.xx.avi
         
         int avi_offset; 
-        if (using_avi) {
-            avi_offset = 0;
-        } else {
+        if (using_pgm) {
             avi_offset = -4; // everything is 4 characters less since we don't have ".avi" at the end
+        } else {
+            avi_offset = 0;
         }
         
         string this_file = itr->path().leaf().string();
@@ -631,7 +631,7 @@ int RecordingManager::MatchVideoFile(string directory, string datestr, bool usin
                     }
                 } catch (...) {
                     // failed to convert, don't do anything
-                    // since this isn't
+                    // since this isn't a number or thus a video match
                 }
             }
         }

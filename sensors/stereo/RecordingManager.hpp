@@ -36,7 +36,7 @@ class RecordingManager {
         void SetPlaybackVideoNumber(int video_number, long long timestamp);
         void SetPlaybackFrameNumber(int frame_number);
         
-        bool GetUsingVideoFromDisk() { return using_video_from_disk_; }
+        bool UsingLiveCameras() { return !using_video_from_disk_; }
         
         int GetRecFrameNumber() { return recNumFrames; }
         int GetRecVideoNumber() { return video_number; }
