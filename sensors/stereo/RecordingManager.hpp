@@ -53,7 +53,7 @@ class RecordingManager {
         string SetupVideoWriterPGM(string dirnamePrefix, bool increment_number);
         VideoWriter SetupVideoWriterAVI(string filenamePrefix, Size frameSize, bool increment_number, bool is_color = false);
         
-        int LoadVideoFileFromDirAVI(long long timestamp, int video_number);
+        int LoadVideoFileFromDir(long long timestamp, int video_number);
     
         void GetFramePGM(Mat &left_image, Mat &right_image);
         void GetFrameAVI(Mat &left_image, Mat &right_image);
@@ -76,6 +76,9 @@ class RecordingManager {
         
         VideoCapture *left_video_capture_;
         VideoCapture *right_video_capture_;
+        
+        string pgm_left_dir_; // directory for the "loaded" pgm files
+        string pgm_right_dir_;
         
         VideoWriter record_hud_writer_;
         

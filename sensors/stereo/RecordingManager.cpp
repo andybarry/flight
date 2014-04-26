@@ -226,13 +226,10 @@ string RecordingManager::SetupVideoWriterPGM(string dirnamePrefix, bool incremen
  */
 bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_right) {
     
-    using_video_directory_ = false;
     using_video_from_disk_ = true;
     
     // determine if we are using pgm files or avi files
     if (boost::iequals(video_file_left.substr(video_file_left.length() - 4), ".avi")) {
-        
-        cout << "loading avi files" << endl;
         
         // using avi files
         
@@ -257,7 +254,7 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
                 << endl;
             return false;
         } else {
-            cout << "Opened " << video_file_left << endl;
+            cout << endl << endl << "Opened " << video_file_left << endl;
         }
         
         if (right_video_capture_->open(video_file_right) != true) {
@@ -287,6 +284,9 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
             
             return false;
         }
+        
+        pgm_left_dir_ = video_file_left;
+        pgm_right_dir_ = video_file_right;
     
     }
     
@@ -322,12 +322,36 @@ void RecordingManager::GetPlaybackFrame(Mat &left_image, Mat &right_image) {
 }
 
 void RecordingManager::GetFramePGM(Mat &left_image, Mat &right_image) {
-    // TODO
-    left_image = Mat::zeros(240, 376, CV_8UC1);
-    right_image = Mat::zeros(240, 376, CV_8UC1);
+
+    // load PGM files from a directory
     
-    putText(left_image, "PGM TODO...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
-    putText(right_image, "PGM TODO...", Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+    // at this point, everything is already loaded up
+    
+    // get the name of the image we want based on our position in the video
+    
+    boost::format formatter_left = boost::format("left%05d.pgm") % file_frame_number_;
+    string im_name_left = formatter_left.str();
+    
+    boost::format formatter_right = boost::format("right%05d.pgm") % file_frame_number_;
+    string im_name_right = formatter_right.str();
+    
+    
+    left_image = imread(pgm_left_dir_ + "/" + im_name_left, -1);
+    
+    if (left_image.data == NULL) {
+        left_image = Mat::zeros(240, 376, CV_8UC1);
+        putText(left_image, "Missing PGM file: " + im_name_left, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+    }
+    
+    
+    right_image = imread(pgm_right_dir_ + "/" + im_name_right, -1);
+    
+    if (right_image.data == NULL) {
+        right_image = Mat::zeros(240, 376, CV_8UC1);
+        putText(right_image, "Missing PGM file: " + im_name_right, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+    }
+    
+
 }
 
 /**
@@ -396,7 +420,7 @@ void RecordingManager::SetPlaybackVideoNumber(int video_number, long long timest
     if (using_video_directory_ && video_number != current_video_number_ && video_number >= 0) {
     
         // load a new video file
-        file_frame_skip_ = LoadVideoFileFromDirAVI(timestamp, video_number);
+        file_frame_skip_ = LoadVideoFileFromDir(timestamp, video_number);
         
         if (file_frame_skip_ >= 0) {
             current_video_number_ = video_number;
@@ -493,7 +517,8 @@ void RecordingManager::RecFrameHud(Mat hud_frame) {
  * LoadVideoFileFromDir loads two video files from a directory, given a video
  * directory, a timestamp, and video number.
  * 
- * Assigns values to left_video_capture_ and right_video_capture_
+ * Assigns values to left_video_capture_ and right_video_capture_ or to pgm_left_dir_
+ * and pgm_right_dir_ depending on stereo_config_.usePGM's value.
  *
  * @param timestamp timestamp to extract the date out of
  * @param video_number video number to load
@@ -501,7 +526,7 @@ void RecordingManager::RecFrameHud(Mat hud_frame) {
  * @retval frame skip amount, or -1 on failure.
  * 
  */
-int RecordingManager::LoadVideoFileFromDirAVI(long long timestamp, int video_number) {
+int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number) {
     
     char tmbuf[64], buf[64];
     
@@ -514,7 +539,7 @@ int RecordingManager::LoadVideoFileFromDirAVI(long long timestamp, int video_num
 
     string datetime = buf;
     
-    int skip_amount = MatchVideoFile(video_directory_, datetime, false, video_number);
+    int skip_amount = MatchVideoFile(video_directory_, datetime, stereo_config_.usePGM, video_number);
     
     
     // format the video number as a two-decimal value
@@ -530,35 +555,11 @@ int RecordingManager::LoadVideoFileFromDirAVI(long long timestamp, int video_num
         + "." + video_number_str + ".avi";
     
     // attempt to create video capture objects
-    
-    if (!left_video_capture_) {
-        left_video_capture_ = new VideoCapture();
+    if (LoadVideoFiles(left_video, right_video) == true) {
+        return skip_amount;
     } else {
-        left_video_capture_->release();
-    }
-    
-    if (!right_video_capture_) {
-        right_video_capture_ = new VideoCapture();
-    } else {
-        right_video_capture_->release();
-    }
-    
-    cout << endl << "Loading:" << endl << "\t" << left_video << endl << "\t" << right_video << endl;
-    
-    left_video_capture_->open(left_video);
-    if (!left_video_capture_->isOpened()) {
-        cerr << "Error: failed to load " << left_video << endl;
         return -1;
     }
-    
-    right_video_capture_->open(right_video);
-    if (!right_video_capture_->isOpened()) {
-        cerr << "Error: failed to load " << right_video << endl;
-        return -1;
-    }
-    
-    
-    return skip_amount;
 }
 
 /**
