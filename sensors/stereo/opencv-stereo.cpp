@@ -54,8 +54,6 @@ bool quiet_mode = false;
 
 mutex optotrak_mutex;
 
-int file_frame_number = 0; // for playing back movies
-
 dc1394_t        *d;
 dc1394camera_t  *camera;
 
@@ -141,6 +139,7 @@ int main(int argc, char *argv[])
     
     string configFile = "";
     string video_file_left = "", video_file_right = "", video_directory = "";
+    int starting_frame_number = 0;
     bool enable_gamma = false;
     
     StereoBM *stereo_bm = NULL;
@@ -157,7 +156,7 @@ int main(int argc, char *argv[])
     parser.add(video_file_left, "l", "video-file-left", "Do not use cameras, instead use this video file (also requires a right video file).");
     parser.add(video_file_right, "t", "video-file-right", "Right video file, only for use with the -l option.");
     parser.add(video_directory, "i", "video-directory", "Directory to search for videos in (for playback).");
-    parser.add(file_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
+    parser.add(starting_frame_number, "f", "starting-frame", "Frame to start at when playing back videos.");
     parser.add(display_hud, "v", "hud", "Overlay HUD on display images.");
     parser.add(record_hud, "x", "record-hud", "Record the HUD display.");
     parser.add(file_frame_skip, "p", "skip", "Number of frames skipped in recording (for playback).");
@@ -207,6 +206,7 @@ int main(int argc, char *argv[])
     }
     
     recording_manager.SetQuietMode(quiet_mode);
+    recording_manager.SetPlaybackFrameNumber(starting_frame_number);
         
     
     
@@ -728,25 +728,19 @@ int main(int argc, char *argv[])
                     break;
                     
                 case '.':
-                    file_frame_number ++;
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() + 1);
                     break;
                 
                 case ',':
-                    file_frame_number --;
-                    if (file_frame_number < 0) {
-                        file_frame_number = 0;
-                    }
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() - 1);
                     break;
                     
                 case '>':
-                    file_frame_number += 50;
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() + 50);
                     break;
                 
                 case '<':
-                    file_frame_number -= 50;
-                    if (file_frame_number < 0) {
-                        file_frame_number = 0;
-                    }
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() - 50);
                     break;
                     
                 case 'k':
@@ -840,7 +834,7 @@ int main(int argc, char *argv[])
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
                 cout << "sobelAdd = " << state.sobelAdd << endl;
-                cout << "frame_number = " << file_frame_number << endl;
+                cout << "frame_number = " << recording_manager.GetPlaybackFrameNumber() << endl;
                 cout << "y offset = " << y_offset << endl;
                 cout << "PitchRangeOfLens = " << hud.GetPitchRangeOfLens() << endl;
             }

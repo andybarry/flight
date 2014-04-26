@@ -28,13 +28,14 @@ class RecordingManager {
         
         bool LoadVideoFiles(string video_file_left, string video_file_right);
         
-        void GetPlaybackFrame(Mat left, Mat right);
+        void GetPlaybackFrame(Mat &left_image, Mat &right_image);
         
         void SetRecordingOn(bool x) { recording_on_ = x; }
         
         bool SetPlaybackVideoDirectory(string video_directory);
         void SetPlaybackVideoNumber(int video_number, long long timestamp);
         void SetPlaybackFrameNumber(int frame_number);
+        int GetPlaybackFrameNumber() { return file_frame_number_; }
         
         bool UsingLiveCameras() { return !using_video_from_disk_; }
         
@@ -54,8 +55,8 @@ class RecordingManager {
         
         int LoadVideoFileFromDirAVI(long long timestamp, int video_number);
     
-        void GetFramePGM(Mat left_image, Mat right_image);
-        void GetFrameAVI(Mat left_image, Mat right_image);
+        void GetFramePGM(Mat &left_image, Mat &right_image);
+        void GetFrameAVI(Mat &left_image, Mat &right_image);
         
         string GetNextVideoFilename(string filename_prefix, bool use_pgm, bool increment_number);
         int GetNextVideoNumber(bool use_pgm, bool increment_number);

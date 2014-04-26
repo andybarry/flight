@@ -231,10 +231,26 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
     
     // determine if we are using pgm files or avi files
     if (boost::iequals(video_file_left.substr(video_file_left.length() - 4), ".avi")) {
-    
+        
+        cout << "loading avi files" << endl;
+        
         // using avi files
         
         reading_pgm_ = false;
+        
+        // attempt to create video capture objects
+    
+        if (!left_video_capture_) {
+            left_video_capture_ = new VideoCapture();
+        } else {
+            left_video_capture_->release();
+        }
+        
+        if (!right_video_capture_) {
+            right_video_capture_ = new VideoCapture();
+        } else {
+            right_video_capture_->release();
+        }
         
         if (left_video_capture_->open(video_file_left) != true) {
             cerr << "Error: failed to open " << video_file_left
@@ -277,11 +293,12 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
     return true;
 }
 
-void RecordingManager::GetPlaybackFrame(Mat left_image, Mat right_image) {
+void RecordingManager::GetPlaybackFrame(Mat &left_image, Mat &right_image) {
     
     // check to see if there is a frame to get
     
     if (using_video_directory_ && current_video_number_ < 0) {
+        
         // this is probably happening because we're waiting for
         // LCM messages to load the video
         
@@ -304,7 +321,7 @@ void RecordingManager::GetPlaybackFrame(Mat left_image, Mat right_image) {
     }
 }
 
-void RecordingManager::GetFramePGM(Mat left_image, Mat right_image) {
+void RecordingManager::GetFramePGM(Mat &left_image, Mat &right_image) {
     // TODO
     left_image = Mat::zeros(240, 376, CV_8UC1);
     right_image = Mat::zeros(240, 376, CV_8UC1);
@@ -321,7 +338,7 @@ void RecordingManager::GetFramePGM(Mat left_image, Mat right_image) {
  * @param right_image right image to put frame into
  *
  */
-void RecordingManager::GetFrameAVI(Mat left_image, Mat right_image) {
+void RecordingManager::GetFrameAVI(Mat &left_image, Mat &right_image) {
 
     Mat matL_file, matR_file;
                 
@@ -392,7 +409,7 @@ void RecordingManager::SetPlaybackVideoNumber(int video_number, long long timest
 
 void RecordingManager::SetPlaybackFrameNumber(int frame_number) {
 
-    if (frame_number > 0) {
+    if (frame_number >= 0) {
         file_frame_number_ = frame_number;
     }
 }
