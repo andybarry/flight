@@ -514,7 +514,7 @@ int RecordingManager::LoadVideoFileFromDirAVI(long long timestamp, int video_num
 
     string datetime = buf;
     
-    int skip_amount = MatchVideoFile(video_directory_, datetime, true, video_number);
+    int skip_amount = MatchVideoFile(video_directory_, datetime, false, video_number);
     
     
     // format the video number as a two-decimal value
