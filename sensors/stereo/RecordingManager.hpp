@@ -46,6 +46,7 @@ class RecordingManager {
         
         void SetHudNumbers(Hud hud);
         
+        void RestartRecHud() { record_hud_setup_ = false; }
         void RecFrameHud(Mat hud_frame);
         
         void SetQuietMode(bool x) { quiet_mode_ = x; }

@@ -385,8 +385,6 @@ int main(int argc, char *argv[])
     
     recording_manager.Init(stereoConfig);
     
-    VideoWriter record_hud_writer;
-    
     if (recording_manager.UsingLiveCameras()) {
         matL = GetFrameFormat7(camera);
         matR = GetFrameFormat7(camera2);
@@ -821,6 +819,7 @@ int main(int argc, char *argv[])
                 case 'V':
                     // record the HUD
                     record_hud = true;
+                    recording_manager.RestartRecHud();
                     break;
                 
                 case 'q':
