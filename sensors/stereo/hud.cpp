@@ -28,7 +28,7 @@ Hud::Hud() {
     q2_ = 0;
     q3_ = 0;
     is_autonomous_ = 0;
-    clutter_level_ = 10;
+    clutter_level_ = 5;
 }
 
 

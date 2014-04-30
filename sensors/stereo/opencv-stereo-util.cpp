@@ -616,17 +616,17 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
     }
     
     vector<Point2f> img_points_list;
-
+    
     projectPoints(points_list, Mat::zeros(3, 1, CV_32F), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
     
     // now draw the points onto the image
     for (int i=0; i<int(img_points_list.size()); i++)
     {
-        //rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-    //        Point(img_points_list[i].x + 2, img_points_list[i].y + 2), color, CV_FILLED);
-            
         rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
             Point(img_points_list[i].x + 4, img_points_list[i].y + 4), color, CV_FILLED);
+            
+        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
+            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), Scalar(255, 255, 255), CV_FILLED);
     }
     
 }

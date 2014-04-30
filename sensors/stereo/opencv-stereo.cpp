@@ -399,27 +399,29 @@ int main(int argc, char *argv[])
         
         // grab a few frames and send them over LCM for the user
         // to verify that everything is working
-        printf("Sending init images over LCM... ");
-        fflush(stdout);
-        
-        for (int i = 0; i < 5; i++) {
-        
-            matL = GetFrameFormat7(camera);
-            SendImageOverLcm(lcm, "stereo_image_left", matL);
-            
-            matR = GetFrameFormat7(camera2);
-            SendImageOverLcm(lcm, "stereo_image_right", matR);
-            
-            // don't send these too fast, otherwise we'll flood the ethernet link
-            // and not actually be helpful
-            
-            // wait one second
-            printf(".");
+        if (!show_display) {
+            printf("Sending init images over LCM... ");
             fflush(stdout);
             
-            sleep(1);
+            for (int i = 0; i < 5; i++) {
+            
+                matL = GetFrameFormat7(camera);
+                SendImageOverLcm(lcm, "stereo_image_left", matL);
+                
+                matR = GetFrameFormat7(camera2);
+                SendImageOverLcm(lcm, "stereo_image_right", matR);
+                
+                // don't send these too fast, otherwise we'll flood the ethernet link
+                // and not actually be helpful
+                
+                // wait one second
+                printf(".");
+                fflush(stdout);
+                
+                sleep(1);
+            }
+            printf(" done.\n");
         }
-        printf(" done.\n");
 
     } // recording_manager.UsingLiveCameras()
     
@@ -533,6 +535,8 @@ int main(int argc, char *argv[])
                 int sad = pointVector2d[i].z;
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
+                
+                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1);
             }
 
             // draw pixel blocks
@@ -542,12 +546,6 @@ int main(int argc, char *argv[])
             
             // draw a line for the user to show disparity
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity, state.zero_dist_disparity);
-            
-            // OMG WHAT A HACK
-            //Laplacian(matL, matDisp, -1);
-            //Laplacian(matL, matDisp, -1, 3);
-            //Sobel(matL, remapR, -1, 1, 0, 3, 1, 0);
-            
             
             
             if (show_unrectified == false) {
@@ -568,7 +566,7 @@ int main(int argc, char *argv[])
                     vector<Point3f> lcm_points;
                     Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
                     
-                    Draw3DPointsOnImage(matDisp, &lcm_points, stereoCalibration.M1, stereoCalibration.D1);
+                    //Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1);
                 }
                 
             }
@@ -861,7 +859,7 @@ int main(int argc, char *argv[])
         }
 
         
-    } // end main while loopi
+    } // end main while loop
 
     printf("\n\n");
     
