@@ -536,7 +536,12 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
                 
+                cv::vector<Point3f> temp_vec;
+                temp_vec.push_back(Point3f(0,0,0));
+                
                 Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1);
+                
+                //Draw3DPointsOnImage(matL, &temp_vec, stereoCalibration.M1, stereoCalibration.D1);
             }
 
             // draw pixel blocks

@@ -426,6 +426,27 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     if (hitCounter > 0)
     {
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
+        cout << endl << "in if" << endl;
+        
+        for (unsigned int i = 0; i < localHitPoints.size(); i++) {
+            
+            
+            double m[4] = {localHitPoints[i].x, localHitPoints[i].y, localHitPoints[i].z, 1.0};
+            Mat vec = Mat(4, 1, CV_32FC1, m);
+            
+            cout << state.Q << endl << vec << endl;
+            
+            Mat this_xyzw = state.Q * vec;
+            
+            
+            //float x = this_xyzw.at<float>(0,0);
+            //float y = this_xyzw.at<float>(1,0);
+            //float z = this_xyzw.at<float>(2,0);
+            //float w = this_xyzw.at<float>(3,0);
+            
+            //(*pointVector3d)[i] = Point3f(x/w, y/w, z/w);
+        }
+        
     }
     
 }
