@@ -28,6 +28,8 @@ int current_video_number = -1;
 
 RecordingManager recording_manager;
 
+BarryMooreState state; // HACK DEBUG TODO
+
 // global for where we are drawing a line on the image
 int lineLeftImgPosition = -1;
 int lineLeftImgPositionY = -1;
@@ -361,7 +363,7 @@ int main(int argc, char *argv[])
     Mat imgDisp2;
     
     // initilize default parameters
-    BarryMooreState state;
+    //BarryMooreState state; //HACK DEBUG TODO
     
     state.disparity = stereoConfig.disparity;
     state.zero_dist_disparity = stereoConfig.infiniteDisparity;
@@ -540,13 +542,10 @@ int main(int argc, char *argv[])
                 //rectangle(matDisp, Point(x2-4,y2-4), Point(x2+4, y2+4), sad,  CV_FILLED);
                 //rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
                 
-                
-                cv::vector<Point3f> temp_vec;
-                temp_vec.push_back(Point3f(0,0,0));
-                
-                //Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, 128);
-                
-                //Draw3DPointsOnImage(matL, &temp_vec, stereoCalibration.M1, stereoCalibration.D1);
+            }
+            
+            if (pointVector3d.size() > 0) {
+                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, 128);
             }
 
             // draw pixel blocks
@@ -991,8 +990,8 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
             lineLeftImgPositionY = y;
         }
         
-        //state.debugJ = x;
-        //state.debugI = y;
+        state.debugJ = x;
+        state.debugI = y;
     }
 }
 

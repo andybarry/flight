@@ -406,8 +406,8 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                     // don't forget to offset it by the blockSize,
                     // so we match the center of the block instead
                     // of the top left corner
-                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, disparity));
-                    //localHitPoints.push_back(Point3f(state.debugJ, state.debugI, state.debugDisparity));
+                    //localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, disparity));
+                    localHitPoints.push_back(Point3f(state.debugJ, state.debugI, state.debugDisparity)); // HACK DEBUG TODO
                     
                     
                     uchar pxL = leftImage.at<uchar>(i,j);
@@ -427,8 +427,8 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     // now we have an array of hits -- transform them to 3d points
     if (hitCounter > 0)
     {
-        //perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
-        
+        perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
+        /*
         for (unsigned int i = 0; i < localHitPoints.size(); i++) {
             
             
@@ -450,6 +450,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
             
             pointVector3d->push_back(Point3f(x/w, y/w, z/w));
         }
+        */
         
     }
     
