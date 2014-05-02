@@ -190,6 +190,8 @@ int main(int argc, char *argv[])
         return -1;
     }
     
+    recording_manager.Init(stereoConfig);
+    
     // attempt to load video files / directories
     if (video_file_left.length() > 0) {
         if (recording_manager.LoadVideoFiles(video_file_left, video_file_right) != true) {
@@ -383,8 +385,6 @@ int main(int argc, char *argv[])
     Mat matL, matR;
     bool quit = false;
     
-    recording_manager.Init(stereoConfig);
-    
     if (recording_manager.UsingLiveCameras()) {
         matL = GetFrameFormat7(camera);
         matR = GetFrameFormat7(camera2);
@@ -525,7 +525,10 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
-        msg.frame_number = recording_manager.GetRecFrameNumber();
+        msg.frame_number = recording_manager.GetRecFrameNumber() - 1; // minus one since recording manager has
+                                                                      // already recorded this frame (above in
+                                                                      // AddFrames) but we haven't made a message
+                                                                      // for it yet
         msg.video_number = recording_manager.GetRecVideoNumber();
 
         // publish the LCM message
@@ -547,7 +550,7 @@ int main(int argc, char *argv[])
                 cv::vector<Point3f> temp_vec;
                 temp_vec.push_back(Point3f(0,0,0));
                 
-                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, 128);
+                //Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, 128);
                 
                 //Draw3DPointsOnImage(matL, &temp_vec, stereoCalibration.M1, stereoCalibration.D1);
             }
@@ -578,6 +581,11 @@ int main(int argc, char *argv[])
                     // transform the point from 3D space back onto the image's 2D space
                     vector<Point3f> lcm_points;
                     Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
+                    
+                    for (unsigned int j = 0; j < lcm_points.size(); j++) {
+                        rectangle(matDisp, Point(lcm_points[i].x, lcm_points[i].y), Point(lcm_points[i].x+state.blockSize, lcm_points[i].y+state.blockSize), 0,  CV_FILLED);
+                        rectangle(matDisp, Point(lcm_points[i].x+1,lcm_points[i].y+1), Point(lcm_points[i].x+state.blockSize-1, lcm_points[i].y-1+state.blockSize), 128);
+                    }
                     
                     //Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1);
                 }
