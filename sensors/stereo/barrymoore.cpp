@@ -608,7 +608,7 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
     
     // bottom right corner of the SAD box
     int endX = pxX + blockSize - 1;
-    int endY = pxY + blockSize - 1; // TODO: check for out-of-image issues with disparity + endX + horz_offset
+    int endY = pxY + blockSize - 1;
     
     
     // if we are off the edge of the image, we are not likely to be detecting
