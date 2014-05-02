@@ -60,6 +60,8 @@ dc1394camera_t  *camera;
 dc1394_t        *d2;
 dc1394camera_t  *camera2;
 
+BarryMooreState state; // HACK HACK FIXME DEBUG ONLY
+
 OpenCvStereoConfig stereoConfig;
 
 /**
@@ -359,7 +361,7 @@ int main(int argc, char *argv[])
     Mat imgDisp2;
     
     // initilize default parameters
-    BarryMooreState state;
+    //BarryMooreState state;
     
     state.disparity = stereoConfig.disparity;
     state.zero_dist_disparity = stereoConfig.infiniteDisparity;
@@ -511,8 +513,12 @@ int main(int argc, char *argv[])
         
         for (unsigned int i=0;i<pointVector3d.size();i++) {
             
-            x[i] = pointVector3d[i].x;
-            y[i] = pointVector3d[i].y;
+            //x[i] = pointVector3d[i].x; // HACK HACK DEBUG TODO
+            //y[i] = pointVector3d[i].y;
+            
+            x[i] = pointVector2d[i].x;
+            y[i] = pointVector2d[i].y;
+            
             z[i] = pointVector3d[i].z;
             grey[i] = pointColors[i];
         }
@@ -536,10 +542,14 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
                 
+                //rectangle(matDisp, Point(x2-4,y2-4), Point(x2+4, y2+4), sad,  CV_FILLED);
+                //rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
+                
+                
                 cv::vector<Point3f> temp_vec;
                 temp_vec.push_back(Point3f(0,0,0));
                 
-                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1);
+                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, 128);
                 
                 //Draw3DPointsOnImage(matL, &temp_vec, stereoCalibration.M1, stereoCalibration.D1);
             }
@@ -689,9 +699,9 @@ int main(int argc, char *argv[])
                     state.sobelAdd += 0.2;
                     break;
                     
-                case 'j':
-                    state.sobelAdd -= 0.2;
-                    break;
+              //  case 'j':
+              //      state.sobelAdd -= 0.2;
+              //      break;
                     
                 case 'm':
                     if (recording_manager.UsingLiveCameras()) {
@@ -749,9 +759,9 @@ int main(int argc, char *argv[])
                     recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() - 50);
                     break;
                     
-                case 'k':
-                    state.zero_dist_disparity ++;
-                    break;
+                //case 'k':
+                //    state.zero_dist_disparity ++;
+                 //   break;
                 
                 case 'l':
                     state.zero_dist_disparity --;
@@ -824,6 +834,33 @@ int main(int argc, char *argv[])
                     record_hud = true;
                     recording_manager.RestartRecHud();
                     break;
+                    
+                    /*
+                case 'j':
+                    state.debugJ --;
+                    break;
+                    
+                case 'J':
+                    state.debugJ ++;
+                    break;
+                    
+                case 'i':
+                    state.debugI --;
+                    break;
+                    
+                case 'I':
+                    state.debugI ++;
+                    break;
+                    
+                case 'k':
+                    state.debugDisparity --;
+                    break;
+                    
+                case 'K':
+                    state.debugDisparity ++;
+                    break;
+                    
+                    */
                 
                 case 'q':
                     quit = true;
@@ -943,6 +980,7 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
     
     if( flags & CV_EVENT_FLAG_LBUTTON)
     {
+        
         // paint a line on the image they clicked on
         if (display_hud) {
             // check for scaling on the hud
@@ -952,6 +990,9 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
             lineLeftImgPosition = x;
             lineLeftImgPositionY = y;
         }
+        
+        state.debugJ = x;
+        state.debugI = y;
     }
 }
 

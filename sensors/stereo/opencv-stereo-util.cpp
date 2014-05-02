@@ -380,7 +380,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
  */
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration)
 {
-    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat;
+    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat, m2Mat, d2Mat;
 
     CvMat *Q = (CvMat *)cvLoad((calibrationDir + "/Q.xml").c_str(),NULL,NULL,NULL);
     
@@ -432,9 +432,25 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     
     CvMat *d1 = (CvMat *)cvLoad((calibrationDir + "/D1.xml").c_str(),NULL,NULL,NULL);
     
-    if (m1 == NULL)
+    if (d1 == NULL)
     {
         cerr << "Error: failed to read " << calibrationDir << "/D1.xml." << endl;
+        return false;
+    }
+    
+    CvMat *m2 = (CvMat *)cvLoad((calibrationDir + "/M2.xml").c_str(),NULL,NULL,NULL);
+    
+    if (m2 == NULL)
+    {
+        cerr << "Error: failed to read " << calibrationDir << "/M2.xml." << endl;
+        return false;
+    }
+    
+    CvMat *d2 = (CvMat *)cvLoad((calibrationDir + "/D2.xml").c_str(),NULL,NULL,NULL);
+    
+    if (d2 == NULL)
+    {
+        cerr << "Error: failed to read " << calibrationDir << "/D2.xml." << endl;
         return false;
     }
     
@@ -449,6 +465,9 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     m1Mat = Mat(m1,true);
     d1Mat = Mat(d1,true);
     
+    m2Mat = Mat(m2,true);
+    d2Mat = Mat(d2,true);
+    
     Mat mx1fp, empty1, mx2fp, empty2;
     
     // this will convert to a fixed-point notation
@@ -461,6 +480,9 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     
     stereoCalibration->M1 = m1Mat;
     stereoCalibration->D1 = d1Mat;
+    
+    stereoCalibration->M2 = m2Mat;
+    stereoCalibration->D2 = d2Mat;
     
     
     return true;
@@ -622,11 +644,16 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
     // now draw the points onto the image
     for (int i=0; i<int(img_points_list.size()); i++)
     {
+        
+        //line(camera_image, Point(img_points_list[i].x, 0), Point(img_points_list[i].x, camera_image.rows), color);
+        //line(camera_image, Point(0, img_points_list[i].y), Point(camera_image.cols, img_points_list[i].y), color);
+        
         rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
             Point(img_points_list[i].x + 4, img_points_list[i].y + 4), color, CV_FILLED);
             
         rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
             Point(img_points_list[i].x + 2, img_points_list[i].y + 2), Scalar(255, 255, 255), CV_FILLED);
+        
     }
     
 }

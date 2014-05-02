@@ -407,6 +407,8 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                     // so we match the center of the block instead
                     // of the top left corner
                     localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, disparity));
+                    //localHitPoints.push_back(Point3f(state.debugJ, state.debugI, state.debugDisparity));
+                    
                     
                     uchar pxL = leftImage.at<uchar>(i,j);
                     pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
@@ -425,26 +427,28 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     // now we have an array of hits -- transform them to 3d points
     if (hitCounter > 0)
     {
-        perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
-        cout << endl << "in if" << endl;
+        //perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
         
         for (unsigned int i = 0; i < localHitPoints.size(); i++) {
             
             
-            double m[4] = {localHitPoints[i].x, localHitPoints[i].y, localHitPoints[i].z, 1.0};
+            float m[4] = {localHitPoints[i].x, localHitPoints[i].y, localHitPoints[i].z, 1.0};
             Mat vec = Mat(4, 1, CV_32FC1, m);
             
-            cout << state.Q << endl << vec << endl;
+            Mat temp_q;
             
-            Mat this_xyzw = state.Q * vec;
+            state.Q.convertTo(temp_q, CV_32FC1);
+            
+            Mat this_xyzw = temp_q * vec;
             
             
-            //float x = this_xyzw.at<float>(0,0);
-            //float y = this_xyzw.at<float>(1,0);
-            //float z = this_xyzw.at<float>(2,0);
-            //float w = this_xyzw.at<float>(3,0);
+            float x = this_xyzw.at<float>(0,0);
+            float y = this_xyzw.at<float>(1,0);
+            float z = this_xyzw.at<float>(2,0);
+            float w = this_xyzw.at<float>(3,0);
             
-            //(*pointVector3d)[i] = Point3f(x/w, y/w, z/w);
+            
+            pointVector3d->push_back(Point3f(x/w, y/w, z/w));
         }
         
     }

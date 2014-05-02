@@ -41,6 +41,8 @@ struct BarryMooreState
     
     bool show_display;
     
+    float debugJ, debugI, debugDisparity;
+    
     //cv::vector<Point3f> *localHitPoints; // this is an array of cv::vector<Point3f>'s
 };
 
