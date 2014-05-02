@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
         err2 = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
         DC1394_ERR_CLN_RTN(err2, cleanup_and_exit(camera2), "Could not setup camera number 2");
         
-        // enable cameraTODO
+        // enable camera
         err = dc1394_video_set_transmission(camera, DC1394_ON);
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
         err2 = dc1394_video_set_transmission(camera2, DC1394_ON);
@@ -493,9 +493,7 @@ int main(int argc, char *argv[])
         
         // do the main stereo processing
         if (disable_stereo != true) {
-            state.show_display = true; // HACK
             barry_moore_stereo.ProcessImages(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
-            state.show_display = false; // HACK
             
         }
             
@@ -511,12 +509,8 @@ int main(int argc, char *argv[])
         
         for (unsigned int i=0;i<pointVector3d.size();i++) {
             
-            //x[i] = pointVector3d[i].x; // HACK HACK DEBUG TODO
-            //y[i] = pointVector3d[i].y;
-            
-            x[i] = pointVector2d[i].x;
-            y[i] = pointVector2d[i].y;
-            
+            x[i] = pointVector3d[i].x;
+            y[i] = pointVector3d[i].y;
             z[i] = pointVector3d[i].z;
             grey[i] = pointColors[i];
         }
