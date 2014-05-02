@@ -610,6 +610,29 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
     int endX = pxX + blockSize - 1;
     int endY = pxY + blockSize - 1; // TODO: check for out-of-image issues with disparity + endX + horz_offset
     
+    
+    // if we are off the edge of the image, we are not likely to be detecting
+    // horizontal, so return false
+    if (   startX + disparity + INVARIANCE_CHECK_HORZ_OFFSET_MIN < 0
+        || endX + disparity + INVARIANCE_CHECK_HORZ_OFFSET_MAX > rightImage.cols) {
+            
+        return false;
+        
+    }
+    
+    if (startY + INVARIANCE_CHECK_HORZ_OFFSET_MIN < 0
+        || endY + INVARIANCE_CHECK_HORZ_OFFSET_MAX > rightImage.rows) {
+            
+        // we are limited in the vertical range we can check here
+        
+        // TODO: be smarter here
+        
+        // give up and bail out, deleting potential hits
+        return true;    
+        
+    }
+    
+    
     // here we check a few spots:
     //  1) the expected match at zero-disparity (10-infinity meters away)
     //  2) inf distance, moved up 1-2 pixels
