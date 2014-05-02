@@ -60,8 +60,6 @@ dc1394camera_t  *camera;
 dc1394_t        *d2;
 dc1394camera_t  *camera2;
 
-BarryMooreState state; // HACK HACK FIXME DEBUG ONLY
-
 OpenCvStereoConfig stereoConfig;
 
 /**
@@ -361,7 +359,7 @@ int main(int argc, char *argv[])
     Mat imgDisp2;
     
     // initilize default parameters
-    //BarryMooreState state;
+    BarryMooreState state;
     
     state.disparity = stereoConfig.disparity;
     state.zero_dist_disparity = stereoConfig.infiniteDisparity;
@@ -449,10 +447,11 @@ int main(int argc, char *argv[])
             // capture images from the cameras
             matL = GetFrameFormat7(camera);
             matR = GetFrameFormat7(camera2);
-            
+
             // record video
             recording_manager.AddFrames(matL, matR);
             
+
         } else {
             // using a video file -- get the next frame
             recording_manager.GetPlaybackFrame(matL, matR);
@@ -467,8 +466,6 @@ int main(int argc, char *argv[])
         
         //matR = matR2;
 
-        
-        
         Mat matDisp, remapL, remapR;
         
         if (show_display) {
@@ -496,8 +493,9 @@ int main(int argc, char *argv[])
         
         // do the main stereo processing
         if (disable_stereo != true) {
-            
+            state.show_display = true; // HACK
             barry_moore_stereo.ProcessImages(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
+            state.show_display = false; // HACK
             
         }
             
@@ -529,10 +527,10 @@ int main(int argc, char *argv[])
         msg.grey = grey;
         msg.frame_number = recording_manager.GetRecFrameNumber();
         msg.video_number = recording_manager.GetRecVideoNumber();
-        
+
         // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo", &msg);
-        
+
         if (show_display) {
         
             for (unsigned int i=0;i<pointVector2d.size();i++) {
@@ -885,7 +883,7 @@ int main(int argc, char *argv[])
         } // end show_display
         
         numFrames ++;
-        
+
         // check for new LCM messages
         NonBlockingLcm(lcm);
         
@@ -991,8 +989,8 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
             lineLeftImgPositionY = y;
         }
         
-        state.debugJ = x;
-        state.debugI = y;
+        //state.debugJ = x;
+        //state.debugI = y;
     }
 }
 
