@@ -82,6 +82,7 @@ struct OpenCvStereoCalibration
     
     Mat M1;
     Mat D1;
+    Mat R1;
     
     Mat M2;
     Mat D2;
@@ -106,6 +107,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image);
 
 void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_out);
 
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Scalar color = Scalar(0, 0, 255));
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int color = 128, float x=0, float y=0, float z=0);
 
 #endif

@@ -306,13 +306,15 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
         printf("Running stereo calibration ...\n");
         fflush(stdout);
         
-         CvScalar scal;
+        CvScalar scal;
+         
+        /*
         for(i=0;i<8;i++)
         {
             scal = cvGet1D(&_D1,i);
             printf("val:%f \n",scal.val[0]);
         }
-        
+        */
 
         
         
@@ -321,9 +323,9 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             &_M1, &_D1, &_M2, &_D2,
             imageSize, &_R, &_T, &_E, &_F,
             cvTermCriteria(CV_TERMCRIT_ITER+
-            CV_TERMCRIT_EPS, 30, 1e-7),
-            CV_CALIB_RATIONAL_MODEL 
-            | CV_CALIB_FIX_INTRINSIC);
+            CV_TERMCRIT_EPS, 30, 1e-7),CV_CALIB_FIX_INTRINSIC);
+//            CV_CALIB_RATIONAL_MODEL 
+  //          | CV_CALIB_FIX_INTRINSIC);
             // | CV_CALIB_USE_INTRINSIC_GUESS);
              //| CV_CALIB_SAME_FOCAL_LENGTH);
              //| CV_CALIB_FIX_ASPECT_RATIO);
@@ -334,12 +336,13 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
 //                | CV_CALIB_FIX_K5 | CV_CALIB_FIX_K6);//|
 //                CV_CALIB_FIX_ASPECT_RATIO );
         printf(" done\n");
-        
+        /*
          for(i=0;i<8;i++)
         {
             scal = cvGet1D(&_D1,i);
             printf("val:%f \n",scal.val[0]);
         }
+        */
     } // end for single or multiple camera calibration if
 // CALIBRATION QUALITY CHECK
 // because the output fundamental matrix implicitly

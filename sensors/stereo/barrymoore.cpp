@@ -406,8 +406,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                     // don't forget to offset it by the blockSize,
                     // so we match the center of the block instead
                     // of the top left corner
-                    //localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, disparity));
-                    localHitPoints.push_back(Point3f(state.debugJ, state.debugI, state.debugDisparity)); // HACK DEBUG TODO
+                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, -disparity));
                     
                     
                     uchar pxL = leftImage.at<uchar>(i,j);
@@ -629,7 +628,7 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
         // TODO: be smarter here
         
         // give up and bail out, deleting potential hits
-        return true;    
+        return true;
         
     }
     

@@ -380,7 +380,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
  */
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration)
 {
-    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat, m2Mat, d2Mat;
+    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat, r1Mat, m2Mat, d2Mat;
 
     CvMat *Q = (CvMat *)cvLoad((calibrationDir + "/Q.xml").c_str(),NULL,NULL,NULL);
     
@@ -438,6 +438,14 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
         return false;
     }
     
+    CvMat *r1 = (CvMat *)cvLoad((calibrationDir + "/R1.xml").c_str(),NULL,NULL,NULL);
+    
+    if (r1 == NULL)
+    {
+        cerr << "Error: failed to read " << calibrationDir << "/R1.xml." << endl;
+        return false;
+    }
+    
     CvMat *m2 = (CvMat *)cvLoad((calibrationDir + "/M2.xml").c_str(),NULL,NULL,NULL);
     
     if (m2 == NULL)
@@ -464,6 +472,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     
     m1Mat = Mat(m1,true);
     d1Mat = Mat(d1,true);
+    r1Mat = Mat(r1,true);
     
     m2Mat = Mat(m2,true);
     d2Mat = Mat(d2,true);
@@ -480,6 +489,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     
     stereoCalibration->M1 = m1Mat;
     stereoCalibration->D1 = d1Mat;
+    stereoCalibration->R1 = r1Mat;
     
     stereoCalibration->M2 = m2Mat;
     stereoCalibration->D2 = d2Mat;
@@ -627,7 +637,7 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param cam_mat_d distortion calibration matrix (usually D1.xml)
  * @param color color to draw the boxes
  */
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Scalar color)
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int color, float x, float y, float z)
 {
     vector<Point3f> &points_list = *points_list_in;
     
@@ -637,24 +647,24 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
         return;
     }
     
+    
     vector<Point2f> img_points_list;
     
-    projectPoints(points_list, Mat::zeros(3, 1, CV_32F), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
-    //projectPoints(points_list, Mat::zeros(3, 1, CV_32F), Mat::zeros(3, 1, CV_32F), Mat::eye(3, 3, CV_32F), Mat::zeros(8,1,CV_32F), img_points_list);
+    projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
     
     // now draw the points onto the image
     for (int i=0; i<int(img_points_list.size()); i++)
     {
         
-        line(camera_image, Point(img_points_list[i].x, 0), Point(img_points_list[i].x, camera_image.rows), color);
-        line(camera_image, Point(0, img_points_list[i].y), Point(camera_image.cols, img_points_list[i].y), color);
-        /*
+        //line(camera_image, Point(img_points_list[i].x, 0), Point(img_points_list[i].x, camera_image.rows), color);
+        //line(camera_image, Point(0, img_points_list[i].y), Point(camera_image.cols, img_points_list[i].y), color);
+        
         rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
             Point(img_points_list[i].x + 4, img_points_list[i].y + 4), color, CV_FILLED);
             
         rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
             Point(img_points_list[i].x + 2, img_points_list[i].y + 2), Scalar(255, 255, 255), CV_FILLED);
-        */
+        
     }
     
 }
