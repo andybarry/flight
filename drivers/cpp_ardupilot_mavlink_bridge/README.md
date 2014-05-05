@@ -1,11 +1,11 @@
 Ardupilot MAVLINK Bridge
 ========================
-
-Reads messages from the serial port and publishes them to LCM.
+Reads LCM MAVLINK messages and converts them to messages on many different channels, one channel for each data stream./
 
 
 Installation
 ============
+
 You must have the LCM types compiled.  Run flight/LCM/build to do so.
 
 
