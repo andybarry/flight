@@ -541,11 +541,12 @@ int main(int argc, char *argv[])
                 //rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
                 
             }
-            
+            /*
             if (pointVector3d.size() > 0) {
                 Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);//, 32, -3, 100);
             }
-
+            */
+            
             // draw pixel blocks
             if (lineLeftImgPosition >= 0 && lineLeftImgPositionY > 1) {
                 DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize/2, state.disparity, state.blockSize);
@@ -572,13 +573,13 @@ int main(int argc, char *argv[])
                     // transform the point from 3D space back onto the image's 2D space
                     vector<Point3f> lcm_points;
                     Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
-                    
+                    /*
                     for (unsigned int j = 0; j < lcm_points.size(); j++) {
                         rectangle(matDisp, Point(lcm_points[i].x, lcm_points[i].y), Point(lcm_points[i].x+state.blockSize, lcm_points[i].y+state.blockSize), 0,  CV_FILLED);
                         rectangle(matDisp, Point(lcm_points[i].x+1,lcm_points[i].y+1), Point(lcm_points[i].x+state.blockSize-1, lcm_points[i].y-1+state.blockSize), 128);
                     }
-                    
-                    //Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1);
+                    */
+                    Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);
                 }
                 
             }

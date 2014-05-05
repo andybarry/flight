@@ -620,8 +620,8 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
         
     }
     
-    if (startY + INVARIANCE_CHECK_HORZ_OFFSET_MIN < 0
-        || endY + INVARIANCE_CHECK_HORZ_OFFSET_MAX > rightImage.rows) {
+    if (startY + INVARIANCE_CHECK_VERT_OFFSET_MIN < 0
+        || endY + INVARIANCE_CHECK_VERT_OFFSET_MAX > rightImage.rows) {
             
         // we are limited in the vertical range we can check here
         
