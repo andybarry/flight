@@ -537,15 +537,7 @@ int main(int argc, char *argv[])
                 rectangle(matDisp, Point(x2,y2), Point(x2+state.blockSize, y2+state.blockSize), sad,  CV_FILLED);
                 rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
                 
-                //rectangle(matDisp, Point(x2-4,y2-4), Point(x2+4, y2+4), sad,  CV_FILLED);
-                //rectangle(matDisp, Point(x2+1,y2+1), Point(x2+state.blockSize-1, y2-1+state.blockSize), 255);
-                
             }
-            /*
-            if (pointVector3d.size() > 0) {
-                Draw3DPointsOnImage(matL, &pointVector3d, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);//, 32, -3, 100);
-            }
-            */
             
             // draw pixel blocks
             if (lineLeftImgPosition >= 0 && lineLeftImgPositionY > 1) {
@@ -556,15 +548,6 @@ int main(int argc, char *argv[])
             DrawLines(remapL, remapR, matDisp, lineLeftImgPosition, lineLeftImgPositionY, state.disparity, state.zero_dist_disparity);
             
             
-            if (show_unrectified == false) {
-                
-                imshow("Input", remapL);
-                imshow("Input2", remapR);
-            } else {
-                imshow("Input", matL);
-                imshow("Input2", matR);
-            }
-            
             if (visualize_stereo_hits == true && stereo_lcm_msg != NULL) {
                 
                 // loop through the stereo message and draw boxes on screen
@@ -573,15 +556,21 @@ int main(int argc, char *argv[])
                     // transform the point from 3D space back onto the image's 2D space
                     vector<Point3f> lcm_points;
                     Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
-                    /*
-                    for (unsigned int j = 0; j < lcm_points.size(); j++) {
-                        rectangle(matDisp, Point(lcm_points[i].x, lcm_points[i].y), Point(lcm_points[i].x+state.blockSize, lcm_points[i].y+state.blockSize), 0,  CV_FILLED);
-                        rectangle(matDisp, Point(lcm_points[i].x+1,lcm_points[i].y+1), Point(lcm_points[i].x+state.blockSize-1, lcm_points[i].y-1+state.blockSize), 128);
-                    }
-                    */
+
+                    // draw the points on the unrectified image (to see these
+                    // you must pass the -u flag)
                     Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);
                 }
                 
+            }
+            
+            if (show_unrectified == false) {
+                
+                imshow("Input", remapL);
+                imshow("Input2", remapR);
+            } else {
+                imshow("Input", matL);
+                imshow("Input2", matR);
             }
             
             
