@@ -580,8 +580,8 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
  * headless configuration
  *
  * @param lcm already initialized lcm object
- * @param image the image to send
  * @param channel channel name to send over
+ * @param image the image to send
  *
  */
 void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {

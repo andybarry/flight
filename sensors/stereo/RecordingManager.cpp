@@ -42,7 +42,7 @@ bool RecordingManager::InitRecording(Mat image_left, Mat image_right) {
         return false;
     }
     
-    recNumFrames = 0;
+    rec_num_frames_ = 0;
     
     // allocate a huge buffer for video frames
     printf("Allocating ringbuffer data... ");
@@ -68,10 +68,10 @@ bool RecordingManager::InitRecording(Mat image_left, Mat image_right) {
 void RecordingManager::BeginNewRecording() {
 
     // get a new filename
-    video_number = GetNextVideoNumber(stereo_config_.usePGM, true);
+    video_number_ = GetNextVideoNumber(stereo_config_.usePGM, true);
     
     // reset the number of frames we've recorded
-    recNumFrames = 0;
+    rec_num_frames_ = 0;
     
     recording_on_ = true;
 }
@@ -79,10 +79,10 @@ void RecordingManager::BeginNewRecording() {
 void RecordingManager::AddFrames(Mat image_left, Mat image_right) {
 
     if (recording_on_) {
-        ringbufferL[recNumFrames%RINGBUFFER_SIZE] = image_left;
-        ringbufferR[recNumFrames%RINGBUFFER_SIZE] = image_right;
+        ringbufferL[rec_num_frames_%RINGBUFFER_SIZE] = image_left;
+        ringbufferR[rec_num_frames_%RINGBUFFER_SIZE] = image_right;
         
-        recNumFrames ++;
+        rec_num_frames_ ++;
     }
 }
 
@@ -92,13 +92,13 @@ void RecordingManager::FlushBufferToDisk() {
     printf("Writing video...\n");
     
     int endI, firstFrame = 0;
-    if (recNumFrames < RINGBUFFER_SIZE)
+    if (rec_num_frames_ < RINGBUFFER_SIZE)
     {
-        endI = recNumFrames;
+        endI = rec_num_frames_;
     } else {
         // our buffer is smaller than the full movie.
         // figure out where in the ringbuffer we are
-        firstFrame = recNumFrames%RINGBUFFER_SIZE+1;
+        firstFrame = rec_num_frames_%RINGBUFFER_SIZE+1;
         if (firstFrame > RINGBUFFER_SIZE)
         {
             firstFrame = 0;
@@ -106,7 +106,7 @@ void RecordingManager::FlushBufferToDisk() {
         
         endI = RINGBUFFER_SIZE;
         
-        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", recNumFrames-RINGBUFFER_SIZE);
+        printf("\nWARNING: buffer size exceeded by %d frames, which have been dropped.\n\n", rec_num_frames_ - RINGBUFFER_SIZE);
         
     }
     
@@ -314,7 +314,7 @@ bool RecordingManager::LoadVideoFiles(string video_file_left, string video_file_
     return true;
 }
 
-void RecordingManager::GetPlaybackFrame(Mat &left_image, Mat &right_image) {
+void RecordingManager::GetFrames(Mat &left_image, Mat &right_image) {
     
     // check to see if there is a frame to get
     
@@ -511,15 +511,21 @@ int RecordingManager::GetNextVideoNumber(bool use_pgm, bool increment_number) {
     }
 }
 
+int RecordingManager::GetFrameNumber() {
+    if (!UsingLiveCameras()) {
+        return file_frame_number_;
+    } else {
+        return rec_num_frames_;
+    }
+}
+
 void RecordingManager::SetHudNumbers(Hud hud) {
     if (!UsingLiveCameras()) {
     
         hud.SetFrameNumber(file_frame_number_);
-        hud.SetVideoNumber(current_video_number_);
-        
-    } else {
-        hud.SetFrameNumber(recNumFrames);
     }
+    
+    hud.SetVideoNumber(GetFrameNumber());
 }
 
 void RecordingManager::RecFrameHud(Mat hud_frame) {

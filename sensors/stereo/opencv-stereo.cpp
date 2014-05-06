@@ -16,6 +16,7 @@ bool show_unrectified = false;
 bool display_hud = false;
 bool record_hud = false;
 bool visualize_stereo_hits = true;
+bool publish_all_images = false;
 lcmt_stereo *stereo_lcm_msg = NULL; // for use in visualizing stereo hits recorded on the fly
 
 int force_brightness = -1;
@@ -142,6 +143,8 @@ int main(int argc, char *argv[])
     int starting_frame_number = 0;
     bool enable_gamma = false;
     
+    int last_playback_frame_number = -2;
+    
     StereoBM *stereo_bm = NULL;
     Mat single_disp_mat = Mat::zeros(240, 376, CV_8UC1);
     
@@ -163,6 +166,7 @@ int main(int argc, char *argv[])
     parser.add(full_stereo, "z", "full-stereo", "Process images with full stereo (only valid with -d)");
     parser.add(use_optotrak, "o", "optotrak", "Use Optotrak to build a depth map.");
     parser.add(enable_gamma, "g", "enable-gamma", "Turn gamma on for both cameras.");
+    parser.add(publish_all_images, "P", "publish-all-images", "Publish all images to LCM");
     parser.parse();
     
     // parse the config file
@@ -308,6 +312,9 @@ int main(int argc, char *argv[])
         moveWindow("Debug 1", stereoConfig.displayOffsetX + 900, stereoConfig.displayOffsetY + 670);
         moveWindow("Debug 2", stereoConfig.displayOffsetX + 1400, stereoConfig.displayOffsetY + 670);
         
+    } // show display
+    
+    if (show_display || publish_all_images) {
         // if a channel exists, subscribe to it
         if (stereoConfig.stereo_replay_channel.length() > 0) {
             stereo_replay_sub = lcmt_stereo_subscribe(lcm, stereoConfig.stereo_replay_channel.c_str(), &stereo_replay_handler, &hud);
@@ -341,8 +348,7 @@ int main(int argc, char *argv[])
             // init the opencv stereo objects
             stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
         }
-        
-    } // show display
+    } // end show_display || publish_all_images
     
     // load calibration
     OpenCvStereoCalibration stereoCalibration;
@@ -399,7 +405,7 @@ int main(int argc, char *argv[])
         
         // grab a few frames and send them over LCM for the user
         // to verify that everything is working
-        if (!show_display) {
+        if (!show_display && !publish_all_images) {
             printf("Sending init images over LCM... ");
             fflush(stdout);
             
@@ -454,7 +460,16 @@ int main(int argc, char *argv[])
 
         } else {
             // using a video file -- get the next frame
-            recording_manager.GetPlaybackFrame(matL, matR);
+            recording_manager.GetFrames(matL, matR);
+        }
+        
+        if (publish_all_images) {
+            if (recording_manager.GetFrameNumber() != last_playback_frame_number) {
+                SendImageOverLcm(lcm, "stereo_image_left", matL);
+                SendImageOverLcm(lcm, "stereo_image_right", matR);
+                
+                last_playback_frame_number = recording_manager.GetFrameNumber();
+            }
         }
         
         // TEMP TODO TEMP:
@@ -519,10 +534,10 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
-        msg.frame_number = recording_manager.GetRecFrameNumber() - 1; // minus one since recording manager has
-                                                                      // already recorded this frame (above in
-                                                                      // AddFrames) but we haven't made a message
-                                                                      // for it yet
+        msg.frame_number = recording_manager.GetFrameNumber() - 1;  // minus one since recording manager has
+                                                                    // already recorded this frame (above in
+                                                                    // AddFrames) but we haven't made a message
+                                                                    // for it yet
         msg.video_number = recording_manager.GetRecVideoNumber();
 
         // publish the LCM message
@@ -731,19 +746,19 @@ int main(int argc, char *argv[])
                     break;
                     
                 case '.':
-                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() + 1);
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetFrameNumber() + 1);
                     break;
                 
                 case ',':
-                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() - 1);
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetFrameNumber() - 1);
                     break;
                     
                 case '>':
-                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() + 50);
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetFrameNumber() + 50);
                     break;
                 
                 case '<':
-                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetPlaybackFrameNumber() - 50);
+                    recording_manager.SetPlaybackFrameNumber(recording_manager.GetFrameNumber() - 50);
                     break;
                     
                 //case 'k':
@@ -865,7 +880,7 @@ int main(int argc, char *argv[])
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
                 cout << "sobelAdd = " << state.sobelAdd << endl;
-                cout << "frame_number = " << recording_manager.GetPlaybackFrameNumber() << endl;
+                cout << "frame_number = " << recording_manager.GetFrameNumber() << endl;
                 cout << "y offset = " << y_offset << endl;
                 cout << "PitchRangeOfLens = " << hud.GetPitchRangeOfLens() << endl;
             }

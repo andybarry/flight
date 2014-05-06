@@ -30,19 +30,18 @@ class RecordingManager {
         
         bool LoadVideoFiles(string video_file_left, string video_file_right);
         
-        void GetPlaybackFrame(Mat &left_image, Mat &right_image);
+        void GetFrames(Mat &left_image, Mat &right_image);
         
         void SetRecordingOn(bool x) { recording_on_ = x; }
         
         bool SetPlaybackVideoDirectory(string video_directory);
         void SetPlaybackVideoNumber(int video_number, long long timestamp);
         void SetPlaybackFrameNumber(int frame_number);
-        int GetPlaybackFrameNumber() { return file_frame_number_; }
+        int GetFrameNumber();
         
         bool UsingLiveCameras() { return !using_video_from_disk_; }
         
-        int GetRecFrameNumber() { return recNumFrames; }
-        int GetRecVideoNumber() { return video_number; }
+        int GetRecVideoNumber() { return video_number_; }
         
         void SetHudNumbers(Hud hud);
         
@@ -85,8 +84,8 @@ class RecordingManager {
         
         VideoWriter record_hud_writer_;
         
-        int recNumFrames;
-        int video_number;
+        int rec_num_frames_;
+        int video_number_;
         bool recording_on_;
         bool reading_pgm_;
         
