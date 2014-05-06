@@ -22,6 +22,7 @@ externals/timesync/build
 externals/timesync/lcmtypes
 ui/log-monitor/log-monitor
 ui/stereo-monitor/stereo-monitor
+controllers/cpp_stereo_obstacles/stereo-imu-obstacles
 *.ppm
 *.pgm
 sensors/stereo/stereo_camera_calibrate/D1.xml
@@ -39,6 +40,7 @@ sensors/stereo/stereo_camera_calibrate/my1.xml
 sensors/stereo/stereo_camera_calibrate/my2.xml
 sensors/stereo/stereo_camera_calibrate/pyimglist.txt
 sensors/stereo/stereo_camera_calibrate/stereo_calibrate
+sensors/stereo/vids/*
 *.avi
 docs/*.aux
 docs/*.log
