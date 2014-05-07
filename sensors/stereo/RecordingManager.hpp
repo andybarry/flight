@@ -2,7 +2,7 @@
 #define RECORDING_MANAGER_H_
 
 #include "opencv-stereo-util.hpp"
-#include "hud.hpp"
+#include "../../ui/hud/hud.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 

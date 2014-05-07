@@ -21,8 +21,8 @@ opencv-stereo-util.o: opencv-stereo-util.cpp opencv-stereo-util.hpp
 RecordingManager.o: RecordingManager.cpp RecordingManager.hpp opencv-stereo-util.o
 	$(CC) $(CFLAGS) RecordingManager.cpp
 	
-hud.o: hud.cpp hud.hpp
-	$(CC) $(CFLAGS) hud.cpp
+hud.o: ../../ui/hud/hud.cpp ../../ui/hud/hud.hpp
+	$(CC) $(CFLAGS) ../../ui/hud/hud.cpp
 
 opencv-stereo.o: opencv-stereo.hpp opencv-stereo.cpp opencv-stereo-util.hpp barrymoore.hpp RecordingManager.hpp
 	$(CC) $(CFLAGS) opencv-stereo.cpp

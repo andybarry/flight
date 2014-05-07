@@ -48,7 +48,7 @@
 
 #include "opencv-stereo-util.hpp"
 #include "barrymoore.hpp"
-#include "hud.hpp"
+#include "../../ui/hud/hud.hpp"
 #include "RecordingManager.hpp"
 
 using namespace std;
