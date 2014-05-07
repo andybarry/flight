@@ -582,9 +582,18 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
  * @param lcm already initialized lcm object
  * @param channel channel name to send over
  * @param image the image to send
+ * @param compression_quality 0-100 for jpeg compression quality. Set to -1 for no compression.
+ *      Default: 80
  *
  */
-void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
+void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_quality) {
+    
+    if (!image.isContinuous()) {
+        cout << "Image not continuous. LCM transport not implemented." << endl;
+        return;
+    }
+    
+    cout << "in send image" << endl;
     
     // create LCM message
     bot_core_image_t msg;
@@ -595,22 +604,43 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image) {
     msg.height = image.rows;
     msg.row_stride = image.cols;
     
-    msg.pixelformat = 1497715271; // see bot_core_iamge_t.lcm --> PIXEL_FORMAT_GRAY; // TODO: detect this
+    msg.nmetadata = 0;
     
-    
-    if (image.isContinuous()) {
-    
+    if (compression_quality >= 0) {
+        cout << "using compression" << endl;
+         // use jpeg compression
+         
+         // allocate a buffer to put the result into
+         int bufsize;
+         uint8_t buffer[bufsize];
+         
+         
+        jpeg_compress_8u_gray(image.ptr(), image.cols, image.rows, image.step, buffer, &bufsize, compression_quality);
+        
+        // got the compressed file, now push it to LCM
+        msg.data = buffer;
+        msg.size = bufsize;
+        
+        msg.pixelformat = 1196444237; // see bot_core_image_t.lcm --> PIXEL_FORMAT_MJPEG
+        
+        // send the image over lcm
+        bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+        
+        
+    } else {
+        
+        msg.pixelformat = 1497715271; // see bot_core_image_t.lcm --> PIXEL_FORMAT_GRAY; // TODO: detect this
+        
         msg.data = image.ptr();
         
         msg.size = image.cols * image.rows;
         
-        msg.nmetadata = 0;
-        
         // send the image over lcm
         bot_core_image_t_publish(lcm, channel.c_str(), &msg);
-    } else {
-        cout << "Image not continuous. LCM transport not implemented." << endl;
+            
     }
+    
+    cout << "leaving send image" << endl;
 }
 
 /**
