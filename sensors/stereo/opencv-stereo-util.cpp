@@ -593,8 +593,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
         return;
     }
     
-    cout << "in send image" << endl;
-    
     // create LCM message
     bot_core_image_t msg;
     
@@ -607,7 +605,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
     msg.nmetadata = 0;
     
     if (compression_quality >= 0) {
-        cout << "using compression" << endl;
          // use jpeg compression
          
          // allocate a buffer to put the result into
@@ -640,7 +637,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
             
     }
     
-    cout << "leaving send image" << endl;
 }
 
 /**

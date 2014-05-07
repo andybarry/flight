@@ -107,7 +107,7 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
 
 void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bool complete_set = false, int force_brightness = -1, int force_exposure = -1);
 
-void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_quality = 10);
+void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_quality = 80);
 
 void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_out);
 

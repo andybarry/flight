@@ -412,10 +412,10 @@ int main(int argc, char *argv[])
             for (int i = 0; i < 5; i++) {
             
                 matL = GetFrameFormat7(camera);
-                SendImageOverLcm(lcm, "stereo_image_left", matL);
+                SendImageOverLcm(lcm, "stereo_image_left", matL, 50);
                 
                 matR = GetFrameFormat7(camera2);
-                SendImageOverLcm(lcm, "stereo_image_right", matR);
+                SendImageOverLcm(lcm, "stereo_image_right", matR, 50);
                 
                 // don't send these too fast, otherwise we'll flood the ethernet link
                 // and not actually be helpful
@@ -470,6 +470,10 @@ int main(int argc, char *argv[])
                 
                 last_playback_frame_number = recording_manager.GetFrameNumber();
             }
+            
+            //process LCM until there are no more messages
+            // this allows us to drop frames if we are behind
+            while (NonBlockingLcm(lcm)) {}
         }
         
         // TEMP TODO TEMP:
