@@ -23,6 +23,7 @@ externals/timesync/lcmtypes
 ui/log-monitor/log-monitor
 ui/stereo-monitor/stereo-monitor
 controllers/cpp_stereo_obstacles/stereo-imu-obstacles
+ui/plane-visualizer/plane-visualizer
 *.ppm
 *.pgm
 sensors/stereo/stereo_camera_calibrate/D1.xml
