@@ -4,12 +4,9 @@ Reads LCM MAVLINK messages and converts them to messages on many different chann
 
 Dependencies
 ============
-The bridge takes its input from the MAVCONN serial bridge.  You must install and run that bridge.  Start here: https://pixhawk.ethz.ch/software/mavconn/start
+The bridge takes its input from the MAVCONN serial bridge.  You must install and run that bridge.  Start here: 
 
-Note: you do not need all of MAVCONN, instead you just need the serial bridge.  When compiling, you can just run:
-
-    make mavconn-bridge-serial
-
+https://github.com/andybarry/flight/wiki/Install-mavconn---mavlink
 
 
 Installation
