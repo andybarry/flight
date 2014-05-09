@@ -20,8 +20,8 @@ LIBS=`pkg-config --libs lcm opencv bot2-core bot2-frames bot2-param-client` $(LC
 
 all: stereo-imu-obstacles
 
-stereo-imu-obstacles: stereo-imu-obstacles.o TrajectoryLibrary.o Trajectory.o
-	$(CC) stereo-imu-obstacles.o TrajectoryLibrary.o  Trajectory.o -o stereo-imu-obstacles $(LIBS)
+stereo-imu-obstacles: stereo-imu-obstacles.o TrajectoryLibrary.o Trajectory.o StereoOctomap.o
+	$(CC) stereo-imu-obstacles.o TrajectoryLibrary.o  Trajectory.o StereoOctomap.o -o stereo-imu-obstacles $(LIBS)
 
 stereo-imu-obstacles.o: stereo-imu-obstacles.cpp stereo-imu-obstacles.hpp
 	$(CC) $(CFLAGS) stereo-imu-obstacles.cpp
@@ -31,6 +31,9 @@ TrajectoryLibrary.o: TrajectoryLibrary.cpp TrajectoryLibrary.hpp
 
 Trajectory.o: Trajectory.cpp Trajectory.hpp
 	$(CC) $(CFLAGS) Trajectory.cpp
+	
+StereoOctomap.o: ../../estimators/StereoOctomap/StereoOctomap.cpp ../../estimators/StereoOctomap/StereoOctomap.hpp
+	$(CC) $(CFLAGS) ../../estimators/StereoOctomap/StereoOctomap.cpp
 	
 clean:
 	rm -rf *o stereo-imu-obstacles

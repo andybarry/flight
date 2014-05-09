@@ -17,8 +17,8 @@ void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
     
     // get transform from global to body frame
     BotTrans to_open_cv, body_to_local;
-    bot_frames_get_trans(botFrames, "opencvFrame", "local", &to_open_cv);
-    bot_frames_get_trans(botFrames, "body", "local", &body_to_local);
+    bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &to_open_cv);
+    bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
     
     
     // insert the points into the octree
@@ -60,8 +60,8 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
         octomath::Vector3 vec_new_point(trans_point[0], trans_point[1], trans_point[2]);
         
         // add this point to the octree
-        currentOctree->insertRay(vec_plane_origin, vec_new_point);
-        buildingOctree->insertRay(vec_plane_origin, vec_new_point);
+        current_octree_->insertRay(vec_plane_origin, vec_new_point);
+        building_octree_->insertRay(vec_plane_origin, vec_new_point);
         
     }
 }
@@ -107,10 +107,16 @@ void StereoOctomap::PublishOctomap(lcm_t *lcm) {
     }
 
     std::stringstream datastream;
-    currentOctree->writeBinaryConst(datastream);
+    current_octree_->writeBinaryConst(datastream);
     std::string datastring = datastream.str();
     oc_msg.data = (uint8_t *) datastring.c_str();
     oc_msg.length = datastring.size();
 
     octomap_raw_t_publish(lcm, "OCTOMAP", &oc_msg);
+}
+
+int64_t StereoOctomap::getTimestampNow() {
+    struct timeval thisTime;
+    gettimeofday(&thisTime, NULL);
+    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }

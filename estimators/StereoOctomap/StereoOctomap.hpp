@@ -35,14 +35,14 @@ class StereoOctomap {
         
         void ProcessStereoMessage(const lcmt_stereo *msg);
         
-        void PublishOctomap(lcm_t *lcm) {
-);
+        void PublishOctomap(lcm_t *lcm);
         
         
     private:
     
         void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
-        void RemoveOldPoints(int64_t last_msg_time)
+        void RemoveOldPoints(int64_t last_msg_time);
+        int64_t getTimestampNow();
     
         OcTree *current_octree_;
         OcTree *building_octree_;
@@ -50,6 +50,8 @@ class StereoOctomap {
         int64_t current_octree_timestamp_, building_octree_timestamp_;
         
         BotFrames *bot_frames_;
+        
+        
         
         
 

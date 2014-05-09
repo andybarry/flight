@@ -20,6 +20,8 @@ mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 
+Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
+Mat hud_image; 
 
 int main(int argc,char** argv) {
 
@@ -89,6 +91,10 @@ int main(int argc,char** argv) {
         // read the LCM channel, but process everything to allow us to drop frames
         while (NonBlockingLcm(lcm)) {}
         
+        hud.DrawHud(left_image, hud_image);
+    
+        imshow("HUD", hud_image);
+        
         char key = waitKey(1);
             
         if (key != 255 && key != -1)
@@ -134,12 +140,10 @@ void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, 
         return;
     }
     
-    Mat left_image = Mat::zeros(msg->height, msg->width, CV_8UC1);
+    left_image = Mat::zeros(msg->height, msg->width, CV_8UC1);
     
     // decompress JPEG
     jpeg_decompress_8u_gray(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
-    
-    Mat hud_image;
     
     // draw the hud
     hud->DrawHud(left_image, hud_image);

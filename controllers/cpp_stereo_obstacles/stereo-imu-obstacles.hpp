@@ -28,7 +28,8 @@ using namespace std;
 #include <bot_param/param_client.h>
 #include <lcmtypes/octomap_raw_t.h>
 
-#include <octomap/OcTree.h>
+//#include <octomap/OcTree.h>
+#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_trajectory_number.h"
@@ -36,10 +37,7 @@ using namespace std;
 #include "TrajectoryLibrary.hpp"
 #include "Trajectory.hpp"
 
-static void usage(void);
 void sighandler(int dum);
-
-int64_t getTimestampNow();
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
