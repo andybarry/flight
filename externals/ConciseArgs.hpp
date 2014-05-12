@@ -169,6 +169,7 @@ public:
       shortName(_shortName), longName(_longName), description(_description), mandatory(_mandatory), parsed(false)
   { //TODO: assert that shortname is a char?
   }
+  virtual ~OptBase() {}
   std::string shortName;
   std::string longName;
   std::string description;
