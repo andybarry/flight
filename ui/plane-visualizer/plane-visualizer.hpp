@@ -14,11 +14,14 @@
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
 
 #include "../../externals/ConciseArgs.hpp"
+#include "../../sensors/stereo/opencv-stereo-util.hpp"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
 #include "../../externals/jpeg-utils/jpeg-utils.h"
+
+#include <mutex>
 
 void sighandler(int dum);
 

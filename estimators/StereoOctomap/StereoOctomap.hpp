@@ -17,7 +17,7 @@
 #include <octomap/OcTree.h>
 #include "../../LCM/lcmt_stereo.h"
 
-#define OCTREE_LIFE 2000 // in msec
+#define OCTREE_LIFE 2000000 // in usec
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;

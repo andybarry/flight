@@ -11,23 +11,23 @@ MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
 
 MAVLIB=../../../mav/mavconn/build/lib
 
-CFLAGS=-c -Wall -O3 -std=c++0x `pkg-config --cflags lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -I/$(LCMDIR)
+CFLAGS=-c -Wall -O3 -std=c++0x `pkg-config --cflags lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -I/$(LCMDIR) -I/usr/local/include/firefly-mv-utils -I/usr/local/include/dc1394 -I/usr/include/dc1394
 
-LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -ljpeg $(LCMLIB)
-
-
-
+LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -ldc1394 -L /usr/local/lib/libdc1394.so -lgthread-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -lboost_system -lboost_filesystem -ljpeg $(LCMLIB)
 
 all: plane-visualizer
 
-plane-visualizer: plane-visualizer.o hud.o jpeg-utils.o
-	$(CC) plane-visualizer.o hud.o jpeg-utils.o -o plane-visualizer $(LIBS)
+plane-visualizer: plane-visualizer.o hud.o jpeg-utils.o opencv-stereo-util.o
+	$(CC) plane-visualizer.o hud.o jpeg-utils.o opencv-stereo-util.o -o plane-visualizer $(LIBS)
 
 plane-visualizer.o: plane-visualizer.cpp
 	$(CC) $(CFLAGS) plane-visualizer.cpp
 	
 hud.o: ../../ui/hud/hud.cpp ../../ui/hud/hud.hpp
 	$(CC) $(CFLAGS) ../../ui/hud/hud.cpp
+	
+opencv-stereo-util.o: ../../sensors/stereo/opencv-stereo-util.cpp ../../sensors/stereo/opencv-stereo-util.hpp 
+	$(CC) $(CFLAGS) ../../sensors/stereo/opencv-stereo-util.cpp
 	
 jpeg-utils.o: ../../externals/jpeg-utils/jpeg-utils.c ../../externals/jpeg-utils/jpeg-utils.h
 	$(CC) $(CFLAGS) ../../externals/jpeg-utils/jpeg-utils.c

@@ -19,11 +19,41 @@ lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
+lcmt_stereo_subscription_t *stereo_sub;
 
+mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
-Mat hud_image; 
+
+
+
+mutex stereo_mutex;
+lcmt_stereo *last_stereo_msg;
 
 int main(int argc,char** argv) {
+    
+    string config_file = "";
+    
+    ConciseArgs parser(argc, argv);
+    parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
+    parser.parse();
+    
+    OpenCvStereoConfig stereo_config;
+    
+    // parse the config file
+    if (ParseConfigFile(config_file, &stereo_config) != true)
+    {
+        fprintf(stderr, "Failed to parse configuration file, quitting.\n");
+        return 1;
+    }
+    
+    // load calibration
+    OpenCvStereoCalibration stereo_calibration;
+    
+    if (LoadCalibration(stereo_config.calibrationDir, &stereo_calibration) != true)
+    {
+        cerr << "Error: failed to read calibration files. Quitting." << endl;
+        return 1;
+    }
 
     
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
@@ -56,7 +86,6 @@ int main(int argc,char** argv) {
     char *baro_airspeed_channel;
     if (bot_param_get_str(param, "lcm_channels.baro_airspeed", &baro_airspeed_channel) >= 0) {
         baro_airspeed_sub = lcmt_baro_airspeed_subscribe(lcm, baro_airspeed_channel, &baro_airspeed_handler, &hud);
-        cout << baro_airspeed_channel << endl;
     }
     
     char *servo_out_channel;
@@ -72,6 +101,11 @@ int main(int argc,char** argv) {
     char *stereo_replay_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo_replay", &stereo_replay_channel) >= 0) {
         stereo_replay_sub = lcmt_stereo_subscribe(lcm, stereo_replay_channel, &stereo_replay_handler, &hud);
+    }
+    
+    char *stereo_channel;
+    if (bot_param_get_str(param, "lcm_channels.stereo", &stereo_channel) >= 0) {
+        stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel, &stereo_handler, NULL);
     }
     
     char *stereo_image_left_channel;
@@ -91,9 +125,31 @@ int main(int argc,char** argv) {
         // read the LCM channel, but process everything to allow us to drop frames
         while (NonBlockingLcm(lcm)) {}
         
-        hud.DrawHud(left_image, hud_image);
+        
+        
+        Mat hud_image, temp_image;
+        
+        image_mutex.lock();
+        left_image.copyTo(temp_image);
+        image_mutex.unlock();
+        
+        // transform the point from 3D space back onto the image's 2D space
+        vector<Point3f> lcm_points;
+        
+        stereo_mutex.lock();
+        Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+        stereo_mutex.unlock();
+
+        
+
+        Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+        
+        hud.DrawHud(temp_image, hud_image);
+        
     
         imshow("HUD", hud_image);
+        
+        
         
         char key = waitKey(1);
             
@@ -128,28 +184,30 @@ void sighandler(int dum)
 
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-    // TODO
+    stereo_mutex.lock();
+    if (last_stereo_msg) {
+        delete last_stereo_msg;
+    }
+    
+    last_stereo_msg = lcmt_stereo_copy(msg);
+    stereo_mutex.unlock();
 }
 
 void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, const bot_core_image_t *msg, void *user) {
-    
-    Hud *hud = (Hud*)user;
     
     if (msg->pixelformat != 1196444237) { // PIXEL_FORMAT_MJPEG
         cerr << "Warning: reading images other than JPEG not yet implemented." << endl;
         return;
     }
     
+    image_mutex.lock();
+    
     left_image = Mat::zeros(msg->height, msg->width, CV_8UC1);
     
     // decompress JPEG
     jpeg_decompress_8u_gray(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
     
-    // draw the hud
-    hud->DrawHud(left_image, hud_image);
-    
-    imshow("HUD", hud_image);
-    
+    image_mutex.unlock();
     
 }
 

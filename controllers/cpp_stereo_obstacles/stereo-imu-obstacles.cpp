@@ -10,13 +10,6 @@
 #include "stereo-imu-obstacles.hpp"
 
     
-#define IMAGE_GL_Y_OFFSET 400
-#define IMAGE_GL_WIDTH 376
-#define IMAGE_GL_HEIGHT 240
-    
-//#define OCTREE_LIFE 2000000 // in usec
-#define OCTREE_LIFE 2000 // in msec
-
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
@@ -63,6 +56,9 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     octomap->ProcessStereoMessage(msg);
     
+    if (numFrames%30 == 0) {
+        octomap->PublishOctomap(lcm);
+    }
     
     // search the trajectory library for the best trajectory
     /*

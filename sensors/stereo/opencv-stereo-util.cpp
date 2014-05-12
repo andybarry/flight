@@ -669,7 +669,7 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
     
     if (points_list.size() <= 0)
     {
-        cout << "Draw3DPointsOnimage: zero sized points list" << endl;
+        //cout << "Draw3DPointsOnimage: zero sized points list" << endl;
         return;
     }
     

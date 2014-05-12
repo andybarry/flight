@@ -569,17 +569,13 @@ int main(int argc, char *argv[])
             
             if (visualize_stereo_hits == true && stereo_lcm_msg != NULL) {
                 
-                // loop through the stereo message and draw boxes on screen
-                for (auto i = 0; i < stereo_lcm_msg->number_of_points; i++) {
-                    
-                    // transform the point from 3D space back onto the image's 2D space
-                    vector<Point3f> lcm_points;
-                    Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
+                // transform the points from 3D space back onto the image's 2D space
+                vector<Point3f> lcm_points;
+                Get3DPointsFromStereoMsg(stereo_lcm_msg, &lcm_points);
 
-                    // draw the points on the unrectified image (to see these
-                    // you must pass the -u flag)
-                    Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);
-                }
+                // draw the points on the unrectified image (to see these
+                // you must pass the -u flag)
+                Draw3DPointsOnImage(matL, &lcm_points, stereoCalibration.M1, stereoCalibration.D1, stereoCalibration.R1, 128);
                 
             }
             
