@@ -19,6 +19,8 @@
 
 #define OCTREE_LIFE 2000000 // in usec
 
+#define STEREO_DIST_TO_METERS_DIVISOR 10 // points come in in cm
+
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
@@ -32,6 +34,7 @@ class StereoOctomap {
     public:
         
         StereoOctomap(BotFrames *bot_frames);
+        StereoOctomap(BotFrames *bot_frames, octomap_raw_t *msg);
         
         void ProcessStereoMessage(const lcmt_stereo *msg);
         

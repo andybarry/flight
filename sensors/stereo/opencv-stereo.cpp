@@ -36,6 +36,8 @@ int lineLeftImgPositionY = -1;
 // lcm subscription to the control channel
 lcmt_stereo_control_subscription_t *stereo_control_sub;
 
+BarryMooreState state; // HACK
+
 // subscriptions to data
 lcmt_stereo_subscription_t *stereo_replay_sub;
 mav_pose_t_subscription_t *mav_pose_t_sub;
@@ -367,7 +369,7 @@ int main(int argc, char *argv[])
     Mat imgDisp2;
     
     // initilize default parameters
-    BarryMooreState state;
+    //BarryMooreState state; // HACK
     
     state.disparity = stereoConfig.disparity;
     state.zero_dist_disparity = stereoConfig.infiniteDisparity;
@@ -982,6 +984,9 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
     
     if( flags & CV_EVENT_FLAG_LBUTTON)
     {
+        
+        state.debugI = y;
+        state.debugJ = x;
         
         // paint a line on the image they clicked on
         if (display_hud) {

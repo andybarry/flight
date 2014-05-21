@@ -408,6 +408,8 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                     // of the top left corner
                     localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, -disparity));
                     
+                    //localHitPoints.push_back(Point3f(state.debugJ, state.debugI, -disparity));
+                    
                     
                     uchar pxL = leftImage.at<uchar>(i,j);
                     pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
@@ -427,30 +429,6 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     if (hitCounter > 0)
     {
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
-        /*
-        for (unsigned int i = 0; i < localHitPoints.size(); i++) {
-            
-            
-            float m[4] = {localHitPoints[i].x, localHitPoints[i].y, localHitPoints[i].z, 1.0};
-            Mat vec = Mat(4, 1, CV_32FC1, m);
-            
-            Mat temp_q;
-            
-            state.Q.convertTo(temp_q, CV_32FC1);
-            
-            Mat this_xyzw = temp_q * vec;
-            
-            
-            float x = this_xyzw.at<float>(0,0);
-            float y = this_xyzw.at<float>(1,0);
-            float z = this_xyzw.at<float>(2,0);
-            float w = this_xyzw.at<float>(3,0);
-            
-            
-            pointVector3d->push_back(Point3f(x/w, y/w, z/w));
-        }
-        */
-        
     }
     
 }

@@ -9,7 +9,7 @@
 
 #include "stereo-imu-obstacles.hpp"
 
-    
+
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
@@ -89,9 +89,21 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     fflush(stdout);
 }
 
-int main(int argc,char** argv)
-{
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+int main(int argc,char** argv) {
+    
+    bool ttl_one = false;
+    
+    ConciseArgs parser(argc, argv);
+    parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
+    parser.parse();
+    
+    
+    if (ttl_one) {
+        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+    } else {
+        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
+    }
+    
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");

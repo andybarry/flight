@@ -37,6 +37,8 @@ using namespace std;
 #include "TrajectoryLibrary.hpp"
 #include "Trajectory.hpp"
 
+#include "../../externals/ConciseArgs.hpp"
+
 void sighandler(int dum);
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);

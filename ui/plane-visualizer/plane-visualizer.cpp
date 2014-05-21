@@ -56,7 +56,7 @@ int main(int argc,char** argv) {
     }
 
     
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
@@ -137,7 +137,9 @@ int main(int argc,char** argv) {
         vector<Point3f> lcm_points;
         
         stereo_mutex.lock();
-        Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+        if (last_stereo_msg) {
+            Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+        }
         stereo_mutex.unlock();
 
         

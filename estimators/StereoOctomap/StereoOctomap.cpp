@@ -12,6 +12,38 @@ StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
     
 }
 
+/**
+ * Constructs StereoOcotmap from an LCM message
+ * 
+ * @param bot_frames initialized bot_frames pointer
+ * @param oc_msg LCM message containing data to build the octomap
+ */
+StereoOctomap::StereoOctomap(BotFrames *bot_frames, octomap_raw_t *msg) : StereoOctomap(bot_frames) {
+    // this is a delegating construtor, so we've already done the inititalization steps
+    
+    // construct from an LCM message
+    
+    
+    std::stringstream datastream;
+    datastream.write((const char*) msg->data, msg->length);
+    
+    current_octree_ = new octomap::OcTree(1); //resolution will be set by data from message
+    current_octree_->readBinary(datastream);
+    
+    current_octree_timestamp_ = msg->utime;
+    
+    std::stringstream datastream2;
+    datastream2.write((const char*) msg->data, msg->length);
+    
+    building_octree_ = new octomap::OcTree(1); //resolution will be set by data from message
+    building_octree_->readBinary(datastream2);
+    
+    building_octree_timestamp_ = msg->utime + OCTREE_LIFE/2; // half a life in the future
+    
+    
+    fprintf(stderr, "loadedOctomap\n");
+}
+
 
 void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
     
@@ -39,25 +71,24 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
     double plane_origin[3];
     bot_trans_apply_vec(body_to_local, origin, plane_origin);
     octomath::Vector3 vec_plane_origin(plane_origin[0], plane_origin[1], plane_origin[2]);
+    //octomath::Vector3 vec_plane_origin(0, 0, 0);
     
     
     // now apply this matrix to each point
     for (int i = 0; i<msg->number_of_points; i++)
     {
-        Vector3d this_point;
-        this_point << msg->z[i], msg->x[i], msg->y[i];
         double this_point_d[3];
         double trans_point[3];
-        this_point_d[0] = msg->x[i]/10;
-        this_point_d[1] = msg->y[i]/10;
-        
-        // opencv sends the z coordinate reversed from what we expect and is also in cm
-        this_point_d[2] = -msg->z[i]/10;
+
+        this_point_d[0] = msg->x[i] / STEREO_DIST_TO_METERS_DIVISOR;
+        this_point_d[1] = msg->y[i] / STEREO_DIST_TO_METERS_DIVISOR;
+        this_point_d[2] = msg->z[i] / STEREO_DIST_TO_METERS_DIVISOR;
         
         // add the position vector
         bot_trans_apply_vec(to_open_cv, this_point_d, trans_point);
         
         octomath::Vector3 vec_new_point(trans_point[0], trans_point[1], trans_point[2]);
+        //octomath::Vector3 vec_new_point(0, 0, 5);
         
         // add this point to the octree
         current_octree_->insertRay(vec_plane_origin, vec_new_point);
