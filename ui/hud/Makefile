@@ -15,13 +15,13 @@ CFLAGS=-c -Wall -O3 -std=c++0x `pkg-config --cflags lcm bot2-core bot2-param-cli
 
 LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -ldc1394 -L /usr/local/lib/libdc1394.so -lgthread-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -lboost_system -lboost_filesystem -ljpeg $(LCMLIB)
 
-all: plane-visualizer
+all: hud-main
 
-plane-visualizer: plane-visualizer.o hud.o jpeg-utils.o opencv-stereo-util.o
-	$(CC) plane-visualizer.o hud.o jpeg-utils.o opencv-stereo-util.o -o plane-visualizer $(LIBS)
+hud-main: hud-main.o hud.o jpeg-utils.o opencv-stereo-util.o
+	$(CC) hud-main.o hud.o jpeg-utils.o opencv-stereo-util.o -o hud-main $(LIBS)
 
-plane-visualizer.o: plane-visualizer.cpp
-	$(CC) $(CFLAGS) plane-visualizer.cpp
+hud-main.o: hud-main.cpp
+	$(CC) $(CFLAGS) hud-main.cpp
 	
 hud.o: ../../ui/hud/hud.cpp ../../ui/hud/hud.hpp
 	$(CC) $(CFLAGS) ../../ui/hud/hud.cpp
@@ -33,7 +33,7 @@ jpeg-utils.o: ../../externals/jpeg-utils/jpeg-utils.c ../../externals/jpeg-utils
 	$(CC) $(CFLAGS) ../../externals/jpeg-utils/jpeg-utils.c
 
 clean:
-	rm -rf *o plane-visualizer
+	rm -rf *o hud-main
 
 
 

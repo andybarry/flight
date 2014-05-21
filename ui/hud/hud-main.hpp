@@ -1,7 +1,7 @@
 #ifndef UI_PLANE_VISUALIZER
 #define UI_PLANE_VISUALIZER
 
-#include "../hud/hud.hpp"
+#include "hud.hpp"
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_optotrak.h"
