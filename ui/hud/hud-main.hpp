@@ -30,8 +30,6 @@
 
 #include <mutex>
 
-#define STEREO_DIST_TO_METERS_DIVISOR 10 // points come in in cm
-
 using namespace std;
 using namespace octomap;
 

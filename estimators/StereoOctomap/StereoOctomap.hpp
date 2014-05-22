@@ -19,8 +19,6 @@
 
 #define OCTREE_LIFE 2000000 // in usec
 
-#define STEREO_DIST_TO_METERS_DIVISOR 10 // points come in in cm
-
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 

@@ -47,9 +47,9 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
         double this_point_d[3];
         double trans_point[3];
 
-        this_point_d[0] = msg->x[i] / STEREO_DIST_TO_METERS_DIVISOR;
-        this_point_d[1] = msg->y[i] / STEREO_DIST_TO_METERS_DIVISOR;
-        this_point_d[2] = msg->z[i] / STEREO_DIST_TO_METERS_DIVISOR;
+        this_point_d[0] = msg->x[i];
+        this_point_d[1] = msg->y[i];
+        this_point_d[2] = msg->z[i];
         
         // add the position vector
         bot_trans_apply_vec(to_open_cv, this_point_d, trans_point);

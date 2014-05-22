@@ -530,9 +530,9 @@ int main(int argc, char *argv[])
         
         for (unsigned int i=0;i<pointVector3d.size();i++) {
             
-            x[i] = pointVector3d[i].x;
-            y[i] = pointVector3d[i].y;
-            z[i] = pointVector3d[i].z;
+            x[i] = pointVector3d[i].x / stereoConfig.calibrationUnitConversion;
+            y[i] = pointVector3d[i].y / stereoConfig.calibrationUnitConversion;
+            z[i] = pointVector3d[i].z / stereoConfig.calibrationUnitConversion;
             grey[i] = pointColors[i];
         }
         

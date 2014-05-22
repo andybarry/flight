@@ -52,6 +52,7 @@ struct OpenCvStereoConfig
     string lcmUrl;
     string stereoControlChannel;
     string calibrationDir;
+    float calibrationUnitConversion;
     string videoSaveDir;
     string fourcc;
     

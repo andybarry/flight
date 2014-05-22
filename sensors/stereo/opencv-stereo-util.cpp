@@ -364,6 +364,19 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         return false;
     }
     
+    configStruct->calibrationUnitConversion =
+        g_key_file_get_double(keyfile, "cameras",
+        "calibrationUnitConversion", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify unit conversion (or I failed to read it). Parameter: cameras.calibrationUnitConversion\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
     return true;
 }
 

@@ -143,6 +143,20 @@ int main(int argc,char** argv) {
         left_image.copyTo(temp_image);
         image_mutex.unlock();
         
+        
+        vector<Point3f> octomap_points;
+        
+        BotTrans global_to_body;
+        bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
+        
+        if (GetOctomapPoints(&octomap_points, &global_to_body)) {
+            
+            //cout << "drawing" << octomap_points << endl;
+            
+            Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+        }
+        
+        
         // transform the point from 3D space back onto the image's 2D space
         vector<Point3f> lcm_points;
         
@@ -154,22 +168,7 @@ int main(int argc,char** argv) {
 
         //cout << lcm_points << endl;
 
-       Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
-        
-        vector<Point3f> octomap_points;
-        
-        
-        
-        BotTrans global_to_body;
-        bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
-        
-        if (GetOctomapPoints(&octomap_points, &global_to_body)) {
-            
-            //cout << "drawing" << octomap_points << endl;
-            
-            Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
-        }
-        
+       Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
         
         
         hud.DrawHud(temp_image, hud_image);
@@ -237,7 +236,7 @@ bool GetOctomapPoints(vector<Point3f> *octomap_points, BotTrans *global_to_body)
             bot_trans_apply_vec(global_to_body, this_point_d, point_in_body_coords);
                 
             
-            octomap_points->push_back(Point3f(point_in_body_coords[0] * STEREO_DIST_TO_METERS_DIVISOR, point_in_body_coords[1] * STEREO_DIST_TO_METERS_DIVISOR, point_in_body_coords[2] * STEREO_DIST_TO_METERS_DIVISOR));
+            octomap_points->push_back(Point3f(point_in_body_coords[0], point_in_body_coords[1], point_in_body_coords[2]));
             
         }
     }
