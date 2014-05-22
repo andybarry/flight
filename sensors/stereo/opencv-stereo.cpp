@@ -390,6 +390,8 @@ int main(int argc, char *argv[])
     state.Q = stereoCalibration.qMat;
     state.show_display = show_display;
     
+    state.lastValidPixelRow = stereoConfig.lastValidPixelRow;
+    
     Mat matL, matR;
     bool quit = false;
     
@@ -486,7 +488,7 @@ int main(int argc, char *argv[])
         //matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
         
         //matR = matR2;
-
+        
         Mat matDisp, remapL, remapR;
         
         if (show_display) {
@@ -520,7 +522,17 @@ int main(int argc, char *argv[])
             
         // build an LCM message for the stereo data
         lcmt_stereo msg;
-        msg.timestamp = getTimestampNow();
+        
+        
+        if (recording_manager.UsingLiveCameras() || stereo_lcm_msg == NULL) {
+            msg.timestamp = getTimestampNow();
+        } else {
+            // if we are replaying videos, preserve the timestamp of the original video
+            msg.timestamp = stereo_lcm_msg->timestamp;
+            
+        }
+        
+        
         msg.number_of_points = (int)pointVector3d.size();
         
         float x[msg.number_of_points];
@@ -984,7 +996,7 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
     
     if( flags & CV_EVENT_FLAG_LBUTTON)
     {
-        
+        cout << y << endl;
         state.debugI = y;
         state.debugJ = x;
         

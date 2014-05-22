@@ -230,6 +230,18 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     
     configStruct->calibrationDir = calibDir;
     
+    configStruct->lastValidPixelRow = g_key_file_get_integer(keyfile,
+        "cameras", "lastValidPixelRow", &gerror);
+    
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify the last valid row of pixels (or I failed to read it). Parameter: cameras.lastValidPixelRow\n");
+        
+        g_error_free(gerror);
+        
+        return false;
+    }
+    
     // get the video saving directory
     const char *videoSaveDir = g_key_file_get_string(keyfile, "cameras", "videoSaveDir", NULL);
     if (videoSaveDir == NULL)
@@ -307,6 +319,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         
         return false;
     }
+    
     
     // get interestOperatorLimit
     configStruct->interestOperatorLimit =

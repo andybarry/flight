@@ -185,6 +185,15 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     
     //cout << "[main] all remap threads finished" << endl;
     
+    if (state.lastValidPixelRow > 0) {
+        
+        // crop image to be only include valid pixels
+        remapped_left = remapped_left.rowRange(0, state.lastValidPixelRow);
+        remapped_right = remapped_right.rowRange(0, state.lastValidPixelRow);
+        rows = remapped_left.rows;
+    }
+    
+    
     Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
     Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
     
@@ -241,7 +250,7 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
         thread_states_[i].pointVector2d = &pointVector2dArray[i];
         thread_states_[i].pointColors = &pointColorsArray[i];
         thread_states_[i].row_start = start;
-        thread_states_[i].row_end = end;
+        thread_states_[i].row_end = end; 
         
         
         

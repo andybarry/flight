@@ -67,24 +67,36 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
 
 void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
     // check timestamps
-    if (current_octree_timestamp_ < 0 || current_octree_timestamp_ > last_msg_time) // the second case can happen if you're replaying a log and jump back
-    {
+    if (current_octree_timestamp_ < 0) {
          current_octree_timestamp_ = last_msg_time;
          building_octree_timestamp_ = last_msg_time + OCTREE_LIFE/2; // half a life in the future
-    } else {
-        if (current_octree_timestamp_ + OCTREE_LIFE < last_msg_time)
-        {
-            // swap out trees since this one has expired
-            delete current_octree_;
-            
-            current_octree_timestamp_ = building_octree_timestamp_;
-            building_octree_timestamp_ = last_msg_time;
-            
-            current_octree_ = building_octree_;
-            building_octree_ = new OcTree(0.1);
-            
-            cout << endl << "swapping octrees" << endl;
-        }
+    } else if (current_octree_timestamp_ > last_msg_time) {
+        // can happen if you're replaying a log and jump back
+        
+        // replaying a log, so reinit everything.
+        delete current_octree_;
+        delete building_octree_;
+        
+        current_octree_timestamp_ = last_msg_time;
+        building_octree_timestamp_ = last_msg_time + OCTREE_LIFE/2;
+        
+        current_octree_ = new OcTree(0.1);
+        building_octree_ = new OcTree(0.1);
+        
+        cout << endl << "swapping octrees because jump back in time" << endl;
+        
+        
+    } else if (current_octree_timestamp_ + OCTREE_LIFE < last_msg_time) {
+        // swap out trees since this one has expired
+        delete current_octree_;
+        
+        current_octree_timestamp_ = building_octree_timestamp_;
+        building_octree_timestamp_ = last_msg_time;
+        
+        current_octree_ = building_octree_;
+        building_octree_ = new OcTree(0.1);
+        
+        cout << endl << "swapping octrees" << endl;
     }
     //currentOctree->degradeOutdatedNodes(2);
 }

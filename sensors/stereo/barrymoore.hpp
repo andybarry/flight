@@ -30,6 +30,8 @@ struct BarryMooreState
     int blockSize;
     int sadThreshold;
     
+    int lastValidPixelRow;
+    
     // a parameter added to the SAD/sobel division in the denominator
     float sobelAdd;
     

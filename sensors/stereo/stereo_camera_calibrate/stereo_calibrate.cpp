@@ -407,7 +407,7 @@ StereoCalib(const char* imageList, int nx, int ny, int useUncalibrated, float _s
             cvStereoRectify( &_M1, &_M2, &_D1, &_D2, imageSize,
                 &_R, &_T,
                 &_R1, &_R2, &_P1, &_P2, &_Q,
-                0/*CV_CALIB_ZERO_DISPARITY*/ );
+                0/*CV_CALIB_ZERO_DISPARITY*/, 0 );
             isVerticalStereo = fabs(P2[1][3]) > fabs(P2[0][3]);
     //Precompute maps for cvRemap()
             if (calibrateOnlyLeft == true || calibrateOnlyRight == true)
