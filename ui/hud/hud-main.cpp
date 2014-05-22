@@ -20,14 +20,17 @@ mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_stereo_subscription_t *stereo_sub;
+octomap_raw_t_subscription_t *octomap_sub;
 
 mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
 
 
-
 mutex stereo_mutex;
 lcmt_stereo *last_stereo_msg;
+
+OcTree *octree = NULL;
+mutex octomap_mutex;
 
 int main(int argc,char** argv) {
     
@@ -68,6 +71,8 @@ int main(int argc,char** argv) {
         fprintf(stderr, "Error: no param server!\n");
         return 1;
     }
+    
+    BotFrames *bot_frames = bot_frames_new(lcm, param);
     
     // create a HUD object so we can pass it's pointer to the lcm handlers
     Hud hud;
@@ -113,11 +118,16 @@ int main(int argc,char** argv) {
         stereo_image_left_sub = bot_core_image_t_subscribe(lcm, stereo_image_left_channel, &stereo_image_left_handler, &hud);
     }
     
+    char *octomap_channel;
+    if (bot_param_get_str(param, "lcm_channels.octomap", &octomap_channel) >= 0) {
+        octomap_sub = octomap_raw_t_subscribe(lcm, octomap_channel, &octomap_raw_t_handler, NULL);
+    }
+    
     // control-c handler
     signal(SIGINT,sighandler);
     
     namedWindow("HUD", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
-    moveWindow("HUD", -0, 1500);
+    moveWindow("HUD", 2800, 1000);
     
     cout << "Running..." << endl;
 
@@ -142,9 +152,25 @@ int main(int argc,char** argv) {
         }
         stereo_mutex.unlock();
 
-        
+        //cout << lcm_points << endl;
 
-        Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+       Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+        
+        vector<Point3f> octomap_points;
+        
+        
+        
+        BotTrans global_to_body;
+        bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
+        
+        if (GetOctomapPoints(&octomap_points, &global_to_body)) {
+            
+            //cout << "drawing" << octomap_points << endl;
+            
+            Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+        }
+        
+        
         
         hud.DrawHud(temp_image, hud_image);
         
@@ -181,6 +207,45 @@ void sighandler(int dum)
     printf("done.\n");
     
     exit(0);
+}
+
+bool GetOctomapPoints(vector<Point3f> *octomap_points, BotTrans *global_to_body) {
+    octomap_mutex.lock();
+    
+    if (octree == NULL) {
+        octomap_mutex.unlock();
+        return false;
+    }
+    
+    
+    // loop through the most likely points on the octomap and plot them on the image
+    for(OcTree::leaf_iterator it = octree->begin_leafs(), end=octree->end_leafs(); it!= end; ++it) {
+        //manipulate node, e.g.:
+        
+        // check to see if this is occupied
+        if (it->getOccupancy() > 0.2) {
+        
+            octomap::point3d this_point = it.getCoordinate();
+            
+            // convert this global coordinate into the local coordinate frame
+            double this_point_d[3];
+            this_point_d[0] = this_point.x();
+            this_point_d[1] = this_point.y();
+            this_point_d[2] = this_point.z();
+            
+            double point_in_body_coords[3];
+            bot_trans_apply_vec(global_to_body, this_point_d, point_in_body_coords);
+                
+            
+            octomap_points->push_back(Point3f(point_in_body_coords[0] * STEREO_DIST_TO_METERS_DIVISOR, point_in_body_coords[1] * STEREO_DIST_TO_METERS_DIVISOR, point_in_body_coords[2] * STEREO_DIST_TO_METERS_DIVISOR));
+            
+        }
+    }
+    
+    octomap_mutex.unlock();
+    
+    return true;
+    
 }
 
 
@@ -256,6 +321,28 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAcceleration(msg->accel[0], msg->accel[1], msg->accel[2]);
     
     hud->SetTimestamp(msg->utime);
+}
+
+
+void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user) {
+    // get an octomap and load it into memory
+    
+    octomap_mutex.lock();
+    
+    if (octree) {
+        delete octree;
+    }
+    
+    std::stringstream datastream;
+    datastream.write((const char*) msg->data, msg->length);
+    
+    octree = new octomap::OcTree(1); //resolution will be set by data from message
+    octree->readBinary(datastream);
+    
+    octree->toMaxLikelihood();
+    
+    octomap_mutex.unlock();
+    
 }
 
 

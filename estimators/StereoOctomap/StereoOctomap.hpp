@@ -34,7 +34,6 @@ class StereoOctomap {
     public:
         
         StereoOctomap(BotFrames *bot_frames);
-        StereoOctomap(BotFrames *bot_frames, octomap_raw_t *msg);
         
         void ProcessStereoMessage(const lcmt_stereo *msg);
         

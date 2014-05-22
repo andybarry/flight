@@ -8,22 +8,23 @@ LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a
 
 MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
+OCTOMAPLIB=../../../Fixie/build/lib/liboctomap.a ../../../Fixie/build/lib/liboctomath.a ../../../Fixie/build/lib/liblcmtypes_octomap-utils.a
 
 MAVLIB=../../../mav/mavconn/build/lib
 
-CFLAGS=-c -Wall -O3 -std=c++0x `pkg-config --cflags lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -I/$(LCMDIR) -I/usr/local/include/firefly-mv-utils -I/usr/local/include/dc1394 -I/usr/include/dc1394
+CFLAGS=-c -Wall -O3 -std=c++0x -I/usr/local/include/opencv2 `pkg-config --cflags opencv lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames  eigen3` -I/$(LCMDIR) -I/usr/local/include/firefly-mv-utils -I/usr/local/include/dc1394 -I/usr/include/dc1394 -I../../../Fixie/build/include
 
-LIBS=`pkg-config --libs lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames opencv` -ldc1394 -L /usr/local/lib/libdc1394.so -lgthread-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -lboost_system -lboost_filesystem -ljpeg $(LCMLIB)
+LIBS=`pkg-config --libs opencv lcm bot2-core bot2-param-client bot2-lcmgl-client bot2-frames eigen3` -ldc1394 -L /usr/local/lib/libdc1394.so -lgthread-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -lboost_system -lboost_filesystem -ljpeg $(LCMLIB) $(MAVLCMLIB) $(OCTOMAPLIB)
 
 all: hud-main
 
 hud-main: hud-main.o hud.o jpeg-utils.o opencv-stereo-util.o
 	$(CC) hud-main.o hud.o jpeg-utils.o opencv-stereo-util.o -o hud-main $(LIBS)
 
-hud-main.o: hud-main.cpp
+hud-main.o: hud-main.cpp hud-main.hpp
 	$(CC) $(CFLAGS) hud-main.cpp
 	
-hud.o: ../../ui/hud/hud.cpp ../../ui/hud/hud.hpp
+hud.o: hud.cpp hud.hpp
 	$(CC) $(CFLAGS) ../../ui/hud/hud.cpp
 	
 opencv-stereo-util.o: ../../sensors/stereo/opencv-stereo-util.cpp ../../sensors/stereo/opencv-stereo-util.hpp 

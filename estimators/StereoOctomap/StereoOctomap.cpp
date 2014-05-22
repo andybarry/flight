@@ -12,39 +12,6 @@ StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
     
 }
 
-/**
- * Constructs StereoOcotmap from an LCM message
- * 
- * @param bot_frames initialized bot_frames pointer
- * @param oc_msg LCM message containing data to build the octomap
- */
-StereoOctomap::StereoOctomap(BotFrames *bot_frames, octomap_raw_t *msg) : StereoOctomap(bot_frames) {
-    // this is a delegating construtor, so we've already done the inititalization steps
-    
-    // construct from an LCM message
-    
-    
-    std::stringstream datastream;
-    datastream.write((const char*) msg->data, msg->length);
-    
-    current_octree_ = new octomap::OcTree(1); //resolution will be set by data from message
-    current_octree_->readBinary(datastream);
-    
-    current_octree_timestamp_ = msg->utime;
-    
-    std::stringstream datastream2;
-    datastream2.write((const char*) msg->data, msg->length);
-    
-    building_octree_ = new octomap::OcTree(1); //resolution will be set by data from message
-    building_octree_->readBinary(datastream2);
-    
-    building_octree_timestamp_ = msg->utime + OCTREE_LIFE/2; // half a life in the future
-    
-    
-    fprintf(stderr, "loadedOctomap\n");
-}
-
-
 void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
     
     // get transform from global to body frame

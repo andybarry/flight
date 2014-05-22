@@ -56,7 +56,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     octomap->ProcessStereoMessage(msg);
     
-    if (numFrames%30 == 0) {
+    if (numFrames%15 == 0) {
         octomap->PublishOctomap(lcm);
     }
     
