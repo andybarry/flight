@@ -235,8 +235,10 @@ bool GetOctomapPoints(vector<Point3f> *octomap_points, BotTrans *global_to_body)
             double point_in_body_coords[3];
             bot_trans_apply_vec(global_to_body, this_point_d, point_in_body_coords);
                 
-            
-            octomap_points->push_back(Point3f(point_in_body_coords[0], point_in_body_coords[1], point_in_body_coords[2]));
+            // don't plot points that are behind us
+            if (point_in_body_coords[2] >= 0) {
+                octomap_points->push_back(Point3f(point_in_body_coords[0], point_in_body_coords[1], point_in_body_coords[2]));
+            }
             
         }
     }

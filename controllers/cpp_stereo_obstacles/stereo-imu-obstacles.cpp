@@ -33,28 +33,29 @@ bot_lcmgl_t* lcmgl;
 lcmt_stereo_subscription_t * stereo_sub;
 
 
-lcmt_stereo *lastStereo = NULL;
-
 
 
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
     
-    StereoOctomap *octomap = (StereoOctomap*)user;
-    
-    if (lastStereo == NULL)
-    {
-        lastStereo = lcmt_stereo_copy(msg);
-    }
-    
-    //msg = lastStereo;
-
     // start the rate clock
     struct timeval start, now;
     unsigned long elapsed;
     gettimeofday( &start, NULL );
     
-    octomap->ProcessStereoMessage(msg);
+    
+    
+    StereoHandlerData *data = (StereoHandlerData*)user;
+    
+    StereoOctomap *octomap = data->octomap;
+    StereoFilter *filter = data->filter;
+    
+    // filter the stereo message
+    lcmt_stereo *filtered_msg = filter->ProcessMessage(msg);
+    
+    cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
+
+    octomap->ProcessStereoMessage(filtered_msg);
     
     if (numFrames%15 == 0) {
         octomap->PublishOctomap(lcm);
@@ -79,6 +80,8 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     }   
     */
     numFrames ++;
+    
+    delete filtered_msg;
     
     // compute framerate
     gettimeofday( &now, NULL );
@@ -116,10 +119,16 @@ int main(int argc,char** argv) {
     
     // init octomap
     StereoOctomap octomap(bot_frames);
+    
+    StereoFilter filter(0.005);
+    
+    StereoHandlerData user_data;
+    user_data.octomap = &octomap;
+    user_data.filter = &filter;
 
     char *stereo_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo", &stereo_channel) >= 0) {
-        stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel, &stereo_handler, &octomap);
+        stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel, &stereo_handler, &user_data);
     }
 
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");

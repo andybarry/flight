@@ -39,6 +39,13 @@ using namespace std;
 
 #include "../../externals/ConciseArgs.hpp"
 
+#include "StereoFilter.hpp"
+
+struct StereoHandlerData {
+    StereoOctomap *octomap;
+    StereoFilter *filter;
+};
+
 void sighandler(int dum);
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);

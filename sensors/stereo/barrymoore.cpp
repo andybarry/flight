@@ -17,8 +17,8 @@
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
 #define INVARIANCE_CHECK_VERT_OFFSET_INCREMENT 2
 
-#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
-#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
+#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
+#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
 
 BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
 
@@ -558,7 +558,7 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     }
     int laplacian_value = leftVal + rightVal;
     
-    if (leftVal < sobelLimit || rightVal < sobelLimit)
+    if (leftVal < sobelLimit || rightVal < sobelLimit)// || abs(leftVal - rightVal) > 200)
     {
         return -1;
     }

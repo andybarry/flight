@@ -145,6 +145,8 @@ int main(int argc, char *argv[])
     int starting_frame_number = 0;
     bool enable_gamma = false;
     
+    int last_frame_number = -1;
+    
     int last_playback_frame_number = -2;
     
     StereoBM *stereo_bm = NULL;
@@ -559,7 +561,10 @@ int main(int argc, char *argv[])
         msg.video_number = recording_manager.GetRecVideoNumber();
 
         // publish the LCM message
-        lcmt_stereo_publish(lcm, "stereo", &msg);
+        if (last_frame_number != msg.frame_number) {
+            lcmt_stereo_publish(lcm, "stereo", &msg);
+            last_frame_number = msg.frame_number;
+        }
 
         if (show_display) {
         
@@ -996,7 +1001,6 @@ void onMouseStereo( int event, int x, int y, int flags, void* hud) {
     
     if( flags & CV_EVENT_FLAG_LBUTTON)
     {
-        cout << y << endl;
         state.debugI = y;
         state.debugJ = x;
         
