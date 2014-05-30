@@ -53,7 +53,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     // filter the stereo message
     lcmt_stereo *filtered_msg = filter->ProcessMessage(msg);
     
-    cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
+    //cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
 
     octomap->ProcessStereoMessage(filtered_msg);
     
@@ -120,7 +120,7 @@ int main(int argc,char** argv) {
     // init octomap
     StereoOctomap octomap(bot_frames);
     
-    StereoFilter filter(0.005);
+    StereoFilter filter(0.1);
     
     StereoHandlerData user_data;
     user_data.octomap = &octomap;

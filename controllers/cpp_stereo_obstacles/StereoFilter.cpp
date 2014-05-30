@@ -18,6 +18,9 @@ StereoFilter::StereoFilter(float distance_threshold) {
  */
 lcmt_stereo* StereoFilter::ProcessMessage(const lcmt_stereo *msg) {
     
+    
+    //cout << "Process message called" << endl << "=================================" << endl;
+    
     // build a new stereo message to return
     
     lcmt_stereo *filtered_msg = new lcmt_stereo;
@@ -45,6 +48,17 @@ lcmt_stereo* StereoFilter::ProcessMessage(const lcmt_stereo *msg) {
     }
     
     
+    //PrintMsg(last_stereo_msg_, "last message");
+    //PrintMsg(msg, "this message");
+    
+    
+    
+    if (msg->frame_number - last_stereo_msg_->frame_number < 0) {
+        //cout << "JUMP BACK" << endl;
+        delete last_stereo_msg_;
+        last_stereo_msg_ = lcmt_stereo_copy(msg);
+        return filtered_msg;
+    }
     
     int point_counter = 0;
     
@@ -85,10 +99,10 @@ bool StereoFilter::FilterSinglePoint(float x, float y, float z) {
         
         float dist = DistanceFunction(x, last_stereo_msg_->x[i], y, last_stereo_msg_->y[i], z, last_stereo_msg_->z[i]);
         
-        cout << "dist = " << dist << endl;
+       // cout << "dist = " << dist << endl;
         if (dist < distance_threshold_) {
             
-            cout << "(" << last_stereo_msg_->x[i] << ", " << x << ") , (" << last_stereo_msg_->y[i] << ", " << y << ") , (" << last_stereo_msg_->z[i] << ", " << z << ")" << endl;
+      //      cout << "(" << last_stereo_msg_->x[i] << ", " << x << ") , (" << last_stereo_msg_->y[i] << ", " << y << ") , (" << last_stereo_msg_->z[i] << ", " << z << ")" << endl;
             
             
             return true;
@@ -102,7 +116,17 @@ bool StereoFilter::FilterSinglePoint(float x, float y, float z) {
 }
 
 float StereoFilter::DistanceFunction(float x1, float x2, float y1, float y2, float z1, float z2) {
+    //cout << "sqrt( ( " << x1 << " - " << x2 << ")^2 + (" << y1 << " - " << y2 << ")^2 + (" << z1 << " - " << z2 << ")^2  ) = " << sqrt(  (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2)   ) << endl;
     return sqrt(  (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2)   );
 }
 
-
+void StereoFilter::PrintMsg(const lcmt_stereo *msg, string header) {
+    cout << "-------------- " << header << " -------------" << endl << "Timestamp: " << msg->timestamp;
+    cout << endl << "Frame number: " << msg->frame_number << endl << "number_of_points: " << msg->number_of_points;
+    cout << endl;
+    
+    for (int i = 0; i < msg->number_of_points; i++) {
+        cout << "(" << msg->x[i] << ", " << msg->y[i] << ", " << msg->z[i] << ")" << endl;
+    }
+    cout << "------------ end message ---------------" << endl;
+}

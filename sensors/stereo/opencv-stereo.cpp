@@ -469,48 +469,6 @@ int main(int argc, char *argv[])
             recording_manager.GetFrames(matL, matR);
         }
         
-        if (publish_all_images) {
-            if (recording_manager.GetFrameNumber() != last_playback_frame_number) {
-                SendImageOverLcm(lcm, "stereo_image_left", matL);
-                SendImageOverLcm(lcm, "stereo_image_right", matR);
-                
-                last_playback_frame_number = recording_manager.GetFrameNumber();
-            }
-            
-            //process LCM until there are no more messages
-            // this allows us to drop frames if we are behind
-            while (NonBlockingLcm(lcm)) {}
-        }
-        
-        // TEMP TODO TEMP:
-        // change the Y axis of the right image for post-calibration
-        // alignment
-        
-        //Mat matR2 = cv::Mat::zeros(matR.size(), matR.type());
-        //matR(cv::Rect(0,0, matR.cols,matR.rows-y_offset)).copyTo(matR2(cv::Rect(0,y_offset,matR.cols,matR.rows-y_offset)));
-        
-        //matR = matR2;
-        
-        Mat matDisp, remapL, remapR;
-        
-        if (show_display) {
-            // we remap again here because we're just in display
-            Mat remapLtemp(matL.rows, matL.cols, matL.depth());
-            Mat remapRtemp(matR.rows, matR.cols, matR.depth());
-            
-            remapL = remapLtemp;
-            remapR = remapRtemp;
-            
-            remap(matL, remapL, stereoCalibration.mx1fp, Mat(), INTER_NEAREST);
-            remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
-            
-            remapL.copyTo(matDisp);
-            
-            //process LCM until there are no more messages
-            // this allows us to drop frames if we are behind
-            while (NonBlockingLcm(lcm)) {}
-        } // end show_display
-        
         cv::vector<Point3f> pointVector3d;
         cv::vector<uchar> pointColors;
         cv::vector<Point3i> pointVector2d; // for display
@@ -554,10 +512,16 @@ int main(int argc, char *argv[])
         msg.y = y;
         msg.z = z;
         msg.grey = grey;
-        msg.frame_number = recording_manager.GetFrameNumber() - 1;  // minus one since recording manager has
-                                                                    // already recorded this frame (above in
-                                                                    // AddFrames) but we haven't made a message
-                                                                    // for it yet
+        msg.frame_number = recording_manager.GetFrameNumber();
+        
+        if (recording_manager.UsingLiveCameras()) {
+            msg.frame_number = msg.frame_number - 1;  // minus one since recording manager has
+                                                      // already recorded this frame (above in
+                                                      // AddFrames) but we haven't made a message
+                                                      // for it yet
+        }
+        
+        
         msg.video_number = recording_manager.GetRecVideoNumber();
 
         // publish the LCM message
@@ -565,6 +529,40 @@ int main(int argc, char *argv[])
             lcmt_stereo_publish(lcm, "stereo", &msg);
             last_frame_number = msg.frame_number;
         }
+        
+        if (publish_all_images) {
+            if (recording_manager.GetFrameNumber() != last_playback_frame_number) {
+                SendImageOverLcm(lcm, "stereo_image_left", matL);
+                SendImageOverLcm(lcm, "stereo_image_right", matR);
+                
+                last_playback_frame_number = recording_manager.GetFrameNumber();
+            }
+            
+            //process LCM until there are no more messages
+            // this allows us to drop frames if we are behind
+            while (NonBlockingLcm(lcm)) {}
+        }
+        
+        Mat matDisp, remapL, remapR;
+        
+        if (show_display) {
+            // we remap again here because we're just in display
+            Mat remapLtemp(matL.rows, matL.cols, matL.depth());
+            Mat remapRtemp(matR.rows, matR.cols, matR.depth());
+            
+            remapL = remapLtemp;
+            remapR = remapRtemp;
+            
+            remap(matL, remapL, stereoCalibration.mx1fp, Mat(), INTER_NEAREST);
+            remap(matR, remapR, stereoCalibration.mx2fp, Mat(), INTER_NEAREST);
+            
+            remapL.copyTo(matDisp);
+            
+            //process LCM until there are no more messages
+            // this allows us to drop frames if we are behind
+            while (NonBlockingLcm(lcm)) {}
+        } // end show_display
+        
 
         if (show_display) {
         
