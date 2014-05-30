@@ -575,8 +575,8 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
  * 
  * @param leftImage left image
  * @param rightImage right image
- * @param pxX row pixel location
- * @param pxY column pixel location
+ * @param pxX column pixel location
+ * @param pxY row pixel location
  * @param state state structure that includes a number of parameters
  *
  * @retval true if there is another match (so NOT an obstacle)
