@@ -490,7 +490,6 @@ int main(int argc, char *argv[])
             
             timer_sum += after-before;
             timer_count ++;
-            cout << "Time: " << timer_sum/(double)timer_count << endl;
             
         }
             
@@ -929,7 +928,7 @@ int main(int argc, char *argv[])
             elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - 
             (start.tv_usec / 1000 + start.tv_sec * 1000);
             
-            printf("\r%d frames (%lu ms) - %4.1f fps | %4.1f ms/frame", numFrames, elapsed, (float)numFrames/elapsed * 1000, elapsed/(float)numFrames);
+            printf("\r%d frames (%lu ms) - %4.1f fps | %4.1f ms/frame, stereo: %f", numFrames, elapsed, (float)numFrames/elapsed * 1000, elapsed/(float)numFrames, timer_sum/(double)timer_count);
             fflush(stdout);
         }
 
