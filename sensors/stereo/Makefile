@@ -3,7 +3,7 @@
 CC=g++
 # Hey!, I am comment number 2. I want to say that CFLAGS will be the
 # options I'll pass to the compiler.
-CFLAGS=-c -Wall -O3 -std=c++0x -fopenmp `pkg-config --cflags opencv bot2-lcmgl-client bot2-core` -I/usr/local/include   -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include   -pthread -I/usr/local/include -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include -I/usr/local/include/firefly-mv-utils -I/usr/local/include/dc1394 -I/usr/include/dc1394
+CFLAGS=-c -Wall -O3 -std=c++0x -mfpu=neon -march=native -fopenmp `pkg-config --cflags opencv bot2-lcmgl-client bot2-core` -I/usr/local/include   -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include   -pthread -I/usr/local/include -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include -I/usr/local/include/firefly-mv-utils -I/usr/local/include/dc1394 -I/usr/include/dc1394
 
 LIBS=-fopenmp `pkg-config --libs opencv` -L/usr/local/lib -ldc1394   -lglib-2.0 -L /usr/local/lib -L /usr/local/lib/libdc1394.so -L /usr/local/lib/liblcm.so -lgthread-2.0 -lrt -lglib-2.0 ../../LCM/lib/libtypes.a /usr/local/lib/firefly-mv-utils/libutil.so -pthread -lboost_system -lboost_filesystem -Wl,-rpath -Wl,/usr/local/lib/firefly-mv-utils `pkg-config --libs bot2-lcmgl-client bot2-core libavcodec` -ljpeg
 

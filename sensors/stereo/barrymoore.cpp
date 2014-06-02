@@ -469,7 +469,10 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     int startY = pxY;
     
     // bottom right corner of the SAD box
-    int endX = pxX + blockSize - 1;
+    #ifndef USE_NEON
+        int endX = pxX + blockSize - 1;
+    #endif
+    
     int endY = pxY + blockSize - 1;
     
     #if USE_SAFTEY_CHECKS
@@ -526,6 +529,16 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     
     int sad = 0;
     
+    #ifdef USE_NEON
+        uint16x8_t interest_op_sum_8x_L, interest_op_sum_8x_R, sad_sum_8x;
+        
+        // load zeros into everything
+        interest_op_sum_8x_L = vdupq_n_u16(0);
+        interest_op_sum_8x_R = vdupq_n_u16(0);
+        sad_sum_8x = vdupq_n_u16(0);
+    
+    #endif
+    
     for (int i=startY;i<=endY;i++)
     {
         // get a pointer for this row
@@ -535,28 +548,76 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
         uchar *this_row_laplacianL = laplacianL.ptr<uchar>(i);
         uchar *this_row_laplacianR = laplacianR.ptr<uchar>(i);
         
-        for (int j=startX;j<=endX;j++)
-        {
-            // we are now looking at a single pixel value
-            /*uchar pxL = leftImage.at<uchar>(i,j);
-            uchar pxR = rightImage.at<uchar>(i,j + disparity);
+        #ifdef USE_NEON
+            // load this row into memory
+            uint8x8_t this_row_8x8_L = vld1_u8(this_rowL + startX);
+            uint8x8_t this_row_8x8_R = vld1_u8(this_rowR + startX + disparity);
             
-            uchar sL = laplacianL.at<uchar>(i,j);
-            uchar sR = laplacianR.at<uchar>(i,j + disparity);
-            */
-            uchar pxL = this_rowL[j];
-            uchar pxR = this_rowR[j + disparity];
+            uint8x8_t interest_op_8x8_L = vld1_u8(this_row_laplacianL + startX);
+            uint8x8_t interest_op_8x8_R = vld1_u8(this_row_laplacianR + startX + disparity);
+             
+            // do absolute differencing for the entire row in one operation!
+            uint8x8_t sad_8x = vabd_u8(this_row_8x8_L, this_row_8x8_R);
             
-            uchar sL = this_row_laplacianL[j];//laplacianL.at<uchar>(i,j);
-            uchar sR = this_row_laplacianR[j + disparity]; //laplacianR.at<uchar>(i,j + disparity);
+            // sum up
+            sad_sum_8x = vaddw_u8(sad_sum_8x, sad_8x);
             
-            leftVal += sL;
-            rightVal += sR;
-            
-            sad += abs(pxL - pxR);
-        }
+            // sum laplacian values
+            interest_op_sum_8x_L = vaddw_u8(interest_op_sum_8x_L, interest_op_8x8_L);
+            interest_op_sum_8x_R = vaddw_u8(interest_op_sum_8x_R, interest_op_8x8_R);
+        
+        #else // USE_NEON
+        
+            for (int j=startX;j<=endX;j++) {
+                // we are now looking at a single pixel value
+                /*uchar pxL = leftImage.at<uchar>(i,j);
+                uchar pxR = rightImage.at<uchar>(i,j + disparity);
+                
+                uchar sL = laplacianL.at<uchar>(i,j);
+                uchar sR = laplacianR.at<uchar>(i,j + disparity);
+                */
+                
+                
+                uchar sL = this_row_laplacianL[j];//laplacianL.at<uchar>(i,j);
+                uchar sR = this_row_laplacianR[j + disparity]; //laplacianR.at<uchar>(i,j + disparity);
+                
+                leftVal += sL;
+                rightVal += sR;
+                
+                uchar pxL = this_rowL[j];
+                uchar pxR = this_rowR[j + disparity];
+                
+                sad += abs(pxL - pxR);
+            }
+        #endif // USE_NEON
     }
+    
+    #ifdef USE_NEON
+        // sum up
+        sad = vgetq_lane_u16(sad_sum_8x, 0) + vgetq_lane_u16(sad_sum_8x, 1)
+           + vgetq_lane_u16(sad_sum_8x, 2) + vgetq_lane_u16(sad_sum_8x, 3)
+           + vgetq_lane_u16(sad_sum_8x, 4);// + vgetq_lane_u16(sad_sum_8x, 5)
+    //           + vgetq_lane_u16(sad_sum_8x, 6) + vgetq_lane_u16(sad_sum_8x, 7);
+
+        leftVal = vgetq_lane_u16(interest_op_sum_8x_L, 0)
+                + vgetq_lane_u16(interest_op_sum_8x_L, 1)
+                + vgetq_lane_u16(interest_op_sum_8x_L, 2)
+                + vgetq_lane_u16(interest_op_sum_8x_L, 3)
+                + vgetq_lane_u16(interest_op_sum_8x_L, 4);
+                
+                
+        rightVal = vgetq_lane_u16(interest_op_sum_8x_R, 0)
+                 + vgetq_lane_u16(interest_op_sum_8x_R, 1)
+                 + vgetq_lane_u16(interest_op_sum_8x_R, 2)
+                 + vgetq_lane_u16(interest_op_sum_8x_R, 3)
+                 + vgetq_lane_u16(interest_op_sum_8x_R, 4);
+    #endif
+
+    //cout << "(" << leftVal << ", " << rightVal << ") vs. (" << leftVal2 << ", " << rightVal2 << ")" << endl;
+    
     int laplacian_value = leftVal + rightVal;
+    
+    //cout << "sad with neon: " << sad << " without neon: " << sad2 << endl;
     
     if (leftVal < sobelLimit || rightVal < sobelLimit)// || abs(leftVal - rightVal) > 200)
     {

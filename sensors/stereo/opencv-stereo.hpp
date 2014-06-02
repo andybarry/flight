@@ -20,6 +20,8 @@
 
 #include "opencv2/opencv.hpp"
 
+#include <boost/timer.hpp>
+
 #include <lcm/lcm.h>
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"

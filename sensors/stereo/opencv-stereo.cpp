@@ -55,6 +55,9 @@ bool full_stereo = false;
 bool use_optotrak = false;
 bool quiet_mode = false;
 
+double timer_sum = 0;
+int timer_count = 0;
+
 mutex optotrak_mutex;
 
 dc1394_t        *d;
@@ -476,7 +479,18 @@ int main(int argc, char *argv[])
         
         // do the main stereo processing
         if (disable_stereo != true) {
+            
+            gettimeofday( &now, NULL );
+            double before = now.tv_usec + now.tv_sec * 1000 * 1000;
+
             barry_moore_stereo.ProcessImages(matL, matR, &pointVector3d, &pointColors, &pointVector2d, state);
+            
+            gettimeofday( &now, NULL );
+            double after = now.tv_usec + now.tv_sec * 1000 * 1000;
+            
+            timer_sum += after-before;
+            timer_count ++;
+            cout << "Time: " << timer_sum/(double)timer_count << endl;
             
         }
             

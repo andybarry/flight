@@ -8,11 +8,18 @@
 #ifndef BARRYMOORE_H
 #define BARRYMOORE_H
 
+#define USE_NEON
+
+
 #include "opencv2/opencv.hpp"
 #include <cv.h>
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+
+#ifdef USE_NEON
+#include <arm_neon.h>
+#endif // USE_NEON
 
 #define NUM_THREADS 8
 //#define NUM_REMAP_THREADS 8
