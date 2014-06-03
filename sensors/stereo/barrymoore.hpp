@@ -8,9 +8,6 @@
 #ifndef BARRYMOORE_H
 #define BARRYMOORE_H
 
-#define USE_NEON
-
-
 #include "opencv2/opencv.hpp"
 #include <cv.h>
 #include <iostream>
