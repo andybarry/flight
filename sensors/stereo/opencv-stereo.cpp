@@ -388,7 +388,8 @@ int main(int argc, char *argv[])
     }
     
     state.sadThreshold = stereoConfig.sadThreshold;
-    state.sobelAdd = stereoConfig.interestOperatorDivisor;
+    state.interestOperatorMultiplier = stereoConfig.interestOperatorMultiplier;
+    state.interestOperatorMultiplierHorizontalInvariance = stereoConfig.interestOperatorMultiplierHorizontalInvariance;
     
     state.mapxL = stereoCalibration.mx1fp;
     state.mapxR = stereoCalibration.mx2fp;
@@ -728,12 +729,12 @@ int main(int argc, char *argv[])
                     break;
                     
                 case 'u':
-                    state.sobelAdd += 0.2;
+                    state.interestOperatorMultiplier -= 0.05;
                     break;
                     
-              //  case 'j':
-              //      state.sobelAdd -= 0.2;
-              //      break;
+                case 'U':
+                    state.interestOperatorMultiplier += 0.05;
+                    break;
                     
                 case 'm':
                     if (recording_manager.UsingLiveCameras()) {
@@ -909,7 +910,7 @@ int main(int argc, char *argv[])
                 cout << "sobelLimit = " << state.sobelLimit << endl;
                 cout << "blockSize = " << state.blockSize << endl;
                 cout << "sadThreshold = " << state.sadThreshold << endl;
-                cout << "sobelAdd = " << state.sobelAdd << endl;
+                cout << "interestOperatorMultiplier = " << state.interestOperatorMultiplier << endl;
                 cout << "frame_number = " << recording_manager.GetFrameNumber() << endl;
                 cout << "y offset = " << y_offset << endl;
                 cout << "PitchRangeOfLens = " << hud.GetPitchRangeOfLens() << endl;

@@ -76,7 +76,8 @@ struct OpenCvStereoConfig
     int displayOffsetX;
     int displayOffsetY;
     
-    float interestOperatorDivisor;
+    float interestOperatorMultiplier;
+    float interestOperatorMultiplierHorizontalInvariance;
     
 };
 

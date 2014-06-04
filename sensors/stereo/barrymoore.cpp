@@ -11,7 +11,7 @@
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Set to 0 for a small speedup.
-#define USE_SAFTEY_CHECKS 0
+#define USE_SAFTEY_CHECKS 1
 
 #define INVARIANCE_CHECK_VERT_OFFSET_MIN (-8)
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
@@ -230,13 +230,34 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     cv::vector<uchar> pointColorsArray[NUM_THREADS+1];
     
     //cout << "[main] firing worker threads..." << endl;
+    
+    
+    // figure out how to split up the work
+    int thread_increment = RoundUp(rows/NUM_THREADS, state.blockSize);
+    int last_thread_num_rows = rows - thread_increment * (NUM_THREADS - 1);
+    
+    // make sure the last thread has a number of rows divisible by the block size
+    last_thread_num_rows = last_thread_num_rows - last_thread_num_rows % state.blockSize;
+    
+    //printf("thread increment: %d, last thread: %d\n", thread_increment, last_thread_num_rows);
+    
     for (int i=0;i<NUM_THREADS;i++)
     {
         
         thread_states_[i].state = state;
         
-        int start = rows/NUM_THREADS*i;
-        int end = rows/NUM_THREADS*(i+1);
+        int start = thread_increment * i;
+        int end;
+        
+        if (i < NUM_THREADS - 1) {
+            // not the last thread
+            end = thread_increment*(i+1) - 1;
+        } else {
+            // the last thread
+            end = start + last_thread_num_rows - 1;
+        }
+        
+        printf("start: %d, end: %d\n", start, end);
         
         // send in the whole image because each thread needs
         // the entire image to do its small remapping job
@@ -390,6 +411,8 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
         stopJ = leftImage.cols - blockSize;
     }
     
+    printf("row_start: %d, row_end: %d, startJ: %d, stopJ: %d, rows: %d, cols: %d\n", row_start, row_end, startJ, stopJ, leftImage.rows, leftImage.cols);
+    
     int hitCounter = 0;
     
     for (int i=row_start; i < row_end; i+=blockSize)
@@ -401,7 +424,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
             int sad = GetSAD(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state);
             // check to see if the SAD is below the threshold,
             // indicating a hit
-            if (sad < sadThreshold && sad >= 0)
+            if (true || sad < sadThreshold && sad >= 0)
             {
                 // got a hit
                 
@@ -409,7 +432,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
     
-                if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
+                if (true || CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
                 
                     // add it to the vector of matches
                     // don't forget to offset it by the blockSize,
@@ -503,13 +526,24 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
         
         if (endX + disparity > rightImage.cols)
         {
+            printf("Warning: endX + disparity > rightImage.cols\n");
             endX = rightImage.cols - disparity;
+            flag = true;
+        }
+        
+        if (startY < 0) {
+            printf("Warning: startY < 0\n");
+            flag = true;
+        }
+        
+        if (endY > rightImage.rows) {
+            printf("Warning: endY > rightImage.rows\n");
             flag = true;
         }
         
         if (flag == true)
         {
-            printf("startX = %d, endX = %d, disparity = %d\n", startX, endX, disparity);
+            printf("startX = %d, endX = %d, disparity = %d, startY = %d, endY = %d\n", startX, endX, disparity, startY, endY);
         }
         
         // disparity might be negative as well
@@ -525,6 +559,8 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
         endY = min(leftImage.rows, endY);
     #endif
     
+    printf("startX = %d, endX = %d, disparity = %d, startY = %d, endY = %d\n", startX, endX, disparity, startY, endY);
+    
     int leftVal = 0, rightVal = 0;
     
     int sad = 0;
@@ -539,8 +575,7 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     
     #endif
     
-    for (int i=startY;i<=endY;i++)
-    {
+    for (int i=startY;i<=endY;i++) {
         // get a pointer for this row
         uchar *this_rowL = leftImage.ptr<uchar>(i);
         uchar *this_rowR = rightImage.ptr<uchar>(i);
@@ -625,7 +660,7 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
     }
     
     //return sobel;
-    return 100*(float)sad/(float)((float)laplacian_value/(float)state.sobelAdd);
+    return 100*(float)sad/(float)((float)laplacian_value*(float)state.interestOperatorMultiplier);
 }
 
 /**
@@ -711,6 +746,13 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
             
             uchar pxR_array[400], sR_array[400];
             
+            // for each pixel in the left image, we are going to search a bunch
+            // of pixels in the right image.  We do it this way to save the computation
+            // of dealing with the same left-image pixel over and over again.
+            
+            // counter indexes which location we're looking at for this run, so for each
+            // pixel in the left image, we examine a bunch of pixels in the right image
+            // and add up their results into different slots in sad_array over the loop
             counter = 0;
             
             for (int vert_offset = INVARIANCE_CHECK_VERT_OFFSET_MIN;
@@ -742,11 +784,41 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
     for (int i = 0; i < counter; i++)
     {
         sobel_array[i] = leftVal + right_val_array[i];
-        if (right_val_array[i] >= sobelLimit && 100*(float)sad_array[i]/(float)((float)sobel_array[i]/(float)state.sobelAdd) < state.sadThreshold) {
+        
+        // we don't check for leftVal >= sobelLimit because we have already
+        // checked that in the main search loop (in GetSAD).
+        if (right_val_array[i] >= sobelLimit && 100*(float)sad_array[i]/(float)((float)sobel_array[i]*state.interestOperatorMultiplierHorizontalInvariance) < state.sadThreshold) {
             return true;
         }
     }
     return false;
     
     
+}
+
+/**
+ * Round up to the nearest multiple of a number.
+ * From: http://stackoverflow.com/questions/3407012/c-rounding-up-to-the-nearest-multiple-of-a-number
+ * 
+ * @param numToRound input number to be rounded
+ * @param multiple multiple of the number to be rounded to
+ * 
+ * @retval rounded number
+ * 
+ * Examples:
+ *  roundUp(7, 100) --> 100
+ *  roundUp(52, 20) --> 60
+ * 
+ */
+int BarryMoore::RoundUp(int numToRound, int multiple) 
+{ 
+    if (multiple == 0) 
+        return numToRound; 
+
+    int remainder = abs(numToRound) % multiple;
+    if (remainder == 0)
+        return numToRound;
+    if (numToRound < 0)
+        return -(abs(numToRound) - remainder);
+    return numToRound + multiple - remainder;
 }

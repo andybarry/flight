@@ -36,8 +36,9 @@ struct BarryMooreState
     
     int lastValidPixelRow;
     
-    // a parameter added to the SAD/sobel division in the denominator
-    float sobelAdd;
+    // a parameter added to the SAD/sobel multiplier in the denominator
+    float interestOperatorMultiplier;
+    float interestOperatorMultiplierHorizontalInvariance;
     
     Mat mapxL;
     
@@ -115,6 +116,8 @@ class BarryMoore {
         // this must be static so the threading won't have to
         // deal with the implicit 'this' variable
         static void* WorkerThread(void *x);
+        
+        int RoundUp(int numToRound, int multiple);
         
         pthread_t worker_pool_[NUM_THREADS+1];
         ThreadWorkType work_type_[NUM_THREADS+1];
