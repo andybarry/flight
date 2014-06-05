@@ -185,14 +185,6 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     
     //cout << "[main] all remap threads finished" << endl;
     
-    if (state.lastValidPixelRow > 0) {
-        
-        // crop image to be only include valid pixels
-        remapped_left = remapped_left.rowRange(0, state.lastValidPixelRow);
-        remapped_right = remapped_right.rowRange(0, state.lastValidPixelRow);
-        rows = remapped_left.rows;
-    }
-    
     
     Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
     Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
@@ -231,6 +223,12 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
     
     //cout << "[main] firing worker threads..." << endl;
     
+    if (state.lastValidPixelRow > 0) {
+        
+        // crop image to be only include valid pixels
+        rows = state.lastValidPixelRow;
+    }
+    
     
     // figure out how to split up the work
     int thread_increment = RoundUp(rows/NUM_THREADS, state.blockSize);
@@ -257,7 +255,7 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
             end = start + last_thread_num_rows - 1;
         }
         
-        printf("start: %d, end: %d\n", start, end);
+        //printf("start: %d, end: %d\n", start, end);
         
         // send in the whole image because each thread needs
         // the entire image to do its small remapping job
@@ -411,7 +409,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
         stopJ = leftImage.cols - blockSize;
     }
     
-    printf("row_start: %d, row_end: %d, startJ: %d, stopJ: %d, rows: %d, cols: %d\n", row_start, row_end, startJ, stopJ, leftImage.rows, leftImage.cols);
+    //printf("row_start: %d, row_end: %d, startJ: %d, stopJ: %d, rows: %d, cols: %d\n", row_start, row_end, startJ, stopJ, leftImage.rows, leftImage.cols);
     
     int hitCounter = 0;
     
@@ -424,7 +422,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
             int sad = GetSAD(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state);
             // check to see if the SAD is below the threshold,
             // indicating a hit
-            if (true || sad < sadThreshold && sad >= 0)
+            if (sad < sadThreshold && sad >= 0)
             {
                 // got a hit
                 
@@ -432,7 +430,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                 // (ie check for parts of the image that look the same as this
                 // which would indicate that this might be a false-positive)
     
-                if (true || CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
+                if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
                 
                     // add it to the vector of matches
                     // don't forget to offset it by the blockSize,
@@ -541,16 +539,20 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
             flag = true;
         }
         
+        // disparity might be negative as well
+        if (disparity < 0 && startX + disparity < 0)
+        {
+            printf("Warning: disparity < 0 && startX + disparity < 0\n");
+            startX = -disparity;
+            flag = true;
+        }
+        
         if (flag == true)
         {
             printf("startX = %d, endX = %d, disparity = %d, startY = %d, endY = %d\n", startX, endX, disparity, startY, endY);
         }
         
-        // disparity might be negative as well
-        if (disparity < 0 && startX + disparity < 0)
-        {
-            startX = -disparity;
-        }
+        
         
         startX = max(0, startX);
         startY = max(0, startY);
@@ -559,7 +561,7 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
         endY = min(leftImage.rows, endY);
     #endif
     
-    printf("startX = %d, endX = %d, disparity = %d, startY = %d, endY = %d\n", startX, endX, disparity, startY, endY);
+    //printf("startX = %d, endX = %d, disparity = %d, startY = %d, endY = %d, rows = %d, cols = %d\n", startX, endX, disparity, startY, endY, leftImage.rows, leftImage.cols);
     
     int leftVal = 0, rightVal = 0;
     
