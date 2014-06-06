@@ -11,14 +11,14 @@
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
 // that it will do the right thing even if you ask it for pixel
 // values near the edges of images.  Set to 0 for a small speedup.
-#define USE_SAFTEY_CHECKS 1
+#define USE_SAFTEY_CHECKS 0
 
 #define INVARIANCE_CHECK_VERT_OFFSET_MIN (-8)
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
 #define INVARIANCE_CHECK_VERT_OFFSET_INCREMENT 2
 
-#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
-#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
+#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
+#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
 
 BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
 

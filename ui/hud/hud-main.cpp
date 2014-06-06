@@ -168,10 +168,13 @@ int main(int argc,char** argv) {
 
         //cout << lcm_points << endl;
 
-       Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+        Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
         
+        // remap
+        Mat remapped_image;
+        remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
         
-        hud.DrawHud(temp_image, hud_image);
+        hud.DrawHud(remapped_image, hud_image);
         
     
         imshow("HUD", hud_image);
