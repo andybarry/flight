@@ -24,6 +24,7 @@ ui/log-monitor/log-monitor
 ui/stereo-monitor/stereo-monitor
 controllers/cpp_stereo_obstacles/stereo-imu-obstacles
 ui/hud/hud-main
+sensors/bm-stereo/bm-stereo
 *.ppm
 *.pgm
 sensors/stereo/stereo_camera_calibrate/D1.xml
