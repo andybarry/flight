@@ -124,6 +124,25 @@ int main(int argc,char** argv) {
         Mat disp8;
         disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
         
+        // project into 3d space
+        Mat image_3d;
+        reprojectImageTo3D(disparity_bm, image_3d, stereo_calibration.qMat);
+        
+        // put these 3D coordinates in an LCM message
+        lcmt_stereo msg;
+        msg.timestamp = getTimestampNow();
+        
+        msg.frame_number = -1; // TODO
+        
+        int x[image_3d.cols * image_3d.rows];
+        int y[image_3d.cols * image_3d.rows];
+        int z[image_3d.cols * image_3d.rows];
+        
+        for (int i = 0; i < image_3d.cols * image_3d.rows; i++) {
+            //x[i] = image_3d.at<
+        }
+        
+    
         
         // now strip out the values that are not at our disparity, so we can make a fair comparision
         // (and show the losses that come with our sparser technique)
@@ -133,6 +152,7 @@ int main(int argc,char** argv) {
         // display the disparity map
         //imshow("Debug 1", in_range);
         imshow("Disparity", disp8);
+        imshow("Disparity3d", image_3d);
         
         
         
