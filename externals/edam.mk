@@ -161,7 +161,7 @@ MAKE		:= make
 
 # debug/profile build flags
 CPPFLAGS	:= $(if $(PROFILEMODE),-pg -D PROFILE) $(if $(DEBUGMODE),\
-	-g3 -D DEBUG -Wall -Wextra,-D NDEBUG -O2) $(CPPFLAGS)
+	-g3 -D DEBUG -Wall -Wextra,-D NDEBUG -O3) $(CPPFLAGS)
 CXXFLAGS	:= $(if $(DEBUGMODE),-Woverloaded-virtual -Wreorder \
 	-Wctor-dtor-privacy) $(CXXFLAGS)
 DFLAGS		:= $(if $(DEBUGMODE),,-frelease)
