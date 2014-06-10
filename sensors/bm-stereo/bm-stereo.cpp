@@ -134,14 +134,31 @@ int main(int argc,char** argv) {
         
         msg.frame_number = -1; // TODO
         
-        int x[image_3d.cols * image_3d.rows];
-        int y[image_3d.cols * image_3d.rows];
-        int z[image_3d.cols * image_3d.rows];
+        float x[image_3d.cols * image_3d.rows];
+        float y[image_3d.cols * image_3d.rows];
+        float z[image_3d.cols * image_3d.rows];
         
-        for (int i = 0; i < image_3d.cols * image_3d.rows; i++) {
-            //x[i] = image_3d.at<
+        if (image_3d.isContinuous() == false) {
+            cerr << "Error: image_3d not continuous." << endl;
+            exit(1);
         }
         
+        float *image_3d_ptr = image_3d.ptr<float>(0);
+        
+        int i = 0;
+        for (i = 0; i < image_3d.cols * image_3d.rows; i += 3) {
+            x[i] = image_3d_ptr[i];
+            y[i] = image_3d_ptr[i+1];
+            z[i] = image_3d_ptr[i+2];
+        }
+        
+        msg.x = x;
+        msg.y = y;
+        msg.z = z;
+        
+        msg.number_of_points = i;
+
+        lcmt_stereo_publish(lcm, "stereo-bm", &msg);
     
         
         // now strip out the values that are not at our disparity, so we can make a fair comparision
