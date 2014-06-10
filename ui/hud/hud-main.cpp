@@ -35,9 +35,12 @@ mutex octomap_mutex;
 int main(int argc,char** argv) {
     
     string config_file = "";
+    int move_window_x = -1, move_window_y = -1;
     
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
+    parser.add(move_window_x, "x", "move-window-x", "Move window starting location x (must pass both x and y)");
+    parser.add(move_window_y, "y", "move-window-y", "Move window starting location y (must pass both x and y)");
     parser.parse();
     
     OpenCvStereoConfig stereo_config;
@@ -127,7 +130,10 @@ int main(int argc,char** argv) {
     signal(SIGINT,sighandler);
     
     namedWindow("HUD", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
-    moveWindow("HUD", 2800, 1000);
+    
+    if (move_window_x != -1 && move_window_y != -1) {
+        moveWindow("HUD", move_window_x, move_window_y);
+    }
     
     cout << "Running..." << endl;
 
