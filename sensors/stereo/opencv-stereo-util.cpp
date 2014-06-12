@@ -734,7 +734,6 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
             Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
         
     }
-    
 }
 
 

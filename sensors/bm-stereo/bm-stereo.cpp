@@ -96,7 +96,20 @@ int main(int argc,char** argv) {
     
     StereoBM *stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
     
+    
+    stereo_bm->state->preFilterSize 		= 105;
+	stereo_bm->state->preFilterCap 		    = 61;
+	stereo_bm->state->SADWindowSize 		= 5;
+	stereo_bm->state->minDisparity 		    = 36;
+	stereo_bm->state->numberOfDisparities 	= 112;
+	stereo_bm->state->textureThreshold  	= 427;
+	stereo_bm->state->uniquenessRatio 	    = 18;
+	stereo_bm->state->speckleWindowSize 	= 59;
+	stereo_bm->state->speckleRange		    = 30;
+    
+    
     cout << "Running..." << endl;
+    
 
     while (true) {
         
@@ -152,9 +165,9 @@ int main(int argc,char** argv) {
             if (image_3d_ptr[i+2] < 10000) {
                 // this is a valid point
                 
-                x_vec.push_back(image_3d_ptr[i]);
-                y_vec.push_back(image_3d_ptr[i+1]);
-                z_vec.push_back(image_3d_ptr[i+2]);
+                x_vec.push_back(image_3d_ptr[i] / stereo_config.calibrationUnitConversion);
+                y_vec.push_back(image_3d_ptr[i+1] / stereo_config.calibrationUnitConversion);
+                z_vec.push_back(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion);
                 
                 
             }
