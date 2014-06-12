@@ -702,9 +702,10 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param points_list_in vector<Point3f> of 3D points to draw. Likely obtained from Get3DPointsFromStereoMsg
  * @param cam_mat_m camera calibration matrix (usually M1.xml)
  * @param cam_mat_d distortion calibration matrix (usually D1.xml)
- * @param color color to draw the boxes
+ * @param outline_color color to draw the box outlines (default: 128)
+ * @param inside_color color to draw the inside of the boxes (default: 255)
  */
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int color, float x, float y, float z)
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color)
 {
     vector<Point3f> &points_list = *points_list_in;
     
@@ -727,10 +728,10 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
         //line(camera_image, Point(0, img_points_list[i].y), Point(camera_image.cols, img_points_list[i].y), color);
         
         rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
-            Point(img_points_list[i].x + 4, img_points_list[i].y + 4), color, CV_FILLED);
+            Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
             
         rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), Scalar(255, 255, 255), CV_FILLED);
+            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
         
     }
     

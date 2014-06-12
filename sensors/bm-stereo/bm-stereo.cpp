@@ -103,30 +103,31 @@ int main(int argc,char** argv) {
         left_mutex.lock();
         right_mutex.lock();
         
-        
+        cout << "locked..." << endl;
 
 
         // remap images
         Mat remap_left(left_image.rows, left_image.cols, left_image.depth());
         Mat remap_right(right_image.rows, right_image.cols, right_image.depth());
-        
+        cout << "remap..." << endl;
         remap(left_image, remap_left, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
         remap(right_image, remap_right, stereo_calibration.mx2fp, Mat(), INTER_NEAREST);
-        
+        cout << "remap done..." << endl;
         imshow("Left", remap_left);
         imshow("Right", remap_right);
         
-        
+        cout << "shown..." << endl;
         // do stereo processing
         Mat disparity_bm;
-        (*stereo_bm)(remap_left, remap_right, disparity_bm); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
-        
+        (*stereo_bm)(remap_left, remap_right, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
+        cout << "stereo done..." << endl;
         Mat disp8;
         disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
-        
+        cout << "stereo done and converted..." << endl;
         // project into 3d space
         Mat image_3d;
-        reprojectImageTo3D(disparity_bm, image_3d, stereo_calibration.qMat);
+        reprojectImageTo3D(disparity_bm, image_3d, stereo_calibration.qMat, true);
+        
         
         // put these 3D coordinates in an LCM message
         lcmt_stereo msg;
@@ -134,9 +135,6 @@ int main(int argc,char** argv) {
         
         msg.frame_number = -1; // TODO
         
-        float x[image_3d.cols * image_3d.rows];
-        float y[image_3d.cols * image_3d.rows];
-        float z[image_3d.cols * image_3d.rows];
         
         if (image_3d.isContinuous() == false) {
             cerr << "Error: image_3d not continuous." << endl;
@@ -145,20 +143,33 @@ int main(int argc,char** argv) {
         
         float *image_3d_ptr = image_3d.ptr<float>(0);
         
-        int i = 0;
-        for (i = 0; i < image_3d.cols * image_3d.rows; i += 3) {
-            x[i] = image_3d_ptr[i];
-            y[i] = image_3d_ptr[i+1];
-            z[i] = image_3d_ptr[i+2];
+        vector<float> x_vec, y_vec, z_vec;
+        
+        
+        cout << "2..." << endl;
+        for (int i = 0; i < image_3d.cols * image_3d.rows; i += 3) {
+            
+            if (image_3d_ptr[i+2] < 10000) {
+                // this is a valid point
+                
+                x_vec.push_back(image_3d_ptr[i]);
+                y_vec.push_back(image_3d_ptr[i+1]);
+                z_vec.push_back(image_3d_ptr[i+2]);
+                
+                
+            }
         }
         
-        msg.x = x;
-        msg.y = y;
-        msg.z = z;
         
-        msg.number_of_points = i;
-
+        cout << "3..." << endl;
+        msg.x = &x_vec[0];
+        msg.y = &y_vec[0];
+        msg.z = &z_vec[0];
+        
+        msg.number_of_points = x_vec.size();
+cout << "4..." << endl;
         lcmt_stereo_publish(lcm, "stereo-bm", &msg);
+        cout << "published..." << endl;
     
         
         // now strip out the values that are not at our disparity, so we can make a fair comparision

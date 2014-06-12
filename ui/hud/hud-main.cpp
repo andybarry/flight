@@ -20,14 +20,15 @@ mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_stereo_subscription_t *stereo_sub;
+lcmt_stereo_subscription_t *stereo_bm_sub;
 octomap_raw_t_subscription_t *octomap_sub;
 
 mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
 
 
-mutex stereo_mutex;
-lcmt_stereo *last_stereo_msg;
+mutex stereo_mutex, stereo_bm_mutex;
+lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg;
 
 OcTree *octree = NULL;
 mutex octomap_mutex;
@@ -126,6 +127,11 @@ int main(int argc,char** argv) {
         octomap_sub = octomap_raw_t_subscribe(lcm, octomap_channel, &octomap_raw_t_handler, NULL);
     }
     
+    char *stereo_bm_channel;
+    if (bot_param_get_str(param, "lcm_channels.stereo_bm", &stereo_bm_channel) >= 0) {
+        stereo_bm_sub = lcmt_stereo_subscribe(lcm, stereo_bm_channel, &stereo_bm_handler, NULL);
+    }
+    
     // control-c handler
     signal(SIGINT,sighandler);
     
@@ -175,6 +181,15 @@ int main(int argc,char** argv) {
         //cout << lcm_points << endl;
 
         Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+        
+        vector<Point3f> bm_points;
+        stereo_bm_mutex.lock();
+        if (last_stereo_bm_msg) {
+            Get3DPointsFromStereoMsg(last_stereo_bm_msg, &bm_points);
+        }
+        stereo_bm_mutex.unlock();
+        Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
+        
         
         // remap
         Mat remapped_image;
@@ -268,6 +283,16 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     
     last_stereo_msg = lcmt_stereo_copy(msg);
     stereo_mutex.unlock();
+}
+
+void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    stereo_bm_mutex.lock();
+    if (last_stereo_bm_msg) {
+        delete last_stereo_bm_msg;
+    }
+    
+    last_stereo_bm_msg = lcmt_stereo_copy(msg);
+    stereo_bm_mutex.unlock();
 }
 
 void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, const bot_core_image_t *msg, void *user) {
