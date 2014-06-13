@@ -36,6 +36,7 @@ void stereo_image_right_handler(const lcm_recv_buf_t *rbuf, const char* channel,
 
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
+void onMouse( int event, int x, int y, int flags, void* );
 
 bool NonBlockingLcm(lcm_t *lcm);
 

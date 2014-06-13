@@ -143,62 +143,71 @@ int main(int argc,char** argv) {
     
     cout << "Running..." << endl;
 
+    bool change_flag = true;
+
     while (true) {
         // read the LCM channel, but process everything to allow us to drop frames
-        while (NonBlockingLcm(lcm)) {}
+        while (NonBlockingLcm(lcm)) {
+            change_flag = true;
+        }
         
+        if (change_flag == true) {
+            change_flag = false;
         
-        
-        Mat hud_image, temp_image;
-        
-        image_mutex.lock();
-        left_image.copyTo(temp_image);
-        image_mutex.unlock();
-        
-        
-        vector<Point3f> octomap_points;
-        
-        BotTrans global_to_body;
-        bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
-        
-        if (GetOctomapPoints(&octomap_points, &global_to_body)) {
+            Mat hud_image, temp_image;
             
-            //cout << "drawing" << octomap_points << endl;
+            image_mutex.lock();
+            left_image.copyTo(temp_image);
+            image_mutex.unlock();
             
-            Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
-        }
-        
-        
-        // transform the point from 3D space back onto the image's 2D space
-        vector<Point3f> lcm_points;
-        
-        stereo_mutex.lock();
-        if (last_stereo_msg) {
-            Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
-        }
-        stereo_mutex.unlock();
+            vector<Point3f> bm_points;
+            stereo_bm_mutex.lock();
+            if (last_stereo_bm_msg) {
+                Get3DPointsFromStereoMsg(last_stereo_bm_msg, &bm_points);
+            }
+            stereo_bm_mutex.unlock();
+            Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
+            
+            
+            
+            vector<Point3f> octomap_points;
+            
+            BotTrans global_to_body;
+            bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
+            
+            if (GetOctomapPoints(&octomap_points, &global_to_body)) {
+                
+                //cout << "drawing" << octomap_points << endl;
+                
+                Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+            }
+            
+            
+            // transform the point from 3D space back onto the image's 2D space
+            vector<Point3f> lcm_points;
+            
+            stereo_mutex.lock();
+            if (last_stereo_msg) {
+                Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+            }
+            stereo_mutex.unlock();
 
-        //cout << lcm_points << endl;
+            //cout << lcm_points << endl;
 
-        Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+            Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+            
+            
+            
+            
+            // remap
+            Mat remapped_image;
+            remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
+            
+            hud.DrawHud(remapped_image, hud_image);
+            
         
-        vector<Point3f> bm_points;
-        stereo_bm_mutex.lock();
-        if (last_stereo_bm_msg) {
-            Get3DPointsFromStereoMsg(last_stereo_bm_msg, &bm_points);
+            imshow("HUD", hud_image);
         }
-        stereo_bm_mutex.unlock();
-        Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
-        
-        
-        // remap
-        Mat remapped_image;
-        remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
-        
-        hud.DrawHud(remapped_image, hud_image);
-        
-    
-        imshow("HUD", hud_image);
         
         
         

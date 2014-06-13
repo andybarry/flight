@@ -23,6 +23,9 @@ mutex left_mutex, right_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1);
 Mat right_image = Mat::zeros(240, 376, CV_8UC1);
 
+
+int click_x = -1, click_y = -1;
+
 int main(int argc,char** argv) {
     
     string config_file = "";
@@ -92,6 +95,11 @@ int main(int argc,char** argv) {
     namedWindow("Disparity", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
     moveWindow("Disparity", 2700, 1000+350);
     
+    namedWindow("Disparity3d", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+    moveWindow("Disparity3d", 2700+400, 1000+350);
+    
+    setMouseCallback("Disparity3d", onMouse); // for drawing disparity lines
+    
     
     
     StereoBM *stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
@@ -116,30 +124,36 @@ int main(int argc,char** argv) {
         left_mutex.lock();
         right_mutex.lock();
         
-        cout << "locked..." << endl;
-
 
         // remap images
         Mat remap_left(left_image.rows, left_image.cols, left_image.depth());
         Mat remap_right(right_image.rows, right_image.cols, right_image.depth());
-        cout << "remap..." << endl;
+
         remap(left_image, remap_left, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
         remap(right_image, remap_right, stereo_calibration.mx2fp, Mat(), INTER_NEAREST);
-        cout << "remap done..." << endl;
+
         imshow("Left", remap_left);
         imshow("Right", remap_right);
         
-        cout << "shown..." << endl;
         // do stereo processing
         Mat disparity_bm;
         (*stereo_bm)(remap_left, remap_right, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
-        cout << "stereo done..." << endl;
-        Mat disp8;
-        disparity_bm.convertTo(disp8, CV_8U, 255/(stereo_bm->state->numberOfDisparities*16.));
-        cout << "stereo done and converted..." << endl;
+        
+        // run SGBM
+        StereoSGBM sgbm_stereo(stereo_bm->state->minDisparity, stereo_bm->state->numberOfDisparities,
+            stereo_bm->state->SADWindowSize);
+            
+        Mat disparity_sgbm;
+        sgbm_stereo(remap_left, remap_right, disparity_sgbm);
+
+        Mat disp8, disp8_sgbm;
+        disparity_bm.convertTo(disp8, CV_8U);
+        disparity_sgbm.convertTo(disp8_sgbm, CV_8U, 1.0/16.0);
+
         // project into 3d space
-        Mat image_3d;
+        Mat image_3d, image_3d_sgbm;
         reprojectImageTo3D(disparity_bm, image_3d, stereo_calibration.qMat, true);
+        reprojectImageTo3D(disparity_sgbm, image_3d_sgbm, stereo_calibration.qMat, true);
         
         
         // put these 3D coordinates in an LCM message
@@ -155,34 +169,46 @@ int main(int argc,char** argv) {
         }
         
         float *image_3d_ptr = image_3d.ptr<float>(0);
+        float *image_3d_ptr_sgbm = image_3d_sgbm.ptr<float>(0);
         
         vector<float> x_vec, y_vec, z_vec;
         
         
-        cout << "2..." << endl;
-        for (int i = 0; i < image_3d.cols * image_3d.rows; i += 3) {
+        for (int i = 0; i < image_3d.cols * image_3d.rows * 3; i += 3) {
             
-            if (image_3d_ptr[i+2] < 10000) {
+            if (image_3d_ptr[i+2] != 10000) {
                 // this is a valid point
                 
-                x_vec.push_back(image_3d_ptr[i] / stereo_config.calibrationUnitConversion);
-                y_vec.push_back(image_3d_ptr[i+1] / stereo_config.calibrationUnitConversion);
-                z_vec.push_back(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion);
-                
-                
+                if (abs(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion) < 4) {
+                    x_vec.push_back(image_3d_ptr[i] / stereo_config.calibrationUnitConversion);
+                    y_vec.push_back(image_3d_ptr[i+1] / stereo_config.calibrationUnitConversion);
+                    z_vec.push_back(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion);
+                }
+            }
+            
+            if (image_3d_ptr_sgbm[i+2] > 4) {
+                image_3d_ptr_sgbm[i+2] = 10000;
             }
         }
         
+        cv::vector<Point3f> debug_points, debug_points_3d;
+        debug_points.push_back(Point3f(click_x, click_y, 0));
         
-        cout << "3..." << endl;
+        perspectiveTransform(debug_points, debug_points_3d, stereo_calibration.qMat);
+        
+        x_vec.push_back(debug_points_3d[0].x);
+        y_vec.push_back(debug_points_3d[0].y);
+        z_vec.push_back(debug_points_3d[0].z);
+        
+        
+        
         msg.x = &x_vec[0];
         msg.y = &y_vec[0];
         msg.z = &z_vec[0];
         
-        msg.number_of_points = x_vec.size();
-cout << "4..." << endl;
+        msg.number_of_points = x_vec.size() + 1; // TODO DEBUG
+
         lcmt_stereo_publish(lcm, "stereo-bm", &msg);
-        cout << "published..." << endl;
     
         
         // now strip out the values that are not at our disparity, so we can make a fair comparision
@@ -193,7 +219,15 @@ cout << "4..." << endl;
         // display the disparity map
         //imshow("Debug 1", in_range);
         imshow("Disparity", disp8);
+        imshow("Disparity SGBM", disp8_sgbm);
+        
+        if (click_x > 0) {
+            line(image_3d, Point(click_x, 0), Point(click_x, image_3d.rows), 128);
+            line(image_3d, Point(0, click_y), Point(image_3d.cols, click_y), 128);
+        }
+        
         imshow("Disparity3d", image_3d);
+        imshow("Disparity3d SGBM", image_3d_sgbm);
         
         
         
@@ -278,6 +312,18 @@ void stereo_image_right_handler(const lcm_recv_buf_t *rbuf, const char* channel,
 
 // for replaying videos, subscribe to the stereo replay channel and set the frame number
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+}
+
+/**
+ * Mouse callback so that the user can click on an image
+ */
+void onMouse( int event, int x, int y, int flags, void* ) {
+    if( flags & CV_EVENT_FLAG_LBUTTON)
+    {
+        // paint a line on the image they clicked on
+        click_x = x;
+        click_y = y;
+    }
 }
 
 
