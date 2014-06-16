@@ -1,0 +1,25 @@
+#!/bin/bash
+
+LOG=/home/$USER/rlg/logs/2014-04-18-near-goalposts/pass1
+OUT_LOG=/home/$USER/rlg/logs/2014-04-18-near-goalposts/pass1_bm
+
+set -x
+
+# generate log file for stereo system
+
+# startup stuff
+
+bot-param-server /home/$USER/realtime/config/plane.cfg &
+/home/$USER/realtime/sensors/stereo/opencv-stereo -c /home/$USER/realtime/sensors/stereo/aaazzz.conf -q -i /home/$USER/rlg/logs/2014-04-18-near-goalposts/onboard -P &
+
+/home/$USER/realtime/sensors/bm-stereo/bm-stereo -c /home/$USER/realtime/sensors/stereo/aaazzz.conf &
+
+# startup our own logging
+lcm-logger $OUT_LOG &
+
+echo "started, running log now..."
+
+lcm-logplayer $LOG
+
+
+exit(0)
