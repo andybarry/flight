@@ -21,6 +21,7 @@
 #include <glib.h> // for configuration files
 
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
+
 #include "../../LCM/lcmt_stereo.h"
 
 

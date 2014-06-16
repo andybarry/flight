@@ -546,8 +546,8 @@ int main(int argc, char *argv[])
         
         if (publish_all_images) {
             if (recording_manager.GetFrameNumber() != last_playback_frame_number) {
-                SendImageOverLcm(lcm, "stereo_image_left", matL);
-                SendImageOverLcm(lcm, "stereo_image_right", matR);
+                SendImageOverLcm(lcm, "stereo_image_left", matL, 80);
+                SendImageOverLcm(lcm, "stereo_image_right", matR, 80);
                 
                 last_playback_frame_number = recording_manager.GetFrameNumber();
             }

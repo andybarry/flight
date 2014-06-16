@@ -18,13 +18,16 @@ bot_core_image_t_subscription_t *stereo_image_left_sub;
 bot_core_image_t_subscription_t *stereo_image_right_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 
-mutex left_mutex, right_mutex;
+mutex left_mutex, right_mutex, frame_number_mutex;
 
 Mat left_image = Mat::zeros(240, 376, CV_8UC1);
 Mat right_image = Mat::zeros(240, 376, CV_8UC1);
 
+int frame_number, video_number;
 
 int click_x = -1, click_y = -1;
+
+bool new_frame_number = false, new_left = false, new_right = false;
 
 int main(int argc,char** argv) {
     
@@ -99,7 +102,7 @@ int main(int argc,char** argv) {
     moveWindow("Disparity3d", 2700+400, 1000+350);
     
     setMouseCallback("Disparity3d", onMouse); // for drawing disparity lines
-    
+    setMouseCallback("Disparity", onMouse);
     
     
     StereoBM *stereo_bm = new StereoBM(CV_STEREO_BM_BASIC);
@@ -118,11 +121,34 @@ int main(int argc,char** argv) {
     
     cout << "Running..." << endl;
     
-
+    bool new_lcm = false;
+    
+    Mat disparity_bm = Mat::zeros(240, 376, CV_8UC1);
+    Mat disparity_sgbm = Mat::zeros(240, 376, CV_8UC1);
+    
+    int this_frame_number;
+    int this_video_number;
+    
     while (true) {
+        
         
         left_mutex.lock();
         right_mutex.lock();
+        
+        frame_number_mutex.lock();
+        
+        if (new_frame_number && new_left && new_right) {
+            new_lcm = true;
+            
+            new_left = false;
+            new_right = false;
+            new_frame_number = false;
+        }
+        
+        this_frame_number = frame_number;
+        this_video_number = video_number;
+        
+        frame_number_mutex.unlock();
         
 
         // remap images
@@ -135,16 +161,18 @@ int main(int argc,char** argv) {
         imshow("Left", remap_left);
         imshow("Right", remap_right);
         
-        // do stereo processing
-        Mat disparity_bm;
-        (*stereo_bm)(remap_left, remap_right, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
-        
-        // run SGBM
         StereoSGBM sgbm_stereo(stereo_bm->state->minDisparity, stereo_bm->state->numberOfDisparities,
             stereo_bm->state->SADWindowSize);
             
-        Mat disparity_sgbm;
-        sgbm_stereo(remap_left, remap_right, disparity_sgbm);
+        
+        // do stereo processing
+        if (new_lcm) {
+            (*stereo_bm)(remap_left, remap_right, disparity_bm, CV_32F); // opencv overloads the () operator (function call), but we have a pointer, so we must dereference first.
+        
+            // run SGBM
+            
+            sgbm_stereo(remap_left, remap_right, disparity_sgbm);
+        }
 
         Mat disp8, disp8_sgbm;
         disparity_bm.convertTo(disp8, CV_8U);
@@ -160,7 +188,8 @@ int main(int argc,char** argv) {
         lcmt_stereo msg;
         msg.timestamp = getTimestampNow();
         
-        msg.frame_number = -1; // TODO
+        msg.frame_number = this_frame_number;
+        msg.video_number = this_video_number;
         
         
         if (image_3d.isContinuous() == false) {
@@ -173,24 +202,26 @@ int main(int argc,char** argv) {
         
         vector<float> x_vec, y_vec, z_vec;
         
-        
         for (int i = 0; i < image_3d.cols * image_3d.rows * 3; i += 3) {
             
             if (image_3d_ptr[i+2] != 10000) {
                 // this is a valid point
                 
-                if (abs(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion) < 4) {
+                if (abs(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion) < 5) {
                     x_vec.push_back(image_3d_ptr[i] / stereo_config.calibrationUnitConversion);
                     y_vec.push_back(image_3d_ptr[i+1] / stereo_config.calibrationUnitConversion);
                     z_vec.push_back(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion);
                 }
             }
             
-            if (image_3d_ptr_sgbm[i+2] > 4) {
+            if (image_3d_ptr_sgbm[i+2] / stereo_config.calibrationUnitConversion > 5) {
                 image_3d_ptr_sgbm[i+2] = 10000;
+                image_3d_ptr_sgbm[i+1] = 10000;
+                image_3d_ptr_sgbm[i] = 10000;
+                
             }
         }
-        
+        /*
         cv::vector<Point3f> debug_points, debug_points_3d;
         debug_points.push_back(Point3f(click_x, click_y, 0));
         
@@ -199,18 +230,22 @@ int main(int argc,char** argv) {
         x_vec.push_back(debug_points_3d[0].x);
         y_vec.push_back(debug_points_3d[0].y);
         z_vec.push_back(debug_points_3d[0].z);
-        
+        */
         
         
         msg.x = &x_vec[0];
         msg.y = &y_vec[0];
         msg.z = &z_vec[0];
         
-        msg.number_of_points = x_vec.size() + 1; // TODO DEBUG
+        msg.number_of_points = x_vec.size() + 0; // TODO DEBUG
 
-        lcmt_stereo_publish(lcm, "stereo-bm", &msg);
-    
         
+        
+        if (new_lcm) {
+            lcmt_stereo_publish(lcm, "stereo-bm", &msg);
+            new_lcm = false;
+        }
+    
         // now strip out the values that are not at our disparity, so we can make a fair comparision
         // (and show the losses that come with our sparser technique)
         //Mat in_range;
@@ -218,17 +253,41 @@ int main(int argc,char** argv) {
         
         // display the disparity map
         //imshow("Debug 1", in_range);
-        imshow("Disparity", disp8);
-        imshow("Disparity SGBM", disp8_sgbm);
         
         if (click_x > 0) {
             line(image_3d, Point(click_x, 0), Point(click_x, image_3d.rows), 128);
             line(image_3d, Point(0, click_y), Point(image_3d.cols, click_y), 128);
+            
+            line(disp8, Point(click_x, 0), Point(click_x, image_3d.rows), 128);
+            line(disp8, Point(0, click_y), Point(image_3d.cols, click_y), 128);
         }
+        
+        // figure out details about where the mouse is clicking
+        // specifically, get the disparity
+        
+        float this_disparity = disparity_bm.at<float>(click_y, click_x);
+
+        
+        vector<Point3f> click_point_vec;
+        click_point_vec.push_back(Point3f(click_x, click_y, this_disparity));
+        
+        vector<Point3f> click_point_3d;
+        
+        perspectiveTransform(click_point_vec, click_point_3d, stereo_calibration.qMat);
+        
+        printf("\r(x, y): (%d, %d), disparity: %4.1f, (x, y, z): (%4.1f, %4.1f, %4.1f)      ",
+            click_x, click_y, this_disparity, click_point_3d[0].x / stereo_config.calibrationUnitConversion, click_point_3d[0].y / stereo_config.calibrationUnitConversion, click_point_3d[0].z / stereo_config.calibrationUnitConversion);
+        fflush(stdout);
+        
+        
+        
+        imshow("Disparity", disp8);
+        imshow("Disparity SGBM", disp8_sgbm);
+        
+        
         
         imshow("Disparity3d", image_3d);
         imshow("Disparity3d SGBM", image_3d_sgbm);
-        
         
         
         
@@ -255,7 +314,8 @@ int main(int argc,char** argv) {
                 break;
         }
         
-        lcm_handle(lcm);
+        //lcm_handle(lcm);
+        NonBlockingLcm(lcm);
     }
 
     return 0;
@@ -288,6 +348,12 @@ void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, 
     // decompress JPEG
     jpeg_decompress_8u_gray(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
     
+    if (new_right) {
+        cerr << "Warning: likely dropping a frame on the left image!" << endl;
+    }
+    
+    new_left = true;
+    
     left_mutex.unlock();
     
 }
@@ -306,12 +372,30 @@ void stereo_image_right_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     // decompress JPEG
     jpeg_decompress_8u_gray(msg->data, msg->size, right_image.data, msg->width, msg->height, right_image.step);
     
+    if (new_right) {
+        cerr << "Warning: likely dropping a frame on the right image!" << endl;
+    }
+    
+    new_right = true;
+    
     right_mutex.unlock();
     
 }
 
 // for replaying videos, subscribe to the stereo replay channel and set the frame number
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    frame_number_mutex.lock();
+    
+    frame_number = msg->frame_number;
+    video_number = msg->video_number;
+    
+    if (new_frame_number) {
+        cerr << "Warning: likely dropping a frame number!" << endl;
+    }
+    
+    new_frame_number = true;
+    
+    frame_number_mutex.unlock();
 }
 
 /**
@@ -326,4 +410,42 @@ void onMouse( int event, int x, int y, int flags, void* ) {
     }
 }
 
+
+/**
+ * Processes LCM messages without blocking.
+ * 
+ * @param lcm lcm object
+ * 
+ * @retval true if processed a message
+ */
+bool NonBlockingLcm(lcm_t *lcm)
+{
+    // setup an lcm function that won't block when we read it
+    int lcm_fd = lcm_get_fileno(lcm);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(lcm_fd, &fds);
+    
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+        0,  // seconds
+        1   // microseconds
+    };
+
+    
+    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+
+    if(0 == status) {
+        // no messages
+        //do nothing
+        return false;
+        
+    } else if(FD_ISSET(lcm_fd, &fds)) {
+        // LCM has events ready to be processed.
+        lcm_handle(lcm);
+        return true;
+    }
+    return false;
+
+}
 
