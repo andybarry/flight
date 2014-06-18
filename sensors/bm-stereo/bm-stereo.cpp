@@ -275,9 +275,11 @@ int main(int argc,char** argv) {
         
         perspectiveTransform(click_point_vec, click_point_3d, stereo_calibration.qMat);
         
-        printf("\r(x, y): (%d, %d), disparity: %4.1f, (x, y, z): (%4.1f, %4.1f, %4.1f)      ",
-            click_x, click_y, this_disparity, click_point_3d[0].x / stereo_config.calibrationUnitConversion, click_point_3d[0].y / stereo_config.calibrationUnitConversion, click_point_3d[0].z / stereo_config.calibrationUnitConversion);
-        fflush(stdout);
+        if (click_x > 0 && click_y > 0) {
+            printf("\r(x, y): (%d, %d), disparity: %4.1f, (x, y, z): (%4.1f, %4.1f, %4.1f)      ",
+                click_x, click_y, this_disparity, click_point_3d[0].x / stereo_config.calibrationUnitConversion, click_point_3d[0].y / stereo_config.calibrationUnitConversion, click_point_3d[0].z / stereo_config.calibrationUnitConversion);
+            fflush(stdout);
+        }
         
         
         
