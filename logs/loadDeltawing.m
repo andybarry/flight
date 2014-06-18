@@ -127,25 +127,59 @@ if (exist('stereo'))
   stereoVals = stereo;
   clear stereo
 
-  stereo.utime = stereoVals(:,1);
-  stereo.number_of_points = stereoVals(:,2);
-  stereo.frame_number = stereoVals(:,3);
-  stereo.video_number = stereoVals(:,4);
+  stereo = LoadStereo(stereoVals);
+  
+end
 
-  if (size(stereoVals, 2) < 6)
+%{
+
+if (exist('stereo_bm'))
+  stereoBmVals = stereo_bm;
+  clear stereo_bm
+
+  stereo_bm.utime = stereoBmVals(:,1);
+  stereo_bm.number_of_points = stereoBmVals(:,2);
+  stereo_bm.frame_number = stereoBmVals(:,3);
+  stereo_bm.video_number = stereoBmVals(:,4);
+
+  if (size(stereoBmVals, 2) < 6)
     % if we got no stereo hits, the array won't be initialized
-    stereo.x = [];
-    stereo.y = [];
-    stereo.z = [];
-    stereo.logtime = stereoVals(:,5);
+    stereo_bm.x = [];
+    stereo_bm.y = [];
+    stereo_bm.z = [];
+    stereo_bm.logtime = stereoBmVals(:,5);
   else
-    stereo.x = []; % TODO
-    stereo.y = []; % TODO
-    stereo.z = []; % TODO
-    stereo.logtime = stereoVals(:,5);
+    stereo_bm.x = []; % TODO
+    stereo_bm.y = []; % TODO
+    stereo_bm.z = []; % TODO
+    stereo_bm.logtime = stereoBmVals(:,5);
   end
 end
- 
+
+if (exist('stereo_replay'))
+  stereoReplayVals = stereo_replay;
+  clear stereo_replay
+
+  stereo_replay.utime = stereoReplayVals(:,1);
+  stereo_replay.number_of_points = stereoReplayVals(:,2);
+  stereo_replay.frame_number = stereoReplayVals(:,3);
+  stereo_replay.video_number = stereoReplayVals(:,4);
+
+  if (size(stereoReplayVals, 2) < 6)
+    % if we got no stereo hits, the array won't be initialized
+    stereo_replay.x = [];
+    stereo_replay.y = [];
+    stereo_replay.z = [];
+    stereo_replay.logtime = stereoReplayVals(:,5);
+  else
+    stereo_replay.x = []; % TODO
+    stereo_replay.y = []; % TODO
+    stereo_replay.z = []; % TODO
+    stereo_replay.logtime = stereoReplayVals(:,5);
+  end
+end
+
+%}
 
 
 
