@@ -123,11 +123,29 @@ u.logtime = servo_out(:,7);
 % #5- z(0)
 % #5- log_timestamp
 % #]
-if (exist('stereo'))
+if (exist('stereo', 'var'))
   stereoVals = stereo;
   clear stereo
 
   stereo = LoadStereo(stereoVals);
+  
+end
+
+
+if (exist('stereo_bm', 'var'))
+  stereoBmVals = stereo_bm;
+  clear stereo_bm
+
+  stereo_bm = LoadStereo(stereoBmVals);
+  
+end
+
+
+if (exist('stereo_replay', 'var'))
+  stereoReplayVals = stereo_replay;
+  clear stereo_repaly
+
+  stereo_replay = LoadStereo(stereoReplayVals);
   
 end
 

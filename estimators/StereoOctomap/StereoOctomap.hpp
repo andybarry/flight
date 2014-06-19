@@ -36,6 +36,9 @@ class StereoOctomap {
         void ProcessStereoMessage(const lcmt_stereo *msg);
         
         void PublishOctomap(lcm_t *lcm);
+        void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
+        
+        static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
         
         
     private:

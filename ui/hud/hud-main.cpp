@@ -175,12 +175,13 @@ int main(int argc,char** argv) {
             BotTrans global_to_body;
             bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
             
-            if (GetOctomapPoints(&octomap_points, &global_to_body)) {
-                
-                //cout << "drawing" << octomap_points << endl;
-                
+            octomap_mutex.lock();
+            if (octree != NULL) {
+                StereoOctomap::GetOctomapPoints(octree, &octomap_points, &global_to_body, true);
+
                 Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
             }
+            octomap_mutex.unlock();
             
             
             // transform the point from 3D space back onto the image's 2D space
@@ -239,47 +240,6 @@ void sighandler(int dum)
     printf("done.\n");
     
     exit(0);
-}
-
-bool GetOctomapPoints(vector<Point3f> *octomap_points, BotTrans *global_to_body) {
-    octomap_mutex.lock();
-    
-    if (octree == NULL) {
-        octomap_mutex.unlock();
-        return false;
-    }
-    
-    
-    // loop through the most likely points on the octomap and plot them on the image
-    for(OcTree::leaf_iterator it = octree->begin_leafs(), end=octree->end_leafs(); it!= end; ++it) {
-        //manipulate node, e.g.:
-        
-        // check to see if this is occupied
-        if (it->getOccupancy() > 0.2) {
-        
-            octomap::point3d this_point = it.getCoordinate();
-            
-            // convert this global coordinate into the local coordinate frame
-            double this_point_d[3];
-            this_point_d[0] = this_point.x();
-            this_point_d[1] = this_point.y();
-            this_point_d[2] = this_point.z();
-            
-            double point_in_body_coords[3];
-            bot_trans_apply_vec(global_to_body, this_point_d, point_in_body_coords);
-                
-            // don't plot points that are behind us
-            if (point_in_body_coords[2] >= 0) {
-                octomap_points->push_back(Point3f(point_in_body_coords[0], point_in_body_coords[1], point_in_body_coords[2]));
-            }
-            
-        }
-    }
-    
-    octomap_mutex.unlock();
-    
-    return true;
-    
 }
 
 

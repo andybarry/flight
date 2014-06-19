@@ -39,13 +39,13 @@ function stereo = LoadStereo(stereo_values)
 
         offset_index = 5;
 
-        stereo.x(i,1:this_number) = stereo_values(i, offset_index:3:offset_index+(this_number-1)*3);
+        stereo.x(i,1:this_number) = stereo_values(i, offset_index:this_number+offset_index-1);
 
-        offset_index = offset_index + 1;
-        stereo.y(i,1:this_number) = stereo_values(i, offset_index:3:offset_index+(this_number-1)*3);
+        offset_index = offset_index + this_number;
+        stereo.y(i,1:this_number) = stereo_values(i, offset_index:this_number+offset_index-1);
 
-        offset_index = offset_index + 1;
-        stereo.z(i,1:this_number) = stereo_values(i, offset_index:3:offset_index+(this_number-1)*3);
+        offset_index = offset_index + this_number;
+        stereo.z(i,1:this_number) = stereo_values(i, offset_index:this_number+offset_index-1);
 
         stereo.logtime(i) = stereo_values(i, this_number*3+5);
       else

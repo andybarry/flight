@@ -9,6 +9,8 @@
 
 #include "stereo-imu-obstacles.hpp"
 
+#define PUBLISH_MAP_TO_STEREO_AT_EVERY_FRAME
+
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -60,6 +62,12 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     if (numFrames%15 == 0) {
         octomap->PublishOctomap(lcm);
     }
+    
+    #ifdef PUBLISH_MAP_TO_STEREO_AT_EVERY_FRAME
+    
+        octomap->PublishToStereo(lcm, msg->frame_number, msg->video_number);
+    
+    #endif
     
     // search the trajectory library for the best trajectory
     /*

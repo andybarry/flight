@@ -24,6 +24,7 @@
 
 #include <lcmtypes/octomap_raw_t.h>
 #include <octomap/OcTree.h>
+#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
 #include "opencv2/opencv.hpp"
 #include <cv.h>
@@ -52,8 +53,6 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
 // octomap handler
 void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user);
-
-bool GetOctomapPoints(vector<Point3f> *octomap_points, BotTrans *global_to_body);
 
 
 bool NonBlockingLcm(lcm_t *lcm);
