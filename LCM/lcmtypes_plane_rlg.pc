@@ -1,7 +1,7 @@
-prefix=/home/abarry/Fixie/build
+prefix=/home/odroid/Fixie/build
 exec_prefix=${prefix}
-libdir=/home/abarry/realtime/LCM/lib
-includedir=/home/abarry/realtime/LCM
+libdir=/home/odroid/realtime/LCM/lib
+includedir=/home/odroid/realtime/LCM
 
 Name: lcmtypes_plane_rlg
 Description: LCM types for RLG plane
