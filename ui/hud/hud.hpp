@@ -5,6 +5,7 @@
 #include <cv.h>
 #include <iostream>
 #include <string>
+#include <bot_core/bot_core.h>
 
 using namespace cv;
 using namespace std;
@@ -64,7 +65,7 @@ class Hud {
         int GetAltitudeLeft(Mat hud_img) { return hud_img.cols * .833; }
     
     public:
-        Hud();
+        Hud(Scalar hud_color = Scalar(0.45, 0.95, 0.48)); // default is green
         
         void SetAirspeed(float airspeed_in_mps) { airspeed_
             = 2.23694*airspeed_in_mps; }

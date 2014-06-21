@@ -13,6 +13,7 @@ lcm_t * lcm;
 
 // globals for subscription functions, so we can unsubscribe in the control-c handler
 mav_pose_t_subscription_t *mav_pose_t_sub;
+mav_pose_t_subscription_t *mav_pose_t_replay_sub;
 lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
 lcmt_deltawing_u_subscription_t *servo_out_sub;
@@ -37,11 +38,13 @@ int main(int argc,char** argv) {
     
     string config_file = "";
     int move_window_x = -1, move_window_y = -1;
+    bool replay_hud_bool = false;
     
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(move_window_x, "x", "move-window-x", "Move window starting location x (must pass both x and y)");
     parser.add(move_window_y, "y", "move-window-y", "Move window starting location y (must pass both x and y)");
+    parser.add(replay_hud_bool, "r", "replay-hud", "Enable a second HUD on the channel STATE_ESTIMATOR_POSE_REPLAY");
     parser.parse();
     
     OpenCvStereoConfig stereo_config;
@@ -80,11 +83,17 @@ int main(int argc,char** argv) {
     
     // create a HUD object so we can pass it's pointer to the lcm handlers
     Hud hud;
+    Hud replay_hud(Scalar(0, 0, 0.8));
+    replay_hud.SetClutterLevel(99);
 
     // if a channel exists, subscribe to it
     char *pose_channel;
     if (bot_param_get_str(param, "coordinate_frames.body.pose_update_channel", &pose_channel) >= 0) {
         mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel, &mav_pose_t_handler, &hud);
+    }
+    
+    if (replay_hud_bool) {
+        mav_pose_t_replay_sub = mav_pose_t_subscribe(lcm, "STATE_ESTIMATOR_POSE_REPLAY", &mav_pose_t_handler, &replay_hud); // we can use the same handler, and just send it the replay_hud pointer
     }
     
     char *gps_channel;
@@ -205,6 +214,12 @@ int main(int argc,char** argv) {
             remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
             
             hud.DrawHud(remapped_image, hud_image);
+            
+            if (replay_hud_bool) {
+                Mat temp;
+                hud_image.copyTo(temp);
+                replay_hud.DrawHud(temp, hud_image);
+            }
             
         
             imshow("HUD", hud_image);

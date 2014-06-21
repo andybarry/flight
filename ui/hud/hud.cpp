@@ -1,14 +1,14 @@
 #include "hud.hpp"
 
-Hud::Hud() {
+Hud::Hud(Scalar hud_color) {
     scale_factor_ = 2;
-    hud_color_ = Scalar(0.45, 0.95, 0.48); // green
+    hud_color_ = hud_color;
     box_line_width_ = 2;
     text_font_ = FONT_HERSHEY_DUPLEX;
     hud_font_scale_ = 0.45 * scale_factor_;
     hud_font_scale_small_ = 0.3 * scale_factor_;
     text_thickness_ = 1;
-    pitch_range_of_lens_ = 142.0;
+    pitch_range_of_lens_ = 108.2; // measured for the calibrated and rectified image
 
     airspeed_ = -10001;
     altitude_ = -10001;
@@ -40,57 +40,80 @@ Hud::Hud() {
  * 
  */
 void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
+    
     Mat input_image = _input_image.getMat();
     
-    Size output_size = input_image.size()*scale_factor_;
+    Mat hud_img;
+    
+    // check to see if the input is a black and white image
+    // or a color image
+    
+    // if it is color, we're probably writing on top of an existing
+    // HUD for comparison, so don't convert color
     
     
-    _output_image.create(output_size, CV_32FC3);
-    Mat hud_img = _output_image.getMat();
     
-    Mat gray_img;
-    input_image.copyTo(gray_img);
+    if (input_image.type() == CV_8UC1) {
     
-    Mat gray_img2;
-    gray_img.convertTo(gray_img2, CV_32FC3, 1/255.0);
-    
-    Mat color_img;
-    cvtColor(gray_img2, color_img, CV_GRAY2BGR);
-    
-    resize(color_img, hud_img, output_size);
-    
-    if (clutter_level_ > 0) {
-        DrawAirspeed(hud_img);
-        DrawLadder(hud_img, airspeed_, true, 10, 2);
+        Size output_size = input_image.size()*scale_factor_;
         
-        DrawAltitude(hud_img);
-        DrawLadder(hud_img, altitude_, false, 20, 4);
+        _output_image.create(output_size, CV_32FC3);
+        hud_img = _output_image.getMat();
         
-        DrawCenterMark(hud_img);
+        Mat gray_img;
+        input_image.copyTo(gray_img);
         
-    }    
-    
-    if (clutter_level_ > 1) {
-        DrawGpsSpeed(hud_img);
-        DrawAutonomous(hud_img);
-        DrawFrameNumber(hud_img);
-        DrawBatteryVoltage(hud_img);
-        DrawDateTime(hud_img);
+        Mat gray_img2;
+        gray_img.convertTo(gray_img2, CV_32FC3, 1/255.0);
         
+        Mat color_img;
+        cvtColor(gray_img2, color_img, CV_GRAY2BGR);
+        
+        resize(color_img, hud_img, output_size);
+    } else {
+        
+        _output_image.create(input_image.size(), CV_32FC3);
+        hud_img = _output_image.getMat();
     }
     
-    if (clutter_level_ > 2) {
+    if (clutter_level_ == 99) {
         DrawArtificialHorizon(hud_img);
-        DrawThrottle(hud_img);
-    }
-    
-    if (clutter_level_ > 3) {
-        DrawAllAccelerationIndicators(hud_img);
-    }
-    
-    
-    if (clutter_level_ > 4) {
-        DrawCompass(hud_img);
+        
+    } else {
+        
+        if (clutter_level_ > 0) {
+            DrawAirspeed(hud_img);
+            DrawLadder(hud_img, airspeed_, true, 10, 2);
+            
+            DrawAltitude(hud_img);
+            DrawLadder(hud_img, altitude_, false, 20, 4);
+            
+            DrawCenterMark(hud_img);
+            
+        }    
+        
+        if (clutter_level_ > 1) {
+            DrawGpsSpeed(hud_img);
+            DrawAutonomous(hud_img);
+            DrawFrameNumber(hud_img);
+            DrawBatteryVoltage(hud_img);
+            DrawDateTime(hud_img);
+            
+        }
+        
+        if (clutter_level_ > 2) {
+            DrawArtificialHorizon(hud_img);
+            DrawThrottle(hud_img);
+        }
+        
+        if (clutter_level_ > 3) {
+            DrawAllAccelerationIndicators(hud_img);
+        }
+        
+        
+        if (clutter_level_ > 4) {
+            DrawCompass(hud_img);
+        }
     }
     
     
@@ -342,7 +365,7 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     
     
     float px_per_deg = hud_img.rows / pitch_range_of_lens_;
-    int center_height = hud_img.rows/2 + pitch*px_per_deg;
+    int center_height = hud_img.rows/2 - pitch*px_per_deg;
     
     int center_delta = center_height - hud_img.rows/2;
     
@@ -384,7 +407,7 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     
     line(hud_img, Point(angle_left, angle_top), Point(right, bottom), hud_color_, box_line_width_);
     
-    #if 0
+    #if 1
     int text_gap = 10;
     // draw the pitch label
     string pitch_str;
@@ -458,11 +481,29 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
     
+    double q[4];
+    q[0] = q0_;
+    q[1] = q1_;
+    q[2] = q2_;
+    q[3] = q3_;
+    
+    double rpy[3];
+    
+    bot_quat_to_roll_pitch_yaw(q, rpy);
+    
+    *yaw = rpy[2] * 180 / PI;
+    *pitch = rpy[1] * 180 / PI;
+    *roll = rpy[0] * 180 / PI;
+    
+    /*
     *roll = 180/PI * atan2(2*(q0_ * q1_ + q2_ * q3_), ( 1 - 2*(q1_*q1_ + q2_ * q2_) ) );
     
     *pitch = -180/PI * asin(2 * (q0_ * q2_ - q3_ * q1_ ) );
     
     *yaw = 180/PI * atan2( 2* (q0_ * q3_ + q1_ * q2_), ( 1 - 2*(q2_*q2_ + q3_ * q3_) ) );
+    */
+    
+    //printf("roll %f / %f pitch %f / %f, yaw %f / %f\n", *roll, rpy[0] * 180/PI, *pitch, rpy[1] * 180/PI, *yaw, rpy[2] * 180/PI);
 }
 
 void Hud::DrawFrameNumber(Mat hud_img) {
