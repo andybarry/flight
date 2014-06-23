@@ -143,6 +143,8 @@ int main(int argc,char** argv) {
     msg.cov[220] = 0.25;
     
     lcm.publish("MAV_STATE_EST_INITIALIZER", &msg);
+    
+    cout << "Init message sent." << endl;
 
     return 0;
 }
