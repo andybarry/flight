@@ -9,6 +9,10 @@
 
 #include "bm-stereo.hpp"
 
+
+#define STEREO_DISTANCE_LIMIT 7.0 // meters
+
+
 using namespace std;
 
 lcm_t * lcm;
@@ -207,14 +211,15 @@ int main(int argc,char** argv) {
             if (image_3d_ptr[i+2] != 10000) {
                 // this is a valid point
                 
-                if (abs(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion) < 5) {
+                // check to see if it is close enough for us to count
+                if (abs(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion) < STEREO_DISTANCE_LIMIT) {
                     x_vec.push_back(image_3d_ptr[i] / stereo_config.calibrationUnitConversion);
                     y_vec.push_back(image_3d_ptr[i+1] / stereo_config.calibrationUnitConversion);
                     z_vec.push_back(image_3d_ptr[i+2] / stereo_config.calibrationUnitConversion);
                 }
             }
             
-            if (image_3d_ptr_sgbm[i+2] / stereo_config.calibrationUnitConversion > 5) {
+            if (image_3d_ptr_sgbm[i+2] / stereo_config.calibrationUnitConversion > STEREO_DISTANCE_LIMIT) {
                 image_3d_ptr_sgbm[i+2] = 10000;
                 image_3d_ptr_sgbm[i+1] = 10000;
                 image_3d_ptr_sgbm[i] = 10000;

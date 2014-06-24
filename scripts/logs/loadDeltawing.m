@@ -6,35 +6,42 @@
 
 %filename2 = 'laptop_lcmlog_2013_04_17_00.mat';
 
+clear STATE_ESTIMATOR_POSE battery_status stereoBmVals u
+clear imu stereoReplayVals wind_groundspeed attitude est stereoVals 
+clear wind_gspeed baro log stereo_bm wingeron_u baro_airspeed gps
+clear servo_out stereo_replay battery gpsValues stereo this_number
+clear stereo_octomap stereoOctomapVals
 
 load(strcat(dir, filename));
 %load(strcat(dir, filename2));
 
 % grab estimator values
-est.utime = STATE_ESTIMATOR_POSE(:,1);
+if (exist('STATE_ESTIMATOR_POSE', 'var'))
+  est.utime = STATE_ESTIMATOR_POSE(:,1);
 
-est.pos.x = STATE_ESTIMATOR_POSE(:,2);
-est.pos.y = STATE_ESTIMATOR_POSE(:,3);
-est.pos.z = STATE_ESTIMATOR_POSE(:,4);
+  est.pos.x = STATE_ESTIMATOR_POSE(:,2);
+  est.pos.y = STATE_ESTIMATOR_POSE(:,3);
+  est.pos.z = STATE_ESTIMATOR_POSE(:,4);
 
-est.vel.x = STATE_ESTIMATOR_POSE(:,5);
-est.vel.y = STATE_ESTIMATOR_POSE(:,6);
-est.vel.z = STATE_ESTIMATOR_POSE(:,7);
+  est.vel.x = STATE_ESTIMATOR_POSE(:,5);
+  est.vel.y = STATE_ESTIMATOR_POSE(:,6);
+  est.vel.z = STATE_ESTIMATOR_POSE(:,7);
 
-est.orientation.q0 = STATE_ESTIMATOR_POSE(:,8);
-est.orientation.q1 = STATE_ESTIMATOR_POSE(:,9);
-est.orientation.q2 = STATE_ESTIMATOR_POSE(:,10);
-est.orientation.q3 = STATE_ESTIMATOR_POSE(:,11);
+  est.orientation.q0 = STATE_ESTIMATOR_POSE(:,8);
+  est.orientation.q1 = STATE_ESTIMATOR_POSE(:,9);
+  est.orientation.q2 = STATE_ESTIMATOR_POSE(:,10);
+  est.orientation.q3 = STATE_ESTIMATOR_POSE(:,11);
 
-est.rotation_rate.x = STATE_ESTIMATOR_POSE(:,12);
-est.rotation_rate.y = STATE_ESTIMATOR_POSE(:,13);
-est.rotation_rate.z = STATE_ESTIMATOR_POSE(:,14);
+  est.rotation_rate.x = STATE_ESTIMATOR_POSE(:,12);
+  est.rotation_rate.y = STATE_ESTIMATOR_POSE(:,13);
+  est.rotation_rate.z = STATE_ESTIMATOR_POSE(:,14);
 
-est.accel.x = STATE_ESTIMATOR_POSE(:,15);
-est.accel.y = STATE_ESTIMATOR_POSE(:,16);
-est.accel.z = STATE_ESTIMATOR_POSE(:,17);
+  est.accel.x = STATE_ESTIMATOR_POSE(:,15);
+  est.accel.y = STATE_ESTIMATOR_POSE(:,16);
+  est.accel.z = STATE_ESTIMATOR_POSE(:,17);
 
-est.logtime = STATE_ESTIMATOR_POSE(:,18);
+  est.logtime = STATE_ESTIMATOR_POSE(:,18);
+end
 
 % battery values
 battery.utime = battery_status(:,1);
@@ -146,6 +153,14 @@ if (exist('stereo_replay', 'var'))
   clear stereo_repaly
 
   stereo_replay = LoadStereo(stereoReplayVals);
+  
+end
+
+if (exist('stereo_octomap', 'var'))
+  stereoOctomapVals = stereo_octomap;
+  clear stereo_octomap
+
+  stereo_octomap = LoadStereo(stereoOctomapVals);
   
 end
 

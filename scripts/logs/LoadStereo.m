@@ -27,6 +27,10 @@ function stereo = LoadStereo(stereo_values)
     stereo.logtime = stereo_values(:,5);
   else
     
+    % init variables
+    stereo.x = zeros(length(stereo.frame_number), size(stereo_values,2));
+    stereo.y = zeros(length(stereo.frame_number), size(stereo_values,2));
+    stereo.z = zeros(length(stereo.frame_number), size(stereo_values,2));
     
     % parse the nubmer of points
     for i=1:length(stereo.number_of_points)

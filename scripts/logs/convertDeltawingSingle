@@ -2,4 +2,4 @@
 
 echo "python $HOME/realtime/logs/log_to_mat.py -f -l lcmt_deltawing_u,lcmt_optotrak,lcmt_optotrak_xhat,lcmt_optotrak_quat,lcmt_baro_airspeed,lcmt_stereo,lcmt_wind_groundspeed,lcmt_trajectory_number,lcmt_battery_status,pose_t,pose_t,ins_t,gps_data_t $1"
     
-python $HOME/realtime/logs/log_to_mat.py -f -l lcmt_deltawing_u,lcmt_optotrak,lcmt_optotrak_xhat,lcmt_optotrak_quat,lcmt_baro_airspeed,lcmt_stereo,lcmt_wind_groundspeed,lcmt_trajectory_number,lcmt_battery_status,pose_t,pose_t,ins_t,gps_data_t $1
+python $HOME/realtime/scripts/logs/log_to_mat.py -f -l lcmt_deltawing_u,lcmt_optotrak,lcmt_optotrak_xhat,lcmt_optotrak_quat,lcmt_baro_airspeed,lcmt_stereo,lcmt_wind_groundspeed,lcmt_trajectory_number,lcmt_battery_status,pose_t,pose_t,ins_t,gps_data_t $1
