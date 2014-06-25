@@ -4,7 +4,7 @@
  * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
  *
  */
- 
+
 #ifndef OPENCV_STEREO_UTIL
 #define OPENCV_STEREO_UTIL
 
@@ -37,7 +37,7 @@ extern "C"
 
     #include "camera.h"
     #include "utils.h"
-    
+
     #include "../../externals/jpeg-utils/jpeg-utils.h"
 }
 
@@ -49,7 +49,7 @@ struct OpenCvStereoConfig
 {
     uint64 guidLeft;
     uint64 guidRight;
-    
+
     string lcmUrl;
     string stereoControlChannel;
     string calibrationDir;
@@ -57,9 +57,9 @@ struct OpenCvStereoConfig
     int lastValidPixelRow;
     string videoSaveDir;
     string fourcc;
-    
+
     bool usePGM;
-    
+
     string stereo_replay_channel;
     string baro_airspeed_channel;
     string pose_channel;
@@ -67,19 +67,19 @@ struct OpenCvStereoConfig
     string battery_status_channel;
     string servo_out_channel;
     string optotrak_channel;
-    
+
     int disparity;
     int infiniteDisparity;
     int interestOperatorLimit;
     int blockSize;
     int sadThreshold;
-    
+
     int displayOffsetX;
     int displayOffsetY;
-    
+
     float interestOperatorMultiplier;
     float interestOperatorMultiplierHorizontalInvariance;
-    
+
 };
 
 struct OpenCvStereoCalibration
@@ -87,11 +87,11 @@ struct OpenCvStereoCalibration
     Mat mx1fp;
     Mat mx2fp;
     Mat qMat;
-    
+
     Mat M1;
     Mat D1;
     Mat R1;
-    
+
     Mat M2;
     Mat D2;
 };

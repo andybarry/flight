@@ -6,7 +6,7 @@
  * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
  *
  */
- 
+
 #ifndef OPENCV_CALIBRATE
 #define OPENCV_CALIBRATE
 
