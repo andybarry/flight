@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
     string configFile = "";
     string video_file_left = "", video_file_right = "", video_directory = "";
     int starting_frame_number = 0;
-    bool enable_gamma = false;
+    bool enable_gamma = false, random_results = false;
     
     int last_frame_number = -1;
     
@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
     parser.add(full_stereo, "z", "full-stereo", "Process images with full stereo (only valid with -d)");
     parser.add(use_optotrak, "o", "optotrak", "Use Optotrak to build a depth map.");
     parser.add(enable_gamma, "g", "enable-gamma", "Turn gamma on for both cameras.");
+    parser.add(random_results, "R", "random-results", "Return random pixel locations with the same count as coming out of the stereo algorithm.  Only for debugging / analysis!");
     parser.add(publish_all_images, "P", "publish-all-images", "Publish all images to LCM");
     parser.parse();
     
@@ -380,6 +381,7 @@ int main(int argc, char *argv[])
     state.zero_dist_disparity = stereoConfig.infiniteDisparity;
     state.sobelLimit = stereoConfig.interestOperatorLimit;
     state.blockSize = stereoConfig.blockSize;
+    state.random_results = random_results;
     
     if (state.blockSize > 10 || state.blockSize < 1)
     {

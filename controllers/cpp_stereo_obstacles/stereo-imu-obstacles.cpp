@@ -23,6 +23,8 @@ char *lcm_out = NULL;
 int numFrames = 0;
 unsigned long totalTime = 0;
 
+bool disable_filtering = false;
+
 int64_t currentOctreeTimestamp, buildingOctreeTimestamp;
 
 // global trajectory library
@@ -52,8 +54,14 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     StereoOctomap *octomap = data->octomap;
     StereoFilter *filter = data->filter;
     
+    lcmt_stereo *filtered_msg;
+    
     // filter the stereo message
-    lcmt_stereo *filtered_msg = filter->ProcessMessage(msg);
+    if (disable_filtering == false) {
+        filtered_msg = filter->ProcessMessage(msg);
+    } else {
+        filtered_msg = lcmt_stereo_copy(msg);
+    }
     
     //cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
 
@@ -106,6 +114,7 @@ int main(int argc,char** argv) {
     
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
+    parser.add(disable_filtering, "f", "disable-filtering", "Disable filtering.");
     parser.parse();
     
     
@@ -142,7 +151,10 @@ int main(int argc,char** argv) {
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
     bot_lcmgl_enable(lcmgl, GL_BLEND);
     
-
+    
+    if (disable_filtering) {
+        cout << "WARNING: filtering disabled" << endl;
+    }
     
     
     

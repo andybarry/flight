@@ -29,13 +29,13 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
     error('sensed size mismatch.');
   end
   
-  num_frames = size(sensedx, 1)
+  num_frames = size(sensedx, 1);
   max_points = size(sensedx, 2);
   
   max_truth_est_points = size(truth_estx, 2);
   
   for i = 1 : num_frames
-    fprintf(['\nProcessing frame ' num2str(i)]);
+    fprintf(['\nProcessing frame ' num2str(i) ' / ' num2str(num_frames)]);
     
     for j = 1 : max_points
       
@@ -59,7 +59,7 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
             break;
           end
 
-          this_dist = sum(this_point - this_truth_est_point).^2.^0.5;
+          this_dist = sum((this_point - this_truth_est_point).^2).^0.5;
 
           if (this_dist < distances(i, j))
             distances(i, j) = this_dist;

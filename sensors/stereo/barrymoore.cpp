@@ -456,8 +456,18 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     }
     
     // now we have an array of hits -- transform them to 3d points
-    if (hitCounter > 0)
-    {
+    if (hitCounter > 0) {
+        
+        if (state.random_results == true) {
+            for (int i = 0; i < hitCounter; i++) {
+                
+                int randx = rand() % (stopJ - startJ) + startJ;
+                int randy = rand() % (row_end - row_start) + row_start;
+                
+                localHitPoints[i] = Point3f(randx, randy, -disparity);
+            }
+        }
+        
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
     }
     

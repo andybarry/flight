@@ -51,3 +51,6 @@ docs/*.aux
 docs/*.log
 docs/*.out
 docs/*.pdf
+sensors/bm-stereo/*.eps
+sensors/bm-stereo/*.png
+sensors/bm-stereo/*.fig

@@ -1,6 +1,11 @@
 % add path for the log loader
 
-pass_number = 3;
+pass_number = 1;
+
+start_frame_pass = [ 1801 852 696 ];
+end_frame_pass = [ 2305 1119 1416 ];
+
+
 
 addpath('../../scripts/logs');
 
@@ -63,12 +68,39 @@ else
   
 end
 
+% ok everything is aligned now.
+% now figure out where we want to look
 bm_stereo_aligned.frame_number = bm_stereo.frame_number(bm_start:bm_end);
+stereo_octomap_aligned.frame_number = stereo_octomap.frame_number(stereo_start:stereo_end);
+
+diff_start2 = start_frame_pass(pass_number) - bm_stereo_aligned.frame_number(1);
+
+if (diff_start2 < 0)
+  error('Requested start frame is earlier than we have data for.');
+else
+  bm_start = bm_start + diff_start2;
+  stereo_start = stereo_start + diff_start2;
+end
+
+
+diff_end2 = bm_stereo_aligned.frame_number(end) - end_frame_pass(pass_number);
+
+if (diff_end2 < 0)
+  error('Requested end frame is later than we have data for.');
+else
+  bm_end = bm_end - diff_end2;
+  stereo_end = stereo_end - diff_end2;
+end
+
+
+bm_stereo_aligned.frame_number = bm_stereo.frame_number(bm_start:bm_end);
+stereo_octomap_aligned.frame_number = stereo_octomap.frame_number(stereo_start:stereo_end);
+
 bm_stereo_aligned.x = bm_stereo.x(bm_start:bm_end, :);
 bm_stereo_aligned.y = bm_stereo.y(bm_start:bm_end, :);
 bm_stereo_aligned.z = bm_stereo.z(bm_start:bm_end, :);
 
-stereo_octomap_aligned.frame_number = stereo_octomap.frame_number(stereo_start:stereo_end);
+
 stereo_octomap_aligned.x = stereo_octomap.x(stereo_start:stereo_end, :);
 stereo_octomap_aligned.y = stereo_octomap.y(stereo_start:stereo_end, :);
 stereo_octomap_aligned.z = stereo_octomap.z(stereo_start:stereo_end, :);
@@ -96,5 +128,6 @@ real_dists = real_dists(find(real_dists));
 hist(real_dists,0:.1:ceil(max(real_dists)));
 xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
+title(strrep(filename, '_','-'));
 grid on
 

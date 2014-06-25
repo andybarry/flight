@@ -46,7 +46,7 @@ struct BarryMooreState
     
     Mat Q;
     
-    bool show_display;
+    bool show_display, random_results;
     
     float debugJ, debugI, debugDisparity;
     
