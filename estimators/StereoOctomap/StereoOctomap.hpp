@@ -28,35 +28,35 @@ using namespace octomap;
 
 
 class StereoOctomap {
-    
+
     public:
-        
+
         StereoOctomap(BotFrames *bot_frames);
-        
+
         void ProcessStereoMessage(const lcmt_stereo *msg);
-        
+
         void PublishOctomap(lcm_t *lcm);
         void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
-        
+
         static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
-        
-        
+
+
     private:
-    
+
         void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
         void RemoveOldPoints(int64_t last_msg_time);
         int64_t getTimestampNow();
-    
+
         OcTree *current_octree_;
         OcTree *building_octree_;
-        
+
         int64_t current_octree_timestamp_, building_octree_timestamp_;
-        
+
         BotFrames *bot_frames_;
-        
-        
-        
-        
+
+
+
+
 
 };
 

@@ -4,7 +4,7 @@
  * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
  *
  */
- 
+
 #include "Trajectory.hpp"
 
 
@@ -26,23 +26,23 @@ void Trajectory::LoadTrajectory(string filename, bool quiet)
 {
     // open the file
     vector<vector<string>> strs;
-    
+
     string utrajFile = filename.substr(0, filename.length()-4) + "-u.csv";
-    
+
     if (!quiet)
     {
         cout << "Loading trajectory: " << filename << " + " << utrajFile << endl;
     }
-    
+
     int trajlibLoc = filename.rfind("trajlib");
     string trajNumberStr = filename.substr(trajlibLoc+7, filename.length()-trajlibLoc-4-7);
-    
-    
+
+
     trajNumber = stoi(trajNumberStr);
-    
+
     LoadXFromCSV(filename);
     LoadUFromCSV(utrajFile);
-    
+
     //print();
 }
 
@@ -69,14 +69,14 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
         if( !row.empty() )
             matrix.push_back( row );
     }
-    
+
     if (matrix.size() > 0)
     {
         dimension = int(matrix[0].size());
     } else {
         cout << "WARNING: loaded trajectory of size 0." << endl;
     }
-    
+
     for( int i=0; i<int(matrix.size()); i++ )
     {
         vector<float> thisRow;
@@ -85,9 +85,9 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
             thisRow.push_back(atof(matrix[i][j].c_str()));
         }
         xpoints.push_back(thisRow);
-        
+
     }
-    
+
 }
 
 
@@ -114,14 +114,14 @@ void Trajectory::LoadUFromCSV( const std::string& filename)
         if( !row.empty() )
             matrix.push_back( row );
     }
-    
+
     if (matrix.size() > 0)
     {
         udimension = int(matrix[0].size());
     } else {
         cout << "WARNING: loaded trajectory of size 0: " << filename << endl;
     }
-    
+
     for( int i=0; i<int(matrix.size()); i++ )
     {
         vector<float> thisRow;
@@ -130,9 +130,9 @@ void Trajectory::LoadUFromCSV( const std::string& filename)
             thisRow.push_back(atof(matrix[i][j].c_str()));
         }
         upoints.push_back(thisRow);
-        
+
     }
-    
+
 }
 
 void Trajectory::print()
@@ -140,7 +140,7 @@ void Trajectory::print()
     cout << "------------ Trajectory print -------------" << endl;
     cout << "Dimension: " << dimension << endl;
     cout << "u-dimension: " << udimension << endl;
-    
+
     for (int i=0; i<int(xpoints.size()); i++)
     {
         for (int j=0; j<int(xpoints[i].size()); j++)
@@ -149,7 +149,7 @@ void Trajectory::print()
         }
         cout << endl;
     }
-    
+
     cout << "------------- u points ----------------" << endl;
     for (int i=0; i<int(upoints.size()); i++)
     {
@@ -165,13 +165,13 @@ void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz
 {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
-    
+
     double originalPoint[3];
     originalPoint[0] = xpoints[index][0];
     originalPoint[1] = xpoints[index][1];
     originalPoint[2] = xpoints[index][2];
-    
-    
+
+
     bot_trans_apply_vec(transform, originalPoint, xyz);
 }
 
@@ -183,7 +183,7 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transfo
     {
         double xyz[3];
         GetTransformedPoint(i, transform, xyz);
-        
+
         bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
     }
     bot_lcmgl_end(lcmgl);
@@ -193,18 +193,18 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transfo
 float Trajectory::DistanceToPoint(float x, float y, float z)
 {
     float minDist = -1;
-    
+
     for (int i=0; i<int(xpoints.size()); i++)
     {
         // find the distance to this point
         float thisDist = sqrt( pow(x-xpoints[i][0],2) + pow(y-xpoints[i][1],2) + pow(z-xpoints[i][2],2) );
-        
+
         if (minDist < 0 || thisDist < minDist)
         {
             minDist = thisDist;
         }
     }
-    
+
     return minDist;
 }
 #endif

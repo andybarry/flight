@@ -35,7 +35,7 @@ using namespace std;
 #include "mav_gps_data_t.h" // from Fixie
 
 #include "mavconn.h" // from mavconn
-    
+
 //#include "../../mavlink-generated/ardupilotmega/mavlink.h"
 #include "../../mavlink-generated2/csailrlg/mavlink.h"
 //#include "../../mavlink-generated2/csailrlg/mavlink_msg_scaled_pressure_and_airspeed.h"
@@ -46,11 +46,11 @@ using namespace std;
  *
  * You must add
  *      #include "../mavlink-generated2/ardupilotmega/mavlink.h"
- * to 
+ * to
  *      ../../LCM/mavlink_message_t.h
  * and comment out its definition of
  *  mavlink_message to make this work
- * 
+ *
  * XXX XXX XXX XXX
  */
 
@@ -107,7 +107,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
 
     printf("done.\n");
-    
+
     exit(0);
 }
 
@@ -132,24 +132,24 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
 {
     // translate a local LCM message for servos into a message for the airplane over
     // mavlink
-    
+
     int elevonL = EightBitToServoCmd(msg->elevonL);
     int elevonR = EightBitToServoCmd(msg->elevonR);
     int throttle = EightBitToServoCmd(msg->throttle);
-    
+
     mavlink_message_t mavmsg;
-    
+
     int beep;
     if (global_beep > 0) {
         beep = 1999;
     } else {
         beep = 1000;
     }
-    
+
 	mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, elevonL, elevonR, throttle, 1000, 1000, 1000, 1000, beep);
 	// Publish the message on the LCM IPC bus
 	sendMAVLinkMessage(lcm, &mavmsg);
-    
+
 }
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user)
@@ -159,20 +159,20 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     // debug -- print message
     /*
     lcmt_deltawing_gains msg2 = ConvertFromMidiLcmToPlane(msg);
-	
+
 	struct timeval thisTime;
 	gettimeofday(&thisTime, NULL);
     msg2.timestamp = (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
-    
+
     lastMsg = msg2;
-	
+
 	// send via LCM
 	lcmt_deltawing_gains_publish (lcmSend, lcm_out, &msg2);
 */
     // extract the message out of the container
     mavlink_message_t mavmsg = msg->msg;
-    
-    
+
+
 
     switch(mavmsg.msgid)
     {
@@ -183,100 +183,100 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
         case MAVLINK_MSG_ID_RAW_IMU:
             mavlink_raw_imu_t rawImu;
             mavlink_msg_raw_imu_decode(&mavmsg, &rawImu);
-            
+
             // convert to LCM type
             mav_ins_t insMsg;
             insMsg.utime = getTimestampNow();
             insMsg.device_time = rawImu.time_usec;
-            
+
             insMsg.gyro[0] = (double)rawImu.xgyro/1000;
             insMsg.gyro[1] = (double)rawImu.ygyro/1000;
             insMsg.gyro[2] = (double)rawImu.zgyro/1000;
-            
+
             insMsg.accel[0] = (double)rawImu.xacc/1000*GRAVITY_MSS;
             insMsg.accel[1] = (double)rawImu.yacc/1000*GRAVITY_MSS;
             insMsg.accel[2] = (double)rawImu.zacc/1000*GRAVITY_MSS;
-            
+
             insMsg.mag[0] = rawImu.xmag;
             insMsg.mag[1] = rawImu.ymag;
             insMsg.mag[2] = rawImu.zmag;
-            
+
             insMsg.quat[0] = 0; // unused
             insMsg.quat[1] = 0; // unused
             insMsg.quat[2] = 0; // unused
             insMsg.quat[3] = 0; // unused
-            
+
             insMsg.pressure = 0; // set somewhere else
             insMsg.rel_alt = 0; // set somewhere else
-            
+
             mav_ins_t_publish(lcm, channelAttitude, &insMsg);
-            
+
             break;
         case MAVLINK_MSG_ID_ATTITUDE:
             mavlink_attitude_t attitude;
             mavlink_msg_attitude_decode(&mavmsg, &attitude);
-            
+
             // convert to LCM type
             lcmt_attitude attitudeMsg;
             attitudeMsg.timestamp = getTimestampNow();
-            
+
             attitudeMsg.roll = attitude.roll;
             attitudeMsg.pitch = attitude.pitch;
             attitudeMsg.yaw = attitude.yaw;
-            
+
             attitudeMsg.rollspeed = attitude.rollspeed;
             attitudeMsg.pitchspeed = attitude.pitchspeed;
             attitudeMsg.yawspeed = attitude.yawspeed;
             //DISABLED: USING RAW IMU DATA INSTEAD
             //lcmt_attitude_publish (lcmAttitude, channelAttitude, &attitudeMsg);
             break;
-         /*   
+         /*
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
             mavlink_global_position_int_t pos;
             mavlink_msg_global_position_int_decode(&mavmsg, &pos);
-            
+
             // convert to LCM type
             lcmt_gps gpsMsg;
             gpsMsg.timestamp = getTimestampNow();
-            
+
             gpsMsg.latitude = pos.lat;
             gpsMsg.longitude = pos.lon;
             gpsMsg.alt = pos.alt;
             gpsMsg.relative_alt = pos.relative_alt;
-            
+
             gpsMsg.vx = pos.vx;
             gpsMsg.vy = pos.vy;
             gpsMsg.vz = pos.vz;
             gpsMsg.hdg = pos.hdg;
-            
+
             lcmt_gps_publish (lcmGps, channelGps, &gpsMsg);
-            
-            
+
+
             break;
-           */ 
+           */
         case MAVLINK_MSG_ID_GPS_RAW_INT:
             mavlink_gps_raw_int_t pos;
             mavlink_msg_gps_raw_int_decode(&mavmsg, &pos);
-            
+
             // convert to LCM type
             mav_gps_data_t gpsMsg;
             //gpsMsg.utime = getTimestampNow();
             gpsMsg.utime = pos.time_usec;
-            
+
             gpsMsg.gps_lock = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
-            
+
             gpsMsg.latitude = (double)pos.lat/1e7; //Latitude comes in at 1E7 degrees
             gpsMsg.longitude = (double)pos.lon/1e7; //Latitude comes in at 1E7 degrees
             gpsMsg.elev = (double)pos.alt/1e3; //Altitude comes in at 1E3 meters (millimeters) above MSL
-            
+
             gpsMsg.horizontal_accuracy = pos.eph; //GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
             gpsMsg.vertical_accuracy = pos.epv; //GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
-            
+
             gpsMsg.speed = (double)pos.vel/100; // GPS ground speed comes in at (m/s * 100). If unknown, set to: 65535
             gpsMsg.heading = (double)pos.cog/100; //Course over ground (NOT heading, but direction of movement) comes in at degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535
             gpsMsg.numSatellites = pos.satellites_visible; //Number of satellites visible. If unknown, set to 255
-            
-            
+
+
             /**
             * Get lineared XYZ.
             * This code from Fixie/drivers/ublox_comm/src/driver/ublox_comm.c
@@ -294,29 +294,29 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             else {
                 xy[0] = xy[1] = 0;
             }
-            
+
             double xyz[3];
             xyz[0] = xy[0];
             xyz[1] = xy[1];
             xyz[2] = gpsMsg.elev - elev_origin;
             memcpy(gpsMsg.xyz_pos, xyz, 3 * sizeof(double));
-            
+
             mav_gps_data_t_publish (lcm, channelGps, &gpsMsg);
-            
+
             break;
-            
+
         case MAVLINK_MSG_ID_SCALED_PRESSURE: // hacked this message to give what I want on the firmware side
             mavlink_scaled_pressure_t pressure;
             mavlink_msg_scaled_pressure_decode(&mavmsg, &pressure);
-            
+
             // convert to LCM type
             lcmt_baro_airspeed baroAirMsg;
             baroAirMsg.utime = getTimestampNow();
-            
+
             baroAirMsg.airspeed = pressure.press_abs;   // HACK
             baroAirMsg.baro_altitude = pressure.press_diff + elev_origin;  // HACK
             baroAirMsg.temperature = pressure.temperature;
-            
+
             // airspeed is unreliable under about 1.25 m/s
             if (baroAirMsg.airspeed < 1.5)
             {
@@ -324,41 +324,41 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             }
             lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
             break;
-            
+
         case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
             // we sent this message, so ignore it
             break;
-            
+
         case MAVLINK_MSG_ID_BATTERY_STATUS:
             mavlink_battery_status_t batmsg;
             mavlink_msg_battery_status_decode(&mavmsg, &batmsg);
-            
+
             lcmt_battery_status lcmmsg;
-            
+
             lcmmsg.timestamp = getTimestampNow();
-            
+
             lcmmsg.voltage = batmsg.voltage_cell_1/1000.0;
             lcmmsg.amps_now = batmsg.current_battery/100.0;
             lcmmsg.milliamp_hours_total = batmsg.voltage_cell_6/100.0;
             lcmmsg.percent_remaining = batmsg.battery_remaining;
-            
+
             //cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << endl;
-            
+
             lcmt_battery_status_publish (lcm, channelBatteryStatus, &lcmmsg);
             break;
-            
+
         case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
-            
+
             // decode the mavlink message
-            
+
             mavlink_servo_output_raw_t servomsg;
             mavlink_msg_servo_output_raw_decode(&mavmsg, &servomsg);
-            
+
             // create the LCM message
             lcmt_deltawing_u servoOutMsg;
-            
+
             servoOutMsg.timestamp = getTimestampNow();
-            
+
             /*
              * Output channels:
              *  1: Elevon L
@@ -370,25 +370,25 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
              *  7:
              *  8:
              */
-            
+
             servoOutMsg.elevonL = servomsg.servo1_raw;
             servoOutMsg.elevonR = servomsg.servo2_raw;
             servoOutMsg.throttle = servomsg.servo3_raw;
-            
+
             if (servomsg.servo5_raw > 1500)
             {
                 servoOutMsg.is_autonomous = 1;
             } else {
                 servoOutMsg.is_autonomous = 0;
             }
-            
+
             if (servomsg.servo6_raw > 1500)
             {
                 servoOutMsg.video_record = 1;
             } else {
                 servoOutMsg.video_record = 0;
             }
-            
+
             if (last_stereo_control != servoOutMsg.video_record)
             {
                 // something has changed, send a new message
@@ -396,32 +396,32 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 stereo_control_msg.timestamp = getTimestampNow();
                 stereo_control_msg.stereo_control =
                      servoOutMsg.video_record;
-                
+
                 lcmt_stereo_control_publish(lcm, channelStereoControl,
                     &stereo_control_msg);
-                    
+
                 last_stereo_control = servoOutMsg.video_record;
             }
-            
+
             // send the lcm message
             lcmt_deltawing_u_publish(lcm, channelServoOutput, &servoOutMsg);
-            
-        
+
+
             break;
-            
+
         case MAVLINK_MSG_ID_STATUSTEXT:
             mavlink_statustext_t textMsg;
             mavlink_msg_statustext_decode(&mavmsg, &textMsg);
-            
-            
-            
+
+
+
             cout << "status text: " << textMsg.text << endl;
             break;
-            
+
         default:
             cout << "unknown message id = " << (int)mavmsg.msgid << endl;
             break;
-            
+
     }
 }
 
@@ -459,7 +459,7 @@ int main(int argc,char** argv)
     beep_sub = lcmt_beep_subscribe(lcm, channelBeep, &beep_handler, NULL);
 
     signal(SIGINT,sighandler);
-    
+
     // init GPS origin
     double latlong_origin[2];
     BotParam *param = bot_param_new_from_server(lcm, 0);

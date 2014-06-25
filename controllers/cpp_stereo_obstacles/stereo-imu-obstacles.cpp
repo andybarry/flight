@@ -41,67 +41,67 @@ lcmt_stereo_subscription_t * stereo_sub;
 
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-    
+
     // start the rate clock
     struct timeval start, now;
     unsigned long elapsed;
     gettimeofday( &start, NULL );
-    
-    
-    
+
+
+
     StereoHandlerData *data = (StereoHandlerData*)user;
-    
+
     StereoOctomap *octomap = data->octomap;
     StereoFilter *filter = data->filter;
-    
+
     lcmt_stereo *filtered_msg;
-    
+
     // filter the stereo message
     if (disable_filtering == false) {
         filtered_msg = filter->ProcessMessage(msg);
     } else {
         filtered_msg = lcmt_stereo_copy(msg);
     }
-    
+
     //cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
 
     octomap->ProcessStereoMessage(filtered_msg);
-    
+
     if (numFrames%15 == 0) {
         octomap->PublishOctomap(lcm);
     }
-    
+
     #ifdef PUBLISH_MAP_TO_STEREO_AT_EVERY_FRAME
-    
+
         octomap->PublishToStereo(lcm, msg->frame_number, msg->video_number);
-    
+
     #endif
-    
+
     // search the trajectory library for the best trajectory
     /*
     Trajectory* farthestTraj = trajlib.FindFarthestTrajectory(currentOctree, &bodyToLocal, lcmgl);
-    
+
     // publish the farthest trajectory number over LCM for visualization
     lcmt_trajectory_number trajNumMsg;
     trajNumMsg.timestamp = getTimestampNow();
     trajNumMsg.trajNum = farthestTraj->GetTrajectoryNumber();
-    
+
     lcmt_trajectory_number_publish(lcm, "trajectory_number", &trajNumMsg);
-    
-    
+
+
     // only publish every so often since it swamps the viewer
     if (numFrames%30 == 0)
     {
         PublishOctomap();
-    }   
+    }
     */
     numFrames ++;
-    
+
     delete filtered_msg;
-    
+
     // compute framerate
     gettimeofday( &now, NULL );
-    
+
     elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) - (start.tv_usec / 1000 + start.tv_sec * 1000);
     totalTime += elapsed;
     printf("\r%d frames | %f ms/frame", numFrames, (float)totalTime/numFrames);
@@ -109,21 +109,21 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
 }
 
 int main(int argc,char** argv) {
-    
+
     bool ttl_one = false;
-    
+
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
     parser.add(disable_filtering, "f", "disable-filtering", "Disable filtering.");
     parser.parse();
-    
-    
+
+
     if (ttl_one) {
         lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     } else {
         lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     }
-    
+
     if (!lcm)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
@@ -133,12 +133,12 @@ int main(int argc,char** argv) {
     // init frames
     BotParam *param = bot_param_new_from_server(lcm, 0);
     BotFrames *bot_frames = bot_frames_new(lcm, param);
-    
+
     // init octomap
     StereoOctomap octomap(bot_frames);
-    
+
     StereoFilter filter(0.1);
-    
+
     StereoHandlerData user_data;
     user_data.octomap = &octomap;
     user_data.filter = &filter;
@@ -150,17 +150,17 @@ int main(int argc,char** argv) {
 
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
     bot_lcmgl_enable(lcmgl, GL_BLEND);
-    
-    
+
+
     if (disable_filtering) {
         cout << "WARNING: filtering disabled" << endl;
     }
-    
-    
-    
+
+
+
     // init trajectory library
     //trajlib.LoadLibrary(libDir);
-    
+
     // control-c handler
     signal(SIGINT,sighandler);
 
@@ -181,8 +181,8 @@ void sighandler(int dum)
 
     lcmt_stereo_unsubscribe(lcm, stereo_sub);
     lcm_destroy (lcm);
-    
+
     printf("done.\n");
-    
+
     exit(0);
 }

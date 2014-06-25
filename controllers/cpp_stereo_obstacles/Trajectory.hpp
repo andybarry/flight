@@ -28,32 +28,32 @@ class Trajectory
     public:
         Trajectory();
         Trajectory(string filename, bool quiet = false); // loads a trajectory from a .csv file
-        
+
         void LoadTrajectory(string filename, bool quiet = false);
-        
+
         vector<float> GetPoint(float t);
-        
+
         int GetDimension() { return dimension; }
         int GetUDimension() { return udimension; }
         int GetTrajectoryNumber() { return trajNumber; }
-        
+
         void print();
-        
+
         void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
-        
-        
+
+
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
         //float DistanceToPoint(float x, float y, float z);
-        
+
         vector<vector<float>> xpoints;
         vector<vector<float>> upoints;
-        
-        
+
+
     private:
-        
-    
+
+
         int dimension; // state space dimension
         int udimension; // control input dimension
         int trajNumber;
