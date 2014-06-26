@@ -10,6 +10,8 @@ StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
     current_octree_timestamp_ = -1;
     building_octree_timestamp_ = -1;
 
+    stereo_calibration_set_ = false;
+
 }
 
 void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
@@ -144,8 +146,12 @@ void StereoOctomap::PublishOctomap(lcm_t *lcm) {
  */
 void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_number) {
 
+    if (stereo_calibration_set_ != true) {
+        cerr << "Can't call PublishToStereo without setting stereo calibration first." << endl;
+        return;
+    }
 
-    lcmt_stereo msg;
+    lcmt_stereo_with_xy msg;
     msg.timestamp = getTimestampNow();
     msg.frame_number = frame_number;
     msg.video_number = video_number;
@@ -158,16 +164,45 @@ void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_numb
 
     vector<cv::Point3f> octomap_points;
 
+
+
     GetOctomapPoints(current_octree_, &octomap_points, &global_to_body, true);
 
+    // project them into 2D to put in the message
+    vector<Point2f> img_points_list;
+    vector<cv::Point3f> octomap_points_transformed;
 
-    vector<float> x_vec, y_vec, z_vec;
+    if (octomap_points.size() > 0) {
 
-    for (cv::Point3f point : octomap_points) {
-        x_vec.push_back(point.x);
-        y_vec.push_back(point.y);
-        z_vec.push_back(point.z);
+        for (cv::Point3f point : octomap_points) {
+            Point3f new_point;
+            new_point.x = point.x * stereo_config_.calibrationUnitConversion;
+            new_point.y = point.y * stereo_config_.calibrationUnitConversion;
+            new_point.z = point.z * stereo_config_.calibrationUnitConversion;
+
+            octomap_points_transformed.push_back(new_point);
+        }
+
+        projectPoints(octomap_points_transformed, stereo_calibration_.R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_.M1, stereo_calibration_.D1, img_points_list);
     }
+
+    vector<float> x_vec(octomap_points.size()), y_vec(octomap_points.size()), z_vec(octomap_points.size());
+    vector<int> frame_x_vec(octomap_points.size()), frame_y_vec(octomap_points.size());
+
+    for (unsigned int i = 0; i < octomap_points.size(); i++) {
+        Point3f point = octomap_points[i];
+
+        x_vec[i] = point.x;
+        y_vec[i] = point.y;
+        z_vec[i] = point.z;
+
+        Point2f point2d = img_points_list[i];
+
+        frame_x_vec[i] = round(point2d.x);
+        frame_y_vec[i] = round(point2d.y);
+
+    }
+
 
     msg.number_of_points = x_vec.size();
 
@@ -180,8 +215,10 @@ void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_numb
     msg.grey = grey;
 
 
-    lcmt_stereo_publish(lcm, "stereo-octomap", &msg);
+    msg.frame_x = &frame_x_vec[0];
+    msg.frame_y = &frame_y_vec[0];
 
+    lcmt_stereo_with_xy_publish(lcm, "stereo-octomap", &msg);
 
 
 }

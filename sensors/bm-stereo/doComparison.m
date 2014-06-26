@@ -1,6 +1,6 @@
 % add path for the log loader
 
-pass_number = 1;
+pass_number = 3;
 
 start_frame_pass = [ 1801 852 696 ];
 end_frame_pass = [ 2305 1119 1416 ];
@@ -129,5 +129,6 @@ hist(real_dists,0:.1:ceil(max(real_dists)));
 xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
+xlim([-1 10]);
 grid on
 

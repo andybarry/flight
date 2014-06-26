@@ -111,11 +111,31 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
+    string config_file = "";
 
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
     parser.add(disable_filtering, "f", "disable-filtering", "Disable filtering.");
+    parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.parse();
+
+    OpenCvStereoConfig stereo_config;
+
+    // parse the config file
+    if (ParseConfigFile(config_file, &stereo_config) != true)
+    {
+        fprintf(stderr, "Failed to parse configuration file, quitting.\n");
+        return 1;
+    }
+
+    // load calibration
+    OpenCvStereoCalibration stereo_calibration;
+
+    if (LoadCalibration(stereo_config.calibrationDir, &stereo_calibration) != true)
+    {
+        cerr << "Error: failed to read calibration files. Quitting." << endl;
+        return 1;
+    }
 
 
     if (ttl_one) {
@@ -136,6 +156,8 @@ int main(int argc,char** argv) {
 
     // init octomap
     StereoOctomap octomap(bot_frames);
+
+    octomap.SetStereoConfig(stereo_config, stereo_calibration);
 
     StereoFilter filter(0.1);
 

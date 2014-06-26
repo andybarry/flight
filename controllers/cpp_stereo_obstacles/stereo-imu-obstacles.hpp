@@ -39,6 +39,8 @@ using namespace std;
 
 #include "../../externals/ConciseArgs.hpp"
 
+#include "../../sensors/stereo/opencv-stereo-util.hpp"
+
 #include "StereoFilter.hpp"
 
 struct StereoHandlerData {
