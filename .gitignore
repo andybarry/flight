@@ -10,6 +10,7 @@ LCM/lib/libtypes.a
 LCM/*.pyc
 *.o
 *~
+*.dep
 controllers/constant-control/constant-control
 drivers/process_control/process-control
 estimators/cpp_wind/wind-estimator
@@ -23,6 +24,7 @@ externals/timesync/lcmtypes
 ui/log-monitor/log-monitor
 ui/stereo-monitor/stereo-monitor
 controllers/cpp_stereo_obstacles/stereo-imu-obstacles
+controllers/cpp_stereo_obstacles/stereo-imu-obstacles_d
 ui/hud/hud-main
 sensors/bm-stereo/bm-stereo
 sensors/bm-stereo/bm-stereo_d

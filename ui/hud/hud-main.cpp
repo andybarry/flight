@@ -21,6 +21,7 @@ mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_stereo_subscription_t *stereo_sub;
+lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
 octomap_raw_t_subscription_t *octomap_sub;
 
@@ -28,8 +29,9 @@ mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
 
 
-mutex stereo_mutex, stereo_bm_mutex;
+mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex;
 lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg;
+lcmt_stereo_with_xy *last_stereo_xy_msg;
 
 OcTree *octree = NULL;
 mutex octomap_mutex;
@@ -126,6 +128,11 @@ int main(int argc,char** argv) {
         stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel, &stereo_handler, NULL);
     }
 
+    char *stereo_xy_channel;
+    if (bot_param_get_str(param, "lcm_channels.stereo_with_xy", &stereo_xy_channel) >= 0) {
+        stereo_xy_sub = lcmt_stereo_with_xy_subscribe(lcm, stereo_xy_channel, &stereo_xy_handler, NULL);
+    }
+
     char *stereo_image_left_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo_image_left", &stereo_image_left_channel) >= 0) {
         stereo_image_left_sub = bot_core_image_t_subscribe(lcm, stereo_image_left_channel, &stereo_image_left_handler, &hud);
@@ -207,6 +214,14 @@ int main(int argc,char** argv) {
             Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
 
 
+            stereo_xy_mutex.lock();
+            if (last_stereo_xy_msg) {
+                vector<Point> xy_points;
+
+                Get2DPointsFromLcmXY(last_stereo_xy_msg, &xy_points);
+                Draw2DPointsOnImage(temp_image, &xy_points);
+            }
+            stereo_xy_mutex.unlock();
 
 
             // remap
@@ -268,6 +283,18 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
     last_stereo_msg = lcmt_stereo_copy(msg);
     stereo_mutex.unlock();
 }
+
+void stereo_xy_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_with_xy *msg, void *user) {
+    stereo_xy_mutex.lock();
+    if (last_stereo_xy_msg) {
+        delete last_stereo_xy_msg;
+    }
+
+    last_stereo_xy_msg = lcmt_stereo_with_xy_copy(msg);
+    stereo_xy_mutex.unlock();
+}
+
+
 
 void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
     stereo_bm_mutex.lock();
@@ -362,6 +389,18 @@ void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 
     octomap_mutex.unlock();
 
+}
+
+void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points) {
+    for (int i = 0; i < msg->number_of_points; i ++) {
+        xy_points->push_back(Point(msg->frame_x[i], msg->frame_y[i]));
+    }
+}
+
+void Draw2DPointsOnImage(Mat image, vector<Point> *points) {
+    for (Point point : *points) {
+        rectangle(image, Point(point.x-1, point.y-1), Point(point.x+1, point.y+1), 0);
+    }
 }
 
 

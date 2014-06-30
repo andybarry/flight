@@ -3,6 +3,7 @@
 
 #include "hud.hpp"
 #include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt_stereo_with_xy.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_optotrak.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
@@ -40,7 +41,7 @@ void sighandler(int dum);
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, const bot_core_image_t *msg, void *user);
 void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
-
+void stereo_xy_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_with_xy *msg, void *user);
 
 void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
@@ -53,6 +54,9 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
 // octomap handler
 void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user);
+
+void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points);
+void Draw2DPointsOnImage(Mat image, vector<Point> *points);
 
 
 bool NonBlockingLcm(lcm_t *lcm);

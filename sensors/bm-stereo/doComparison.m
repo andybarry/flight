@@ -11,7 +11,7 @@ addpath('../../scripts/logs');
 
 
 dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
-filename = ['pass' num2str(pass_number) '_bm.mat'];
+filename = ['pass' num2str(pass_number) '_fix_random_bm.mat'];
 
 loadDeltawing
 
@@ -100,10 +100,26 @@ bm_stereo_aligned.x = bm_stereo.x(bm_start:bm_end, :);
 bm_stereo_aligned.y = bm_stereo.y(bm_start:bm_end, :);
 bm_stereo_aligned.z = bm_stereo.z(bm_start:bm_end, :);
 
+bm_stereo_aligned.utime = bm_stereo.utime(stereo_start:stereo_end);
+bm_stereo_aligned.number_of_points = bm_stereo.number_of_points(stereo_start:stereo_end);
+bm_stereo_aligned.video_number = bm_stereo.video_number(stereo_start:stereo_end);
+bm_stereo_aligned.logtime = bm_stereo.logtime(stereo_start:stereo_end);
+
+
+
+
+
+stereo_octomap_aligned.utime = stereo_octomap.utime(stereo_start:stereo_end);
+stereo_octomap_aligned.number_of_points = stereo_octomap.number_of_points(stereo_start:stereo_end);
+stereo_octomap_aligned.video_number = stereo_octomap.video_number(stereo_start:stereo_end);
+stereo_octomap_aligned.logtime = stereo_octomap.logtime(stereo_start:stereo_end);
 
 stereo_octomap_aligned.x = stereo_octomap.x(stereo_start:stereo_end, :);
 stereo_octomap_aligned.y = stereo_octomap.y(stereo_start:stereo_end, :);
 stereo_octomap_aligned.z = stereo_octomap.z(stereo_start:stereo_end, :);
+
+stereo_octomap_aligned.frame_x = stereo_octomap.frame_x(stereo_start:stereo_end, :);
+stereo_octomap_aligned.frame_y = stereo_octomap.frame_y(stereo_start:stereo_end, :);
 
 bm_stereo_aligned.frame_number(1:5)
 stereo_octomap_aligned.frame_number(1:5)
@@ -114,7 +130,11 @@ stereo_octomap_aligned.frame_number(end-5:end)
 %%
 
 
-distances = SmallestDistance(stereo_octomap_aligned.x, stereo_octomap_aligned.y, stereo_octomap_aligned.z, ...
+%stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
+stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
+
+
+distances = SmallestDistance(stereo_octomap_filtered.x, stereo_octomap_filtered.y, stereo_octomap_filtered.z, ...
   bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1);
 
 %% process and plot
@@ -129,6 +149,6 @@ hist(real_dists,0:.1:ceil(max(real_dists)));
 xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
-xlim([-1 10]);
+xlim([-1 16]);
 grid on
 

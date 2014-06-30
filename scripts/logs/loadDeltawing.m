@@ -160,7 +160,7 @@ if (exist('stereo_octomap', 'var'))
   stereoOctomapVals = stereo_octomap;
   clear stereo_octomap
 
-  stereo_octomap = LoadStereo(stereoOctomapVals);
+  stereo_octomap = LoadStereoWithXY(stereoOctomapVals);
   
 end
 

@@ -21,6 +21,8 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
   
   distances = [];
   
+  counter = 0;
+  
   if (~isequal(size(sensedx), size(sensedy)) || ~isequal(size(sensedx), size(sensedz)))
     error('sensed size mismatch.');
   end
@@ -41,13 +43,14 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
       
       this_point = [ sensedx(i, j) sensedy(i, j) sensedz(i, j) ];
       
+      
       % check for no more points
       
       if (this_point(3) == 0)
         % we're done
         break;
       elseif (this_point(3) > min_sense_dist)
-
+        
         distances(i, j) = 1e8;
 
         % determine the minimum distance to other points
@@ -70,7 +73,7 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
         distances(i, j) = 0;
       end
       
-      
+      counter = counter + 1;
       if (distances(i, j) == 1e8)
         fprintf('x');
       else
@@ -83,11 +86,8 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
       
     end
     
-    
-    
-    
   end
   
-  
+  fprintf('\n\nProcessed %d points.\n', counter);
 
 end

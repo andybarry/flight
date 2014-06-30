@@ -243,7 +243,7 @@ void StereoOctomap::GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octom
         //manipulate node, e.g.:
 
         // check to see if this is occupied
-        if (it->getOccupancy() > 0.2) {
+        if (it->getOccupancy() > octomap->getOccupancyThres()) {
 
             octomap::point3d this_point = it.getCoordinate();
 
