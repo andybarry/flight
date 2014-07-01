@@ -17,8 +17,8 @@
 #define INVARIANCE_CHECK_VERT_OFFSET_MAX 8
 #define INVARIANCE_CHECK_VERT_OFFSET_INCREMENT 2
 
-#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-2)
-#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 2
+#define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
+#define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
 
 BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
 
@@ -413,60 +413,76 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
 
     int hitCounter = 0;
 
-    for (int i=row_start; i < row_end; i+=blockSize)
-    {
-        for (int j=startJ; j < stopJ; j+=blockSize)
+
+    if (state.random_results < 0) {
+        for (int i=row_start; i < row_end; i+=blockSize)
         {
-            // get the sum of absolute differences for this location
-            // on both images
-            int sad = GetSAD(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state);
-            // check to see if the SAD is below the threshold,
-            // indicating a hit
-            if (sad < sadThreshold && sad >= 0)
+            for (int j=startJ; j < stopJ; j+=blockSize)
             {
-                // got a hit
+                // get the sum of absolute differences for this location
+                // on both images
+                int sad = GetSAD(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state);
+                // check to see if the SAD is below the threshold,
+                // indicating a hit
+                if (sad < sadThreshold && sad >= 0)
+                {
+                    // got a hit
 
-                // now check for horizontal invariance
-                // (ie check for parts of the image that look the same as this
-                // which would indicate that this might be a false-positive)
+                    // now check for horizontal invariance
+                    // (ie check for parts of the image that look the same as this
+                    // which would indicate that this might be a false-positive)
 
-                if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
+                    if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
 
-                    // add it to the vector of matches
-                    // don't forget to offset it by the blockSize,
-                    // so we match the center of the block instead
-                    // of the top left corner
-                    localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, -disparity));
+                        // add it to the vector of matches
+                        // don't forget to offset it by the blockSize,
+                        // so we match the center of the block instead
+                        // of the top left corner
+                        localHitPoints.push_back(Point3f(j+blockSize/2.0, i+blockSize/2.0, -disparity));
 
-                    //localHitPoints.push_back(Point3f(state.debugJ, state.debugI, -disparity));
+                        //localHitPoints.push_back(Point3f(state.debugJ, state.debugI, -disparity));
 
 
-                    uchar pxL = leftImage.at<uchar>(i,j);
-                    pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
+                        uchar pxL = leftImage.at<uchar>(i,j);
+                        pointColors->push_back(pxL); // TODO: this is the corner of the box, not the center
 
-                    hitCounter ++;
+                        hitCounter ++;
 
-                    if (state.show_display)
-                    {
-                        pointVector2d->push_back(Point3i(j, i, sad));
-                    }
-                } // check horizontal invariance
+                        if (state.show_display)
+                        {
+                            pointVector2d->push_back(Point3i(j, i, sad));
+                        }
+                    } // check horizontal invariance
+                }
             }
+        }
+    } else {
+
+        double intpart;
+
+        float fractpart = modf(state.random_results , &intpart);
+        hitCounter = round(intpart);
+
+        // determine if this is a time we'll use that last point
+        std::random_device rd;
+        std::default_random_engine generator(rd()); // rd() provides a random seed
+        std::uniform_real_distribution<float> distribution(0, 1);
+
+        if (fractpart > distribution(generator)) {
+            hitCounter ++;
+        }
+
+        for (int i = 0; i < hitCounter; i++) {
+
+            int randx = rand() % (stopJ - startJ) + startJ;
+            int randy = rand() % (row_end - row_start) + row_start;
+
+            localHitPoints.push_back(Point3f(randx, randy, -disparity));
         }
     }
 
     // now we have an array of hits -- transform them to 3d points
     if (hitCounter > 0) {
-
-        if (state.random_results == true) {
-            for (int i = 0; i < hitCounter; i++) {
-
-                int randx = rand() % (stopJ - startJ) + startJ;
-                int randy = rand() % (row_end - row_start) + row_start;
-
-                localHitPoints[i] = Point3f(randx, randy, -disparity);
-            }
-        }
 
         perspectiveTransform(localHitPoints, *pointVector3d, state.Q);
     }

@@ -19,6 +19,9 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
   %
   % @retval distances array of minimum distances at each pont
   
+  
+  no_match_dist = 10;
+  
   distances = [];
   
   counter = 0;
@@ -51,7 +54,7 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
         break;
       elseif (this_point(3) > min_sense_dist)
         
-        distances(i, j) = 1e8;
+        distances(i, j) = no_match_dist;
 
         % determine the minimum distance to other points
         for k = 1 : max_truth_est_points
@@ -74,7 +77,7 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
       end
       
       counter = counter + 1;
-      if (distances(i, j) == 1e8)
+      if (distances(i, j) == no_match_dist)
         fprintf('x');
       else
         fprintf('.');

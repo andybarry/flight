@@ -13,6 +13,8 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+#include <math.h>
+#include <random> // for debug random generator
 
 #ifdef USE_NEON
 #include <arm_neon.h>
@@ -46,7 +48,9 @@ struct BarryMooreState
 
     Mat Q;
 
-    bool show_display, random_results;
+    bool show_display;
+
+    float random_results;
 
     float debugJ, debugI, debugDisparity;
 

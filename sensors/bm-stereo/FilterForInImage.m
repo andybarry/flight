@@ -1,10 +1,13 @@
-function stereo_filtered = FilterForInImage(stereo_octomap, left_bound, right_bound)
-  % Fitlers points for being in the image, with bounds
+function stereo_filtered = FilterForInImage(stereo_octomap, left_bound, right_bound, top_bound, bottom_bound)
+  % Fitlers points for being in the image, with bounds.  NOTE these bounds
+  % are likely in UNRECTIFIED image space.
   %
   % @param stereo_octomap structure from loadDeltawing
   % @param bm_stereo bm stereo structure
   % @param left_bound pixel bound on the left side for in-the-image
   % @param right_bound pixel bound on the right side
+  % @param upper_bound pixel bound on the top
+  % @param lower_bound pixel bound on the bottom
   %
   % @retval stereo_filtered stereo_octomap like structure, but filtered to
   % only contain points valid for bm-stereo
@@ -29,7 +32,9 @@ function stereo_filtered = FilterForInImage(stereo_octomap, left_bound, right_bo
       
       this_frame_point = [ stereo_octomap.frame_x(i, j) stereo_octomap.frame_y(i, j) ];
       
-      if (this_frame_point(1) < 0 || this_frame_point (1) < left_bound || this_frame_point(1) > right_bound)
+      if (this_frame_point(1) < 0 || this_frame_point(1) < left_bound ...
+          || this_frame_point(1) > right_bound || this_frame_point(2) > bottom_bound ...
+          || this_frame_point(2) < top_bound)
         % not a valid point
       else
         

@@ -1,9 +1,11 @@
 % add path for the log loader
 
-pass_number = 3;
+pass_number = 1;
 
+%start_frame_pass = [ 1772 675 559 ];
+%end_frame_pass = [ 2528 1262 1594 ];
 start_frame_pass = [ 1801 852 696 ];
-end_frame_pass = [ 2305 1119 1416 ];
+end_frame_pass = [ 2305 1112 1416 ];
 
 
 
@@ -11,7 +13,9 @@ addpath('../../scripts/logs');
 
 
 dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
-filename = ['pass' num2str(pass_number) '_fix_random_bm.mat'];
+%filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
+filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
+%filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
 
 loadDeltawing
 
@@ -76,7 +80,7 @@ stereo_octomap_aligned.frame_number = stereo_octomap.frame_number(stereo_start:s
 diff_start2 = start_frame_pass(pass_number) - bm_stereo_aligned.frame_number(1);
 
 if (diff_start2 < 0)
-  error('Requested start frame is earlier than we have data for.');
+  error(['Requested start frame is earlier than we have data for (first frame is: ' num2str(bm_stereo_aligned.frame_number(1)) ').']);
 else
   bm_start = bm_start + diff_start2;
   stereo_start = stereo_start + diff_start2;
@@ -86,7 +90,7 @@ end
 diff_end2 = bm_stereo_aligned.frame_number(end) - end_frame_pass(pass_number);
 
 if (diff_end2 < 0)
-  error('Requested end frame is later than we have data for.');
+  error(['Requested end frame is later than we have data for (last frame is: ' num2str(bm_stereo_aligned.frame_number(end)) ').']);
 else
   bm_end = bm_end - diff_end2;
   stereo_end = stereo_end - diff_end2;
@@ -131,16 +135,16 @@ stereo_octomap_aligned.frame_number(end-5:end)
 
 
 %stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
-stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
+stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 132, 376, 51, 223);
 
 
 distances = SmallestDistance(stereo_octomap_filtered.x, stereo_octomap_filtered.y, stereo_octomap_filtered.z, ...
-  bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1);
+  bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1.5);
 
 %% process and plot
 
-real_dists = distances(find(distances-1e8));
-real_dists = real_dists(find(real_dists));
+%real_dists = distances(find(distances-1e8));
+real_dists = distances(find(distances));
 
 
 
@@ -149,6 +153,7 @@ hist(real_dists,0:.1:ceil(max(real_dists)));
 xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
-xlim([-1 16]);
+xlim([-1 11]);
+ylim([0 500]);
 grid on
 
