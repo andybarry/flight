@@ -1,6 +1,6 @@
 % add path for the log loader
 
-pass_number = 1;
+pass_number = 3;
 
 %start_frame_pass = [ 1772 675 559 ];
 %end_frame_pass = [ 2528 1262 1594 ];
@@ -13,8 +13,8 @@ addpath('../../scripts/logs');
 
 
 dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
-%filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
-filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
+filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
+%filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
 %filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
 
 loadDeltawing
@@ -156,4 +156,21 @@ title(strrep(filename, '_','-'));
 xlim([-1 11]);
 ylim([0 500]);
 grid on
+
+real_dists_array{pass_number} = real_dists;
+
+%% sum up
+figure(20)
+real_sum = [];
+for i = 1 : length(real_dists_array)
+  real_sum = [real_sum; real_dists_array{i}];
+end
+hist(real_sum(:,1), 0:.1:ceil(max(real_sum(:,1))));
+xlabel('Minimum separation (meters)')
+ylabel('Number of pixels')
+title('3 Passes');
+xlim([-1 11]);
+ylim([0 1500]);
+grid on
+
 
