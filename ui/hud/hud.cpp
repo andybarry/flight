@@ -324,7 +324,7 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
         }
 
         // if this is the airspeed, we also want to draw an arrow showing where
-        // gps speed fall
+        // gps speed falls
         if (for_airspeed && gps_speed_ > -10000) {
 
             int gps_left = left + ladder_width + gps_gap;
@@ -340,7 +340,18 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
 
                 line(hud_img, Point(gps_left + gps_triangle_size, top + gps_triangle_size/2), Point(gps_left + gps_triangle_size/2, top), hud_color_, box_line_width_);
 
+            } else if (gps_center > bottom) {
+
+                // gps is offscale low
+
+                // draw a downwards facing arrow at the bottom
+                line(hud_img, Point(gps_left, bottom - vertical_line_gap - gps_triangle_size/2), Point(gps_left + gps_triangle_size/2, bottom - vertical_line_gap), hud_color_, box_line_width_);
+
+                line(hud_img, Point(gps_left + gps_triangle_size, bottom - vertical_line_gap - gps_triangle_size/2), Point(gps_left + gps_triangle_size/2, bottom - vertical_line_gap), hud_color_, box_line_width_);
+
+
             } else {
+                // gps is on scale
 
                 line(hud_img, Point(gps_left, gps_center), Point(gps_left + gps_triangle_size, gps_center + gps_triangle_size/2), hud_color_, box_line_width_);
 
@@ -407,7 +418,7 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
 
     line(hud_img, Point(angle_left, angle_top), Point(right, bottom), hud_color_, box_line_width_);
 
-    #if 1
+    #if 0
     int text_gap = 10;
     // draw the pitch label
     string pitch_str;

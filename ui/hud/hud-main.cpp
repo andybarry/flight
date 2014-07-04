@@ -41,12 +41,14 @@ int main(int argc,char** argv) {
     string config_file = "";
     int move_window_x = -1, move_window_y = -1;
     bool replay_hud_bool = false;
+    bool record_hud = false;
 
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(move_window_x, "x", "move-window-x", "Move window starting location x (must pass both x and y)");
     parser.add(move_window_y, "y", "move-window-y", "Move window starting location y (must pass both x and y)");
     parser.add(replay_hud_bool, "r", "replay-hud", "Enable a second HUD on the channel STATE_ESTIMATOR_POSE_REPLAY");
+    parser.add(record_hud, "R", "record-hud", "Enable recording to disk.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -82,6 +84,9 @@ int main(int argc,char** argv) {
     }
 
     BotFrames *bot_frames = bot_frames_new(lcm, param);
+
+    RecordingManager recording_manager;
+    recording_manager.Init(stereo_config);
 
     // create a HUD object so we can pass it's pointer to the lcm handlers
     Hud hud;
@@ -195,7 +200,7 @@ int main(int argc,char** argv) {
             if (octree != NULL) {
                 StereoOctomap::GetOctomapPoints(octree, &octomap_points, &global_to_body, true);
 
-                Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+                //Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
             }
             octomap_mutex.unlock();
 
@@ -237,6 +242,12 @@ int main(int argc,char** argv) {
             }
 
 
+            if (record_hud) {
+                // put this frame into the HUD recording
+                recording_manager.RecFrameHud(hud_image);
+
+            }
+
             imshow("HUD", hud_image);
         }
 
@@ -253,6 +264,19 @@ int main(int argc,char** argv) {
         {
             case 'q':
                 sighandler(0);
+                break;
+
+            case 'R':
+                record_hud = true;
+                recording_manager.RestartRecHud();
+                break;
+
+            case 'c':
+                hud.SetClutterLevel(hud.GetClutterLevel() + 1);
+                break;
+
+            case 'C':
+                hud.SetClutterLevel(hud.GetClutterLevel() - 1);
                 break;
         }
     }
