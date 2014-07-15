@@ -1,6 +1,10 @@
 function saveasAll(filename, fontsize, axis_array)
     % Saves the current figure as a .eps, .png, and .fig
     %
+    % Font size not changing?
+    %   Try: sudo apt-get install xfonts-100dpi xfonts-75dpi and then
+    %   logging out and back in.
+    %
     % @param filename name before the extension to save
     % @param fontsize (optional) specify the plot's font size (often useful
     %   for embedding in papers

@@ -28,13 +28,22 @@ octomap_raw_t_subscription_t *octomap_sub;
 mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
 
+ofstream box_file;
 
-mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex;
+mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex;
 lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
 
 OcTree *octree = NULL;
 mutex octomap_mutex;
+
+bool ui_box = false;
+bool ui_box_first_click = false;
+bool ui_box_done = false;
+
+
+Point2d box_top(-1, -1);
+Point2d box_bottom(-1, -1);
 
 int main(int argc,char** argv) {
 
@@ -42,6 +51,9 @@ int main(int argc,char** argv) {
     int move_window_x = -1, move_window_y = -1;
     bool replay_hud_bool = false;
     bool record_hud = false;
+    bool show_unremapped = false;
+    string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
+
 
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
@@ -49,6 +61,8 @@ int main(int argc,char** argv) {
     parser.add(move_window_y, "y", "move-window-y", "Move window starting location y (must pass both x and y)");
     parser.add(replay_hud_bool, "r", "replay-hud", "Enable a second HUD on the channel STATE_ESTIMATOR_POSE_REPLAY");
     parser.add(record_hud, "R", "record-hud", "Enable recording to disk.");
+    parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
+    parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -63,12 +77,21 @@ int main(int argc,char** argv) {
     // load calibration
     OpenCvStereoCalibration stereo_calibration;
 
+
     if (LoadCalibration(stereo_config.calibrationDir, &stereo_calibration) != true)
     {
         cerr << "Error: failed to read calibration files. Quitting." << endl;
         return 1;
     }
 
+    if (ui_box_path != "") {
+        // init box parsing
+
+        // open a file to write to
+        ui_box = true;
+        show_unremapped = true;
+        box_file.open(ui_box_path);
+    }
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
@@ -157,6 +180,7 @@ int main(int argc,char** argv) {
     signal(SIGINT,sighandler);
 
     namedWindow("HUD", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+    setMouseCallback("HUD", OnMouse, &hud);
 
     if (move_window_x != -1 && move_window_y != -1) {
         moveWindow("HUD", move_window_x, move_window_y);
@@ -172,7 +196,7 @@ int main(int argc,char** argv) {
             change_flag = true;
         }
 
-        if (change_flag == true) {
+        if (change_flag == true || ui_box) {
             change_flag = false;
 
             Mat hud_image, temp_image;
@@ -181,16 +205,24 @@ int main(int argc,char** argv) {
             left_image.copyTo(temp_image);
             image_mutex.unlock();
 
+            // -- BM stereo -- //
             vector<Point3f> bm_points;
             stereo_bm_mutex.lock();
             if (last_stereo_bm_msg) {
                 Get3DPointsFromStereoMsg(last_stereo_bm_msg, &bm_points);
             }
             stereo_bm_mutex.unlock();
-            Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
+
+            vector<int> valid_bm_points;
+
+            if (box_bottom.x == -1) {
+                Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
+            } else {
+                 Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, box_top, box_bottom, &valid_bm_points);
+             }
 
 
-
+            // -- octomap -- //
             vector<Point3f> octomap_points;
 
             BotTrans global_to_body;
@@ -204,6 +236,7 @@ int main(int argc,char** argv) {
             }
             octomap_mutex.unlock();
 
+            // -- stereo -- //
 
             // transform the point from 3D space back onto the image's 2D space
             vector<Point3f> lcm_points;
@@ -218,7 +251,7 @@ int main(int argc,char** argv) {
 
             Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
 
-
+            // -- octomap XY -- //
             stereo_xy_mutex.lock();
             if (last_stereo_xy_msg) {
                 vector<Point> xy_points;
@@ -229,9 +262,56 @@ int main(int argc,char** argv) {
             stereo_xy_mutex.unlock();
 
 
+            // -- box ui -- //
+
+            // check for box_ui management
+            ui_box_mutex.lock();
+
+            if (ui_box_done) {
+
+                // the box is done
+                ui_box_done = false;
+                ui_box_first_click = false;
+
+
+                // write to a file, update variables, and ask for a new frame
+
+                box_file << hud.GetVideoNumber() << "," << hud.GetFrameNumber();
+                cout << hud.GetVideoNumber() << "," << hud.GetFrameNumber();
+
+                for (int valid : valid_bm_points) {
+                    box_file << "," << valid;
+                    cout << "," << valid;
+                }
+
+                box_file << endl;
+                cout << endl;
+
+                // request a new frame
+                AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 1);
+
+                box_top = box_bottom;
+                box_bottom = Point2d(-1, -1);
+            }
+            ui_box_mutex.unlock();
+
+
             // remap
             Mat remapped_image;
-            remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
+            if (show_unremapped == false) {
+                remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
+            } else {
+                temp_image.copyTo(remapped_image);
+            }
+
+            if (ui_box) {
+                if (box_bottom.x == -1) {
+                    line(remapped_image, Point(box_top.x, 0), Point(box_top.x, remapped_image.rows), 0);
+                    line(remapped_image, Point(0, box_top.y), Point(remapped_image.cols, box_top.y), 0);
+                } else {
+                    rectangle(remapped_image, box_top, box_bottom, 128);
+                }
+            }
 
             hud.DrawHud(remapped_image, hud_image);
 
@@ -284,10 +364,54 @@ int main(int argc,char** argv) {
     return 0;
 }
 
+/**
+ * Mouse callback so that the user can click on an image
+ */
+void OnMouse( int event, int x, int y, int flags, void* hud_in) {
+
+    Hud *hud = (Hud*) hud_in;
+
+    ui_box_mutex.lock();
+
+    if( event == EVENT_LBUTTONUP) { // left button click
+        if (ui_box_first_click) {
+            ui_box_done = true;
+        } else {
+            ui_box_first_click = true;
+        }
+    }
+
+    if (ui_box_first_click) {
+        box_bottom = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
+
+    } else {
+        box_top = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
+        box_bottom = Point2d(-1, -1);
+    }
+
+    ui_box_mutex.unlock();
+}
+
+void AskForFrame(int video_number, int frame_number) {
+    // construct a replay message
+    lcmt_stereo msg;
+
+    msg.timestamp = 0;
+    msg.number_of_points = 0;
+    msg.video_number = video_number;
+    msg.frame_number = frame_number;
+
+    lcmt_stereo_publish(lcm, "stereo_replay", &msg);
+}
+
 
 void sighandler(int dum)
 {
     printf("\n\nclosing... ");
+
+    if (box_file.is_open()) {
+        box_file.close();
+    }
 
     lcm_destroy (lcm);
 

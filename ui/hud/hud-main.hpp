@@ -32,6 +32,7 @@
 #include <cv.h>
 
 #include <mutex>
+#include <fstream>
 
 using namespace std;
 using namespace octomap;
@@ -59,6 +60,8 @@ void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points);
 void Draw2DPointsOnImage(Mat image, vector<Point> *points);
 
+void OnMouse( int event, int x, int y, int flags, void* hud_in) ;
+void AskForFrame(int video_number, int frame_number);
 
 bool NonBlockingLcm(lcm_t *lcm);
 

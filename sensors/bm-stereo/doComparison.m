@@ -159,6 +159,11 @@ grid on
 
 real_dists_array{pass_number} = real_dists;
 
+
+%%
+
+
+
 %% sum up
 figure(20)
 real_sum = [];

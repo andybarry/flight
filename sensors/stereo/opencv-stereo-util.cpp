@@ -704,8 +704,12 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param cam_mat_d distortion calibration matrix (usually D1.xml)
  * @param outline_color color to draw the box outlines (default: 128)
  * @param inside_color color to draw the inside of the boxes (default: 255)
+ * @param box_top if you only want to draw points inside a box, this specifies one coordinate of the box
+ * @param box_bottom the second coordinate of the box
+ * @param points_in_box if you pass box_top and box_bottom, this will be filled with the indicies of
+ *          the points inside the box.
  */
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color)
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box)
 {
     vector<Point3f> &points_list = *points_list_in;
 
@@ -720,6 +724,17 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
 
     projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
 
+
+    int min_x = min(box_top.x, box_bottom.x);
+    int min_y = min(box_top.y, box_bottom.y);
+    int max_x = max(box_top.x, box_bottom.x);
+    int max_y = max(box_top.y, box_bottom.y);
+    bool box_bounding = false;
+
+    if (box_top.x != -1 || box_top.y != -1 || box_bottom.x != -1 || box_bottom.y != -1) {
+        box_bounding = true;
+    }
+
     // now draw the points onto the image
     for (int i=0; i<int(img_points_list.size()); i++)
     {
@@ -727,11 +742,30 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
         //line(camera_image, Point(img_points_list[i].x, 0), Point(img_points_list[i].x, camera_image.rows), color);
         //line(camera_image, Point(0, img_points_list[i].y), Point(camera_image.cols, img_points_list[i].y), color);
 
-        rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
-            Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
+        bool flag = false;
 
-        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
+        if (box_bounding) {
+
+            if (img_points_list[i].x >= min_x && img_points_list[i].x <= max_x &&
+                img_points_list[i].y >= min_y && img_points_list[i].y <= max_y) {
+
+                if (points_in_box) {
+                    points_in_box->push_back(i);
+                }
+
+                flag = true;
+            }
+        }
+
+
+        if (box_bounding == false || flag == true) {
+
+            rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
+                Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
+
+            rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
+                Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
+        }
 
     }
 }

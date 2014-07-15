@@ -112,6 +112,9 @@ class Hud {
 
         int GetImageScaling() { return scale_factor_; }
 
+        int GetVideoNumber() { return video_number_; }
+        int GetFrameNumber() { return frame_number_; }
+
         void DrawHud(InputArray _input_image, OutputArray _output_image);
 
 
