@@ -265,19 +265,18 @@ int main(int argc,char** argv) {
             // -- box ui -- //
 
             // check for box_ui management
-            ui_box_mutex.lock();
+
 
             if (ui_box_done) {
 
                 // the box is done
-                ui_box_done = false;
-                ui_box_first_click = false;
-
 
                 // write to a file, update variables, and ask for a new frame
 
-                box_file << hud.GetVideoNumber() << "," << hud.GetFrameNumber();
-                cout << hud.GetVideoNumber() << "," << hud.GetFrameNumber();
+                box_file << hud.GetVideoNumber() << "," << hud.GetFrameNumber() << "," <<
+                    box_top.x << "," << box_top.y << "," << box_bottom.x << "," << box_bottom.y;
+                cout << hud.GetVideoNumber() << "," << hud.GetFrameNumber() << "," <<
+                    box_top.x << "," << box_top.y << "," << box_bottom.x << "," << box_bottom.y;
 
                 for (int valid : valid_bm_points) {
                     box_file << "," << valid;
@@ -290,8 +289,8 @@ int main(int argc,char** argv) {
                 // request a new frame
                 AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 1);
 
-                box_top = box_bottom;
-                box_bottom = Point2d(-1, -1);
+                ResetBoxDrawing();
+
             }
             ui_box_mutex.unlock();
 
@@ -335,15 +334,23 @@ int main(int argc,char** argv) {
 
         char key = waitKey(1);
 
-        if (key != 255 && key != -1)
-        {
+        if (key != 255 && key != -1) {
             cout << endl << key << endl;
         }
 
-        switch (key)
-        {
+        switch (key) {
             case 'q':
                 sighandler(0);
+                break;
+
+            case ',':
+                AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() - 1);
+                ResetBoxDrawing();
+                break;
+
+            case '.':
+                AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 1);
+                ResetBoxDrawing();
                 break;
 
             case 'R':
@@ -362,6 +369,19 @@ int main(int argc,char** argv) {
     }
 
     return 0;
+}
+
+void ResetBoxDrawing() {
+
+    ui_box_mutex.lock();
+
+    ui_box_done = false;
+    ui_box_first_click = false;
+
+    box_top = box_bottom;
+    box_bottom = Point2d(-1, -1);
+
+    ui_box_mutex.unlock();
 }
 
 /**
