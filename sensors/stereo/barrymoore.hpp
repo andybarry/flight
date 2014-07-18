@@ -110,8 +110,6 @@ class BarryMoore {
 
         void RunInterestOp(InterestOpState *interest_state);
 
-        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
-
         bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
 
         void StartWorkerThread(int i, ThreadWorkType work_type);
@@ -153,6 +151,8 @@ class BarryMoore {
 
         bool GetHasNewData(int i) { return has_new_data_[i]; }
         void SetHasNewData(int i, bool val) { has_new_data_[i] = val; }
+
+        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
 
         RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
 

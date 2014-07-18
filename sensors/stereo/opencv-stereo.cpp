@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
 
             // draw pixel blocks
             if (lineLeftImgPosition >= 0 && lineLeftImgPositionY > 1) {
-                DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize/2, state.disparity, state.blockSize);
+                DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize, state, &barry_moore_stereo);
             }
 
             // draw a line for the user to show disparity
@@ -1114,31 +1114,47 @@ Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state,
  *
  * @param left_image the left image
  * @param right_image the right image
- * @param location Point(left,top) -- pixel location of the left/top point on
- *  the left image of the box
- * @param disparity disparity between the images
- * @param block_size size of the pixel block to highlight
+ * @param left left coordinate of the box
+ * @param top top coordinate of the box
+ * @param state BarryMooreState containing stereo information
+ * @param barry_moore_stereo stereo object so we can run GetSAD
  *
  */
-void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size) {
-    if (left + block_size > left_image.cols || top+block_size > left_image.rows
-        || left + block_size > right_image.cols || top+block_size > right_image.rows
-        || left + disparity < 0) { // remember, disparity can be negative
+void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, BarryMooreState state, BarryMoore *barry_moore_stereo) {
+    if (left + state.blockSize > left_image.cols || top+state.blockSize > left_image.rows
+        || left + state.blockSize > right_image.cols || top+state.blockSize > right_image.rows
+        || left + state.disparity < 0) { // remember, disparity can be negative
 
         // invalid spot
 
         return;
     }
 
-    Mat left_block = left_image.rowRange(top, top+block_size).colRange(left, left+block_size);
-    Mat right_block = right_image.rowRange(top, top+block_size).colRange(left+disparity, left+disparity+block_size);
+    Mat left_block = left_image.rowRange(top, top+state.blockSize).colRange(left, left+state.blockSize);
+    Mat right_block = right_image.rowRange(top, top+state.blockSize).colRange(left+state.disparity, left+state.disparity+state.blockSize);
+
+
+    Mat laplacian_left;
+    Laplacian(left_image, laplacian_left, -1, 3, 1, 0, BORDER_DEFAULT);
+
+    Mat laplacian_right;
+    Laplacian(right_image, laplacian_right, -1, 3, 1, 0, BORDER_DEFAULT);
+
+    // compute stats about block
+    int sad = barry_moore_stereo->GetSAD(left_image, right_image, laplacian_left, laplacian_right, left, top, state);
+
 
     // make the blocks visible by making them huge
     const int scale_factor = 100;
 
-    Size output_size = Size(block_size * scale_factor, block_size * scale_factor);
+    Size output_size = Size(state.blockSize * scale_factor, state.blockSize * scale_factor);
     resize(left_block, left_block, output_size, 0, 0, INTER_NEAREST);
     resize(right_block, right_block, output_size, 0, 0, INTER_NEAREST);
+
+    char sad_str_char[100];
+    sprintf(sad_str_char, "SAD = %d", sad);
+
+    putText(right_block, sad_str_char, Point(400, 475), FONT_HERSHEY_PLAIN, 1, 0);
 
     imshow("Left Block", left_block);
     imshow("Right Block", right_block);

@@ -7,7 +7,7 @@
  * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
  *
  */
- 
+
 #ifndef OPENCV_STEREO
 #define OPENCV_STEREO
 
@@ -102,7 +102,7 @@ void onMouse( int event, int x, int y, int, void* );
 void onMouseStereo( int event, int x, int y, int, void* hud);
 void DrawLines(Mat leftImg, Mat rightImg, Mat stereoImg, int lineX, int lineY, int disparity, int inf_disparity);
 
-void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, int disparity, int block_size);
+void DisplayPixelBlocks(Mat left_image, Mat right_image, int left, int top, BarryMooreState state, BarryMoore *barry_moore_stereo);
 
 Mat WriteDisparityMap(cv::vector<Point3i> *pointVector2d, BarryMooreState state, int pixel_value = 128, Mat existing_map = Mat::zeros(240, 376, CV_8UC1));
 
