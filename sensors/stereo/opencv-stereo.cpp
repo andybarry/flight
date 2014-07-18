@@ -383,6 +383,7 @@ int main(int argc, char *argv[])
     state.sobelLimit = stereoConfig.interestOperatorLimit;
     state.blockSize = stereoConfig.blockSize;
     state.random_results = random_results;
+    state.check_horizontal_invariance = true;
 
     if (state.blockSize > 10 || state.blockSize < 1)
     {
@@ -777,6 +778,10 @@ int main(int argc, char *argv[])
                     // to show SAD boxes
                     state.sobelLimit = 0;
                     state.sadThreshold = 255;
+                    break;
+
+                case 'H':
+                    state.check_horizontal_invariance = !state.check_horizontal_invariance;
                     break;
 
                 case '.':

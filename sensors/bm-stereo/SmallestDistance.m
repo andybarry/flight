@@ -1,21 +1,23 @@
-function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, truth_esty, truth_estz, min_sense_dist)
-  % Computes the distance to the cloest point in sensed to ground_truth_est
+function distances = SmallestDistance(from_x, from_y, from_z, to_x, to_y, to_z, min_sense_dist, max_sense_dist)
+  % Computes the minimum distance from (from_x, from_y, from_z) to the
+  %   cloest point in (to_x, to_y, to_z)
   %
-  % @param sensedx array of points sensed from stereo... aka
+  % @param from_x array of points sensed from stereo... aka
   %   stereo_octomap.stereo.x
-  % @param sensedy array of points sensed from stereo... aka
+  % @param from_y array of points sensed from stereo... aka
   %   stereo_octomap.stereo.y
-  % @param sensedz array of points sensed from stereo... aka
+  % @param from_z array of points sensed from stereo... aka
   %   stereo_octomap.stereo.z
   
-  % @param truth_estx array of points sensed from stereo... aka
+  % @param to_x array of points sensed from stereo... aka
   %   bm_stereo.x
-  % @param truth_esty array of points sensed from stereo... aka
+  % @param to_y array of points sensed from stereo... aka
   %   bm_stereo.y
-  % @param truth_estz array of points sensed from stereo... aka
+  % @param to_z array of points sensed from stereo... aka
   %   bm_stereo.z
   %
-  % @param min_sense_dist z-distance at which to ignore sensed points
+  % @param min_sense_dist z-distance at which to ignore from_* points
+  % @param max_sense_dist maximum z-distance at which to compute data for from_* points
   %
   % @retval distances array of minimum distances at each pont
   
@@ -26,25 +28,29 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
   
   counter = 0;
   
-  if (~isequal(size(sensedx), size(sensedy)) || ~isequal(size(sensedx), size(sensedz)))
-    error('sensed size mismatch.');
+  if (~isequal(size(from_x), size(from_y)) || ~isequal(size(from_x), size(from_z)))
+    error('x1/y1/z1 size mismatch.');
   end
   
-  if (~isequal(size(truth_estx), size(truth_esty)) || ~isequal(size(truth_estx), size(truth_estz)))
-    error('sensed size mismatch.');
+  if (~isequal(size(to_x), size(to_y)) || ~isequal(size(to_x), size(to_z)))
+    error('x2/y2/z2 size mismatch.');
   end
   
-  num_frames = size(sensedx, 1);
-  max_points = size(sensedx, 2);
+  if (size(from_x,1) ~= size(to_x,1))
+    error('Different number of frames for x1 and x2.');
+  end
   
-  max_truth_est_points = size(truth_estx, 2);
+  num_frames = size(from_x, 1);
+  max_points = size(from_x, 2);
+  
+  max_truth_est_points = size(to_x, 2);
   
   for i = 1 : num_frames
     fprintf(['\nProcessing frame ' num2str(i) ' / ' num2str(num_frames)]);
     
     for j = 1 : max_points
       
-      this_point = [ sensedx(i, j) sensedy(i, j) sensedz(i, j) ];
+      this_point = [ from_x(i, j) from_y(i, j) from_z(i, j) ];
       
       
       % check for no more points
@@ -52,14 +58,14 @@ function distances = SmallestDistance(sensedx, sensedy, sensedz, truth_estx, tru
       if (this_point(3) == 0)
         % we're done
         break;
-      elseif (this_point(3) > min_sense_dist)
+      elseif (this_point(3) > min_sense_dist && this_point(3) < max_sense_dist)
         
         distances(i, j) = no_match_dist;
 
         % determine the minimum distance to other points
         for k = 1 : max_truth_est_points
 
-          this_truth_est_point = [ truth_estx(i, k) truth_esty(i, k) truth_estz(i, k) ];
+          this_truth_est_point = [ to_x(i, k) to_y(i, k) to_z(i, k) ];
 
           if (this_truth_est_point(3) == 0)
             break;

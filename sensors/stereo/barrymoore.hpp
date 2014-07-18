@@ -48,7 +48,7 @@ struct BarryMooreState
 
     Mat Q;
 
-    bool show_display;
+    bool show_display, check_horizontal_invariance;
 
     float random_results;
 

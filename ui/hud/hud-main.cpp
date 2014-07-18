@@ -348,11 +348,20 @@ int main(int argc,char** argv) {
                 ResetBoxDrawing();
                 break;
 
+            case '<':
+                AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() - 50);
+                ResetBoxDrawing();
+                break;
+
             case '.':
                 AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 1);
                 ResetBoxDrawing();
                 break;
 
+            case '>':
+                AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 50);
+                ResetBoxDrawing();
+                break;
             case 'R':
                 record_hud = true;
                 recording_manager.RestartRecHud();

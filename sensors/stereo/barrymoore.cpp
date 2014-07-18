@@ -432,7 +432,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
                     // (ie check for parts of the image that look the same as this
                     // which would indicate that this might be a false-positive)
 
-                    if (CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
+                    if (!state.check_horizontal_invariance || CheckHorizontalInvariance(leftImage, rightImage, laplacian_left, laplacian_right, j, i, state) == false) {
 
                         // add it to the vector of matches
                         // don't forget to offset it by the blockSize,
