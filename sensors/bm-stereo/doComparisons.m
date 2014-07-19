@@ -1,16 +1,31 @@
+%% load everything
+
 % add path for the log loader
 
-pass_number = 3;
-
-%start_frame_pass = [ 1772 675 559 ];
-%end_frame_pass = [ 2528 1262 1594 ];
-start_frame_pass = [ 1801 852 696 ];
-end_frame_pass = [ 2305 1112 1416 ];
 
 
+%pass_number = 2;
+%doFalseNeg = 0;
+%sumfig = 20;
+
+
+if doFalseNeg == 0
+  start_frame_pass = [ 1801 852 696 ];
+  end_frame_pass = [ 2305 1112 1416 ];
+else
+
+
+  start_frame_pass = [ 1990 989 809 ];
+  %end_frame_pass = [ 2305 1112 1416 ];
+  end_frame_pass = [ 2046 1112 1416 ];
+
+end
 
 addpath('../../scripts/logs');
 
+
+%dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/new/';
+%filename = ['pass' num2str(pass_number) '.mat'];
 
 dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
 filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
@@ -33,6 +48,24 @@ clear imu stereoReplayVals wind_groundspeed attitude est stereoVals
 clear wind_gspeed baro log stereo_bm wingeron_u baro_airspeed gps
 clear servo_out stereo_replay battery gpsValues this_number
 
+
+% load bounding box data
+bbox = LoadBoundingBox(['box_clicking/pass' num2str(pass_number) '.csv']);
+
+%% remove hits outside of bounding box for bm stereo
+
+
+bm_stereo_boxed = ProcessBoundingBoxBmStereo(bm_stereo, bbox);
+
+
+%ComparePlot(bm_stereo, bm_stereo_boxed);
+
+if enable_boxed == 1
+  bm_stereo = bm_stereo_boxed;
+end
+
+
+%% start processing
 
 % everything is loaded and we have two main variables:
 % bm_stereo and stereo_octomap
@@ -131,15 +164,24 @@ stereo_octomap_aligned.frame_number(1:5)
 bm_stereo_aligned.frame_number(end-5:end)
 stereo_octomap_aligned.frame_number(end-5:end)
 
-%%
 
 
-%stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
-stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 132, 376, 51, 223);
+%% process
+if (doFalseNeg == 1)
+  distances = SmallestDistance(bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, ...
+    stereo_octomap_aligned.x, stereo_octomap_aligned.y, stereo_octomap_aligned.z, ...
+    0, 5.0);
+else
+  
+
+  %stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 105, 376);
+  stereo_octomap_filtered = FilterForInImage(stereo_octomap_aligned, 132, 376, 51, 223);
 
 
-distances = SmallestDistance(stereo_octomap_filtered.x, stereo_octomap_filtered.y, stereo_octomap_filtered.z, ...
-  bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1.5);
+  distances = SmallestDistance(stereo_octomap_filtered.x, stereo_octomap_filtered.y, stereo_octomap_filtered.z, ...
+    bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1.5, 100);
+
+end
 
 %% process and plot
 
@@ -154,18 +196,15 @@ xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
 xlim([-1 11]);
-ylim([0 500]);
+set(gca, 'XTickLabel',{'0','2','4','6','8','No Stereo'});
+%ylim([0 500]);
 grid on
 
 real_dists_array{pass_number} = real_dists;
 
-
-%%
-
-
-
 %% sum up
-figure(20)
+
+figure(sumfig)
 real_sum = [];
 for i = 1 : length(real_dists_array)
   real_sum = [real_sum; real_dists_array{i}];
@@ -173,9 +212,17 @@ end
 hist(real_sum(:,1), 0:.1:ceil(max(real_sum(:,1))));
 xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
-title('3 Passes');
+
+if doFalseNeg == 0
+  title('3 Passes False Positive Check')
+else
+  title('3 Passes False Negative Check');
+end
+
 xlim([-1 11]);
-ylim([0 1500]);
+set(gca, 'XTickLabel',{'0','2','4','6','8','No Stereo'});
+%ylim([0 1500]);
 grid on
+
 
 

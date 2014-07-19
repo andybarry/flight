@@ -119,6 +119,10 @@ int main(int argc,char** argv) {
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.parse();
 
+    if (disable_filtering) {
+        cout << "WARNING: you have disabled filtering with the -f flag." << endl;
+    }
+
     OpenCvStereoConfig stereo_config;
 
     // parse the config file
@@ -172,12 +176,6 @@ int main(int argc,char** argv) {
 
     lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
     bot_lcmgl_enable(lcmgl, GL_BLEND);
-
-
-    if (disable_filtering) {
-        cout << "WARNING: filtering disabled" << endl;
-    }
-
 
 
     // init trajectory library

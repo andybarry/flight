@@ -25,7 +25,6 @@
 #include <lcm/lcm.h>
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_control.h"
-#include "../../LCM/lcmt_optotrak.h"
 #include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_deltawing_u.h"
@@ -117,8 +116,5 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
-
-void optotrak_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_optotrak *msg, void *user);
-
 
 #endif

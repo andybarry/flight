@@ -245,6 +245,9 @@ int main(int argc,char** argv) {
         msg.number_of_points = x_vec.size() + 0; // TODO DEBUG
 
 
+        uint8_t temp[msg.number_of_points];
+        msg.grey = temp;
+
 
         if (new_lcm) {
             lcmt_stereo_publish(lcm, "stereo-bm", &msg);

@@ -35,12 +35,9 @@ struct BarryMooreState
     int sobelLimit;
     int blockSize;
     int sadThreshold;
+    float horizontalInvarianceMultiplier;
 
     int lastValidPixelRow;
-
-    // a parameter added to the SAD/sobel multiplier in the denominator
-    float interestOperatorMultiplier;
-    float interestOperatorMultiplierHorizontalInvariance;
 
     Mat mapxL;
 
@@ -152,7 +149,7 @@ class BarryMoore {
         bool GetHasNewData(int i) { return has_new_data_[i]; }
         void SetHasNewData(int i, bool val) { has_new_data_[i] = val; }
 
-        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state);
+        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state, int *left_interest = NULL, int *right_interest = NULL, int *raw_sad = NULL);
 
         RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
 

@@ -20,6 +20,9 @@
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
 
+#define NUMERIC_CONST 333 // just a constant that we multiply the score by to make
+                          // all the parameters in a nice integer range
+
 BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
 
 
@@ -500,11 +503,13 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
  * @param pxX row pixel location
  * @param pxY column pixel location
  * @param state state structure that includes a number of parameters
+ * @param left_interest optional parameter that will be filled with the value for the left interest operation
+ * @param right_interest same as above, for the right image
  *
  * @retval scaled sum of absolute differences for this block --
  *      the value is the sum/numberOfPixels
  */
-int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state)
+int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state, int *left_interest, int *right_interest, int *raw_sad)
 {
     // init parameters
     int blockSize = state.blockSize;
@@ -682,13 +687,31 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
 
     //cout << "sad with neon: " << sad << " without neon: " << sad2 << endl;
 
-    if (leftVal < sobelLimit || rightVal < sobelLimit)// || abs(leftVal - rightVal) > 200)
+    if (left_interest != NULL) {
+        *left_interest = leftVal;
+    }
+
+    if (right_interest != NULL) {
+        *right_interest = rightVal;
+    }
+
+    // percentage of total interest value that is different
+    //float diff_score = 100*(float)abs(leftVal - rightVal)/(float)laplacian_value;
+
+    if (raw_sad != NULL) {
+        *raw_sad = sad;
+    }
+
+
+    if (leftVal < sobelLimit || rightVal < sobelLimit)// || diff_score > state.interest_diff_limit)
     {
         return -1;
     }
 
+    // weight laplacian_value into the score
+
     //return sobel;
-    return 100*(float)sad/(float)((float)laplacian_value*(float)state.interestOperatorMultiplier);
+    return NUMERIC_CONST*(float)sad/(float)laplacian_value;
 }
 
 /**
@@ -733,7 +756,6 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
 
     if (startY + INVARIANCE_CHECK_VERT_OFFSET_MIN < 0
         || endY + INVARIANCE_CHECK_VERT_OFFSET_MAX > rightImage.rows) {
-
         // we are limited in the vertical range we can check here
 
         // TODO: be smarter here
@@ -815,7 +837,8 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
 
         // we don't check for leftVal >= sobelLimit because we have already
         // checked that in the main search loop (in GetSAD).
-        if (right_val_array[i] >= sobelLimit && 100*(float)sad_array[i]/(float)((float)sobel_array[i]*state.interestOperatorMultiplierHorizontalInvariance) < state.sadThreshold) {
+        //if (right_val_array[i] >= sobelLimit && 100*(float)sad_array[i]/(float)((float)sobel_array[i]*state.interestOperatorMultiplierHorizontalInvariance) < state.sadThreshold) {
+        if (right_val_array[i] >= sobelLimit && NUMERIC_CONST*state.horizontalInvarianceMultiplier*(float)sad_array[i]/((float)sobel_array[i]) < state.sadThreshold) {
             return true;
         }
     }

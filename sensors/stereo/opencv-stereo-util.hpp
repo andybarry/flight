@@ -73,12 +73,10 @@ struct OpenCvStereoConfig
     int interestOperatorLimit;
     int blockSize;
     int sadThreshold;
+    float horizontalInvarianceMultiplier;
 
     int displayOffsetX;
     int displayOffsetY;
-
-    float interestOperatorMultiplier;
-    float interestOperatorMultiplierHorizontalInvariance;
 
 };
 

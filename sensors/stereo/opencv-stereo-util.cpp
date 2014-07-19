@@ -335,6 +335,19 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         return false;
     }
 
+    configStruct->horizontalInvarianceMultiplier =
+        g_key_file_get_double(keyfile, "settings",
+        "horizontalInvarianceMultiplier", &gerror);
+
+    if (gerror != NULL)
+    {
+        fprintf(stderr, "Error: configuration file does not specify unit conversion (or I failed to read it). Parameter: settings.horizontalInvarianceMultiplier\n");
+
+        g_error_free(gerror);
+
+        return false;
+    }
+
     // get blockSize
     configStruct->blockSize =
         g_key_file_get_integer(keyfile, "settings",
@@ -362,35 +375,6 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
 
         return false;
     }
-
-    // get interestOperatorMultiplier
-    configStruct->interestOperatorMultiplier =
-        g_key_file_get_double(keyfile, "settings",
-        "interestOperatorMultiplier", &gerror);
-
-    if (gerror != NULL)
-    {
-        fprintf(stderr, "Error: configuration file does not specify interest operator multiplier (or I failed to read it). Parameter: settings.interestOperatorMultiplier\n");
-
-        g_error_free(gerror);
-
-        return false;
-    }
-
-    // get interestOperatorMultiplierHorizontalInvariance
-    configStruct->interestOperatorMultiplierHorizontalInvariance =
-        g_key_file_get_double(keyfile, "settings",
-        "interestOperatorMultiplierHorizontalInvariance", &gerror);
-
-    if (gerror != NULL)
-    {
-        fprintf(stderr, "Error: configuration file does not specify interest operator multiplier for horizontal invariance (or I failed to read it). Parameter: settings.interestOperatorMultiplierHorizontalInvariance\n");
-
-        g_error_free(gerror);
-
-        return false;
-    }
-
 
     configStruct->calibrationUnitConversion =
         g_key_file_get_double(keyfile, "cameras",
