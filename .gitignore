@@ -26,6 +26,7 @@ ui/stereo-monitor/stereo-monitor
 controllers/cpp_stereo_obstacles/stereo-imu-obstacles
 controllers/cpp_stereo_obstacles/stereo-imu-obstacles_d
 ui/hud/hud-main
+ui/hud/hud-main_d
 sensors/bm-stereo/bm-stereo
 sensors/bm-stereo/bm-stereo_d
 estimators/mav-state-init/send-mav-state-init

@@ -225,4 +225,19 @@ set(gca, 'XTickLabel',{'0','2','4','6','8','No Stereo'});
 grid on
 
 
+%% compute statistics
 
+% within 1 meter
+one_meter = length(find(real_sum(:,1) < 1.0)) / length(real_sum(:,1));
+
+disp([num2str(one_meter * 100) ' % within 1.0 meters'])
+
+
+two_meters = length(find(real_sum(:,1) < 2.0)) / length(real_sum(:,1));
+
+disp([num2str(two_meters * 100) ' % within 2.0 meters'])
+
+
+five_meters = length(find(real_sum(:,1) >= 5.0)) / length(real_sum(:,1));
+
+disp([num2str(five_meters * 100) ' % outside of 5.0 meters'])

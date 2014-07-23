@@ -52,6 +52,7 @@ int main(int argc,char** argv) {
     bool replay_hud_bool = false;
     bool record_hud = false;
     bool show_unremapped = false;
+    int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
 
@@ -60,6 +61,7 @@ int main(int argc,char** argv) {
     parser.add(move_window_x, "x", "move-window-x", "Move window starting location x (must pass both x and y)");
     parser.add(move_window_y, "y", "move-window-y", "Move window starting location y (must pass both x and y)");
     parser.add(replay_hud_bool, "r", "replay-hud", "Enable a second HUD on the channel STATE_ESTIMATOR_POSE_REPLAY");
+    parser.add(clutter_level, "C", "clutter-level", "Sets clutter level for HUD display from 0 (just image) to 5 (full HUD)");
     parser.add(record_hud, "R", "record-hud", "Enable recording to disk.");
     parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
@@ -106,6 +108,11 @@ int main(int argc,char** argv) {
         return 1;
     }
 
+    if (clutter_level < 0 || clutter_level > 5) {
+        fprintf(stderr, "Error: clutter level out of bounds.\n");
+        return 1;
+    }
+
     BotFrames *bot_frames = bot_frames_new(lcm, param);
 
     RecordingManager recording_manager;
@@ -113,6 +120,7 @@ int main(int argc,char** argv) {
 
     // create a HUD object so we can pass it's pointer to the lcm handlers
     Hud hud;
+    hud.SetClutterLevel(clutter_level);
     Hud replay_hud(Scalar(0, 0, 0.8));
     replay_hud.SetClutterLevel(99);
 
@@ -190,6 +198,8 @@ int main(int argc,char** argv) {
 
     bool change_flag = true;
 
+    Mat hud_image;
+
     while (true) {
         // read the LCM channel, but process everything to allow us to drop frames
         while (NonBlockingLcm(lcm)) {
@@ -199,7 +209,7 @@ int main(int argc,char** argv) {
         if (change_flag == true || ui_box) {
             change_flag = false;
 
-            Mat hud_image, temp_image;
+            Mat temp_image;
 
             image_mutex.lock();
             left_image.copyTo(temp_image);
@@ -328,6 +338,7 @@ int main(int argc,char** argv) {
             }
 
             imshow("HUD", hud_image);
+
         }
 
 
@@ -369,10 +380,25 @@ int main(int argc,char** argv) {
 
             case 'c':
                 hud.SetClutterLevel(hud.GetClutterLevel() + 1);
+                change_flag = true;
                 break;
 
             case 'C':
                 hud.SetClutterLevel(hud.GetClutterLevel() - 1);
+                change_flag = true;
+                break;
+
+            case 'S':
+                // take a screen cap
+                printf("\nWriting hud.ppm...");
+
+                Mat converted_hud, converted_hud2;
+
+                hud_image.convertTo(converted_hud, CV_16U, 65536);
+
+                imwrite("hud.png", converted_hud);
+                printf("\ndone.");
+
                 break;
         }
     }
