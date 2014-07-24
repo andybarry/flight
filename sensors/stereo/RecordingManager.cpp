@@ -7,6 +7,7 @@ RecordingManager::RecordingManager() {
     current_video_number_ = -1;
     record_hud_setup_ = false;
     video_directory_ = "";
+    video_number_ = -1;
 
     quiet_mode_ = false;
 
@@ -68,7 +69,11 @@ bool RecordingManager::InitRecording(Mat image_left, Mat image_right) {
 void RecordingManager::BeginNewRecording() {
 
     // get a new filename
-    video_number_ = GetNextVideoNumber(stereo_config_.usePGM, true);
+    if (video_number_ < 0) {
+        video_number_ = GetNextVideoNumber(stereo_config_.usePGM, true);
+    } else {
+        video_number_ ++;
+    }
 
     // reset the number of frames we've recorded
     rec_num_frames_ = 0;
@@ -464,7 +469,7 @@ string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_p
 
     // format the number string
     char filenumber[100];
-    sprintf(filenumber, "%02d", GetNextVideoNumber(use_pgm, increment_number));
+    sprintf(filenumber, "%02d", video_number_);
 
     string retstring = stereo_config_.videoSaveDir
                 + "/" + filename_prefix + "-"

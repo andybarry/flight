@@ -111,7 +111,7 @@ void lcm_stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel,
     } else if (msg->stereo_control == 1)
     {
         // record
-        cout << "(Re)starting recording." << endl;
+        cout << endl << "(Re)starting recording." << endl;
 
 
         recording_manager.BeginNewRecording();
