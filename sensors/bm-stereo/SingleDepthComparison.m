@@ -2,28 +2,23 @@
 
 clear
 
-pass_number = 3;
+pass_number = 6;
 doFalseNeg = 0;
 sumfig = 20;
+enable_boxed = 0;
 
 bm_depth_min = 4.7;
 bm_depth_max = 4.9;
+
+new_dir = 1;
 
 %% load everything
 
 disp('Loading...');
 
-if doFalseNeg == 0
-  start_frame_pass = [ 1801 852 696 ];
-  end_frame_pass = [ 2305 1112 1416 ];
-else
+start_frame_pass = [ 1990 989 809 0 0 62];
+end_frame_pass = [ 2046 1112 1416 0 0 5630];
 
-
-  start_frame_pass = [ 1990 989 809 ];
-  %end_frame_pass = [ 2305 1112 1416 ];
-  end_frame_pass = [ 2046 1112 1416 ];
-
-end
 
 addpath('../../scripts/logs');
 
@@ -31,9 +26,14 @@ addpath('../../scripts/logs');
 %dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/new/';
 %filename = ['pass' num2str(pass_number) '.mat'];
 
-dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
-filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
-%filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
+if new_dir ~= 1
+  dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
+  filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
+else
+  dir = '../../logs/logs/2014-07-24-outside-stereo-test1/bm-stereo/';
+  filename = ['pass' num2str(pass_number) '_log.mat'];
+end
+%filename = ['pass' num2str(pass_number) '_disp3_random3.mat']/;
 %filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
 
 loadDeltawing
@@ -54,13 +54,15 @@ clear servo_out stereo_replay battery gpsValues this_number
 
 %% apply boxes
 
-disp('Apply bounding boxes...');
-bbox = LoadBoundingBox(['box_clicking/pass' num2str(pass_number) '.csv']);
+if enable_boxed == 1
+  disp('Apply bounding boxes...');
+  bbox = LoadBoundingBox(['box_clicking/pass' num2str(pass_number) '.csv']);
 
 
-bm_stereo_boxed = ProcessBoundingBoxBmStereo(bm_stereo, bbox);
+  bm_stereo_boxed = ProcessBoundingBoxBmStereo(bm_stereo, bbox);
 
-bm_stereo = bm_stereo_boxed;
+  bm_stereo = bm_stereo_boxed;
+end
 
 
 
@@ -79,20 +81,32 @@ bm_stereo_cropped.utime = bm_stereo.utime;
 bm_stereo_cropped.frame_number = bm_stereo.frame_number;
 bm_stereo_cropped.video_number = bm_stereo.video_number;
 bm_stereo_cropped.logtime = bm_stereo.logtime;
+% 
+
+bm_stereo_cropped.x = zeros(size(bm_stereo.x));
+bm_stereo_cropped.y = zeros(size(bm_stereo.y));
+bm_stereo_cropped.z = zeros(size(bm_stereo.z));
+
+
 
 for i = 1 : length(bm_stereo.frame_number)
   
   valid_ind = find(bm_stereo.z(i,:) > bm_depth_min & bm_stereo.z(i,:) < bm_depth_max);
   
-  bm_stereo_cropped.number_of_points(i) = length(valid_ind);
+  this_len = length(valid_ind);
+  
+  bm_stereo_cropped.number_of_points(i) = this_len;
   
   
-  bm_stereo_cropped.x(i,:) = [ bm_stereo.x(i, valid_ind) zeros(1, row_size - length(valid_ind)) ];
-  bm_stereo_cropped.y(i,:) = [ bm_stereo.y(i, valid_ind) zeros(1, row_size - length(valid_ind)) ];
-  bm_stereo_cropped.z(i,:) = [ bm_stereo.z(i, valid_ind) zeros(1, row_size - length(valid_ind)) ];
-    
+  bm_stereo_cropped.x(i,:) = [ bm_stereo.x(i, valid_ind) zeros(1, row_size - this_len) ];
+  bm_stereo_cropped.y(i,:) = [ bm_stereo.y(i, valid_ind) zeros(1, row_size - this_len) ];
+  bm_stereo_cropped.z(i,:) = [ bm_stereo.z(i, valid_ind) zeros(1, row_size - this_len) ];
+   
+  if mod(i, 100) == 0
+    disp(['Frame ' num2str(i) ' / ' num2str(length(bm_stereo.frame_number))]);
+  end
+  
 end
-
 
 %% align
 
