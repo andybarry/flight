@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# download logs
+
+HOST=$2
+
+# get the date out of the input string
+
+THISDATE=`expr match $1 ".*\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)"`
+
+#echo "Compressing logs for $THISDATE on $HOST..."
+
+#ssh linaro@$HOST "tar -cvzf logs-$HOST-$THISDATE.tar.gz lcmlog-$THISDATE.*"
+
+echo "Downloading logs for $THISDATE from $HOST..."
+
+#scp linaro@$HOST:/home/linaro/logs-$HOST-$THISDATE.tar.gz $1
+
+
+
+
+if [ "$HOST" != "u2gps" ]
+then
+    mkdir $1/$HOST
+    rsync --progress --no-inc-recursive -z linaro@$HOST:/home/linaro/lcmlog-$THISDATE.* $1/$HOST
+else
+
+    rsync --progress --no-inc-recursive -z linaro@$HOST:/home/linaro/lcmlog-$THISDATE.* $1
+fi
