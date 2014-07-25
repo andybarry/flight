@@ -7,6 +7,9 @@
 
 #include "hud-main.hpp"
 
+#define BM_DEPTH_MIN 4.7
+#define BM_DEPTH_MAX 4.9
+
 using namespace std;
 
 lcm_t * lcm;
@@ -30,8 +33,8 @@ Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in
 
 ofstream box_file;
 
-mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex;
-lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg;
+mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
+lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg, *last_stereo_replay_msg;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
 
 OcTree *octree = NULL;
@@ -52,6 +55,8 @@ int main(int argc,char** argv) {
     bool replay_hud_bool = false;
     bool record_hud = false;
     bool show_unremapped = false;
+    bool depth_crop_bm = false;
+    bool draw_stereo_replay = false;
     int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
@@ -65,6 +70,8 @@ int main(int argc,char** argv) {
     parser.add(record_hud, "R", "record-hud", "Enable recording to disk.");
     parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
+    parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
+    parser.add(draw_stereo_replay, "s", "draw_stereo_replay", "Display stereo points from the stereo_replay channel.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -111,6 +118,13 @@ int main(int argc,char** argv) {
     if (clutter_level < 0 || clutter_level > 5) {
         fprintf(stderr, "Error: clutter level out of bounds.\n");
         return 1;
+    }
+
+    float bm_depth_min = 0, bm_depth_max = 0;
+
+    if (depth_crop_bm) {
+        bm_depth_min = BM_DEPTH_MIN;
+        bm_depth_max = BM_DEPTH_MAX;
     }
 
     BotFrames *bot_frames = bot_frames_new(lcm, param);
@@ -226,9 +240,9 @@ int main(int argc,char** argv) {
             vector<int> valid_bm_points;
 
             if (box_bottom.x == -1) {
-                Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0);
+                Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, Point2d(-1, -1), Point2d(-1, -1), NULL, bm_depth_min, bm_depth_max);
             } else {
-                 Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, box_top, box_bottom, &valid_bm_points);
+                 Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, box_top, box_bottom, &valid_bm_points, bm_depth_min, bm_depth_max);
              }
 
 
@@ -257,9 +271,23 @@ int main(int argc,char** argv) {
             }
             stereo_mutex.unlock();
 
-            //cout << lcm_points << endl;
-
             Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+
+
+            // -- stereo replay -- //
+
+            if (draw_stereo_replay) {
+                // transform the point from 3D space back onto the image's 2D space
+                vector<Point3f> lcm_replay_points;
+
+                stereo_replay_mutex.lock();
+                if (last_stereo_replay_msg) {
+                    Get3DPointsFromStereoMsg(last_stereo_replay_msg, &lcm_replay_points);
+                }
+                stereo_replay_mutex.unlock();
+
+                Draw3DPointsOnImage(temp_image, &lcm_replay_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 255, 0);
+            }
 
             // -- octomap XY -- //
             stereo_xy_mutex.lock();
@@ -373,7 +401,7 @@ int main(int argc,char** argv) {
                 AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 50);
                 ResetBoxDrawing();
                 break;
-            case 'R':
+            case 'r':
                 record_hud = true;
                 recording_manager.RestartRecHud();
                 break;
@@ -387,6 +415,26 @@ int main(int argc,char** argv) {
                 hud.SetClutterLevel(hud.GetClutterLevel() - 1);
                 change_flag = true;
                 break;
+
+            case 's':
+                draw_stereo_replay = !draw_stereo_replay;
+                change_flag = true;
+                break;
+
+            case 'z':
+                depth_crop_bm = !depth_crop_bm;
+
+                if (depth_crop_bm) {
+                    bm_depth_min = BM_DEPTH_MIN;
+                    bm_depth_max = BM_DEPTH_MAX;
+                } else {
+                    bm_depth_min = 0;
+                    bm_depth_max = 0;
+                }
+                change_flag = true;
+
+                break;
+
 
             case 'S':
                 // take a screen cap
@@ -426,25 +474,27 @@ void OnMouse( int event, int x, int y, int flags, void* hud_in) {
 
     Hud *hud = (Hud*) hud_in;
 
-    ui_box_mutex.lock();
+    if (ui_box) {
+        ui_box_mutex.lock();
 
-    if( event == EVENT_LBUTTONUP) { // left button click
-        if (ui_box_first_click) {
-            ui_box_done = true;
-        } else {
-            ui_box_first_click = true;
+        if( event == EVENT_LBUTTONUP) { // left button click
+            if (ui_box_first_click) {
+                ui_box_done = true;
+            } else {
+                ui_box_first_click = true;
+            }
         }
+
+        if (ui_box_first_click) {
+            box_bottom = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
+
+        } else {
+            box_top = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
+            box_bottom = Point2d(-1, -1);
+        }
+
+        ui_box_mutex.unlock();
     }
-
-    if (ui_box_first_click) {
-        box_bottom = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
-
-    } else {
-        box_top = Point2d(x / hud->GetImageScaling(), y / hud->GetImageScaling());
-        box_bottom = Point2d(-1, -1);
-    }
-
-    ui_box_mutex.unlock();
 }
 
 void AskForFrame(int video_number, int frame_number) {
@@ -533,6 +583,11 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 
     hud->SetFrameNumber(msg->frame_number);
     hud->SetVideoNumber(msg->video_number);
+
+    stereo_replay_mutex.lock();
+    last_stereo_replay_msg = lcmt_stereo_copy(msg);
+    stereo_replay_mutex.unlock();
+
 }
 
 void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_baro_airspeed *msg, void *user) {

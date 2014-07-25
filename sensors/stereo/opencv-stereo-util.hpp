@@ -113,6 +113,6 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
 
 void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_out);
 
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color = 128, int inside_color = 255, Point2d box_top = Point2d(-1, -1), Point2d box_bottom = Point2d(-1, -1), vector<int> *points_in_box = NULL);
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color = 128, int inside_color = 255, Point2d box_top = Point2d(-1, -1), Point2d box_bottom = Point2d(-1, -1), vector<int> *points_in_box = NULL, float min_z = 0, float max_z = 0);
 
 #endif

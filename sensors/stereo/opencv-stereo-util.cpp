@@ -692,9 +692,11 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param box_bottom the second coordinate of the box
  * @param points_in_box if you pass box_top and box_bottom, this will be filled with the indicies of
  *          the points inside the box.
+ * @param min_z minimum z value allowable to draw the point
+ * @param max_z maximum z value allowable to draw the point
  */
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box)
-{
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box,
+float min_z, float max_z) {
     vector<Point3f> &points_list = *points_list_in;
 
     if (points_list.size() <= 0)
@@ -744,11 +746,18 @@ void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat 
 
         if (box_bounding == false || flag == true) {
 
-            rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
-                Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
+            if (min_z == 0 || points_list[i].z >= min_z) {
 
-            rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-                Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
+                if (max_z == 0 || points_list[i].z <= max_z) {
+
+                    rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
+                        Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
+
+                    rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
+                        Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
+
+                }
+            }
         }
 
     }

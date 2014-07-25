@@ -350,26 +350,50 @@ void RecordingManager::GetFramePGM(Mat &left_image, Mat &right_image) {
 
     // get the name of the image we want based on our position in the video
 
-    boost::format formatter_left = boost::format("left%05d.pgm") % file_frame_number_;
-    string im_name_left = formatter_left.str();
+    bool fail_flag = false;
+    string fail_text_left = "", fail_text_right = "";
 
-    boost::format formatter_right = boost::format("right%05d.pgm") % file_frame_number_;
-    string im_name_right = formatter_right.str();
+    int load_number = file_frame_number_ - file_frame_skip_;
+
+    if (load_number < 0) {
+        fail_flag = true;
+        boost::format formatter_skip = boost::format("First frame: %05d (at %05d)") % file_frame_skip_ % file_frame_number_;
+        fail_text_left = formatter_skip.str();
+        fail_text_right = fail_text_left;
+
+    } else {
+
+        boost::format formatter_left = boost::format("left%05d.pgm") % load_number;
+        string im_name_left = formatter_left.str();
+
+        boost::format formatter_right = boost::format("right%05d.pgm") % load_number;
+        string im_name_right = formatter_right.str();
 
 
-    left_image = imread(pgm_left_dir_ + "/" + im_name_left, -1);
+        left_image = imread(pgm_left_dir_ + "/" + im_name_left, -1);
+        right_image = imread(pgm_right_dir_ + "/" + im_name_right, -1);
 
-    if (left_image.data == NULL) {
-        left_image = Mat::zeros(240, 376, CV_8UC1);
-        putText(left_image, "Missing PGM file: " + im_name_left, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+        if (left_image.data == NULL) {
+            fail_flag = true;
+            fail_text_left = "Missing PGM file: " + im_name_left;
+        }
+
+        if (right_image.data == NULL) {
+            fail_flag = true;
+            fail_text_right = "Missing PGM file: " + im_name_right;
+        }
+
     }
 
 
-    right_image = imread(pgm_right_dir_ + "/" + im_name_right, -1);
 
-    if (right_image.data == NULL) {
+    if (fail_flag) {
+        left_image = Mat::zeros(240, 376, CV_8UC1);
+        putText(left_image, fail_text_left, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+
+
         right_image = Mat::zeros(240, 376, CV_8UC1);
-        putText(right_image, "Missing PGM file: " + im_name_right, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
+        putText(right_image, fail_text_right, Point(50,100), FONT_HERSHEY_DUPLEX, .5, Scalar(255));
     }
 
 
@@ -589,6 +613,7 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
 
     // attempt to create video capture objects
     if (LoadVideoFiles(left_video, right_video) == true) {
+        printf("\nLoaded %s and %s with frame-skip: %d\n", left_video.c_str(), right_video.c_str(), skip_amount);
         return skip_amount;
     } else {
         return -1;
