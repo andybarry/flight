@@ -493,7 +493,12 @@ string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_p
 
     // format the number string
     char filenumber[100];
-    sprintf(filenumber, "%02d", video_number_);
+
+    if (video_number_ < 0) {
+        sprintf(filenumber, "%02d", GetNextVideoNumber(use_pgm, increment_number));
+    } else {
+        sprintf(filenumber, "%02d", video_number_);
+    }
 
     string retstring = stereo_config_.videoSaveDir
                 + "/" + filename_prefix + "-"

@@ -27,10 +27,23 @@ addpath('../../scripts/logs');
 %dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/new/';
 %filename = ['pass' num2str(pass_number) '.mat'];
 
+
 dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
-filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
-%filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
-%filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
+
+if enable_random == 1
+  
+  filename = ['pass' num2str(pass_number) '_disp3_random3.mat'];
+  %filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
+  
+  
+  disp('WARNING RANDOM ENABLED.')
+else
+  
+  filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
+  
+end
+
+
 
 loadDeltawing
 

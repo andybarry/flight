@@ -6,6 +6,7 @@ passes = [ 1 2 3 ];
 
 doFalseNeg = 0;
 enable_boxed = 1;
+enable_random = 1;
 
 figstart = 0
 sumfig = 20;

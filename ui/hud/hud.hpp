@@ -110,6 +110,7 @@ class Hud {
 
         void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
 
+        void SetImageScaling(float scale_factor) { scale_factor_ = scale_factor; }
         int GetImageScaling() { return scale_factor_; }
 
         int GetVideoNumber() { return video_number_; }

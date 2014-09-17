@@ -50,6 +50,11 @@ Point2d box_bottom(-1, -1);
 
 int main(int argc,char** argv) {
 
+    Scalar bm_color(.5, .5, .5);
+    Scalar block_match_color(.8, 0, 0);
+    Scalar block_match_fill_color(1, 1, 1);
+    Scalar octomap_color(1, 0, .4);
+
     string config_file = "";
     int move_window_x = -1, move_window_y = -1;
     bool replay_hud_bool = false;
@@ -137,6 +142,7 @@ int main(int argc,char** argv) {
     hud.SetClutterLevel(clutter_level);
     Hud replay_hud(Scalar(0, 0, 0.8));
     replay_hud.SetClutterLevel(99);
+    replay_hud.SetImageScaling(1);
 
     // if a channel exists, subscribe to it
     char *pose_channel;
@@ -223,11 +229,18 @@ int main(int argc,char** argv) {
         if (change_flag == true || ui_box) {
             change_flag = false;
 
-            Mat temp_image;
+            Mat gray_img;
 
             image_mutex.lock();
-            left_image.copyTo(temp_image);
+            left_image.copyTo(gray_img);
             image_mutex.unlock();
+
+            // convert to color
+            Mat gray_img2;
+            gray_img.convertTo(gray_img2, CV_32FC3, 1/255.0);
+
+            Mat color_img;
+            cvtColor(gray_img2, color_img, CV_GRAY2BGR);
 
             // -- BM stereo -- //
             vector<Point3f> bm_points;
@@ -240,9 +253,9 @@ int main(int argc,char** argv) {
             vector<int> valid_bm_points;
 
             if (box_bottom.x == -1) {
-                Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, Point2d(-1, -1), Point2d(-1, -1), NULL, bm_depth_min, bm_depth_max);
+                Draw3DPointsOnImage(color_img, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, bm_color, 0, Point2d(-1, -1), Point2d(-1, -1), NULL, bm_depth_min, bm_depth_max);
             } else {
-                 Draw3DPointsOnImage(temp_image, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128, 0, box_top, box_bottom, &valid_bm_points, bm_depth_min, bm_depth_max);
+                 Draw3DPointsOnImage(color_img, &bm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, bm_color, 0, box_top, box_bottom, &valid_bm_points, bm_depth_min, bm_depth_max);
              }
 
 
@@ -256,7 +269,7 @@ int main(int argc,char** argv) {
             if (octree != NULL) {
                 StereoOctomap::GetOctomapPoints(octree, &octomap_points, &global_to_body, true);
 
-                //Draw3DPointsOnImage(temp_image, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+                //Draw3DPointsOnImage(color_img, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
             }
             octomap_mutex.unlock();
 
@@ -271,7 +284,7 @@ int main(int argc,char** argv) {
             }
             stereo_mutex.unlock();
 
-            Draw3DPointsOnImage(temp_image, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 0);
+            Draw3DPointsOnImage(color_img, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, block_match_color, block_match_fill_color);
 
 
             // -- stereo replay -- //
@@ -286,7 +299,7 @@ int main(int argc,char** argv) {
                 }
                 stereo_replay_mutex.unlock();
 
-                Draw3DPointsOnImage(temp_image, &lcm_replay_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 255, 0);
+                Draw3DPointsOnImage(color_img, &lcm_replay_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, Scalar(1, 1, 1), 0);
             }
 
             // -- octomap XY -- //
@@ -295,7 +308,7 @@ int main(int argc,char** argv) {
                 vector<Point> xy_points;
 
                 Get2DPointsFromLcmXY(last_stereo_xy_msg, &xy_points);
-                Draw2DPointsOnImage(temp_image, &xy_points);
+                Draw2DPointsOnImage(color_img, &xy_points);
             }
             stereo_xy_mutex.unlock();
 
@@ -336,9 +349,9 @@ int main(int argc,char** argv) {
             // remap
             Mat remapped_image;
             if (show_unremapped == false) {
-                remap(temp_image, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
+                remap(color_img, remapped_image, stereo_calibration.mx1fp, Mat(), INTER_NEAREST);
             } else {
-                temp_image.copyTo(remapped_image);
+                color_img.copyTo(remapped_image);
             }
 
             if (ui_box) {
@@ -438,7 +451,7 @@ int main(int argc,char** argv) {
 
             case 'S':
                 // take a screen cap
-                printf("\nWriting hud.ppm...");
+                printf("\nWriting hud.png...");
 
                 Mat converted_hud, converted_hud2;
 
@@ -657,7 +670,7 @@ void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points) {
 
 void Draw2DPointsOnImage(Mat image, vector<Point> *points) {
     for (Point point : *points) {
-        rectangle(image, Point(point.x-1, point.y-1), Point(point.x+1, point.y+1), 0);
+        rectangle(image, Point(point.x-1, point.y-1), Point(point.x+1, point.y+1), Scalar(0, 0, 0.8));
     }
 }
 

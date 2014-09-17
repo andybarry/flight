@@ -687,7 +687,7 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param cam_mat_m camera calibration matrix (usually M1.xml)
  * @param cam_mat_d distortion calibration matrix (usually D1.xml)
  * @param outline_color color to draw the box outlines (default: 128)
- * @param inside_color color to draw the inside of the boxes (default: 255)
+ * @param inside_color color to draw the inside of the boxes (default: 255). Set to -1 for no fill.
  * @param box_top if you only want to draw points inside a box, this specifies one coordinate of the box
  * @param box_bottom the second coordinate of the box
  * @param points_in_box if you pass box_top and box_bottom, this will be filled with the indicies of
@@ -695,7 +695,7 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param min_z minimum z value allowable to draw the point
  * @param max_z maximum z value allowable to draw the point
  */
-void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, int outline_color, int inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box,
+void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, Scalar outline_color, Scalar inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box,
 float min_z, float max_z) {
     vector<Point3f> &points_list = *points_list_in;
 
@@ -719,6 +719,11 @@ float min_z, float max_z) {
 
     if (box_top.x != -1 || box_top.y != -1 || box_bottom.x != -1 || box_bottom.y != -1) {
         box_bounding = true;
+    }
+
+    int thickness = CV_FILLED;
+    if (inside_color[0] == -1) {
+        thickness = 1;
     }
 
     // now draw the points onto the image
@@ -751,10 +756,12 @@ float min_z, float max_z) {
                 if (max_z == 0 || points_list[i].z <= max_z) {
 
                     rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
-                        Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, CV_FILLED);
+                        Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, thickness);
 
-                    rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-                        Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, CV_FILLED);
+                    if (inside_color[0] != -1) {
+                        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
+                            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, thickness);
+                    }
 
                 }
             }

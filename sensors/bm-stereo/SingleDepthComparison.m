@@ -1,23 +1,44 @@
 % do single-depth comparisons
 
-clear
-
-pass_number = 6;
-doFalseNeg = 0;
-sumfig = 20;
-enable_boxed = 0;
-
-bm_depth_min = 4.7;
-bm_depth_max = 4.9;
-
-new_dir = 1;
+% clear
+% 
+% pass_number = 33;
+% doFalseNeg = 0;
+% sumfig = 20;
+% enable_boxed = 0;
+% 
+% bm_depth_min = 4.7;
+% bm_depth_max = 4.9;
+% 
+% new_dir = 2;
 
 %% load everything
 
 disp('Loading...');
 
-start_frame_pass = [ 1990 989 809 0 0 62];
-end_frame_pass = [ 2046 1112 1416 0 0 5630];
+start_frame_pass = zeros(1, 35);
+end_frame_pass = zeros(1, 35);
+
+start_frame_pass(1) = 1990;
+start_frame_pass(2) = 989;
+start_frame_pass(3) = 809;
+start_frame_pass(6) = 62;
+
+start_frame_pass(27) = 5313;
+start_frame_pass(29) = 6111;
+start_frame_pass(33) = 2851;
+
+
+end_frame_pass(1) = 2046;
+end_frame_pass(2) = 1112;
+end_frame_pass(3) = 1416;
+end_frame_pass(6) = 5630;
+
+end_frame_pass(27) = 11198;
+end_frame_pass(29) = 11962;
+
+end_frame_pass(33) = 8794;
+
 
 
 addpath('../../scripts/logs');
@@ -26,12 +47,16 @@ addpath('../../scripts/logs');
 %dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/new/';
 %filename = ['pass' num2str(pass_number) '.mat'];
 
-if new_dir ~= 1
+if new_dir == 0
   dir = '../../logs/logs/2014-04-18-near-goalposts/bm-stereo/';
   filename = ['pass' num2str(pass_number) '_disp3_3.mat'];
-else
+elseif new_dir == 1
   dir = '../../logs/logs/2014-07-24-outside-stereo-test1/bm-stereo/';
   filename = ['pass' num2str(pass_number) '_log.mat'];
+elseif new_dir == 2
+  dir = '../../logs/logs/2014-07-24-outside-stereo-test2/bm-stereo/';
+  filename = ['pass' num2str(pass_number) '_log.mat'];
+  
 end
 %filename = ['pass' num2str(pass_number) '_disp3_random3.mat']/;
 %filename = ['pass' num2str(pass_number) '_fix_random2.mat'];
@@ -229,11 +254,13 @@ xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
 xlim([-1 11]);
-set(gca, 'XTickLabel',{'0','2','4','6','8','No Stereo'});
+set(gca, 'XTickLabel',{'0','2','4','6','8','No Match'});
 %ylim([0 500]);
 grid on
 
-real_dists_array{pass_number} = real_dists;
+if sum_false_pos == 1
+  real_dists_array{pass_number} = real_dists;
+end
 
 figure(2)
 clf
@@ -242,8 +269,52 @@ xlabel('Minimum separation (meters)')
 ylabel('Number of pixels')
 title(strrep(filename, '_','-'));
 xlim([-1 11]);
-set(gca, 'XTickLabel',{'0','2','4','6','8','No Stereo'});
+set(gca, 'XTickLabel',{'0','2','4','6','8','No Match'});
 %ylim([0 500]);
 grid on
 
-real_dists_array{pass_number} = real_dists;
+if sum_false_pos ~= 1
+  real_dists_array{pass_number} = real_dists;
+end
+
+
+
+%% sum up
+
+figure(sumfig)
+real_sum = [];
+for i = 1 : length(real_dists_array)
+  real_sum = [real_sum; real_dists_array{i}];
+end
+hist(real_sum(:,1), 0:.1:ceil(max(real_sum(:,1))));
+xlabel('Minimum separation (meters)')
+ylabel('Number of pixels')
+
+if doFalseNeg == 0
+  title('')
+else
+  title('False Negative Check');
+end
+
+xlim([-1 11]);
+set(gca, 'XTickLabel',{'0','2','4','6','8','No Match'});
+%ylim([0 1500]);
+grid on
+
+
+%% compute statistics
+
+% within 1 meter
+one_meter = length(find(real_sum(:,1) < 1.0)) / length(real_sum(:,1));
+
+disp([num2str(one_meter * 100) ' % within 1.0 meters'])
+
+
+two_meters = length(find(real_sum(:,1) < 2.0)) / length(real_sum(:,1));
+
+disp([num2str(two_meters * 100) ' % within 2.0 meters'])
+
+
+five_meters = length(find(real_sum(:,1) >= 5.0)) / length(real_sum(:,1));
+
+disp([num2str(five_meters * 100) ' % outside of 5.0 meters'])

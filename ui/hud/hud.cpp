@@ -51,14 +51,12 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
     // if it is color, we're probably writing on top of an existing
     // HUD for comparison, so don't convert color
 
+    Size output_size = input_image.size()*scale_factor_;
 
+    _output_image.create(output_size, CV_32FC3);
+    hud_img = _output_image.getMat();
 
     if (input_image.type() == CV_8UC1) {
-
-        Size output_size = input_image.size()*scale_factor_;
-
-        _output_image.create(output_size, CV_32FC3);
-        hud_img = _output_image.getMat();
 
         Mat gray_img;
         input_image.copyTo(gray_img);
@@ -72,8 +70,7 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
         resize(color_img, hud_img, output_size);
     } else {
 
-        _output_image.create(input_image.size(), CV_32FC3);
-        hud_img = _output_image.getMat();
+        resize(input_image, hud_img, output_size);
     }
 
     if (clutter_level_ == 99) {
