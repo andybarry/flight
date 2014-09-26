@@ -33,6 +33,9 @@ mkdir $VIDEODIR/$DATESTR-$DIRNAME
 echo "$LOGDIR/$DATESTR-$DIRNAME/onboard"
 mkdir  -p $LOGDIR/$DATESTR-$DIRNAME/onboard
 
+echo "$LOGDIR/$DATESTR-$DIRNAME/mat"
+mkdir -p $LOGDIR/$DATESTR-$DIRNAME/mat
+
 echo "Creating symlinks..."
 echo "$VIDEODIR/$DATESTR-$DIRNAME -> $LOGDIR/$DATESTR-$DIRNAME/ground-vids"
 ln -s $VIDEODIR/$DATESTR-$DIRNAME $LOGDIR/$DATESTR-$DIRNAME/ground-vids

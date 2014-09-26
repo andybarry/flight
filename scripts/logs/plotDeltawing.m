@@ -4,8 +4,8 @@
 %dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 
-dir = '2014-02-12-crash-on-takeoff/';
-filename = 'lcmlog_2014_02_12_02.mat';
+dir = '2014-04-18-near-goalposts/mat/';
+filename = 'pass1.mat';
 
 
 
@@ -16,11 +16,14 @@ loadDeltawing
 
 
 % get start and end times
-[throttle_start, throttle_end] = FindActiveTimes(u.logtime, u.throttle, 1700);
+[throttle_start, throttle_end] = FindActiveTimes(u.logtime, u.throttle, 1150);
 
 % get altitude start and end times
 [alt_start, alt_end] = FindActiveTimes(baro.logtime, baro.altitude, 7);
 % now plot relevant things
+
+start_times = throttle_start - 1;
+end_times = throttle_end + 1;
 
 figure(1)
 clf
@@ -35,7 +38,7 @@ hold on
 plot(baro.logtime, baro.airspeed.*.44704,'r');
 title('Airspeed');
 xlabel('Log time (s)');
-ylabel('Airspeed');
+ylabel('Airspeed / Altitude');
 legend('Altitude', 'Airspeed');
 
 figure(2)
@@ -62,8 +65,10 @@ plot3(gps.x, gps.y, gps.z)
 figure(6)
 clf
 q = [est.orientation.q0 est.orientation.q1 est.orientation.q2 est.orientation.q3];
-[pitch, roll, yaw] = quat2angle(q, 'YXZ');
+[yaw, pitch, roll] = quat2angle(q); rad2deg([r p y])
 
-plot(est.logtime, pitch*10);
+plot(est.logtime, rad2deg(pitch));
 hold on
 plot(baro.logtime, baro.altitude,'r');
+legend('pitch', 'altitude');
+xlim([start_times(1) - 1, end_times(end) + 1]);

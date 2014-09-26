@@ -41,6 +41,12 @@ if (exist('STATE_ESTIMATOR_POSE', 'var'))
   est.accel.z = STATE_ESTIMATOR_POSE(:,17);
 
   est.logtime = STATE_ESTIMATOR_POSE(:,18);
+
+  % compute yaw pitch and roll
+  [est.orientation.yaw, est.orientation.pitch, est.orientation.roll] = ...
+    quat2angle( [est.orientation.q0 est.orientation.q1 est.orientation.q2 ...
+    est.orientation.q3]);
+  
 end
 
 % battery values
