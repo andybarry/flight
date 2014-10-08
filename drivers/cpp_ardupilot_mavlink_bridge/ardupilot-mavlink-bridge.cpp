@@ -54,6 +54,8 @@ using namespace std;
  * XXX XXX XXX XXX
  */
 
+#define IGNORE_SYS_ID 99
+
 
 lcm_t * lcm;
 
@@ -172,7 +174,10 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     // extract the message out of the container
     mavlink_message_t mavmsg = msg->msg;
 
-
+    if (mavmsg.sysid == IGNORE_SYS_ID) {
+        // this is Helen's FPGA, ignore message
+        return;
+    }
 
     switch(mavmsg.msgid)
     {

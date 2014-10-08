@@ -20,6 +20,7 @@ using namespace std;
 
 #include "../../LCM/mavlink_msg_container_t.h"
 #include "../../LCM/lcmt_stereo_control.h"
+#include "../../LCM/lcmt_deltawing_u.h"
 
 
 #include <bot_core/bot_core.h>
@@ -54,16 +55,23 @@ using namespace std;
 lcm_t * lcm;
 
 char *channelStereoControl = NULL;
+char *channelMavlink = NULL;
+char *channelServoOut = NULL;
 
+
+mavlink_msg_container_t_subscription_t * mavlink_sub;
 lcmt_stereo_control_subscription_t *stereo_control_sub;
+lcmt_deltawing_u_subscription_t *servo_out_sub;
 
 uint8_t systemID = getSystemID();
 
 static void usage(void) {
-        fprintf(stderr, "usage: fpga-mavlink-bridge stereo-control-channel-name\n");
+        fprintf(stderr, "usage: fpga-mavlink-bridge stereo-control-channel-name mavlink-channel-name\n");
         fprintf(stderr, "    stereo-control-channel-name : LCM channel to receive stereo control commands on\n");
+        fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
+        fprintf(stderr, "    servo-out-channel-name : LCM channel name with servo out messages on it for sending timestamps\n");
         fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./fpga-mavlink-bridge stereo-control\n");
+        fprintf(stderr, "    ./fpga-mavlink-bridge stereo-control MAVLINK servo_out\n");
 }
 
 
@@ -87,7 +95,23 @@ void stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 
     mavlink_message_t mavmsg;
 
-	mavlink_msg_param_set_pack(systemID, 200, &mavmsg, FPGA_TARGET_SYSTEM_ID, FPGA_TARGET_COMPONENT_ID, "RECORD_IMG", 1.0f, MAVLINK_TYPE_FLOAT);
+	mavlink_msg_param_set_pack(systemID, 200, &mavmsg, FPGA_TARGET_SYSTEM_ID, FPGA_TARGET_COMPONENT_ID, "RECORD_IMG", (float) msg->stereo_control, MAVLINK_TYPE_FLOAT);
+
+    cout << "sending set param message from " << systemID << " with value " << (float) msg->stereo_control << endl;
+
+	// Publish the message on the LCM IPC bus
+	sendMAVLinkMessage(lcm, &mavmsg);
+
+}
+
+void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user) {
+    // send a timestamp message on every servo_out message
+
+    mavlink_message_t mavmsg;
+
+	mavlink_msg_system_time_pack(systemID, 200, &mavmsg, getTimestampNow(), 0);
+
+    cout << "sending timestamp" << endl;
 
 	// Publish the message on the LCM IPC bus
 	sendMAVLinkMessage(lcm, &mavmsg);
@@ -114,6 +138,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     mavlink_message_t mavmsg = msg->msg;
 
 
+    if (mavmsg.sysid != FPGA_TARGET_SYSTEM_ID) {
+        return;
+    }
 
     switch(mavmsg.msgid) {
         // process messages here
@@ -122,6 +149,10 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             mavlink_msg_statustext_decode(&mavmsg, &textMsg);
 
             cout << "status text: " << textMsg.text << endl;
+            break;
+
+        case MAVLINK_MSG_ID_HEARTBEAT:
+            cout << "heatbeat from system: " << (int) mavmsg.sysid << endl;
             break;
 
         default:
@@ -134,12 +165,14 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 int main(int argc,char** argv) {
 
-    if (argc!=2) {
+    if (argc!=4) {
         usage();
         exit(0);
     }
 
     channelStereoControl = argv[1];
+    channelMavlink = argv[2];
+    channelServoOut = argv[3];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm) {
@@ -147,12 +180,13 @@ int main(int argc,char** argv) {
         return 1;
     }
 
-    //mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
+    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
     stereo_control_sub = lcmt_stereo_control_subscribe(lcm, channelStereoControl, &stereo_control_handler, NULL);
+    servo_out_sub = lcmt_deltawing_u_subscribe(lcm, channelServoOut, &servo_out_handler, NULL);
 
     signal(SIGINT,sighandler);
 
-    printf("Receiving:\n\tStereo Control: %s\n", channelStereoControl);
+    printf("Receiving:\n\tStereo Control: %s\n\tMAVLINK: %s\n\tServo out: %s\n", channelStereoControl, channelMavlink, channelServoOut);
 
     while (true) {
         // read the LCM channel
