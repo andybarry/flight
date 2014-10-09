@@ -61,3 +61,4 @@ docs/*.pdf
 sensors/bm-stereo/*.eps
 sensors/bm-stereo/*.png
 sensors/bm-stereo/*.fig
+externals/timesync/pod-build/
