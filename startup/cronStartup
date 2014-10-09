@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+#
+# call this every minute from cron to always have the process
+# crontab example: * * * * * /home/$USER/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep"
+#
+
+ENV_SCRIPT=/home/odroid/realtime/scripts/setEnv
+
+# check for command line arguments
+if (( $# < 2 ))
+then
+    echo "Error: not enough arguments"
+    echo "useage: ./cronStartup [command] [pgrep search string]"
+    echo "example: ./cronStartup \"bot-procman-deputy\" \"bot-procman-dep\""
+    exit
+fi
+
+
+# set this to be the command to run
+COMMAND=$1
+
+# set this for the string to search for in ps -A
+PS_SEARCH=$2
+
+
+# check for existing timesync
+if [ `pgrep $PS_SEARCH |wc -l` = 0 ]
+then
+    echo "Found no $PS_SEARCH, starting one..."
+    # set up environment variables
+    /bin/bash -lc "source $ENV_SCRIPT; $COMMAND &"
+else
+    echo "Found a $PS_SEARCH, so not starting a new one."
+fi
+
