@@ -54,7 +54,8 @@ using namespace std;
  * XXX XXX XXX XXX
  */
 
-#define IGNORE_SYS_ID 99
+#define IGNORE_SYS_ID1 99 // helen's fpga
+#define IGNORE_SYS_ID2 42 // this computer
 
 
 lcm_t * lcm;
@@ -174,8 +175,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     // extract the message out of the container
     mavlink_message_t mavmsg = msg->msg;
 
-    if (mavmsg.sysid == IGNORE_SYS_ID) {
-        // this is Helen's FPGA, ignore message
+    if (mavmsg.sysid == IGNORE_SYS_ID1 || mavmsg.sysid == IGNORE_SYS_ID2) {
+        // this is from a system we are ignoring
         return;
     }
 
@@ -424,7 +425,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             break;
 
         default:
-            cout << "unknown message id = " << (int)mavmsg.msgid << endl;
+            cout << "unknown message id = " << (int)mavmsg.msgid << " from sysid = " << (float)mavmsg.sysid << endl;
             break;
 
     }

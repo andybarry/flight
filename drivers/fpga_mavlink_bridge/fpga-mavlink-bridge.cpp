@@ -111,7 +111,7 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 
 	mavlink_msg_system_time_pack(systemID, 200, &mavmsg, getTimestampNow(), 0);
 
-    cout << "sending timestamp" << endl;
+    //cout << "sending timestamp" << endl;
 
 	// Publish the message on the LCM IPC bus
 	sendMAVLinkMessage(lcm, &mavmsg);
