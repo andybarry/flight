@@ -20,6 +20,7 @@ sensors/stereo/opencv-stereo
 ui/plane-health-monitor/plane-health-monitor
 drivers/cpp_ardupilot_mavlink_bridge/ardupilot-mavlink-bridge
 drivers/fpga_mavlink_bridge/fpga-mavlink-bridge
+drivers/fpga_reset/fpga-camera-reset
 externals/timesync/build
 externals/timesync/lcmtypes
 ui/log-monitor/log-monitor
