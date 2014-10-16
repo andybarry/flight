@@ -235,12 +235,26 @@ int main(int argc,char** argv) {
             left_image.copyTo(gray_img);
             image_mutex.unlock();
 
-            // convert to color
-            Mat gray_img2;
-            gray_img.convertTo(gray_img2, CV_32FC3, 1/255.0);
-
             Mat color_img;
-            cvtColor(gray_img2, color_img, CV_GRAY2BGR);
+
+            if (gray_img.type() == CV_8UC1) {
+                // convert to color
+                Mat gray_img2;
+                gray_img.convertTo(gray_img2, CV_32FC3, 1/255.0);
+
+
+                cvtColor(gray_img2, color_img, CV_GRAY2BGR);
+            } else if (gray_img.type() == CV_8UC3) {
+
+                gray_img.convertTo(color_img, CV_32FC3, 1/255.0);
+
+            } else if (gray_img.type() == CV_32FC3) {
+                color_img = gray_img;
+
+            } else {
+                cout << "Error: unsupported image type." << endl;
+                return -1;
+            }
 
             // -- BM stereo -- //
             vector<Point3f> bm_points;
@@ -574,17 +588,38 @@ void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 
 void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, const bot_core_image_t *msg, void *user) {
 
-    if (msg->pixelformat != 1196444237) { // PIXEL_FORMAT_MJPEG
-        cerr << "Warning: reading images other than JPEG not yet implemented." << endl;
+    image_mutex.lock();
+
+    if (msg->pixelformat == 1196444237) { // PIXEL_FORMAT_MJPEG
+
+        left_image = Mat::zeros(msg->height, msg->width, CV_8UC1);
+
+        // decompress JPEG
+        jpeg_decompress_8u_gray(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
+        //jpeg_decompress_8u_rgb(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
+
+    } else if (msg->pixelformat == 1497715271) { // PIXEL_FORMAT_GRAY
+
+        Mat temp_image(msg->height, msg->width, CV_8UC1, msg->data);
+
+        temp_image.copyTo(left_image);
+
+    } else if (msg->pixelformat == 859981650) { // PIXEL_FORMAT_RGB
+
+        Mat temp_image(msg->height, msg->width, CV_8UC3, msg->data, msg->row_stride);
+
+        cvtColor(temp_image, left_image, CV_RGB2BGR);
+
+        cout << "done"  << endl;
+
+    } else {
+        cerr << "Warning: reading images other than GRAY and JPEG not yet implemented." << endl;
         return;
     }
 
-    image_mutex.lock();
 
-    left_image = Mat::zeros(msg->height, msg->width, CV_8UC1);
 
-    // decompress JPEG
-    jpeg_decompress_8u_gray(msg->data, msg->size, left_image.data, msg->width, msg->height, left_image.step);
+
 
     image_mutex.unlock();
 
