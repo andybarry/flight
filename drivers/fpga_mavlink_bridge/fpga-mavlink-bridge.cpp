@@ -97,7 +97,7 @@ void stereo_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 
 	mavlink_msg_param_set_pack(systemID, 200, &mavmsg, FPGA_TARGET_SYSTEM_ID, FPGA_TARGET_COMPONENT_ID, "RECORD_IMG", (float) msg->stereo_control, MAVLINK_TYPE_FLOAT);
 
-    cout << "sending set param message from " << systemID << " with value " << (float) msg->stereo_control << endl;
+    cout << "sending set param message from " << (float)systemID << " with value " << (float) msg->stereo_control << endl;
 
 	// Publish the message on the LCM IPC bus
 	sendMAVLinkMessage(lcm, &mavmsg);
