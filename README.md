@@ -7,6 +7,7 @@ This code powers
 
 * *Pushbroom stereo for high-speed navigation in cluttered environments*:
   * [paper (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry15.pdf)
+  * [video](https://www.youtube.com/watch?v=cZE01bJIgvQ)
 
   [![Pushbroom stereo for high-speed navigation in cluttered environments](http://img.youtube.com/vi/cZE01bJIgvQ/0.jpg)](https://www.youtube.com/watch?v=cZE01bJIgvQ)
 
