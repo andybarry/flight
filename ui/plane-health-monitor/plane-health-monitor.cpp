@@ -30,7 +30,7 @@ using namespace std;
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
-   
+
 #include "../../externals/ConciseArgs.hpp"
 
 lcm_t * lcm;
@@ -57,13 +57,33 @@ StringsOutStruct stringsOut;
 void PrintStatus()
 {
     mux.lock();
-    
+
     printf("\rTime: %s\tLogfile: %s        Frame #: %s", stringsOut.time.c_str(), stringsOut.logfilesize.c_str(), stringsOut.frame_number.c_str());
-    
+
     fflush(stdout);
     mux.unlock();
 }
 
+void UpdateTimestamp(long timestamp)
+{
+     mux.lock();
+
+    char tmbuf[64], buf[64];
+
+    // figure out what time the plane thinks it is
+    struct tm *nowtm;
+    time_t tv_sec = timestamp / 1000000.0;
+    nowtm = localtime(&tv_sec);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    sprintf(buf, "%s", tmbuf);
+
+
+    stringsOut.time = buf;
+
+    mux.unlock();
+
+
+}
 
 void sighandler(int dum)
 {
@@ -74,7 +94,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
 
     printf("done.\n");
-    
+
     exit(0);
 }
 
@@ -87,42 +107,29 @@ int64_t getTimestampNow()
 
 void process_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_process_control *msg, void *user)
 {
-    mux.lock();
-
-    char tmbuf[64], buf[64];
-    
-    // figure out what time the plane thinks it is
-    struct tm *nowtm;
-    time_t tv_sec = msg->timestamp / 1000000.0;
-    nowtm = localtime(&tv_sec);
-    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
-    sprintf(buf, "%s", tmbuf);
-
-
-    stringsOut.time = buf;
-    
-    mux.unlock();
-    
-    
-    PrintStatus();
+   UpdateTimestamp(msg->timestamp);
+   PrintStatus();
 }
+
 
 void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user)
 {
 
     mux.lock();
-    
+
     char buf[500];
-    
+
     // got a log size message, display it
     sprintf(buf, "#%d, %010d", msg->log_number, msg->log_size);
     stringsOut.logfilesize = buf;
-    
+
 
 
     mux.unlock();
-    
-    
+
+    UpdateTimestamp(msg->timestamp);
+
+
     PrintStatus();
 }
 
@@ -130,18 +137,19 @@ void stereo_monitor_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 {
 
     mux.lock();
-    
+
     char buf[500];
-    
+
     // got a log size message, display it
     sprintf(buf, "%05d", msg->frame_number);
     stringsOut.frame_number = buf;
-    
+
 
 
     mux.unlock();
-    
-    
+
+    UpdateTimestamp(msg->timestamp);
+
     PrintStatus();
 }
 
@@ -153,7 +161,7 @@ int main(int argc,char** argv)
     string channel_process_str = "process_status";
     string channel_log_size_str = "log_size";
     string channel_stereo_monitor_str = "stereo_monitor";
-    
+
     ConciseArgs parser(argc, argv);
     parser.add(channel_process_str, "p", "process-control-channel",
         "LCM channel for process control");
@@ -162,7 +170,7 @@ int main(int argc,char** argv)
     parser.add(channel_stereo_monitor_str, "s", "stereo-monitor",
         "LCM channel for stereo-monitor");
     parser.parse();
-    
+
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     if (!lcm)
     {
@@ -170,22 +178,22 @@ int main(int argc,char** argv)
         return 1;
     }
 
-    
+
 
     signal(SIGINT,sighandler);
-    
-    
+
+
     process_sub = lcmt_process_control_subscribe(lcm,
         channel_process_str.c_str(), &process_handler, NULL);
     log_size_sub = lcmt_log_size_subscribe(lcm,
         channel_log_size_str.c_str(), &log_size_handler, NULL);
     stereo_monitor_sub = lcmt_stereo_monitor_subscribe(lcm,
         channel_stereo_monitor_str.c_str(), &stereo_monitor_handler, NULL);
-    
-    
+
+
     printf("Receiving:\n\t%s\n\t%s\n\t%s\n--------------------------------------\n",
         channel_process_str.c_str(), channel_log_size_str.c_str(), channel_stereo_monitor_str.c_str());
-        
+
     PrintStatus();
 
     while (true)

@@ -573,7 +573,7 @@ int main(int argc, char *argv[])
 
             // draw pixel blocks
             if (lineLeftImgPosition >= 0 && lineLeftImgPositionY > 1) {
-                DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize, state, &barry_moore_stereo);
+                DisplayPixelBlocks(remapL, remapR, lineLeftImgPosition - state.blockSize/2, lineLeftImgPositionY - state.blockSize/2, state, &barry_moore_stereo);
             }
 
             // draw a line for the user to show disparity
