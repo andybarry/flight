@@ -3,9 +3,9 @@
 
 %dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
-
+clear
 dir = '2014-04-18-near-goalposts/mat/';
-filename = 'pass1.mat';
+filename = 'pass3.mat';
 
 
 
@@ -45,30 +45,36 @@ figure(2)
 plot(u.logtime, u.throttle);
 xlim([start_times(1) - 1, end_times(end) + 1]);
 xlabel('Time (s)')
-ylabel('Throttle (pulse ms)');
+ylabel('Pulse (ms)');
 
-
-figure(3)
-plot(est.logtime, est.rotation_rate.z);
-xlabel('Time (s)');
-ylabel('Rotation rate Z');
-
-figure(4);
-plot(gps.logtime, gps.x);
-plot(est.logtime, est.rotation_rate.z);
-xlabel('Time (s)');
-ylabel('GPS X-axis');
-
-figure(5)
-plot3(gps.x, gps.y, gps.z)
-
-figure(6)
-clf
-q = [est.orientation.q0 est.orientation.q1 est.orientation.q2 est.orientation.q3];
-[yaw, pitch, roll] = quat2angle(q); rad2deg([r p y])
-
-plot(est.logtime, rad2deg(pitch));
 hold on
-plot(baro.logtime, baro.altitude,'r');
-legend('pitch', 'altitude');
-xlim([start_times(1) - 1, end_times(end) + 1]);
+plot(u.logtime, u.elevonL, 'r');
+plot(u.logtime, u.video_record, 'k');
+legend('Throttle', 'ElevonL', 'Video rec');
+
+
+% 
+% figure(3)
+% plot(est.logtime, est.rotation_rate.z);
+% xlabel('Time (s)');
+% ylabel('Rotation rate Z');
+% 
+% figure(4);
+% plot(gps.logtime, gps.x);
+% plot(est.logtime, est.rotation_rate.z);
+% xlabel('Time (s)');
+% ylabel('GPS X-axis');
+
+% figure(5)
+% plot3(gps.x, gps.y, gps.z)
+% 
+% figure(6)
+% clf
+% q = [est.orientation.q0 est.orientation.q1 est.orientation.q2 est.orientation.q3];
+% [yaw, pitch, roll] = quat2angle(q); rad2deg([r p y])
+% 
+% plot(est.logtime, rad2deg(pitch));
+% hold on
+% plot(baro.logtime, baro.altitude,'r');
+% legend('pitch', 'altitude');
+% xlim([start_times(1) - 1, end_times(end) + 1]);

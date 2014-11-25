@@ -630,35 +630,85 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
     msg.nmetadata = 0;
 
     if (compression_quality >= 0) {
-         // use jpeg compression
 
-         // allocate a buffer to put the result into
-         int bufsize;
-         uint8_t buffer[bufsize];
+        if (image.type() == CV_8UC1) {
+            // use jpeg compression
+
+            // allocate a buffer to put the result into
+            int bufsize = image.cols * image.rows;
+            uint8_t buffer[bufsize];
+
+            jpeg_compress_8u_gray(image.ptr(), image.cols, image.rows, image.step, buffer, &bufsize, compression_quality);
+
+            // got the compressed file, now push it to LCM
+            msg.data = buffer;
+            msg.size = bufsize;
+
+            msg.pixelformat = 1196444237; // see bot_core_image_t.lcm --> PIXEL_FORMAT_MJPEG
+
+            // send the image over lcm
+            bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+
+        } else if (image.type() == CV_8UC3) {
+
+            // allocate a buffer to put the result into
+            int bufsize = image.cols * image.rows * 3;
+            uint8_t buffer[bufsize];
+
+            Mat rgb_mat;
+
+            cvtColor(image, rgb_mat, CV_BGR2RGB);
+
+            jpeg_compress_8u_rgb(image.ptr(), image.cols, image.rows, image.step, buffer, &bufsize, compression_quality);
+
+            msg.data = buffer;
+            msg.size = bufsize;
+
+            msg.pixelformat = 1196444237; // see bot_core_image_t.lcm --> PIXEL_FORMAT_MJPEG
+
+            // send the image over lcm
+            bot_core_image_t_publish(lcm, channel.c_str(), &msg);
 
 
-        jpeg_compress_8u_gray(image.ptr(), image.cols, image.rows, image.step, buffer, &bufsize, compression_quality);
 
-        // got the compressed file, now push it to LCM
-        msg.data = buffer;
-        msg.size = bufsize;
 
-        msg.pixelformat = 1196444237; // see bot_core_image_t.lcm --> PIXEL_FORMAT_MJPEG
-
-        // send the image over lcm
-        bot_core_image_t_publish(lcm, channel.c_str(), &msg);
-
+        } else {
+            cout << "Image type not supported. LCM transport not implemented." << endl;
+            return;
+        }
 
     } else {
 
-        msg.pixelformat = 1497715271; // see bot_core_image_t.lcm --> PIXEL_FORMAT_GRAY; // TODO: detect this
+        if (image.type() == CV_8UC1) {
+            msg.pixelformat = 1497715271; // see bot_core_image_t.lcm --> PIXEL_FORMAT_GRAY; // TODO: detect this
 
-        msg.data = image.ptr();
+            msg.data = image.ptr();
 
-        msg.size = image.cols * image.rows;
+            msg.size = image.cols * image.rows;
 
-        // send the image over lcm
-        bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+            // send the image over lcm
+            bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+        } else if (image.type() == CV_8UC3) {
+
+            Mat rgb_mat;
+
+            cvtColor(image, rgb_mat, CV_BGR2RGB);
+
+
+            msg.pixelformat = 859981650; // PIXEL_FORMAT_RGB
+
+            msg.data = rgb_mat.ptr();
+
+            msg.size = rgb_mat.cols * rgb_mat.rows * 3;
+
+            msg.row_stride = image.step;
+
+            bot_core_image_t_publish(lcm, channel.c_str(), &msg);
+
+        } else {
+            cout << "Image type not supported. LCM transport not implemented." << endl;
+            return;
+        }
 
     }
 

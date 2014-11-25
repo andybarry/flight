@@ -510,7 +510,7 @@ void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
 
     *yaw = 180/PI * atan2( 2* (q0_ * q3_ + q1_ * q2_), ( 1 - 2*(q2_*q2_ + q3_ * q3_) ) );
     */
-
+    //printf("q0: %f, q1: %f, q2: %f, q3: %f\n", q[0], q[1], q[2], q[3]);
     //printf("roll %f / %f pitch %f / %f, yaw %f / %f\n", *roll, rpy[0] * 180/PI, *pitch, rpy[1] * 180/PI, *yaw, rpy[2] * 180/PI);
 }
 

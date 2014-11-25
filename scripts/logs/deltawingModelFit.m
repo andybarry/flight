@@ -55,4 +55,4 @@ id_u_foh = foh(u.logtime, id_u_raw');
 id_u = ppval(id_u_foh, id_t)';
 
 
-fit_data = iddata(id_y, id_u, id_dt);
+fit_data = iddata(id_y, id_u, id_dt); % TODO -- IS THIS RIGHT? CAN I FIT WITH IT?

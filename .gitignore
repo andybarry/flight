@@ -52,6 +52,8 @@ sensors/stereo/stereo_camera_calibrate/my1.xml
 sensors/stereo/stereo_camera_calibrate/my2.xml
 sensors/stereo/stereo_camera_calibrate/pyimglist.txt
 sensors/stereo/stereo_camera_calibrate/stereo_calibrate
+ui/fpga-playback/fpga-playback
+ui/fpga-playback/fpga-playback_d
 sensors/stereo/vids/*
 sensors/stereo/old
 *.avi
