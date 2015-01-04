@@ -541,7 +541,7 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
         // command isn't going to happen
 
         // compute the number of slashes needed
-        int slash_spacing = 200;
+        int slash_spacing = 150;
 
         int rise = overflow_top_line_bottom - overflow_top_line_top;
         int run = overflow_top_line_right - overflow_top_line_left;
@@ -556,12 +556,16 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
 
         line(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
 
-        float slope = 1;
+        float slope = -1;
 
         for (int i = 0; i < 10; i++) {
 
             current_x = overflow_top_line_left + i*delta_x;
             current_y = overflow_top_line_top + i*delta_y;
+
+            //if (current_x > overflow_top_line_right) {
+            //    break;
+            //}
 
             // now the current x and y are the points along a line that is the hypotenuse of the box
             // running the in opposite direction of the slashes
@@ -569,11 +573,38 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
             // if we extend this point with a constant slope to both sides, we'll have the point along
             // the sides to draw a line
 
-            circle(hud_img, Point(current_x, current_y), 10, hud_color_, 1);
+            circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
 
-            int y = slope * ( top_line_right - current_x) + current_y;
+            // if the line is limited by the right edge, solve for the intersection of the
+            // right edge line and a line from this point with the given slope
 
-            circle(hud_img, Point(top_line_right, y), 10, hud_color_, 1);
+            // TODO
+
+            int y_right_edge = slope * ( top_line_right - current_x) + current_y;
+
+            //if (y_right_edge > overflow_top_line_bottom) {
+                line(hud_img, Point(current_x, current_y), Point(top_line_right, y_right_edge), hud_color_, box_line_width_);
+
+            //} else {
+                // if the line is limited by the top edge
+                int x_top_edge = ( overflow_top_line_bottom - current_y) / slope + current_x;
+                //int y = m * (x -x1) + y1
+                //y - y1 = m*(x - x1)
+                //(y-y1)/m = x -x1
+                //x = (y-y1)/m+x1
+
+                //line(hud_img, Point(current_x, current_y), Point(x_top_edge, overflow_top_line_bottom), hud_color_, box_line_width_);
+            //}
+
+            //int y_left_edge = slope * ( top_line_left - current_x) + current_y;
+
+            //if (y_left_edge < top_line_top) {
+                //line(hud_img, Point(current_x, current_y), Point(top_line_left, y_left_edge), hud_color_, box_line_width_);
+            //} else {
+                //int x_bottom_edge = ( top_line_bottom - current_y ) / slope + current_x;
+                //line (hud_img, Point(current_x, current_y), Point(x_bottom_edge, top_line_bottom), hud_color_, box_line_width_);
+            //}
+
 
         }
 
