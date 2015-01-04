@@ -42,6 +42,8 @@ class Hud {
         void DrawCompass(Mat hud_img);
         void DrawBatteryVoltage(Mat hud_img);
 
+        void DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bottom_left, Point bottom_right);
+
         void DrawDateTime(Mat hud_img);
 
 

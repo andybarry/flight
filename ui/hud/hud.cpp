@@ -537,80 +537,110 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
         // draw the line on top of the overflow bar
         line(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(overflow_top_line_right, overflow_top_line_bottom), hud_color_, box_line_width_);
 
-        // now we have drawn the outside box -- draw slashes to indicate that this
-        // command isn't going to happen
-
-        // compute the number of slashes needed
-        int slash_spacing = 150;
-
-        int rise = overflow_top_line_bottom - overflow_top_line_top;
-        int run = overflow_top_line_right - overflow_top_line_left;
-        float cross_slash_slope = float(overflow_top_line_top - top_line_bottom) / float(overflow_top_line_left - top_line_right);
-
-        int current_x, current_y;
-
-        float delta_x = sqrt( slash_spacing / (1 + cross_slash_slope*cross_slash_slope) );
-        float delta_y = cross_slash_slope * delta_x;
-
-        cout << delta_x << ", " << delta_y << endl;
-
-        line(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
-
-        float slope = -1;
-
-        for (int i = 0; i < 10; i++) {
-
-            current_x = overflow_top_line_left + i*delta_x;
-            current_y = overflow_top_line_top + i*delta_y;
-
-            //if (current_x > overflow_top_line_right) {
-            //    break;
-            //}
-
-            // now the current x and y are the points along a line that is the hypotenuse of the box
-            // running the in opposite direction of the slashes
-
-            // if we extend this point with a constant slope to both sides, we'll have the point along
-            // the sides to draw a line
-
-            circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
-
-            // if the line is limited by the right edge, solve for the intersection of the
-            // right edge line and a line from this point with the given slope
-
-            // TODO
-
-            int y_right_edge = slope * ( top_line_right - current_x) + current_y;
-
-            //if (y_right_edge > overflow_top_line_bottom) {
-                line(hud_img, Point(current_x, current_y), Point(top_line_right, y_right_edge), hud_color_, box_line_width_);
-
-            //} else {
-                // if the line is limited by the top edge
-                int x_top_edge = ( overflow_top_line_bottom - current_y) / slope + current_x;
-                //int y = m * (x -x1) + y1
-                //y - y1 = m*(x - x1)
-                //(y-y1)/m = x -x1
-                //x = (y-y1)/m+x1
-
-                //line(hud_img, Point(current_x, current_y), Point(x_top_edge, overflow_top_line_bottom), hud_color_, box_line_width_);
-            //}
-
-            //int y_left_edge = slope * ( top_line_left - current_x) + current_y;
-
-            //if (y_left_edge < top_line_top) {
-                //line(hud_img, Point(current_x, current_y), Point(top_line_left, y_left_edge), hud_color_, box_line_width_);
-            //} else {
-                //int x_bottom_edge = ( top_line_bottom - current_y ) / slope + current_x;
-                //line (hud_img, Point(current_x, current_y), Point(x_bottom_edge, top_line_bottom), hud_color_, box_line_width_);
-            //}
-
-
-        }
+        DrawHashBoxFill(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(overflow_top_line_right, overflow_top_line_bottom), Point(top_line_left, top_line_top), Point(top_line_right, top_line_bottom));
 
     }
 
 
+}
+
+void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bottom_left, Point bottom_right) {
+    // roll_angle is the angle of the box in deg
+
+    // make sure the top is really the top
+    if (top_left.y > bottom_left.y) {
+        Point temp = top_left;
+        top_left = bottom_left;
+        bottom_left = temp;
+
+        temp = top_right;
+        top_right = bottom_right;
+        bottom_right = temp;
+    }
+
+    if (top_left.x > top_right.x) {
+        Point temp = top_left;
+        top_left = top_right;
+        top_right = temp;
+
+        temp = bottom_left;
+        bottom_left = bottom_right;
+        bottom_right = temp;
+    }
+
+    // compute the number of slashes needed
+    int slash_spacing = 150;
+
+    float cross_slash_slope = float(top_left.y - bottom_right.y) / float(top_left.x - bottom_right.x);
+
+    int current_x, current_y;
+
+    float delta_x = sqrt( slash_spacing / (1 + cross_slash_slope*cross_slash_slope) );
+    float delta_y = cross_slash_slope * delta_x;
+
+    cout << delta_x << ", " << delta_y << endl;
+
+    //line(hud_img, top_left, bottom_right, hud_color_, box_line_width_);
+    //line(hud_img, top_right, bottom_left, hud_color_, box_line_width_);
+
+    float slope = -1;
+
+    float top_edge_slope = float( top_right.y - top_left.y ) / float( top_right.x - top_left.x );
+
+    slope += top_edge_slope;
+
+    // TODO CATCH DIV BY ZERO
+    float right_edge_slope = float( top_right.y - bottom_right.y ) / float( top_right.x - bottom_right.x );
+
+
+
+    for (int i = 0; i < 100; i++) {
+
+        current_x = top_left.x + i*delta_x;
+        current_y = top_left.y + i*delta_y;
+
+        if (current_y > min(bottom_left.y, bottom_right.y) || current_x > bottom_right.x) {
+            break;
+        }
+
+        // now the current x and y are the points along a line that is the hypotenuse of the box
+        // running the in opposite direction of the slashes
+
+        // if we extend this point with a constant slope to both sides, we'll have the point along
+        // the sides to draw a line
+
+        circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
+
+        // if the line is limited by the right edge, solve for the intersection of the
+        // right edge line and a line from this point with the given slope
+        int x = (-right_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - right_edge_slope);
+        int y = slope * (x - current_x) + current_y;
+
+        if (y > min(top_left.y, top_right.y)) {
+            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
+        } else {
+            // line would run into the top of the box before the side
+
+            x = (-top_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - top_edge_slope);
+            y = slope * (x - current_x) + current_y;
+            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
+        }
+
+        // compute lines hitting the left edge
+        x = (-right_edge_slope * top_left.x + top_left.y - current_y + slope * current_x) / (slope - right_edge_slope);
+        y = slope * (x - current_x) + current_y;
+
+        if (y < max(bottom_left.y, bottom_right.y)) {
+            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
+        } else {
+            x = (-top_edge_slope * bottom_left.x + bottom_left.y - current_y + slope * current_x) / (slope - top_edge_slope);
+            y = slope * (x - current_x) + current_y;
+            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
+        }
+
+
+
+    }
 }
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
