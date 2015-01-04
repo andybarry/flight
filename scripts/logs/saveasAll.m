@@ -29,6 +29,9 @@ function saveasAll(filename, fontsize, axis_array)
 
             ylhand = get(axis_array(i),'ylabel');
             set(ylhand, 'fontsize', fontsize);
+            
+            zlhand = get(axis_array(i),'zlabel');
+            set(zlhand, 'fontsize', fontsize);
 
             thand = get(axis_array(i),'title');
             set(thand, 'fontsize', fontsize);

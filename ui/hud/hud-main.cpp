@@ -10,6 +10,9 @@
 #define BM_DEPTH_MIN 4.7
 #define BM_DEPTH_MAX 4.9
 
+#define THROTTLE_MIN_US 1212
+#define THROTTLE_MAX_US 1744
+
 using namespace std;
 
 lcm_t * lcm;
@@ -654,7 +657,9 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 
     Hud *hud = (Hud*)user;
 
-    hud->SetServoCommands((msg->throttle - 1100) * 100/797, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
+    float throttle_percent = (msg->throttle - THROTTLE_MIN_US) * 100.0f / (THROTTLE_MAX_US - THROTTLE_MIN_US);
+
+    hud->SetServoCommands(throttle_percent, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
     hud->SetAutonomous(msg->is_autonomous);
 }
 
