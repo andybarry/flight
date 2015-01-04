@@ -47,6 +47,8 @@ bool ui_box = false;
 bool ui_box_first_click = false;
 bool ui_box_done = false;
 
+bool real_frame_loaded = false;
+
 
 Point2d box_top(-1, -1);
 Point2d box_bottom(-1, -1);
@@ -220,6 +222,7 @@ int main(int argc,char** argv) {
     cout << "Running..." << endl;
 
     bool change_flag = true;
+    bool real_frame_loaded_and_run;
 
     Mat hud_image;
 
@@ -231,10 +234,14 @@ int main(int argc,char** argv) {
 
         if (change_flag == true || ui_box) {
             change_flag = false;
+            real_frame_loaded_and_run = false;
 
             Mat gray_img;
 
             image_mutex.lock();
+            if (real_frame_loaded) {
+                real_frame_loaded_and_run = true;
+            }
             left_image.copyTo(gray_img);
             image_mutex.unlock();
 
@@ -389,10 +396,9 @@ int main(int argc,char** argv) {
             }
 
 
-            if (record_hud) {
+            if (record_hud && real_frame_loaded_and_run) {
                 // put this frame into the HUD recording
                 recording_manager.RecFrameHud(hud_image);
-
             }
 
             imshow("HUD", hud_image);
@@ -431,7 +437,7 @@ int main(int argc,char** argv) {
                 AskForFrame(hud.GetVideoNumber(), hud.GetFrameNumber() + 50);
                 ResetBoxDrawing();
                 break;
-            case 'r':
+            case 'R':
                 record_hud = true;
                 recording_manager.RestartRecHud();
                 break;
@@ -613,15 +619,13 @@ void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, 
 
         cvtColor(temp_image, left_image, CV_RGB2BGR);
 
-        cout << "done"  << endl;
-
     } else {
         cerr << "Warning: reading images other than GRAY and JPEG not yet implemented." << endl;
         return;
     }
 
 
-
+    real_frame_loaded = true;
 
 
     image_mutex.unlock();

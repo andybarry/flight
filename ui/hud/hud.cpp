@@ -69,7 +69,6 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
 
         resize(color_img, hud_img, output_size);
     } else {
-
         resize(input_image, hud_img, output_size);
     }
 
@@ -451,7 +450,19 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
 void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left) {
 
     int max_elevon_size = 100;
-    int top_line_left, top_line_top, top_line_right, top_line_bottom;
+    float elevon_overflow = 0;
+
+    if (elevon_value > max_elevon_size) {
+        elevon_overflow = elevon_value - max_elevon_size;
+        elevon_value = max_elevon_size;
+    }
+
+    if (elevon_value < 0) {
+        elevon_overflow = elevon_value;
+        elevon_value = 0;
+    }
+
+    int top_line_left = 0, top_line_top = 0, top_line_right = 0, top_line_bottom = 0;
 
     int sign_change = 1;
     if (is_left == false) {
@@ -466,9 +477,11 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
             position = position_right;
         }
 
+        // point on the artificial horizon (x and y coordinates)
         int elevon_left_side_left = hud_img.cols/2 - (position * sin(PI/180.0 * (roll + 90))) * sign_change;
         int elevon_left_side_top = hud_img.rows/2 - (position * cos(PI/180.0 * (roll + 90))) * sign_change + center_delta;
 
+        // points offset from the artificial horizon that depend on elevon_value (x and y coordinates)
         int elevon_left_side_right = elevon_left_side_left + sin(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
         int elevon_left_side_bottom = elevon_left_side_top + cos(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
 
@@ -485,6 +498,88 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
 
     // now draw the top
     line(hud_img, Point(top_line_left, top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
+
+
+    // deal with overflow if any
+    if (elevon_overflow != 0) {
+
+        int overflow_top_line_left = 0, overflow_top_line_top = 0, overflow_top_line_right = 0, overflow_top_line_bottom = 0;
+
+        for (int i = 0; i < 2; i++) {
+
+            int elevon_overflow_left;
+            int elevon_overflow_top;
+
+            if (i == 0) {
+                elevon_overflow_left = top_line_left;
+                elevon_overflow_top = top_line_top;
+            } else {
+                elevon_overflow_left = top_line_right;
+                elevon_overflow_top = top_line_bottom;
+            }
+
+            // now extend the overflow bar
+            int elevon_overflow_right = elevon_overflow_left + sin(PI/180.0*(roll+180)) * max_elevon_size * (elevon_overflow)/100.0;
+            int elevon_overflow_bottom = elevon_overflow_top + cos(PI/180.0*(roll+180)) * max_elevon_size * (elevon_overflow)/100.0;
+
+            // draw the line
+            line(hud_img, Point(elevon_overflow_left, elevon_overflow_top), Point(elevon_overflow_right, elevon_overflow_bottom), hud_color_, box_line_width_);
+
+            if (i == 0) {
+                overflow_top_line_left = elevon_overflow_right;
+                overflow_top_line_top = elevon_overflow_bottom;
+            } else {
+                overflow_top_line_right = elevon_overflow_right;
+                overflow_top_line_bottom = elevon_overflow_bottom;
+            }
+        }
+
+        // draw the line on top of the overflow bar
+        line(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(overflow_top_line_right, overflow_top_line_bottom), hud_color_, box_line_width_);
+
+        // now we have drawn the outside box -- draw slashes to indicate that this
+        // command isn't going to happen
+
+        // compute the number of slashes needed
+        int slash_spacing = 200;
+
+        int rise = overflow_top_line_bottom - overflow_top_line_top;
+        int run = overflow_top_line_right - overflow_top_line_left;
+        float cross_slash_slope = float(overflow_top_line_top - top_line_bottom) / float(overflow_top_line_left - top_line_right);
+
+        int current_x, current_y;
+
+        float delta_x = sqrt( slash_spacing / (1 + cross_slash_slope*cross_slash_slope) );
+        float delta_y = cross_slash_slope * delta_x;
+
+        cout << delta_x << ", " << delta_y << endl;
+
+        line(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
+
+        float slope = 1;
+
+        for (int i = 0; i < 10; i++) {
+
+            current_x = overflow_top_line_left + i*delta_x;
+            current_y = overflow_top_line_top + i*delta_y;
+
+            // now the current x and y are the points along a line that is the hypotenuse of the box
+            // running the in opposite direction of the slashes
+
+            // if we extend this point with a constant slope to both sides, we'll have the point along
+            // the sides to draw a line
+
+            circle(hud_img, Point(current_x, current_y), 10, hud_color_, 1);
+
+            int y = slope * ( top_line_right - current_x) + current_y;
+
+            circle(hud_img, Point(top_line_right, y), 10, hud_color_, 1);
+
+        }
+
+    }
+
+
 }
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
