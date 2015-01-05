@@ -15,7 +15,7 @@ Hud::Hud(Scalar hud_color) {
     gps_speed_= -10001;
     battery_voltage_ = -10001;
     throttle_ = 0;
-    elevonL_ = 50;
+    elevonL_ = 150;
     elevonR_ = 50;
     x_accel_ = 0;
     y_accel_ = 0;
@@ -589,8 +589,15 @@ void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bo
 
     slope += top_edge_slope;
 
-    // TODO CATCH DIV BY ZERO
-    float right_edge_slope = float( top_right.y - bottom_right.y ) / float( top_right.x - bottom_right.x );
+    // catch divide by zero error
+    bool div_zero = false;
+    float right_edge_slope = 0;
+
+    if (top_right.x == bottom_right.x) {
+        div_zero = true;
+    } else {
+        right_edge_slope = float( top_right.y - bottom_right.y ) / float( top_right.x - bottom_right.x );
+    }
 
 
 
@@ -609,11 +616,19 @@ void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bo
         // if we extend this point with a constant slope to both sides, we'll have the point along
         // the sides to draw a line
 
-        circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
+        //circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
 
         // if the line is limited by the right edge, solve for the intersection of the
         // right edge line and a line from this point with the given slope
-        int x = (-right_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - right_edge_slope);
+
+        int x;
+
+        if (div_zero == true) {
+            x = top_right.x;
+        } else {
+            x = (-right_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - right_edge_slope);
+        }
+
         int y = slope * (x - current_x) + current_y;
 
         if (y > min(top_left.y, top_right.y)) {
@@ -621,13 +636,23 @@ void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bo
         } else {
             // line would run into the top of the box before the side
 
-            x = (-top_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - top_edge_slope);
-            y = slope * (x - current_x) + current_y;
+            if (div_zero == true) {
+                y = top_left.y;
+                x = ( y - current_y ) / slope + current_x;
+            } else {
+                x = (-top_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - top_edge_slope);
+                y = slope * (x - current_x) + current_y;
+            }
+
             line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
         }
 
         // compute lines hitting the left edge
-        x = (-right_edge_slope * top_left.x + top_left.y - current_y + slope * current_x) / (slope - right_edge_slope);
+        if (div_zero == true) {
+            x = top_left.x;
+        } else {
+            x = (-right_edge_slope * top_left.x + top_left.y - current_y + slope * current_x) / (slope - right_edge_slope);
+        }
         y = slope * (x - current_x) + current_y;
 
         if (y < max(bottom_left.y, bottom_right.y)) {
