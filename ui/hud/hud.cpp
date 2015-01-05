@@ -15,7 +15,7 @@ Hud::Hud(Scalar hud_color) {
     gps_speed_= -10001;
     battery_voltage_ = -10001;
     throttle_ = 0;
-    elevonL_ = 150;
+    elevonL_ = 50;
     elevonR_ = 50;
     x_accel_ = 0;
     y_accel_ = 0;
@@ -545,127 +545,74 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
 }
 
 void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bottom_left, Point bottom_right) {
-    // roll_angle is the angle of the box in deg
 
-    // make sure the top is really the top
-    if (top_left.y > bottom_left.y) {
-        Point temp = top_left;
-        top_left = bottom_left;
-        bottom_left = temp;
+    Point point_array[10];
+    point_array[0] = top_left;
+    point_array[1] = top_right;
+    point_array[2] = bottom_right;
+    point_array[3] = bottom_left;
 
-        temp = top_right;
-        top_right = bottom_right;
-        bottom_right = temp;
-    }
+    Mat mask_img = Mat::zeros(hud_img.rows, hud_img.cols, CV_8UC1);
+    Mat hash_img = Mat::zeros(hud_img.rows, hud_img.cols, hud_img.type());
 
-    if (top_left.x > top_right.x) {
-        Point temp = top_left;
-        top_left = top_right;
-        top_right = temp;
+    fillConvexPoly(mask_img, point_array, 4, 1);
 
-        temp = bottom_left;
-        bottom_left = bottom_right;
-        bottom_right = temp;
-    }
-
-    // compute the number of slashes needed
-    int slash_spacing = 150;
-
-    float cross_slash_slope = float(top_left.y - bottom_right.y) / float(top_left.x - bottom_right.x);
-
-    int current_x, current_y;
-
-    float delta_x = sqrt( slash_spacing / (1 + cross_slash_slope*cross_slash_slope) );
-    float delta_y = cross_slash_slope * delta_x;
-
-    cout << delta_x << ", " << delta_y << endl;
-
-    //line(hud_img, top_left, bottom_right, hud_color_, box_line_width_);
-    //line(hud_img, top_right, bottom_left, hud_color_, box_line_width_);
-
-    float slope = -1;
-
-    float top_edge_slope = float( top_right.y - top_left.y ) / float( top_right.x - top_left.x );
-
-    slope += top_edge_slope;
-
-    // catch divide by zero error
-    bool div_zero = false;
-    float right_edge_slope = 0;
-
-    if (top_right.x == bottom_right.x) {
-        div_zero = true;
+    // figure out the angle of the slashes to draw
+    float top_angle;
+    if (top_right.x == top_left.x) {
+        top_angle = -PI/2;
     } else {
-        right_edge_slope = float( top_right.y - bottom_right.y ) / float( top_right.x - bottom_right.x );
+        top_angle = atan2( float( top_right.y - top_left.y ), float( top_right.x - top_left.x ) );
     }
 
+    top_angle += PI/4;
 
 
-    for (int i = 0; i < 100; i++) {
+    Mat rot_mat(2,2, CV_32FC1);
+    rot_mat.at<float>(0,0) = cos(top_angle);
+    rot_mat.at<float>(0,1) = -sin(top_angle);
+    rot_mat.at<float>(1,0) = sin(top_angle);
+    rot_mat.at<float>(1,1) = cos(top_angle);
 
-        current_x = top_left.x + i*delta_x;
-        current_y = top_left.y + i*delta_y;
+    // fill the screen with lines
 
-        if (current_y > min(bottom_left.y, bottom_right.y) || current_x > bottom_right.x) {
-            break;
-        }
+    int line_spacing = 13;
 
-        // now the current x and y are the points along a line that is the hypotenuse of the box
-        // running the in opposite direction of the slashes
+    Point2f rot_about(hud_img.cols/2, hud_img.rows/2);
 
-        // if we extend this point with a constant slope to both sides, we'll have the point along
-        // the sides to draw a line
+    int move_point_x = (top_left.x + top_right.x + bottom_left.x + bottom_right.x ) / 4;
+    int move_point_y = (top_left.y + top_right.y + bottom_left.y + bottom_right.y ) / 4;
 
-        //circle(hud_img, Point(current_x, current_y), 5, hud_color_, 1);
+    Point2f move_point(move_point_x, move_point_y);
 
-        // if the line is limited by the right edge, solve for the intersection of the
-        // right edge line and a line from this point with the given slope
+    for (int i = -hud_img.cols*3; i < hud_img.cols*3; i += line_spacing) {
+        Point2f this_line1(i, -hud_img.rows*2);
+        Point2f this_line2(i, hud_img.cols*2);
 
-        int x;
+        // rotate points by some angle
 
-        if (div_zero == true) {
-            x = top_right.x;
-        } else {
-            x = (-right_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - right_edge_slope);
-        }
+        Mat temp = rot_mat * cv::Mat(this_line1 - rot_about);
+        Mat temp2 = rot_mat * cv::Mat(this_line2 - rot_about);
 
-        int y = slope * (x - current_x) + current_y;
+        this_line1.x = temp.at<float>(0);
+        this_line1.y = temp.at<float>(1);
 
-        if (y > min(top_left.y, top_right.y)) {
-            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
-        } else {
-            // line would run into the top of the box before the side
-
-            if (div_zero == true) {
-                y = top_left.y;
-                x = ( y - current_y ) / slope + current_x;
-            } else {
-                x = (-top_edge_slope * top_right.x + top_right.y - current_y + slope * current_x) / (slope - top_edge_slope);
-                y = slope * (x - current_x) + current_y;
-            }
-
-            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
-        }
-
-        // compute lines hitting the left edge
-        if (div_zero == true) {
-            x = top_left.x;
-        } else {
-            x = (-right_edge_slope * top_left.x + top_left.y - current_y + slope * current_x) / (slope - right_edge_slope);
-        }
-        y = slope * (x - current_x) + current_y;
-
-        if (y < max(bottom_left.y, bottom_right.y)) {
-            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
-        } else {
-            x = (-top_edge_slope * bottom_left.x + bottom_left.y - current_y + slope * current_x) / (slope - top_edge_slope);
-            y = slope * (x - current_x) + current_y;
-            line(hud_img, Point(current_x, current_y), Point(x, y), hud_color_, box_line_width_);
-        }
+        this_line2.x = temp2.at<float>(0);
+        this_line2.y = temp2.at<float>(1);
 
 
-
+        line(hash_img, this_line1+rot_about+move_point, this_line2+rot_about+move_point, hud_color_, box_line_width_);
     }
+
+    // draw lines on the boxes
+    line(hash_img, top_left, top_right, hud_color_, box_line_width_);
+    line(hash_img, top_left, bottom_left, hud_color_, box_line_width_);
+    line(hash_img, bottom_left, bottom_right, hud_color_, box_line_width_);
+    line(hash_img, top_right, bottom_right, hud_color_, box_line_width_);
+
+    hash_img.copyTo(hud_img, mask_img);
+
+
 }
 
 void Hud::GetEulerAngles(float *yaw, float *pitch, float *roll) {
