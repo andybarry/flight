@@ -31,8 +31,10 @@ void sighandler(int dum);
 void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user);
 
 int GetNearestFpgaFrame(long timestamp);
+int GetNearestFpgaFrameFromTable(long timestamp);
 
 string GetFpgaImageFilename(int frame_number);
+
 
 bool NonBlockingLcm(lcm_t *lcm);
 

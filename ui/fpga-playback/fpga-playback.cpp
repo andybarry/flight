@@ -14,8 +14,11 @@ lcm_t * lcm;
 vector<long> frame_table;
 string fpga_img_path = "";
 string publish_channel = "stereo_image_left";
-
+long fpga_offset;
+long fpga_delta = 8333; // 120 fps
 long global_timestamp = -1;
+int frame_offset = 0;
+
 
 // globals for subscription functions, so we can unsubscribe in the control-c handler
 lcmt_deltawing_u_subscription_t *servo_out_sub;
@@ -36,6 +39,8 @@ int main(int argc,char** argv) {
     parser.add(fpga_img_path, "i", "image-path", "Path to FPGA images.", true);
     parser.add(listen_channel, "l", "listen-channel", "Channel to listen for deltawing_u messages on.");
     parser.add(publish_channel, "p", "publish-channel", "Channel to publish images on.");
+    parser.add(fpga_delta, "d", "frame-delta", "Frame delta in microseconds. Default 120fps");
+    parser.add(frame_offset, "o", "frame-offset", "Offset frames by this amount.");
     parser.parse();
 
 
@@ -71,11 +76,23 @@ int main(int argc,char** argv) {
 
     cout << "Done reading CSV file." << endl;
 
+    // the table is not super-accurate, so figure out a constant
+    // timestamp for each frame
+
+    if (frame_table.size() < 200) {
+        cout << "Error frame table smaller than 200 frames (minus ignored frames)." << endl;
+        return -1;
+    }
+
+    fpga_offset = frame_table.at(200) - 200*fpga_delta;
+
+    cout << "FPGA offset = " << fpga_offset << endl;
+
     //fpga_img_path = fpga_log_filename.substr(0, fpga_log_filename.find_last_of("/"));
 
     cout << "img path: " << fpga_img_path << endl;
 
-    namedWindow("Input", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
+    //namedWindow("Input", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO);
 
     bool change_flag = false;
 
@@ -90,15 +107,17 @@ int main(int argc,char** argv) {
 
             int frame_number = GetNearestFpgaFrame(global_timestamp);
 
+            cout << frame_number << " vs " << GetNearestFpgaFrameFromTable(global_timestamp) << endl;
+
             string filename = GetFpgaImageFilename(frame_number);
 
             cout << filename << endl;
 
             Mat image = imread(filename);
 
-            imshow("Input", image);
+            //imshow("Input", image);
 
-            waitKey(10);
+            //waitKey(10);
 
 
             SendImageOverLcm(lcm, publish_channel, image, -1);
@@ -139,6 +158,18 @@ std::vector<std::string> getNextLineAndSplitIntoTokens(std::istream& str)
 }
 
 int GetNearestFpgaFrame(long timestamp) {
+
+    if (timestamp < fpga_offset) {
+        return 0 + frame_offset;
+    } else if (timestamp > (int) frame_table.size() * fpga_delta + fpga_offset) {
+        return frame_table.size() - 1 + frame_offset;
+    } else {
+
+        return (timestamp - fpga_offset) / fpga_delta + frame_offset;
+    }
+}
+
+int GetNearestFpgaFrameFromTable(long timestamp) {
     // a binary search would be more efficient
 
     long best_diff = -1, this_diff;
