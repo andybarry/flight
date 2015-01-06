@@ -22,7 +22,7 @@ function [start_times, end_times] = FindActiveTimes(time, data, threshold)
     ind = find(data > threshold);
     if (isempty(ind))
         % can't find spots with high throttle
-        warn('Cannot find any time with data above thresold')
+        warning('Cannot find any time with data above thresold')
         start_times = [];
         end_times = [];
         return;

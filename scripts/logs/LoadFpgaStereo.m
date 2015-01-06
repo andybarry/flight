@@ -19,7 +19,7 @@ function fpga_struct = LoadFpgaStereo(fpga_csv_filename)
 
   fpga_struct.frame = fpga_raw.frame;
   fpga_struct.time_us = fpga_raw.time_us;
-  fpga_struct.plane_time = fpga_raw.vicon_time_us;
+  fpga_struct.plane_time = fpga_raw.vicon_time_us
   
   
 end
