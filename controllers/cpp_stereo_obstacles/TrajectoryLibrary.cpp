@@ -27,20 +27,19 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
 
     int count = 0;
 
-    while ((dp = readdir(dirp)) != NULL)
-    {
-        string thisFile = dp->d_name;
+    while ((dp = readdir(dirp)) != NULL) {
+        string this_file = dp->d_name;
 
-        if (thisFile.length() > 4 && thisFile.compare(thisFile.length()-4, 4, ".csv") == 0 &&
-        thisFile.compare(thisFile.length()-6, 6, "-u.csv") != 0)
+        if (this_file.length() > 4 && this_file.compare(this_file.length()-4, 4, ".csv") == 0 &&
+        this_file.compare(this_file.length()-6, 6, "-u.csv") != 0)
         {
             // found a .csv file
             // load a trajectory
 
-            Trajectory thisTraj(dirname + dp->d_name);
+            Trajectory this_traj(dirname + dp->d_name);
 
             // add it to the library
-            trajVector.push_back(thisTraj);
+            traj_vector_.push_back(this_traj);
 
             count ++;
         }
@@ -50,46 +49,48 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
 
     cout << "Loaded " << count << " trajectories." << endl;
 
-    if (count > 0)
-    {
+    if (count > 0) {
         return true;
     }
     return false;
 }
 
-Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl)
-{
+void TrajectoryLibrary::Print() {
+    for (auto traj : traj_vector_) {
+
+        traj.Print();
+
+    }
+}
+
+Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
     double minProbability = -1;
     Trajectory *farthestTraj = NULL;
 
-    if (lcmgl != NULL)
-    {
+    if (lcmgl != NULL) {
         bot_lcmgl_push_matrix(lcmgl);
 
     }
 
     // for each point in each trajectory, find the point that is closest in the octree
-    for (int i=0; i<int(trajVector.size()); i++)
-    {
+    for (int i=0; i<int(traj_vector_.size()); i++) {
 
 
         double thisTrajProbability = 0;
         // for each trajectory, look at each point
-        for (int j=0; j<int(trajVector[i].xpoints.size()); j++)
-        {
+        for (int j=0; j<int(traj_vector_[i].xpoints_.size()); j++) {
             // now we are looking at a single point in a trajectorybot_lcmgl_t *lcmgl
 
             double transformedPoint[3];
 
-            trajVector[i].GetTransformedPoint(j, bodyToLocal, transformedPoint);
+            traj_vector_[i].GetTransformedPoint(j, bodyToLocal, transformedPoint);
 
             point3d query (transformedPoint[0], transformedPoint[1], transformedPoint[2]);
 
             OcTreeNode* result = octree->search(query);
 
 
-            if (result != NULL)
-            {
+            if (result != NULL) {
                 //cout << "occupancy probability at " << query << ":\t " << result->getOccupancy() << endl;
                 thisTrajProbability += result->getOccupancy();
             } else {
@@ -100,22 +101,19 @@ Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *
 
         }
 
-        if (lcmgl != NULL)
-        {
-            //trajVector[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
+        if (lcmgl != NULL) {
+            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }
-        if (minProbability == -1 || thisTrajProbability < minProbability)
-        {
+
+        if (minProbability == -1 || thisTrajProbability < minProbability) {
             minProbability = thisTrajProbability;
-            farthestTraj = &trajVector[i];
+            farthestTraj = &traj_vector_[i];
         }
     }
 
-    if (lcmgl != NULL)
-    {
+    if (lcmgl != NULL) {
         // plot the best trajectory
-        if (farthestTraj != NULL)
-        {
+        if (farthestTraj != NULL) {
             bot_lcmgl_color3f(lcmgl, 1, 0, 0);
             farthestTraj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }

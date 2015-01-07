@@ -8,6 +8,8 @@ LCM/mav
 LCM/lib/libplanerlg.a
 LCM/lib/libtypes.a
 LCM/*.pyc
+LCM/mavlink_message_t.h.orig
+LCM/mavlink_message_t.h.rej
 *.o
 *~
 *.dep

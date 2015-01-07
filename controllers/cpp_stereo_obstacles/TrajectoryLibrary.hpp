@@ -40,10 +40,12 @@ class TrajectoryLibrary
 
         Trajectory* FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = NULL);
 
+        void Print();
+
 
 
     private:
-        vector<Trajectory> trajVector;
+        vector<Trajectory> traj_vector_;
 
 };
 

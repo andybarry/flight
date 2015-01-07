@@ -31,13 +31,13 @@ class Trajectory
 
         void LoadTrajectory(string filename, bool quiet = false);
 
-        vector<float> GetPoint(float t);
+        vector<double> GetPoint(double t);
 
-        int GetDimension() { return dimension; }
-        int GetUDimension() { return udimension; }
-        int GetTrajectoryNumber() { return trajNumber; }
+        int GetDimension() { return dimension_; }
+        int GetUDimension() { return udimension_; }
+        int GetTrajectoryNumber() { return trajectory_number_; }
 
-        void print();
+        void Print();
 
         void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
@@ -45,18 +45,19 @@ class Trajectory
 
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
-        //float DistanceToPoint(float x, float y, float z);
+        //double DistanceToPoint(double x, double y, double z);
 
-        vector<vector<float>> xpoints;
-        vector<vector<float>> upoints;
+        vector<vector<double>> xpoints_;
+        vector<vector<double>> upoints_;
 
 
     private:
 
 
-        int dimension; // state space dimension
-        int udimension; // control input dimension
-        int trajNumber;
+        int dimension_; // state space dimension
+        int udimension_; // control input dimension
+        int trajectory_number_;
+        string filename_;
 
         void LoadXFromCSV( const std::string& filename);
         void LoadUFromCSV( const std::string& filename);

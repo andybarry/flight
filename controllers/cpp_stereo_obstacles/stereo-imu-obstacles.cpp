@@ -112,11 +112,13 @@ int main(int argc,char** argv) {
 
     bool ttl_one = false;
     string config_file = "";
+    string trajectory_dir = "";
 
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
     parser.add(disable_filtering, "f", "disable-filtering", "Disable filtering.");
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
+    parser.add(trajectory_dir, "d", "trajectory-dir" "Directory containing CSV files with trajectories.");
     parser.parse();
 
     if (disable_filtering) {
@@ -139,6 +141,16 @@ int main(int argc,char** argv) {
     {
         cerr << "Error: failed to read calibration files. Quitting." << endl;
         return 1;
+    }
+
+    if (trajectory_dir != "") {
+        // load a trajectory library
+        if (!trajlib.LoadLibrary(trajectory_dir)) {
+            cerr << "Error: failed to load trajectory library.  Quitting." << endl;
+            return 1;
+        }
+
+        trajlib.Print();
     }
 
 
@@ -178,8 +190,7 @@ int main(int argc,char** argv) {
     bot_lcmgl_enable(lcmgl, GL_BLEND);
 
 
-    // init trajectory library
-    //trajlib.LoadLibrary(libDir);
+
 
     // control-c handler
     signal(SIGINT,sighandler);

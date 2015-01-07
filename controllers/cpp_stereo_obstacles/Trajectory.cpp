@@ -10,15 +10,14 @@
 
 
 // Constructor that loads a trajectory from a file
-Trajectory::Trajectory()
-{
-    trajNumber = -1;
-    dimension = 0;
-    udimension = 0;
+Trajectory::Trajectory() {
+    trajectory_number_ = -1;
+    dimension_ = 0;
+    udimension_ = 0;
+    filename_ = "test";
 }
 
-Trajectory::Trajectory(string filename, bool quiet)
-{
+Trajectory::Trajectory(string filename, bool quiet) : Trajectory() {
     LoadTrajectory(filename, quiet);
 }
 
@@ -31,19 +30,21 @@ void Trajectory::LoadTrajectory(string filename, bool quiet)
 
     if (!quiet)
     {
-        cout << "Loading trajectory: " << filename << " + " << utrajFile << endl;
+        cout << "Loading trajectory: " << endl << "\t" << filename << endl <<"\t" << utrajFile << endl;
     }
 
-    int trajlibLoc = filename.rfind("trajlib");
-    string trajNumberStr = filename.substr(trajlibLoc+7, filename.length()-trajlibLoc-4-7);
+    //int trajlibLoc = filename.rfind("trajlib");
+    //string trajNumberStr = filename.substr(trajlibLoc+7, filename.length()-trajlibLoc-4-7);
 
 
-    trajNumber = stoi(trajNumberStr);
+    //trajNumber = stoi(trajNumberStr);
 
     LoadXFromCSV(filename);
     LoadUFromCSV(utrajFile);
 
-    //print();
+    filename_ = filename;
+
+    //Print();
 }
 
 // from:  answered Feb 19 at 0:37
@@ -72,19 +73,19 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
 
     if (matrix.size() > 0)
     {
-        dimension = int(matrix[0].size());
+        dimension_ = int(matrix[0].size()) - 1; // minus one because the first column is the time index
     } else {
-        cout << "WARNING: loaded trajectory of size 0." << endl;
+        cout << "WARNING: loaded trajectory of size 0 (did you include the timestamp in the first column): " << filename << endl;
     }
 
     for( int i=0; i<int(matrix.size()); i++ )
     {
-        vector<float> thisRow;
+        vector<double> thisRow;
         for( int j=0; j<int(matrix[i].size()); j++ )
         {
             thisRow.push_back(atof(matrix[i][j].c_str()));
         }
-        xpoints.push_back(thisRow);
+        xpoints_.push_back(thisRow);
 
     }
 
@@ -117,45 +118,52 @@ void Trajectory::LoadUFromCSV( const std::string& filename)
 
     if (matrix.size() > 0)
     {
-        udimension = int(matrix[0].size());
+        udimension_ = int(matrix[0].size()) - 1; // minus one because the first column is the time index
     } else {
-        cout << "WARNING: loaded trajectory of size 0: " << filename << endl;
+        cout << "WARNING: loaded trajectory of size 0 (did you include the timestamp in the first column): " << filename << endl;
     }
 
     for( int i=0; i<int(matrix.size()); i++ )
     {
-        vector<float> thisRow;
+        vector<double> thisRow;
         for( int j=0; j<int(matrix[i].size()); j++ )
         {
             thisRow.push_back(atof(matrix[i][j].c_str()));
         }
-        upoints.push_back(thisRow);
+        upoints_.push_back(thisRow);
 
     }
 
 }
 
-void Trajectory::print()
-{
+void Trajectory::Print() {
     cout << "------------ Trajectory print -------------" << endl;
-    cout << "Dimension: " << dimension << endl;
-    cout << "u-dimension: " << udimension << endl;
+    cout << "Filename: " << filename_ << endl;
+    cout << "Dimension: " << dimension_ << endl;
+    cout << "u-dimension: " << udimension_ << endl;
 
-    for (int i=0; i<int(xpoints.size()); i++)
+    cout << " t\t x\t y\t z\t roll\t pitch\t yaw \t xdot\t ydot\t zdot\t rolld\t pitchd\t yawd" << endl;
+
+    for (int i=0; i<int(xpoints_.size()); i++)
     {
-        for (int j=0; j<int(xpoints[i].size()); j++)
+        for (int j=0; j<int(xpoints_[i].size()); j++)
         {
-            cout << xpoints[i][j] << " ";
+            //cout << xpoints_[i][j] << "\t";
+            printf("% 4.3f\t", xpoints_[i][j]);
         }
         cout << endl;
     }
 
     cout << "------------- u points ----------------" << endl;
-    for (int i=0; i<int(upoints.size()); i++)
+
+    cout << " t\t u1\t u2\t u3" << endl;
+
+    for (int i=0; i<int(upoints_.size()); i++)
     {
-        for (int j=0; j<int(upoints[i].size()); j++)
+        for (int j=0; j<int(upoints_[i].size()); j++)
         {
-            cout << upoints[i][j] << " ";
+            //cout << upoints_[i][j] << " ";
+            printf("% 4.3f\t", upoints_[i][j]);
         }
         cout << endl;
     }
@@ -167,9 +175,9 @@ void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz
     // to the local frame point
 
     double originalPoint[3];
-    originalPoint[0] = xpoints[index][0];
-    originalPoint[1] = xpoints[index][1];
-    originalPoint[2] = xpoints[index][2];
+    originalPoint[0] = xpoints_[index][1];
+    originalPoint[1] = xpoints_[index][2];
+    originalPoint[2] = xpoints_[index][3];
 
 
     bot_trans_apply_vec(transform, originalPoint, xyz);
@@ -179,7 +187,7 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transfo
 {
     bot_lcmgl_line_width(lcmgl, 2.0f);
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
-    for (int i=0; i<int(xpoints.size()); i++)
+    for (int i=0; i<int(xpoints_.size()); i++)
     {
         double xyz[3];
         GetTransformedPoint(i, transform, xyz);
@@ -190,14 +198,14 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transfo
 }
 
 #if 0
-float Trajectory::DistanceToPoint(float x, float y, float z)
+double Trajectory::DistanceToPoint(double x, double y, double z)
 {
-    float minDist = -1;
+    double minDist = -1;
 
     for (int i=0; i<int(xpoints.size()); i++)
     {
         // find the distance to this point
-        float thisDist = sqrt( pow(x-xpoints[i][0],2) + pow(y-xpoints[i][1],2) + pow(z-xpoints[i][2],2) );
+        double thisDist = sqrt( pow(x-xpoints[i][0],2) + pow(y-xpoints[i][1],2) + pow(z-xpoints[i][2],2) );
 
         if (minDist < 0 || thisDist < minDist)
         {
