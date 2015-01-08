@@ -49,7 +49,7 @@ void Trajectory::LoadTrajectory(string filename, bool quiet)
 
 // from:  answered Feb 19 at 0:37
 // Jim M.
-// http://stackoverflow.com/questions/1120140/csv-parser-in-c
+// http://stackoverflow.com/a/14947876/730138
 void Trajectory::LoadXFromCSV( const std::string& filename)
 {
     std::ifstream       file( filename.c_str() );
@@ -94,7 +94,7 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
 
 // from:  answered Feb 19 at 0:37
 // Jim M.
-// http://stackoverflow.com/questions/1120140/csv-parser-in-c
+// http://stackoverflow.com/a/14947876/730138
 void Trajectory::LoadUFromCSV( const std::string& filename)
 {
     std::ifstream       file( filename.c_str() );

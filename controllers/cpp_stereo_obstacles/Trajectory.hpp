@@ -4,7 +4,7 @@
 /*
  * Trajectory class representing a trajectory in state space
  *
- * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
+ * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2015
  *
  */
 
@@ -19,6 +19,8 @@
 #include <bot_frames/bot_frames.h>
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
+
+#include <Eigen/Core>
 
 using namespace std;
 
@@ -47,8 +49,13 @@ class Trajectory
         // could optimize this with cover trees?
         //double DistanceToPoint(double x, double y, double z);
 
-        vector<vector<double>> xpoints_;
-        vector<vector<double>> upoints_;
+        MatrixXd xpoints_;
+        MatrixXd upoints_;
+
+        MatrixXd kpoints_;
+        MatrixXd affine_points_;
+
+        vector<vector<
 
 
     private:
@@ -56,11 +63,15 @@ class Trajectory
 
         int dimension_; // state space dimension
         int udimension_; // control input dimension
+
         int trajectory_number_;
         string filename_;
 
-        void LoadXFromCSV( const std::string& filename);
-        void LoadUFromCSV( const std::string& filename);
+        void LoadXFromCSV(const std::string& filename);
+        void LoadUFromCSV(const std::string& filename);
+
+        void LoadControllerFromCSV(const std::string& filename);
+        void LoadAffineFromCSV(const std::string& filename);
 
 };
 
