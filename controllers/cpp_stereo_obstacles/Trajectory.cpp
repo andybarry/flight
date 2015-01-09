@@ -47,47 +47,38 @@ void Trajectory::LoadTrajectory(string filename, bool quiet)
     //Print();
 }
 
-// from:  answered Feb 19 at 0:37
-// Jim M.
-// http://stackoverflow.com/a/14947876/730138
-void Trajectory::LoadXFromCSV( const std::string& filename)
-{
-    std::ifstream       file( filename.c_str() );
-    std::vector< std::vector<std::string> >   matrix;
-    std::vector<std::string>   row;
-    std::string                line;
-    std::string                cell;
+void Trajectory::LoadXFromCSV( const std::string& filename) {
+    io::CSVReader<13> in(filename);
 
-    while( file )
-    {
-        std::getline(file,line);
-        std::stringstream lineStream(line);
-        row.clear();
+    in.read_header(io::ignore_extra_column, "t", "x", "y", "z", "roll", "pitch", "yaw", "xdot", "ydot", "zdot", "rolldot", "pitchdot", "yawdot");
 
-        while( std::getline( lineStream, cell, ',' ) )
-            row.push_back( cell );
+    double t, x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
 
-        if( !row.empty() )
-            matrix.push_back( row );
-    }
+    int row = 0;
 
-    if (matrix.size() > 0)
-    {
-        dimension_ = int(matrix[0].size()) - 1; // minus one because the first column is the time index
-    } else {
-        cout << "WARNING: loaded trajectory of size 0 (did you include the timestamp in the first column): " << filename << endl;
-    }
+    while (in.read_row(t, x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot)) {
+        // put the data into a matrix
 
-    for( int i=0; i<int(matrix.size()); i++ )
-    {
-        vector<double> thisRow;
-        for( int j=0; j<int(matrix[i].size()); j++ )
-        {
-            thisRow.push_back(atof(matrix[i][j].c_str()));
-        }
-        xpoints_.push_back(thisRow);
+        xpoints_(row, 0) = t;
+        xpoints_(row, 1) = x;
+        xpoints_(row, 2) = y;
+        xpoints_(row, 3) = z;
+        xpoints_(row, 4) = roll;
+        xpoints_(row, 5) = pitch;
+        xpoints_(row, 6) = yaw;
+        xpoints_(row, 7) = xdot;
+        xpoints_(row, 8) = ydot;
+        xpoints_(row, 9) = zdot;
+        xpoints_(row, 10) = rolldot;
+        xpoints_(row, 11) = pitchdot;
+        xpoints_(row, 12) = yawdot;
+
+
+        row ++;
 
     }
+
+    cout << xpoints_;
 
 }
 
@@ -97,6 +88,7 @@ void Trajectory::LoadXFromCSV( const std::string& filename)
 // http://stackoverflow.com/a/14947876/730138
 void Trajectory::LoadUFromCSV( const std::string& filename)
 {
+    /*
     std::ifstream       file( filename.c_str() );
     std::vector< std::vector<std::string> >   matrix;
     std::vector<std::string>   row;
@@ -133,6 +125,7 @@ void Trajectory::LoadUFromCSV( const std::string& filename)
         upoints_.push_back(thisRow);
 
     }
+    */
 
 }
 
@@ -143,7 +136,7 @@ void Trajectory::Print() {
     cout << "u-dimension: " << udimension_ << endl;
 
     cout << " t\t x\t y\t z\t roll\t pitch\t yaw \t xdot\t ydot\t zdot\t rolld\t pitchd\t yawd" << endl;
-
+/*
     for (int i=0; i<int(xpoints_.size()); i++)
     {
         for (int j=0; j<int(xpoints_[i].size()); j++)
@@ -167,13 +160,14 @@ void Trajectory::Print() {
         }
         cout << endl;
     }
+    */
 }
 
 void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz)
 {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
-
+/*
     double originalPoint[3];
     originalPoint[0] = xpoints_[index][1];
     originalPoint[1] = xpoints_[index][2];
@@ -181,6 +175,7 @@ void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz
 
 
     bot_trans_apply_vec(transform, originalPoint, xyz);
+    */
 }
 
 void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform)

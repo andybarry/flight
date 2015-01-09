@@ -20,6 +20,8 @@
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
 
+#include "../../externals/fast-cpp-csv-parser/csv.h"
+
 #include <Eigen/Core>
 
 using namespace std;
@@ -49,13 +51,11 @@ class Trajectory
         // could optimize this with cover trees?
         //double DistanceToPoint(double x, double y, double z);
 
-        MatrixXd xpoints_;
-        MatrixXd upoints_;
+        Eigen::MatrixXd xpoints_;
+        Eigen::MatrixXd upoints_;
 
-        MatrixXd kpoints_;
-        MatrixXd affine_points_;
-
-        vector<vector<
+        Eigen::MatrixXd kpoints_;
+        Eigen::MatrixXd affine_points_;
 
 
     private:
