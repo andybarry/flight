@@ -14,23 +14,22 @@ Trajectory::Trajectory() {
     trajectory_number_ = -1;
     dimension_ = 0;
     udimension_ = 0;
-    filename_ = "test";
+    filename_ = "";
 }
 
-Trajectory::Trajectory(string filename, bool quiet) : Trajectory() {
-    LoadTrajectory(filename, quiet);
+Trajectory::Trajectory(string filename_prefix, bool quiet) : Trajectory() {
+    LoadTrajectory(filename_prefix, quiet);
 }
 
-void Trajectory::LoadTrajectory(string filename, bool quiet)
+void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
 {
     // open the file
     vector<vector<string>> strs;
 
-    string utrajFile = filename.substr(0, filename.length()-4) + "-u.csv";
 
     if (!quiet)
     {
-        cout << "Loading trajectory: " << endl << "\t" << filename << endl <<"\t" << utrajFile << endl;
+        cout << "Loading trajectory: " << endl << "\t" << filename_prefix << endl;
     }
 
     //int trajlibLoc = filename.rfind("trajlib");
@@ -39,15 +38,24 @@ void Trajectory::LoadTrajectory(string filename, bool quiet)
 
     //trajNumber = stoi(trajNumberStr);
 
-    LoadXFromCSV(filename);
-    LoadUFromCSV(utrajFile);
+    LoadXFromCSV(filename_prefix + "-x.csv");
+    LoadUFromCSV(filename_prefix + "-u.csv");
 
-    filename_ = filename;
+
+    //LoadUFromCSV(utrajFile);
+
+    filename_ = filename_prefix;
 
     //Print();
 }
 
 void Trajectory::LoadXFromCSV( const std::string& filename) {
+
+
+    int number_of_lines = GetNumberOfLines(filename);
+
+    xpoints_.resize(number_of_lines - 1, 13); // minus one for the header
+
     io::CSVReader<13> in(filename);
 
     in.read_header(io::ignore_extra_column, "t", "x", "y", "z", "roll", "pitch", "yaw", "xdot", "ydot", "zdot", "rolldot", "pitchdot", "yawdot");
@@ -73,60 +81,55 @@ void Trajectory::LoadXFromCSV( const std::string& filename) {
         xpoints_(row, 11) = pitchdot;
         xpoints_(row, 12) = yawdot;
 
+        row ++;
+
+    }
+
+    cout << xpoints_ << endl;
+
+}
+
+
+void Trajectory::LoadUFromCSV( const std::string& filename) {
+
+    int number_of_lines = GetNumberOfLines(filename);
+
+    upoints_.resize(number_of_lines - 1, 4); // minus one for the header
+
+    io::CSVReader<4> in(filename);
+
+    in.read_header(io::ignore_extra_column, "t", "elevL", "elevR", "throttle");
+
+    double t, elevL, elevR, throttle;
+
+    int row = 0;
+
+    while (in.read_row(t, elevL, elevR, throttle)) {
+        // put the data into a matrix
+
+        upoints_(row, 0) = t;
+        upoints_(row, 1) = elevL;
+        upoints_(row, 2) = elevR;
+        upoints_(row, 3) = throttle;
 
         row ++;
 
     }
 
-    cout << xpoints_;
+    cout << upoints_ << endl;
 
 }
 
+int Trajectory::GetNumberOfLines(string filename) {
+    int number_of_lines = 0;
+    string line;
+    ifstream myfile(filename);
 
-// from:  answered Feb 19 at 0:37
-// Jim M.
-// http://stackoverflow.com/a/14947876/730138
-void Trajectory::LoadUFromCSV( const std::string& filename)
-{
-    /*
-    std::ifstream       file( filename.c_str() );
-    std::vector< std::vector<std::string> >   matrix;
-    std::vector<std::string>   row;
-    std::string                line;
-    std::string                cell;
-
-    while( file )
-    {
-        std::getline(file,line);
-        std::stringstream lineStream(line);
-        row.clear();
-
-        while( std::getline( lineStream, cell, ',' ) )
-            row.push_back( cell );
-
-        if( !row.empty() )
-            matrix.push_back( row );
+    while (getline(myfile, line)) {
+        ++number_of_lines;
     }
 
-    if (matrix.size() > 0)
-    {
-        udimension_ = int(matrix[0].size()) - 1; // minus one because the first column is the time index
-    } else {
-        cout << "WARNING: loaded trajectory of size 0 (did you include the timestamp in the first column): " << filename << endl;
-    }
-
-    for( int i=0; i<int(matrix.size()); i++ )
-    {
-        vector<double> thisRow;
-        for( int j=0; j<int(matrix[i].size()); j++ )
-        {
-            thisRow.push_back(atof(matrix[i][j].c_str()));
-        }
-        upoints_.push_back(thisRow);
-
-    }
-    */
-
+    return number_of_lines;
 }
 
 void Trajectory::Print() {

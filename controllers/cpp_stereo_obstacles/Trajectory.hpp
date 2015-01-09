@@ -31,9 +31,9 @@ class Trajectory
 
     public:
         Trajectory();
-        Trajectory(string filename, bool quiet = false); // loads a trajectory from a .csv file
+        Trajectory(string filename_prefix, bool quiet = false); // loads a trajectory from a .csv file
 
-        void LoadTrajectory(string filename, bool quiet = false);
+        void LoadTrajectory(string filename_prefix, bool quiet = false);
 
         vector<double> GetPoint(double t);
 
@@ -72,6 +72,8 @@ class Trajectory
 
         void LoadControllerFromCSV(const std::string& filename);
         void LoadAffineFromCSV(const std::string& filename);
+
+        int GetNumberOfLines(string filename);
 
 };
 

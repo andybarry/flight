@@ -30,13 +30,12 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
     while ((dp = readdir(dirp)) != NULL) {
         string this_file = dp->d_name;
 
-        if (this_file.length() > 4 && this_file.compare(this_file.length()-4, 4, ".csv") == 0 &&
-        this_file.compare(this_file.length()-6, 6, "-u.csv") != 0)
+        if (this_file.length() > 4 && this_file.compare(this_file.length()-6, 6, "-x.csv") == 0)
         {
             // found a .csv file
             // load a trajectory
 
-            Trajectory this_traj(dirname + dp->d_name);
+            Trajectory this_traj(dirname + this_file.substr(0, this_file.length()-6));
 
             // add it to the library
             traj_vector_.push_back(this_traj);
