@@ -20,7 +20,7 @@
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
 
-#include "../../externals/fast-cpp-csv-parser/csv.h"
+#include "../../externals/csvparser/csvparser.h"
 
 #include <Eigen/Core>
 
@@ -67,11 +67,7 @@ class Trajectory
         int trajectory_number_;
         string filename_;
 
-        void LoadXFromCSV(const std::string& filename);
-        void LoadUFromCSV(const std::string& filename);
-
-        void LoadControllerFromCSV(const std::string& filename);
-        void LoadAffineFromCSV(const std::string& filename);
+        void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix);
 
         int GetNumberOfLines(string filename);
 

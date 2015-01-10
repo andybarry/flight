@@ -38,85 +38,57 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
 
     //trajNumber = stoi(trajNumberStr);
 
-    LoadXFromCSV(filename_prefix + "-x.csv");
-    LoadUFromCSV(filename_prefix + "-u.csv");
-
-
-    //LoadUFromCSV(utrajFile);
+    LoadMatrixFromCSV(filename_prefix + "-x.csv", xpoints_);
+    LoadMatrixFromCSV(filename_prefix + "-u.csv", upoints_);
+    LoadMatrixFromCSV(filename_prefix + "-controller.csv", kpoints_);
+    LoadMatrixFromCSV(filename_prefix + "-affine.csv", affine_points_);
 
     filename_ = filename_prefix;
+
+    cout << "Loaded." << endl;
 
     //Print();
 }
 
-void Trajectory::LoadXFromCSV( const std::string& filename) {
 
-
+void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd &matrix) {
+cout << "Loading" << filename << endl;
     int number_of_lines = GetNumberOfLines(filename);
+    int row_num = 0;
 
-    xpoints_.resize(number_of_lines - 1, 13); // minus one for the header
+    int i =  0;
+    //                                   file, delimiter, first_line_is_header?
+    CsvParser *csvparser = CsvParser_new(filename.c_str(), ",", true);
+    CsvRow *header;
+    CsvRow *row;
 
-    io::CSVReader<13> in(filename);
-
-    in.read_header(io::ignore_extra_column, "t", "x", "y", "z", "roll", "pitch", "yaw", "xdot", "ydot", "zdot", "rolldot", "pitchdot", "yawdot");
-
-    double t, x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
-
-    int row = 0;
-
-    while (in.read_row(t, x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot)) {
-        // put the data into a matrix
-
-        xpoints_(row, 0) = t;
-        xpoints_(row, 1) = x;
-        xpoints_(row, 2) = y;
-        xpoints_(row, 3) = z;
-        xpoints_(row, 4) = roll;
-        xpoints_(row, 5) = pitch;
-        xpoints_(row, 6) = yaw;
-        xpoints_(row, 7) = xdot;
-        xpoints_(row, 8) = ydot;
-        xpoints_(row, 9) = zdot;
-        xpoints_(row, 10) = rolldot;
-        xpoints_(row, 11) = pitchdot;
-        xpoints_(row, 12) = yawdot;
-
-        row ++;
-
+    header = CsvParser_getHeader(csvparser);
+    if (header == NULL) {
+        printf("%s\n", CsvParser_getErrorMessage(csvparser));
+        return;
+    }
+    char **headerFields = CsvParser_getFields(header);
+    for (i = 0 ; i < CsvParser_getNumFields(header) ; i++) {
+        //printf("TITLE: %s\n", headerFields[i]);
     }
 
-    cout << xpoints_ << endl;
+    matrix.resize(number_of_lines - 1, i); // minus 1 for header, i = number of columns
 
-}
+    while ((row = CsvParser_getRow(csvparser)) ) {
+        //printf("NEW LINE:\n");
+        char **rowFields = CsvParser_getFields(row);
+        for (i = 0 ; i < CsvParser_getNumFields(row) ; i++) {
 
+            matrix(row_num, i) = atof(rowFields[i]);
 
-void Trajectory::LoadUFromCSV( const std::string& filename) {
+            //printf("FIELD: %20.20f\n", atof(rowFields[i]));
+        }
+        CsvParser_destroy_row(row);
 
-    int number_of_lines = GetNumberOfLines(filename);
-
-    upoints_.resize(number_of_lines - 1, 4); // minus one for the header
-
-    io::CSVReader<4> in(filename);
-
-    in.read_header(io::ignore_extra_column, "t", "elevL", "elevR", "throttle");
-
-    double t, elevL, elevR, throttle;
-
-    int row = 0;
-
-    while (in.read_row(t, elevL, elevR, throttle)) {
-        // put the data into a matrix
-
-        upoints_(row, 0) = t;
-        upoints_(row, 1) = elevL;
-        upoints_(row, 2) = elevR;
-        upoints_(row, 3) = throttle;
-
-        row ++;
-
+        row_num ++;
     }
+    CsvParser_destroy(csvparser);
 
-    cout << upoints_ << endl;
 
 }
 
@@ -139,31 +111,14 @@ void Trajectory::Print() {
     cout << "u-dimension: " << udimension_ << endl;
 
     cout << " t\t x\t y\t z\t roll\t pitch\t yaw \t xdot\t ydot\t zdot\t rolld\t pitchd\t yawd" << endl;
-/*
-    for (int i=0; i<int(xpoints_.size()); i++)
-    {
-        for (int j=0; j<int(xpoints_[i].size()); j++)
-        {
-            //cout << xpoints_[i][j] << "\t";
-            printf("% 4.3f\t", xpoints_[i][j]);
-        }
-        cout << endl;
-    }
+
+    cout << xpoints_ << endl;
 
     cout << "------------- u points ----------------" << endl;
 
     cout << " t\t u1\t u2\t u3" << endl;
 
-    for (int i=0; i<int(upoints_.size()); i++)
-    {
-        for (int j=0; j<int(upoints_[i].size()); j++)
-        {
-            //cout << upoints_[i][j] << " ";
-            printf("% 4.3f\t", upoints_[i][j]);
-        }
-        cout << endl;
-    }
-    */
+    cout << upoints_ << endl;
 }
 
 void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz)
