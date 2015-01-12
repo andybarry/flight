@@ -65,7 +65,7 @@ class Trajectory
         int udimension_; // control input dimension
 
         int trajectory_number_;
-        string filename_;
+        string filename_prefix_;
 
         void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix);
 

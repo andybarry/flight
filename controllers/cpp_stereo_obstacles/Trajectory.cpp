@@ -14,7 +14,7 @@ Trajectory::Trajectory() {
     trajectory_number_ = -1;
     dimension_ = 0;
     udimension_ = 0;
-    filename_ = "";
+    filename_prefix_ = "";
 }
 
 Trajectory::Trajectory(string filename_prefix, bool quiet) : Trajectory() {
@@ -43,16 +43,30 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
     LoadMatrixFromCSV(filename_prefix + "-controller.csv", kpoints_);
     LoadMatrixFromCSV(filename_prefix + "-affine.csv", affine_points_);
 
-    filename_ = filename_prefix;
+    filename_prefix_ = filename_prefix;
+
+    dimension_ = xpoints_.cols() - 1; // minus 1 because of time index
+    udimension_ = upoints_.cols() - 1;
+
+    if (kpoints_.cols() - 1 != dimension_ * udimension_) {
+        cerr << "Error: expected to have " << dimension_ << "*" << udimension_ << "+1 = " << dimension_ * udimension_ + 1 << " columns in " << filename_prefix << "-controller.csv but found " << kpoints_.cols() << endl;
+        exit(1);
+    }
+
+    if (affine_points_.cols() - 1 != udimension_) {
+        cerr << "Error: expected to have " << udimension_ << "+1 = " << udimension_ + 1 << " columns in " << filename_prefix << "-affine.csv but found " << affine_points_.cols() << endl;
+        exit(1);
+    }
 
     cout << "Loaded." << endl;
 
-    //Print();
 }
 
 
 void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd &matrix) {
-cout << "Loading" << filename << endl;
+
+    cout << "Loading" << filename << endl;
+
     int number_of_lines = GetNumberOfLines(filename);
     int row_num = 0;
 
@@ -67,6 +81,7 @@ cout << "Loading" << filename << endl;
         printf("%s\n", CsvParser_getErrorMessage(csvparser));
         return;
     }
+
     char **headerFields = CsvParser_getFields(header);
     for (i = 0 ; i < CsvParser_getNumFields(header) ; i++) {
         //printf("TITLE: %s\n", headerFields[i]);
@@ -106,7 +121,7 @@ int Trajectory::GetNumberOfLines(string filename) {
 
 void Trajectory::Print() {
     cout << "------------ Trajectory print -------------" << endl;
-    cout << "Filename: " << filename_ << endl;
+    cout << "Filename: " << filename_prefix_ << endl;
     cout << "Dimension: " << dimension_ << endl;
     cout << "u-dimension: " << udimension_ << endl;
 
@@ -119,6 +134,14 @@ void Trajectory::Print() {
     cout << " t\t u1\t u2\t u3" << endl;
 
     cout << upoints_ << endl;
+
+    cout << "------------- k points ----------------" << endl;
+
+    cout << kpoints_ << endl;
+
+    cout << "------------- affine points ----------------" << endl;
+
+    cout << affine_points_ << endl;
 }
 
 void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz)
