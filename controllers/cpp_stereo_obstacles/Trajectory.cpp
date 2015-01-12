@@ -15,6 +15,7 @@ Trajectory::Trajectory() {
     dimension_ = 0;
     udimension_ = 0;
     filename_prefix_ = "";
+    dt_ = 0;
 }
 
 Trajectory::Trajectory(string filename_prefix, bool quiet) : Trajectory() {
@@ -25,7 +26,6 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
 {
     // open the file
     vector<vector<string>> strs;
-
 
     if (!quiet)
     {
@@ -58,14 +58,24 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
         exit(1);
     }
 
-    cout << "Loaded." << endl;
+    if (xpoints_.rows() != upoints_.rows() || xpoints_.rows() != kpoints_.rows() || xpoints_.rows() != affine_points_.rows()) {
+        cerr << "Error: inconsistent number of rows in CSV files: " << endl
+            << "\t" << filename_prefix << "-x: " << xpoints_.rows() << endl
+            << "\t" << filename_prefix << "-u: " << upoints_.rows() << endl
+            << "\t" << filename_prefix << "-controller: " << kpoints_.rows() << endl
+            << "\t" << filename_prefix << "-affine: " << affine_points_.rows() << endl;
+
+            exit(1);
+    }
+
+    cout << "x at t = 0.45:" << endl << GetState(0.45) << endl;
 
 }
 
 
 void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd &matrix) {
 
-    cout << "Loading" << filename << endl;
+    cout << "Loading " << filename << endl;
 
     int number_of_lines = GetNumberOfLines(filename);
     int row_num = 0;
@@ -100,6 +110,17 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
         }
         CsvParser_destroy_row(row);
 
+        if (row_num == 1) {
+            dt_ = matrix(1, 0) - matrix(0, 0);
+        } else if (row_num > 1) {
+            if (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_ > std::numeric_limits<double>::epsilon()) {
+                cerr << "Error: non-constant dt. Expected dt = " << dt_ << " but got matrix[" << row_num << "][0] - matrix[" << row_num - 1 << "][0] = " << matrix(row_num, 0) - matrix(row_num - 1, 0) << endl;
+
+                cout << matrix << endl;
+                exit(1);
+            }
+        }
+
         row_num ++;
     }
     CsvParser_destroy(csvparser);
@@ -118,6 +139,57 @@ int Trajectory::GetNumberOfLines(string filename) {
 
     return number_of_lines;
 }
+
+Eigen::VectorXd Trajectory::GetState(double t) {
+    int index = GetIndexFromTime(t);
+
+    // todo remove time: return xpoints_.block(index, 1, 1, xpoints_.cols() - 1);
+}
+
+Eigen::VectorXd Trajectory::GetUCommand(double t) {
+    int index = GetIndexFromTime(t);
+
+    // todo remove time: return upoints_.row(index);
+}
+
+
+/**
+ * Assuming a constant dt, we can compute the index of a point
+ * based on its time.
+ *
+ * @param t time to find index of
+ * @retval index of nearest point
+ */
+int Trajectory::GetIndexFromTime(double t) {
+
+    // round t to the nearest dt_
+
+   double t0 = xpoints_(0,0);
+
+   double tf = xpoints_(xpoints_.rows() - 1, 0);
+
+   if (t < t0) {
+       return 0;
+   } else if (t > tf) {
+       return xpoints_.rows() - 1;
+   }
+
+   // otherwise, we are somewhere in the bounds of the trajectory
+    int num_dts = t/dt_;
+    float remainder = fmod(t, dt_);
+
+    if (remainder > 0.5f*dt_) {
+        num_dts++;
+    }
+
+    int starting_dts = t0 / dt_;
+
+    return num_dts + starting_dts;
+
+}
+
+
+
 
 void Trajectory::Print() {
     cout << "------------ Trajectory print -------------" << endl;

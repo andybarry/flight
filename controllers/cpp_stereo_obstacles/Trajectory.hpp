@@ -46,10 +46,17 @@ class Trajectory
         void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
 
+        Eigen::VectorXd GetState(double t);
+        Eigen::VectorXd GetUCommand(double t);
 
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
         //double DistanceToPoint(double x, double y, double z);
+
+
+
+
+    private:
 
         Eigen::MatrixXd xpoints_;
         Eigen::MatrixXd upoints_;
@@ -57,8 +64,7 @@ class Trajectory
         Eigen::MatrixXd kpoints_;
         Eigen::MatrixXd affine_points_;
 
-
-    private:
+        double dt_;
 
 
         int dimension_; // state space dimension
@@ -70,6 +76,8 @@ class Trajectory
         void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix);
 
         int GetNumberOfLines(string filename);
+
+        int GetIndexFromTime(double t);
 
 };
 

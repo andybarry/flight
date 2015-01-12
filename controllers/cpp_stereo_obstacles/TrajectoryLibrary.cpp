@@ -44,7 +44,7 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
         }
     }
 
-    (void)closedir(dirp);
+    //(void)closedir(dirp);
 
     cout << "Loaded " << count << " trajectories." << endl;
 
@@ -63,6 +63,8 @@ void TrajectoryLibrary::Print() {
 }
 
 Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
+
+    /*
     double minProbability = -1;
     Trajectory *farthestTraj = NULL;
 
@@ -122,5 +124,7 @@ Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *
     }
 
     return farthestTraj;
+    */
+    return NULL;
 }
 
