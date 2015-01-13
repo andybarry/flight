@@ -68,7 +68,7 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
             exit(1);
     }
 
-    cout << "x at t = 0.45:" << endl << GetState(0.45) << endl;
+    //cout << "x at t = 0.45:" << endl << GetState(0.323) << endl << " u = " << endl << GetUCommand(4.01) << endl;
 
 }
 
@@ -143,13 +143,17 @@ int Trajectory::GetNumberOfLines(string filename) {
 Eigen::VectorXd Trajectory::GetState(double t) {
     int index = GetIndexFromTime(t);
 
-    // todo remove time: return xpoints_.block(index, 1, 1, xpoints_.cols() - 1);
+    Eigen::VectorXd row_vec = xpoints_.row(index);
+
+    return row_vec.tail(xpoints_.cols() - 1); // remove time
 }
 
 Eigen::VectorXd Trajectory::GetUCommand(double t) {
     int index = GetIndexFromTime(t);
 
-    // todo remove time: return upoints_.row(index);
+    Eigen::VectorXd row_vec = upoints_.row(index);
+
+    return row_vec.tail(upoints_.cols() - 1); // remove time
 }
 
 
