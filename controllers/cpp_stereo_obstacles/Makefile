@@ -1,5 +1,5 @@
 TARGET = stereo-imu-obstacles
-SOURCES = stereo-imu-obstacles.cpp ../../sensors/stereo/opencv-stereo-util.cpp TrajectoryLibrary.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StereoFilter.cpp Trajectory.cpp ../../externals/jpeg-utils/jpeg-utils.c ../../externals/csvparser/csvparser.c
+SOURCES = stereo-imu-obstacles.cpp ../../sensors/stereo/opencv-stereo-util.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StereoFilter.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/jpeg-utils/jpeg-utils.c ../../externals/csvparser/csvparser.c
 
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a

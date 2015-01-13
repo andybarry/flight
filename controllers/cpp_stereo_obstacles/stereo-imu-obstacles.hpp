@@ -34,8 +34,7 @@ using namespace std;
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_trajectory_number.h"
 
-#include "TrajectoryLibrary.hpp"
-#include "Trajectory.hpp"
+#include "../TrajectoryLibrary/TrajectoryLibrary.hpp"
 
 #include "../../externals/ConciseArgs.hpp"
 
