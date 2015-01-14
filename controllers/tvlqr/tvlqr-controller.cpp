@@ -10,50 +10,30 @@
 using namespace std;
 
 lcm_t * lcm;
-char *lcm_out = NULL;
-int numFrames = 0;
-unsigned long totalTime = 0;
+
+mav_pose_t_subscription_t *mav_pose_t_sub;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
 
 bot_lcmgl_t* lcmgl;
 
+void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
+    // todo
+}
+
 
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
-    string config_file = "";
     string trajectory_dir = "";
+    string pose_channel = "STATE_ESTIMATOR_POSE";
 
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
-    parser.add(disable_filtering, "f", "disable-filtering", "Disable filtering.");
-    parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
-    parser.add(trajectory_dir, "d", "trajectory-dir" "Directory containing CSV files with trajectories.");
+    parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
+    parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.parse();
-
-    if (disable_filtering) {
-        cout << "WARNING: you have disabled filtering with the -f flag." << endl;
-    }
-
-    OpenCvStereoConfig stereo_config;
-
-    // parse the config file
-    if (ParseConfigFile(config_file, &stereo_config) != true)
-    {
-        fprintf(stderr, "Failed to parse configuration file, quitting.\n");
-        return 1;
-    }
-
-    // load calibration
-    OpenCvStereoCalibration stereo_calibration;
-
-    if (LoadCalibration(stereo_config.calibrationDir, &stereo_calibration) != true)
-    {
-        cerr << "Error: failed to read calibration files. Quitting." << endl;
-        return 1;
-    }
 
     if (trajectory_dir != "") {
         // load a trajectory library
@@ -78,36 +58,13 @@ int main(int argc,char** argv) {
         return 1;
     }
 
-    // init frames
-    BotParam *param = bot_param_new_from_server(lcm, 0);
-    BotFrames *bot_frames = bot_frames_new(lcm, param);
 
-    // init octomap
-    StereoOctomap octomap(bot_frames);
-
-    octomap.SetStereoConfig(stereo_config, stereo_calibration);
-
-    StereoFilter filter(0.1);
-
-    StereoHandlerData user_data;
-    user_data.octomap = &octomap;
-    user_data.filter = &filter;
-
-    char *stereo_channel;
-    if (bot_param_get_str(param, "lcm_channels.stereo", &stereo_channel) >= 0) {
-        stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel, &stereo_handler, &user_data);
-    }
-
-    lcmgl = bot_lcmgl_init(lcm, "lcmgl-stereo-transformed");
-    bot_lcmgl_enable(lcmgl, GL_BLEND);
-
-
-
+    mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
 
     // control-c handler
     signal(SIGINT,sighandler);
 
-    printf("Receiving LCM:\n\tStereo: %s\n", stereo_channel);
+    printf("Receiving LCM:\n\tState estimate: %s\n", pose_channel.c_str());
 
     while (true)
     {
@@ -122,7 +79,7 @@ void sighandler(int dum)
 {
     printf("\n\nclosing... ");
 
-    lcmt_stereo_unsubscribe(lcm, stereo_sub);
+    mav_pose_t_unsubscribe(lcm, mav_pose_t_sub);
     lcm_destroy (lcm);
 
     printf("done.\n");

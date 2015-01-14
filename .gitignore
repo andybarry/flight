@@ -14,6 +14,7 @@ LCM/mavlink_message_t.h.rej
 *~
 *.dep
 controllers/constant-control/constant-control
+controllers/tvlqr/tvlqr-controller
 drivers/process_control/process-control
 estimators/cpp_wind/wind-estimator
 sensors/stereo/opencv-calibrate
