@@ -32,11 +32,8 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
         cout << "Loading trajectory: " << endl << "\t" << filename_prefix << endl;
     }
 
-    //int trajlibLoc = filename.rfind("trajlib");
-    //string trajNumberStr = filename.substr(trajlibLoc+7, filename.length()-trajlibLoc-4-7);
-
-
-    //trajNumber = stoi(trajNumberStr);
+    string traj_number_str = filename_prefix.substr(filename_prefix.length() - 5, 5);
+    trajectory_number_ = stoi(traj_number_str);
 
     LoadMatrixFromCSV(filename_prefix + "-x.csv", xpoints_);
     LoadMatrixFromCSV(filename_prefix + "-u.csv", upoints_);
@@ -192,12 +189,42 @@ int Trajectory::GetIndexFromTime(double t) {
 
 }
 
+/**
+ * Unpacks the gain matrix for a specific time t.
+ *
+ * This could be pre-computed if it becomes a performance bottleneck.
+ *
+ * @param t time along the trajectory
+ *
+ * @retval gain matrix at that time with dimension: state_dimension x u_dimension
+ */
+Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
+    int index = GetIndexFromTime(t);
+
+    Eigen::VectorXd k_row = kpoints_.row(index);
+
+
+    Eigen::MatrixXd k_mat(dimension_, udimension_);
+
+    for (int i = 0; i < udimension_; i++) {
+
+        int start_pos = i * dimension_;
+
+        k_mat.col(i) = k_row.segment(start_pos, dimension_);
+    }
+
+    return k_mat;
+
+
+}
+
 
 
 
 void Trajectory::Print() {
     cout << "------------ Trajectory print -------------" << endl;
     cout << "Filename: " << filename_prefix_ << endl;
+    cout << "Trajectory number: " << trajectory_number_ << endl;
     cout << "Dimension: " << dimension_ << endl;
     cout << "u-dimension: " << udimension_ << endl;
 

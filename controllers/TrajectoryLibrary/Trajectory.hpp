@@ -35,7 +35,7 @@ class Trajectory
 
         void LoadTrajectory(string filename_prefix, bool quiet = false);
 
-        vector<double> GetPoint(double t);
+        Eigen::MatrixXd GetGainMatrix(double t);
 
         int GetDimension() { return dimension_; }
         int GetUDimension() { return udimension_; }

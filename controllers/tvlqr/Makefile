@@ -1,5 +1,5 @@
 TARGET = tvlqr-controller
-SOURCES = tvlqr-controller.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c
+SOURCES = tvlqr-controller.cpp TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c
 
 LCMDIR=../../LCM/
 LCMLIB=../../LCM/lib/libtypes.a

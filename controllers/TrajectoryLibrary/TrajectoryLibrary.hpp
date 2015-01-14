@@ -36,6 +36,8 @@ class TrajectoryLibrary
     public:
         TrajectoryLibrary();
 
+        Trajectory* GetTrajectoryByNumber(int number);
+
         bool LoadLibrary(string dirname);  // loads a trajectory from a directory of .csv files
 
         Trajectory* FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = NULL);

@@ -1,0 +1,7 @@
+struct lcmt_tvlqr_controller_action
+{
+  int64_t timestamp;
+
+  int32_t trajectory_number;
+
+}

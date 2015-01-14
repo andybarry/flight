@@ -12,14 +12,53 @@ using namespace std;
 lcm_t * lcm;
 
 mav_pose_t_subscription_t *mav_pose_t_sub;
+lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
 
+TvlqrControl control;
+
 bot_lcmgl_t* lcmgl;
 
+int64_t traj_timestamp;
+
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
-    // todo
+
+    // whenever we get a state estimate, we want to output a new control action
+
+    cout << "handler" << endl;
+
+    Eigen::VectorXd state_vec = StateEstimatorToStateVector(msg); // todo
+
+
+}
+
+int64_t GetTimestampNow() {
+    struct timeval thisTime;
+    gettimeofday(&thisTime, NULL);
+    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
+}
+
+void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
+
+    // getting an action means we should start a new TVLQR controller!
+
+    Trajectory *traj = trajlib.GetTrajectoryByNumber(msg->trajectory_number);
+
+    if (traj == NULL) {
+        cerr << "Warning: trajectory number " << msg->trajectory_number << " was NULL!  Aborting trajectory run." << endl;
+        return;
+    }
+
+    control.SetTrajectory(traj);
+
+    traj_timestamp = GetTimestampNow();
+
+
+    cout << "Starting trajectory " << msg->trajectory_number << " at t = " << traj_timestamp << endl;
+
+
 }
 
 
@@ -28,11 +67,13 @@ int main(int argc,char** argv) {
     bool ttl_one = false;
     string trajectory_dir = "";
     string pose_channel = "STATE_ESTIMATOR_POSE";
+    string tvlqr_action_channel = "tvlqr-action";
 
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
     parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
+    parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
     parser.parse();
 
     if (trajectory_dir != "") {
@@ -61,10 +102,14 @@ int main(int argc,char** argv) {
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
 
+    tvlqr_controller_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel.c_str(), &lcmt_tvlqr_controller_action_handler, NULL);
+
     // control-c handler
     signal(SIGINT,sighandler);
 
-    printf("Receiving LCM:\n\tState estimate: %s\n", pose_channel.c_str());
+    control.SetTrajectory(trajlib.GetTrajectoryByNumber(1));
+
+    printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\n", pose_channel.c_str(), tvlqr_action_channel.c_str());
 
     while (true)
     {
@@ -80,6 +125,8 @@ void sighandler(int dum)
     printf("\n\nclosing... ");
 
     mav_pose_t_unsubscribe(lcm, mav_pose_t_sub);
+    lcmt_tvlqr_controller_action_unsubscribe(lcm, tvlqr_controller_action_sub);
+
     lcm_destroy (lcm);
 
     printf("done.\n");

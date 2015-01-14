@@ -62,6 +62,15 @@ void TrajectoryLibrary::Print() {
     }
 }
 
+Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
+    for (unsigned int i = 0; i < traj_vector_.size(); i++) {
+        if (traj_vector_.at(i).GetTrajectoryNumber() == number) {
+            return &traj_vector_.at(i);
+        }
+    }
+    return NULL;
+}
+
 Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
 
     /*
