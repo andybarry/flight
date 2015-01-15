@@ -14,6 +14,9 @@
 #include <vector>
 #include <sstream>
 
+#include <bot_core/rotations.h>
+#include <bot_frames/bot_frames.h>
+
 #include "../TrajectoryLibrary/Trajectory.hpp"
 
 #include <Eigen/Core>
@@ -27,13 +30,14 @@ class TvlqrControl
     public:
         TvlqrControl();
 
-        void SetTrajectory(Trajectory *trajectory);
+        void SetTrajectory(Trajectory *trajectory, Eigen::VectorXd initial_state);
 
         Eigen::VectorXd GetControl(double t_along_trajectory, Eigen::VectorXd state);
 
 
     private:
         Trajectory *current_trajectory_;
+        Eigen::VectorXd initial_state_;
 
 };
 

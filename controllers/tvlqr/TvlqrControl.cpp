@@ -12,13 +12,21 @@ TvlqrControl::TvlqrControl() {
 }
 
 
-void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
+void TvlqrControl::SetTrajectory(Trajectory *trajectory, Eigen::VectorXd initial_state) {
 
     if (trajectory == NULL) {
         cerr << "Warning: NULL trajectory in SetTrajectory." << endl;
     }
 
     current_trajectory_ = trajectory;
+
+    // capture the initial state so we know how to deal with it down the line
+
+    initial_state_ = initial_state;
+
+    // get a transform from the initial state to the global origin
+
+    // TODO?
 }
 
 Eigen::VectorXd TvlqrControl::GetControl(double t_along_trajectory, Eigen::VectorXd state) {
