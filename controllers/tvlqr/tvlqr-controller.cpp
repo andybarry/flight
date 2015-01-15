@@ -34,6 +34,42 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
 }
 
+Eigen::VectorXd StateEstimatorToStateVector(const mav_pose_t *msg) {
+
+    // convert message to 12-state vector
+
+    Eigen::VectorXd state(12);
+
+    // x, y, and z are direct
+    state(0) = msg->pos[0];
+    state(1) = msg->pos[1];
+    state(2) = msg->pos[2];
+
+    // roll, pitch, and yaw come from the quats
+    double rpy[3];
+
+    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy);
+
+    state(3) = rpy[0];
+    state(4) = rpy[1];
+    state(5) = rpy[2];
+
+    // velocities are given in the body frame
+
+    state(6) = msg->vel[0];
+    state(7) = msg->vel[1];
+    state(8) = msg->vel[2];
+
+    // rotation rates are given in TODO
+    state(9) =
+    state(10) =
+    state(11) =
+
+    return state;
+
+
+}
+
 int64_t GetTimestampNow() {
     struct timeval thisTime;
     gettimeofday(&thisTime, NULL);

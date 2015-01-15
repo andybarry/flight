@@ -20,4 +20,6 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
 int64_t GetTimestampNow();
 
+Eigen::VectorXd StateEstimatorToStateVector(const mav_pose_t *msg);
+
 #endif
