@@ -2,7 +2,19 @@
 #
 #
 # call this every minute from cron to always have the process
-# crontab example: * * * * * /home/$USER/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep"
+#
+# crontab exampless
+# 
+# ROOT'S CRONTAB:
+#	(master -- for laptop)
+#	* * * * * /home/abarry/realtime/externals/timesync/cronTimesync "/home/odroid/realtime/externals/timesync/build/bin/timesync -m -p 10000" | /usr/bin/logger -t "timesync-cron"
+#
+#	(slave -- for odroid)
+#   * * * * * /home/odroid/realtime/externals/timesync/cronTimesync "/home/odroid/realtime/externals/timesync/build/bin/timesync -s -p 10000" | /usr/bin/logger -t "timesync-cron"
+#
+# USER CRONTAB:
+#	* * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
+#	
 #
 
 ENV_SCRIPT=/home/odroid/realtime/scripts/setEnv
@@ -24,7 +36,7 @@ COMMAND=$1
 PS_SEARCH=$2
 
 
-# check for existing timesync
+# check for existing prgram running
 if [ `pgrep $PS_SEARCH |wc -l` = 0 ]
 then
     echo "Found no $PS_SEARCH, starting one..."
