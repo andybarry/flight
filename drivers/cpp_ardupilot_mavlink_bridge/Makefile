@@ -1,33 +1,34 @@
-# I am a comment, and I want to say that the variable CC will be
-# the compiler to use.
-CC=g++
+TARGET = ardupilot-mavlink-bridge
+SOURCES = ardupilot-mavlink-bridge.cpp
 
-# Hey!, I am comment number 2. I want to say that CFLAGS will be the
-# options I'll pass to the compiler.
 LCMDIR=../../LCM/
+
+REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes'
+
+
+# -------- includes ----------
+
+PKG_CONFIG_PATH_PRONTO=../../../pronto-distro/build/lib/pkgconfig/
+
+#    -- mavlink --
+MAVCONN_INCLUDE=../../../mav/mavconn/src/
+MAVLINK_INCLUDE=../../../mav/mavlink/build/include/v1.0/
+LOCAL_MAVLINK=../../mavlink-generated
+
+#    -- camera --
+FIREFLY_MV_UTILS=/usr/local/include/firefly-mv-utils
+
+# --- libraries ----
+
+MAVCONN_LIB_DIR=../../../mav/mavconn/build/lib/
+MAVCONN=$(MAVCONN_LIB_DIR)/libmavconn_lcm.so -Wl,-rpath -Wl,$(MAVCONN_LIB_DIR)
 LCMLIB=../../LCM/lib/libtypes.a
 
-MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
+CXXFLAGS=-std=c++0x
 
-MAVLIB=/home/$$USER/mav/mavconn/build/lib
+CPPFLAGS=-c -Wall -O3 -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE)
 
-CFLAGS=-c -Wall -O3 `pkg-config --cflags lcm bot2-core bot2-param-client` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes -I../../../mav/mavlink/build/include/v1.0/ -I../../../mav/mavconn/src/
-
-LIBS=`pkg-config --libs lcm bot2-core bot2-param-client` $(LCMLIB) $(MAVLCMLIB) $(MAVLIB)/libmavconn_lcm.so -Wl,-rpath -Wl,$(MAVLIB) 
+LDPOSTFLAGS = `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN)
 
 
-
-
-all: ardupilot-mavlink-bridge
-
-ardupilot-mavlink-bridge: ardupilot-mavlink-bridge.o
-	$(CC) ardupilot-mavlink-bridge.o -o ardupilot-mavlink-bridge $(LIBS)
-
-ardupilot-mavlink-bridge.o: ardupilot-mavlink-bridge.cpp
-	$(CC) $(CFLAGS) ardupilot-mavlink-bridge.cpp
-
-clean:
-	rm -rf *o ardupilot-mavlink-bridge
-
-
-
+include ../../externals/edam.mk

@@ -31,8 +31,8 @@ using namespace std;
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
-#include "mav_ins_t.h" // from Fixie
-#include "mav_gps_data_t.h" // from Fixie
+#include "lcmtypes/mav_ins_t.h" // from pronto
+#include "lcmtypes/mav_gps_data_t.h" // from pronto
 
 #include "mavconn.h" // from mavconn
 
