@@ -75,7 +75,7 @@ string airspeed_channel = "airspeed";
 string altimeter_channel = "altimeter";
 string gps_channel = "gps";
 string battery_status_channel = "battery-status";
-string deltawing_u_channel = "deltawing_u";
+string deltawing_u_channel = "wingeron_u";
 string servo_out_channel = "servo_out";
 string stereo_control_channel = "stereo-control";
 string beep_channel = "beep";
@@ -433,16 +433,16 @@ int main(int argc,char** argv)
 {
 
     ConciseArgs parser(argc, argv);
-    parser.add(mavlink_channel, "m", "mavlink-channel" "LCM channel for mavlink.");
-    parser.add(attitude_channel, "a", "attitude-channel" "LCM channel for IMU messages.");
-    parser.add(airspeed_channel, "s", "airspeed-channel" "LCM channel for pitot tube messages.");
-    parser.add(altimeter_channel, "h", "altimeter-channel" "LCM channel for the altimeter.");
-    parser.add(gps_channel, "g", "gps-channel" "LCM channel for the GPS.");
-    parser.add(battery_status_channel, "b", "batter-status-channel" "LCM channel for battery status.");
-    parser.add(deltawing_u_channel, "d", "deltawing-u-channel" "LCM channel for deltawing control messages.");
-    parser.add(servo_out_channel, "v", "servo-out-channel" "LCM channel for servo commands sent by the aircraft.");
-    parser.add(stereo_control_channel, "c", "stereo-control-channel" "LCM channel for stereo control.");
-    parser.add(beep_channel, "b", "beep-channel" "LCM channel for beep messages.");
+    parser.add(mavlink_channel, "m", "mavlink-channel", "LCM channel for mavlink.");
+    parser.add(attitude_channel, "i", "attitude-channel", "LCM channel for IMU messages.");
+    parser.add(airspeed_channel, "s", "airspeed-channel", "LCM channel for pitot tube messages.");
+    parser.add(altimeter_channel, "a", "altimeter-channel", "LCM channel for the altimeter.");
+    parser.add(gps_channel, "g", "gps-channel", "LCM channel for the GPS.");
+    parser.add(battery_status_channel, "b", "batter-status-channel", "LCM channel for battery status.");
+    parser.add(deltawing_u_channel, "d", "deltawing-u-channel", "LCM channel for deltawing control messages.");
+    parser.add(servo_out_channel, "v", "servo-out-channel", "LCM channel for servo commands sent by the aircraft.");
+    parser.add(stereo_control_channel, "c", "stereo-control-channel", "LCM channel for stereo control.");
+    parser.add(beep_channel, "p", "beep-channel", "LCM channel for beep messages.");
     parser.parse();
 
 

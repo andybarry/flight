@@ -20,7 +20,7 @@ FIREFLY_MV_UTILS=/usr/local/include/firefly-mv-utils
 
 # --- libraries ----
 
-MAVCONN_LIB_DIR=../../../mav/mavconn/build/lib/
+MAVCONN_LIB_DIR=/home/$(USER)/mav/mavconn/build/lib/
 MAVCONN=$(MAVCONN_LIB_DIR)/libmavconn_lcm.so -Wl,-rpath -Wl,$(MAVCONN_LIB_DIR)
 LCMLIB=../../LCM/lib/libtypes.a
 
