@@ -3,7 +3,7 @@
  * and generates an obstacle map.  Then uses that map with a trajectory
  * library for control.
  *
- * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2014
+ * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2015
  *
  */
 
