@@ -22,7 +22,6 @@ using namespace std;
 #include "../../LCM/lcmt_gps.h"
 #include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_attitude.h"
-#include "../../LCM/lcmt_baro_airspeed.h"
 #include "../../LCM/lcmt_deltawing_u.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_beep.h"
@@ -31,8 +30,12 @@ using namespace std;
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
-#include "mav_ins_t.h" // from Fixie
-#include "mav_gps_data_t.h" // from Fixie
+#include "lcmtypes/mav_ins_t.h" // from pronto
+#include "lcmtypes/mav_gps_data_t.h" // from pronto
+#include "lcmtypes/mav_altimeter_t.h" // from pronto
+#include "lcmtypes/mav_airspeed_t.h" // from pronto
+
+#include "../../externals/ConciseArgs.hpp"
 
 #include "mavconn.h" // from mavconn
 
@@ -66,12 +69,16 @@ double elev_origin;
 
 int global_beep = 0;
 
-char *channelAttitude = NULL;
-char *channelBaroAirspeed = NULL;
-char *channelGps = NULL;
-char *channelBatteryStatus = NULL;
-char *channelServoOutput = NULL;
-char *channelStereoControl = NULL;
+string mavlink_channel = "MAVLINK";
+string attitude_channel = "attitude";
+string airspeed_channel = "airspeed";
+string altimeter_channel = "altimeter";
+string gps_channel = "gps";
+string battery_status_channel = "battery-status";
+string deltawing_u_channel = "wingeron_u";
+string servo_out_channel = "servo_out";
+string stereo_control_channel = "stereo-control";
+string beep_channel = "beep";
 
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
@@ -81,24 +88,6 @@ lcmt_beep_subscription_t *beep_sub;
 int last_stereo_control = 0;
 
 uint8_t systemID = getSystemID();
-
-static void usage(void)
-{
-        fprintf(stderr, "usage: ardupilot-mavlink-bridge mavlink-channel-name attitude-channel-name baro-airspeed-channel-name gps-channel-name battery-status-channel-name input-servo-channel-name output-servo-channel-name stereo-control-channel-name beep-channel-name\n");
-        fprintf(stderr, "    mavlink-channel-name : LCM channel name with MAVLINK LCM messages\n");
-        fprintf(stderr, "    attitude-channel-name : LCM channel to publish attitude messages on\n");
-        fprintf(stderr, "    baro-airspeed-channel-name : LCM channel to publish barometric altitude and airspeed\n");
-        fprintf(stderr, "    gps-channel-name : LCM channel to publish GPS messages on\n");
-        fprintf(stderr, "    battery-status-channel-name : LCM channel to publish battery status messages on\n");
-        fprintf(stderr, "    input-servo-channel-name : LCM channel to listen for servo commands on\n");
-        fprintf(stderr, "    output-servo-channel-name : LCM channel to publish executed servo commands on\n");
-        fprintf(stderr, "    stereo-control-channel-name : LCM channel to publish stereo control commands on\n");
-        fprintf(stderr, "    beep-channel-name : LCM channel to receive beep commands on\n");
-        fprintf(stderr, "  example:\n");
-        fprintf(stderr, "    ./ardupilot-mavlink-bridge MAVLINK attitude baro-airspeed gps battery-status deltawing_u servo_out stereo-control beep\n");
-        fprintf(stderr, "    reads LCM MAVLINK messages and converts them to easy to use attitude, baro/airspeed and gps messages.  Also pushes servo commands to the APM and reads the executed commands.\n");
-}
-
 
 void sighandler(int dum)
 {
@@ -215,7 +204,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             insMsg.pressure = 0; // set somewhere else
             insMsg.rel_alt = 0; // set somewhere else
 
-            mav_ins_t_publish(lcm, channelAttitude, &insMsg);
+            mav_ins_t_publish(lcm, attitude_channel.c_str(), &insMsg);
 
             break;
         case MAVLINK_MSG_ID_ATTITUDE:
@@ -307,7 +296,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             xyz[2] = gpsMsg.elev - elev_origin;
             memcpy(gpsMsg.xyz_pos, xyz, 3 * sizeof(double));
 
-            mav_gps_data_t_publish (lcm, channelGps, &gpsMsg);
+            mav_gps_data_t_publish (lcm, gps_channel.c_str(), &gpsMsg);
 
             break;
 
@@ -316,19 +305,27 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             mavlink_msg_scaled_pressure_decode(&mavmsg, &pressure);
 
             // convert to LCM type
-            lcmt_baro_airspeed baroAirMsg;
-            baroAirMsg.utime = getTimestampNow();
+            mav_altimeter_t altimeter_msg;
+            mav_airspeed_t airspeed_msg;
 
-            baroAirMsg.airspeed = pressure.press_abs;   // HACK
-            baroAirMsg.baro_altitude = pressure.press_diff + elev_origin;  // HACK
-            baroAirMsg.temperature = pressure.temperature;
+            int64_t msg_timestamp;
+            msg_timestamp = getTimestampNow();
+
+            altimeter_msg.utime = msg_timestamp;
+            airspeed_msg.utime = msg_timestamp;
+
+            airspeed_msg.airspeed = pressure.press_abs;   // HACK
+            altimeter_msg.altitude = pressure.press_diff + elev_origin;  // HACK
+            altimeter_msg.temperature = pressure.temperature;
 
             // airspeed is unreliable under about 1.25 m/s
-            if (baroAirMsg.airspeed < 1.5)
+            if (airspeed_msg.airspeed < 1.5)
             {
-             //   baroAirMsg.airspeed = 0;
+             //   airspeed_msg.airspeed = 0;
             }
-            lcmt_baro_airspeed_publish (lcm, channelBaroAirspeed, &baroAirMsg);
+
+            mav_altimeter_t_publish(lcm, altimeter_channel.c_str(), &altimeter_msg);
+            mav_airspeed_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
             break;
 
         case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
@@ -350,7 +347,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
             //cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << endl;
 
-            lcmt_battery_status_publish (lcm, channelBatteryStatus, &lcmmsg);
+            lcmt_battery_status_publish (lcm, battery_status_channel.c_str(), &lcmmsg);
             break;
 
         case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
@@ -403,14 +400,14 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 stereo_control_msg.stereo_control =
                      servoOutMsg.video_record;
 
-                lcmt_stereo_control_publish(lcm, channelStereoControl,
+                lcmt_stereo_control_publish(lcm, stereo_control_channel.c_str(),
                     &stereo_control_msg);
 
                 last_stereo_control = servoOutMsg.video_record;
             }
 
             // send the lcm message
-            lcmt_deltawing_u_publish(lcm, channelServoOutput, &servoOutMsg);
+            lcmt_deltawing_u_publish(lcm, servo_out_channel.c_str(), &servoOutMsg);
 
 
             break;
@@ -434,24 +431,20 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 int main(int argc,char** argv)
 {
-    char *channelMavlink = NULL;
-    char *channelDeltawingU = NULL;
-    char *channelBeep = NULL;
 
-    if (argc!=10) {
-        usage();
-        exit(0);
-    }
+    ConciseArgs parser(argc, argv);
+    parser.add(mavlink_channel, "m", "mavlink-channel", "LCM channel for mavlink.");
+    parser.add(attitude_channel, "i", "attitude-channel", "LCM channel for IMU messages.");
+    parser.add(airspeed_channel, "s", "airspeed-channel", "LCM channel for pitot tube messages.");
+    parser.add(altimeter_channel, "a", "altimeter-channel", "LCM channel for the altimeter.");
+    parser.add(gps_channel, "g", "gps-channel", "LCM channel for the GPS.");
+    parser.add(battery_status_channel, "b", "batter-status-channel", "LCM channel for battery status.");
+    parser.add(deltawing_u_channel, "d", "deltawing-u-channel", "LCM channel for deltawing control messages.");
+    parser.add(servo_out_channel, "v", "servo-out-channel", "LCM channel for servo commands sent by the aircraft.");
+    parser.add(stereo_control_channel, "c", "stereo-control-channel", "LCM channel for stereo control.");
+    parser.add(beep_channel, "p", "beep-channel", "LCM channel for beep messages.");
+    parser.parse();
 
-    channelMavlink = argv[1];
-    channelAttitude = argv[2];
-    channelBaroAirspeed = argv[3];
-    channelGps = argv[4];
-    channelBatteryStatus = argv[5];
-    channelDeltawingU = argv[6];
-    channelServoOutput = argv[7];
-    channelStereoControl = argv[8];
-    channelBeep = argv[9];
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
@@ -460,9 +453,9 @@ int main(int argc,char** argv)
         return 1;
     }
 
-    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, channelMavlink, &mavlink_handler, NULL);
-    deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm, channelDeltawingU, &deltawing_u_handler, NULL);
-    beep_sub = lcmt_beep_subscribe(lcm, channelBeep, &beep_handler, NULL);
+    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, mavlink_channel.c_str(), &mavlink_handler, NULL);
+    deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm, deltawing_u_channel.c_str(), &deltawing_u_handler, NULL);
+    beep_sub = lcmt_beep_subscribe(lcm, beep_channel.c_str(), &beep_handler, NULL);
 
     signal(SIGINT,sighandler);
 
@@ -487,7 +480,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude and airspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n", channelMavlink, channelDeltawingU, channelBeep, channelAttitude, channelBaroAirspeed, channelGps, channelBatteryStatus, channelServoOutput, channelStereoControl);
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str());
 
     while (true)
     {

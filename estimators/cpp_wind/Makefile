@@ -1,31 +1,41 @@
-# I am a comment, and I want to say that the variable CC will be
-# the compiler to use.
-CC=g++
+TARGET = wind-estimator
+SOURCES = wind-estimator.cpp
 
-# Hey!, I am comment number 2. I want to say that CFLAGS will be the
-# options I'll pass to the compiler.
 LCMDIR=../../LCM/
+
+REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv'
+
+
+# -------- includes ----------
+
+PKG_CONFIG_PATH_PRONTO=../../../pronto-distro/build/lib/pkgconfig/
+
+#    -- mavlink --
+MAVCONN_INCLUDE=../../../mav/mavconn/src/
+MAVLINK_INCLUDE=../../../mav/mavlink/build/include/v1.0/
+LOCAL_MAVLINK=../../mavlink-generated
+
+#    -- camera --
+FIREFLY_MV_UTILS=/usr/local/include/firefly-mv-utils
+DC1394=/usr/include/dc1394
+
+DC1394_LIB=/usr/local/lib/libdc1394.so
+FIREFLY_MV_UTILS_LIB=/usr/local/lib/firefly-mv-utils/libutil.so -Wl,-rpath -Wl,/usr/local/lib/firefly-mv-utils
+
+# --- libraries ----
+
+MAVCONN_LIB_DIR=/home/$(USER)/mav/mavconn/build/lib/
+MAVCONN=$(MAVCONN_LIB_DIR)/libmavconn_lcm.so -Wl,-rpath -Wl,$(MAVCONN_LIB_DIR)
 LCMLIB=../../LCM/lib/libtypes.a
 
-MAVLCMLIB=../../../Fixie/build/lib/liblcmtypes_mav-lcmtypes.a
+OCTOMAPLIB=../../../pronto-distro/build/lib/liboctomap.a ../../../pronto-distro/build/lib/liboctomath.a ../../../pronto-distro/build/lib/liblcmtypes_octomap-utils.a
 
-CFLAGS=-c -Wall -O3 -std=c++0x `pkg-config --cflags lcm` -I/$(LCMDIR) -I../../mavlink-generated -I../../../Fixie/build/include/lcmtypes
+CXXFLAGS=-std=c++0x
 
-LIBS=`pkg-config --libs lcm` $(LCMLIB) $(MAVLCMLIB)
+CPPFLAGS=-c -Wall -O3 -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394)
 
-
-
-
-all: wind-estimator
-
-wind-estimator: wind-estimator.o
-	$(CC) wind-estimator.o -o wind-estimator $(LIBS)
-
-wind-estimator.o: wind-estimator.cpp
-	$(CC) $(CFLAGS) wind-estimator.cpp
-
-clean:
-	rm -rf *o wind-estimator
+LDPOSTFLAGS = `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN) $(FIREFLY_MV_UTILS_LIB) -L $(DC1394_LIB) -ldc1394
 
 
-
+# include a standard makefile that uses these variables and builds everything
+include ../../externals/edam.mk

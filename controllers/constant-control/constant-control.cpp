@@ -10,7 +10,7 @@
 
 
 #include "../../LCM/lcmt_deltawing_u.h"
-#include "mav_pose_t.h" // from Fixie
+#include "lcmtypes/mav_pose_t.h" // from pronto
 
 #include "../../externals/ConciseArgs.hpp"
 

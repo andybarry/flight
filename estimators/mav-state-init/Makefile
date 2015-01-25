@@ -1,4 +1,4 @@
-TARGET = send-mav-state-init 
+TARGET = send-mav-state-init
 SOURCES = send-mav-state-init.cpp
 
 LCMDIR=../../LCM/
