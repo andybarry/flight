@@ -1,7 +1,7 @@
 /*
  * Implements a Time Varying Linear Quadratic Regulator using trajectories.
  *
- * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2014
+ * Author: Andrew Barry, <abarry@csail.mit.edu> 2015
  *
  */
 
@@ -29,14 +29,14 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
     cout << "handler" << endl;
 
-    Eigen::VectorXd state_vec = StateEstimatorToStateVector(msg); // todo
+    Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
 
 
 }
 
-Eigen::VectorXd StateEstimatorToStateVector(const mav_pose_t *msg) {
+Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
 
-    // convert message to 12-state vector
+    // convert message to 12-state vector in the Drake frame
 
     Eigen::VectorXd state(12);
 
@@ -54,21 +54,109 @@ Eigen::VectorXd StateEstimatorToStateVector(const mav_pose_t *msg) {
     state(4) = rpy[1];
     state(5) = rpy[2];
 
-    // velocities are given in the body frame
+    Eigen::Vector3d UVW; // in body frame
+    UVW(0) = msg->vel[0];
+    UVW(1) = msg->vel[1];
+    UVW(2) = msg->vel[2];
 
-    state(6) = msg->vel[0];
-    state(7) = msg->vel[1];
-    state(8) = msg->vel[2];
+    Eigen::Vector3d rpy_eigen(rpy);
 
-    // rotation rates are given in TODO
-    state(9) =
-    state(10) =
-    state(11) =
+    // velocities are given in the body frame, we need to move them
+    // to the global frame
+
+    Eigen::Matrix3d R_body_to_world = rpy2rotmat(rpy_eigen);
+    //Eigen::Matrix3d R_world_to_body = R_body_to_world.Transpose();
+
+    Eigen::Vector3d vel_world_frame = R_body_to_world * UVW;
+
+    state(6) = vel_world_frame(0);
+    state(7) = vel_world_frame(1);
+    state(8) = vel_world_frame(2);
+
+    // rotation rates are given in body frame
+
+    Eigen::Vector3d PQR;
+    PQR(0) = msg->rotation_rate[0];
+    PQR(1) = msg->rotation_rate[1];
+    PQR(2) = msg->rotation_rate[2];
+
+    Eigen::Vector3d pqr = R_body_to_world * PQR;
+
+    // convert rotation rates into rolldot, pitchdot, yawdot
+
+    Eigen::Vector3d rpydot = angularvel2rpydot(rpy_eigen, pqr);
+
+    state(9) = rpydot(0);
+    state(10) = rpydot(1);
+    state(11) = rpydot(2);
 
     return state;
 
 
 }
+
+Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy) {
+
+    // from Drake's rpy2rotmat
+
+    Eigen::Matrix3d rotmat;
+
+    rotmat(0,0) = cos(rpy(2))*cos(rpy(1));
+    rotmat(0,1) = cos(rpy(2))*sin(rpy(1))*sin(rpy(0))-sin(rpy(2))*cos(rpy(0));
+    rotmat(0,2) = cos(rpy(2))*sin(rpy(1))*cos(rpy(0))+sin(rpy(2))*sin(rpy(0));
+
+    rotmat(1,0) = sin(rpy(2))*cos(rpy(1));
+    rotmat(1,1) = sin(rpy(2))*sin(rpy(1))*sin(rpy(0))+cos(rpy(2))*cos(rpy(0));
+    rotmat(1,2) = sin(rpy(2))*sin(rpy(1))*cos(rpy(0))-cos(rpy(2))*sin(rpy(0));
+
+    rotmat(2,0) = -sin(rpy(1));
+    rotmat(2,1) = cos(rpy(1))*sin(rpy(0));
+    rotmat(2,2) = cos(rpy(1))*cos(rpy(0));
+
+    return rotmat;
+
+
+}
+
+Eigen::Vector3d angularvel2rpydot(Eigen::Vector3d rpy, Eigen::Vector3d omega) {
+
+    // from Drake
+
+    return angularvel2rpydotMatrix(rpy) * omega;
+
+}
+
+Eigen::Matrix3d angularvel2rpydotMatrix(Eigen::Vector3d rpy) {
+
+    // from Drake
+
+    double p = rpy(1);
+    double y = rpy(2);
+
+    double sy = sin(y);
+    double cy = cos(y);
+    double sp = sin(p);
+    double cp = cos(p);
+    double tp = sp / cp;
+
+    Eigen::Matrix3d phi;
+
+    phi(0,0) = cy/cp;
+    phi(0,1) = sy/cp;
+    phi(0,2) = 0;
+
+    phi(1,0) = -sy;
+    phi(1,1) = cy;
+    phi(1,2) = 0;
+
+    phi(2,0) = cy*tp;
+    phi(2,1) = tp*sy;
+    phi(2,2) = 1;
+
+    return phi;
+
+}
+
 
 int64_t GetTimestampNow() {
     struct timeval thisTime;

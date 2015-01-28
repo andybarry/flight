@@ -1,7 +1,7 @@
 /*
  * Trajectory class representing a trajectory in state space
  *
- * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
+ * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2015
  *
  */
 

@@ -30,7 +30,7 @@ class TvlqrControl
     public:
         TvlqrControl();
 
-        void SetTrajectory(Trajectory *trajectory, Eigen::VectorXd initial_state);
+        void SetTrajectory(Trajectory *trajectory);
 
         Eigen::VectorXd GetControl(double t_along_trajectory, Eigen::VectorXd state);
 
@@ -38,6 +38,7 @@ class TvlqrControl
     private:
         Trajectory *current_trajectory_;
         Eigen::VectorXd initial_state_;
+        bool state_initialized_;
 
 };
 
