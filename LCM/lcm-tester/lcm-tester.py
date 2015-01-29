@@ -1,6 +1,9 @@
 import lcm
+import sys
 
 lc = lcm.LCM()
+
+sys.path.insert(0, '../')
 
 from lcmt_tvlqr_controller_action import lcmt_tvlqr_controller_action
 
