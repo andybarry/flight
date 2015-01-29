@@ -14,6 +14,7 @@ LCM/mavlink_message_t.h.rej
 *~
 *.dep
 controllers/constant-control/constant-control
+utils/utils/utils-test
 controllers/tvlqr/tvlqr-controller
 drivers/process_control/process-control
 estimators/mav-state-init/mav-state-init

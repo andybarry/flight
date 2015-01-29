@@ -1,7 +1,5 @@
-TARGET = tvlqr-controller
-SOURCES = tvlqr-controller.cpp TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp
-
-SUBPROJS = test
+TARGET = utils-test
+SOURCES = RealtimeUtils.cpp test.cpp
 
 LCMDIR=../../LCM/
 

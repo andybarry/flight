@@ -92,77 +92,43 @@ Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
 
     return state;
 
-
 }
 
-Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy) {
+TEST(tvlqr, StateEstimatorToDrakeVector) {
 
-    // from Drake's rpy2rotmat
+    mav_pose_t msg;
 
-    Eigen::Matrix3d rotmat;
+    msg.pos[0] = 0.5079;
+    msg.pos[1] = 0.0855;
+    msg.pos[2] = 0.2625;
 
-    rotmat(0,0) = cos(rpy(2))*cos(rpy(1));
-    rotmat(0,1) = cos(rpy(2))*sin(rpy(1))*sin(rpy(0))-sin(rpy(2))*cos(rpy(0));
-    rotmat(0,2) = cos(rpy(2))*sin(rpy(1))*cos(rpy(0))+sin(rpy(2))*sin(rpy(0));
+    msg.orientation[0] = 0.8258;
+    msg.orientation[1] = 0.3425;
+    msg.orientation[2] = 0.1866;
+    msg.orientation[3] = 0.4074;
 
-    rotmat(1,0) = sin(rpy(2))*cos(rpy(1));
-    rotmat(1,1) = sin(rpy(2))*sin(rpy(1))*sin(rpy(0))+cos(rpy(2))*cos(rpy(0));
-    rotmat(1,2) = sin(rpy(2))*sin(rpy(1))*cos(rpy(0))-cos(rpy(2))*sin(rpy(0));
+    msg.vel[0] = 0.7303;
+    msg.vel[1] = 0.4886;
+    msg.vel[2] = 0.5785;
 
-    rotmat(2,0) = -sin(rpy(1));
-    rotmat(2,1) = cos(rpy(1))*sin(rpy(0));
-    rotmat(2,2) = cos(rpy(1))*cos(rpy(0));
-
-    return rotmat;
+    msg.rotation_rate[0] = 0.2373;
+    msg.rotation_rate[1] = 0.4588;
+    msg.rotation_rate[2] = 0.9631;
 
 
-}
+    Eigen::VectorXd output = StateEstimatorToDrakeVector(&msg);
 
-Eigen::Vector3d angularvel2rpydot(Eigen::Vector3d rpy, Eigen::Vector3d omega) {
+    Eigen::VectorXd matlab_output(12);
 
-    // from Drake
+    matlab_output << 0.5079, 0.0855, 0.2625, 0.8010, 0.0292, 0.9289, 0.5106, 0.5572, 0.7318, 0.2665, -0.3722, 1.0002;
 
-    return angularvel2rpydotMatrix(rpy) * omega;
 
-}
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.0001) );
 
-Eigen::Matrix3d angularvel2rpydotMatrix(Eigen::Vector3d rpy) {
-
-    // from Drake
-
-    double p = rpy(1);
-    double y = rpy(2);
-
-    double sy = sin(y);
-    double cy = cos(y);
-    double sp = sin(p);
-    double cp = cos(p);
-    double tp = sp / cp;
-
-    Eigen::Matrix3d phi;
-
-    phi(0,0) = cy/cp;
-    phi(0,1) = sy/cp;
-    phi(0,2) = 0;
-
-    phi(1,0) = -sy;
-    phi(1,1) = cy;
-    phi(1,2) = 0;
-
-    phi(2,0) = cy*tp;
-    phi(2,1) = tp*sy;
-    phi(2,2) = 1;
-
-    return phi;
 
 }
 
 
-int64_t GetTimestampNow() {
-    struct timeval thisTime;
-    gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
-}
 
 void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
 

@@ -1,7 +1,5 @@
-TARGET = tvlqr-controller
-SOURCES = tvlqr-controller.cpp TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp
-
-SUBPROJS = test
+TARGET = test
+SOURCES = TODO
 
 LCMDIR=../../LCM/
 
@@ -11,8 +9,6 @@ REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv'
 # -------- includes ----------
 
 PKG_CONFIG_PATH_PRONTO=../../../pronto-distro/build/lib/pkgconfig/
-
-GTEST_INCLUDE=../../../gtest-1.7.0/include/
 
 #    -- mavlink --
 MAVCONN_INCLUDE=../../../mav/mavconn/src/
@@ -36,7 +32,7 @@ OCTOMAPLIB=../../../pronto-distro/build/lib/liboctomap.a ../../../pronto-distro/
 
 CXXFLAGS=-std=c++0x
 
-CPPFLAGS=-c -Wall -O3 -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394) -I$(GTEST_INCLUDE)
+CPPFLAGS=-c -Wall -O3 -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394)
 
 LDPOSTFLAGS = `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN) $(FIREFLY_MV_UTILS_LIB) -L $(DC1394_LIB) -ldc1394
 
