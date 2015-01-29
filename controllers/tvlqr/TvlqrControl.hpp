@@ -23,6 +23,8 @@
 
 #include "../../utils/utils/RealtimeUtils.hpp"
 
+#include "../../utils/ServoConverter/ServoConverter.hpp"
+
 using namespace std;
 
 
@@ -30,11 +32,11 @@ class TvlqrControl
 {
 
     public:
-        TvlqrControl();
+        TvlqrControl(ServoConverter *converter);
 
         void SetTrajectory(Trajectory *trajectory);
 
-        Eigen::VectorXd GetControl(Eigen::VectorXd state);
+        Eigen::VectorXi GetControl(Eigen::VectorXd state);
 
 
     private:
@@ -46,6 +48,8 @@ class TvlqrControl
         Trajectory *current_trajectory_;
         Eigen::VectorXd initial_state_;
         bool state_initialized_;
+
+        ServoConverter *converter_;
 
         int64_t t0_;
 

@@ -17,7 +17,8 @@ lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 // global trajectory library
 TrajectoryLibrary trajlib;
 
-TvlqrControl control;
+TvlqrControl *control;
+ServoConverter *converter;
 
 bot_lcmgl_t* lcmgl;
 
@@ -32,7 +33,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
 
 
-    Eigen::VectorXd control_vec = control.GetControl(state_vec);
+    Eigen::VectorXi control_vec = control->GetControl(state_vec);
 
     // send control out through LCM
 
@@ -62,7 +63,7 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
         return;
     }
 
-    control.SetTrajectory(traj);
+    control->SetTrajectory(traj);
 
 
     cout << "Starting trajectory " << msg->trajectory_number << endl;
@@ -79,6 +80,14 @@ void sighandler(int dum)
     lcmt_tvlqr_controller_action_unsubscribe(lcm, tvlqr_controller_action_sub);
 
     lcm_destroy (lcm);
+
+    if (converter != NULL) {
+        delete converter;
+    }
+
+    if (control != NULL) {
+        delete control;
+    }
 
     printf("done.\n");
 

@@ -12,9 +12,9 @@ class ServoConverterTest : public testing::Test {
 
             lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
 
-             param_ = bot_param_new_from_server(lcm_, 0);
+            param_ = bot_param_new_from_server(lcm_, 0);
 
-             converter_ = new ServoConverter(param_);
+            converter_ = new ServoConverter(param_);
 
         }
 

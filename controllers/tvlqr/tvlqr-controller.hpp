@@ -10,6 +10,7 @@
 #include "TvlqrControl.hpp"
 
 #include "../../utils/utils/RealtimeUtils.hpp"
+#include <bot_param/param_client.h>
 
 using namespace std;
 

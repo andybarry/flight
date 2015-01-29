@@ -7,10 +7,11 @@
 
 #include "TvlqrControl.hpp"
 
-TvlqrControl::TvlqrControl() {
+TvlqrControl::TvlqrControl(ServoConverter *converter) {
     current_trajectory_ = NULL;
     state_initialized_ = false;
     t0_ = 0;
+    converter_ = converter;
 }
 
 
@@ -26,7 +27,7 @@ void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 
 }
 
-Eigen::VectorXd TvlqrControl::GetControl(Eigen::VectorXd state) {
+Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     if (current_trajectory_ == NULL) {
         cerr << "Warning: NULL trajectory in GetControl." << endl;
@@ -50,7 +51,10 @@ Eigen::VectorXd TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     Eigen::VectorXd additional_control_action = gain_matrix * (state - x0);
 
-    return current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
+    Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
+
+
+    return converter_->RadiansToServoCommands(command_in_rad);
 
 }
 

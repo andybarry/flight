@@ -16,7 +16,8 @@ extern lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 // global trajectory library
 extern TrajectoryLibrary trajlib;
 
-extern TvlqrControl control;
+extern TvlqrControl *control;
+extern ServoConverter *converter;
 
 extern bot_lcmgl_t* lcmgl;
 
@@ -61,6 +62,12 @@ int main(int argc,char** argv) {
         return 1;
     }
 
+    BotParam *param = bot_param_new_from_server(lcm, 0);
+
+    ServoConverter *converter = new ServoConverter(param);
+
+    control = new TvlqrControl(converter);
+
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
 
@@ -69,7 +76,7 @@ int main(int argc,char** argv) {
     // control-c handler
     signal(SIGINT,sighandler);
 
-    control.SetTrajectory(trajlib.GetTrajectoryByNumber(1));
+    control->SetTrajectory(trajlib.GetTrajectoryByNumber(1));
 
     printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\nSending LCM:\n\t%s\n", pose_channel.c_str(), tvlqr_action_channel.c_str(), deltawing_u_channel.c_str());
 
