@@ -46,10 +46,22 @@ class ServoConverter {
 
         Eigen::Vector3d ServoCommandsToRadians(Eigen::Vector3i commands);
 
+        Eigen::Vector3i MinMaxCommands(Eigen::Vector3i commands);
+
 
     private:
-        ServoConfig rad_to_servo;
-        ServoConfig servo_to_rad;
+        ServoConfig rad_to_servo_;
+        ServoConfig servo_to_rad_;
+
+        int elevL_min_;
+        int elevL_max_;
+
+        int elevR_min_;
+        int elevR_max_;
+
+        int throttle_min_;
+        int throttle_max_;
+
 
 
 

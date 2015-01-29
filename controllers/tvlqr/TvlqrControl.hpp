@@ -36,6 +36,8 @@ class TvlqrControl
 
         void SetTrajectory(Trajectory *trajectory);
 
+        bool HasTrajectory() { return current_trajectory_ != NULL; }
+
         Eigen::VectorXi GetControl(Eigen::VectorXd state);
 
 

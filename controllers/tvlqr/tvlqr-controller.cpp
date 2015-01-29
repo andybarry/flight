@@ -26,9 +26,12 @@ string deltawing_u_channel = "wingeron_u";
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
 
-    // whenever we get a state estimate, we want to output a new control action
+    if (!control->HasTrajectory()) {
 
-    cout << "handler" << endl;
+        return;
+    }
+
+    // whenever we get a state estimate, we want to output a new control action
 
     Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
 
