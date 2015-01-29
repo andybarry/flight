@@ -10,7 +10,7 @@ REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv'
 
 PKG_CONFIG_PATH_PRONTO=../../../pronto-distro/build/lib/pkgconfig/
 
-GTEST_INCLUDE=../../../gtest-1.7.0/include/
+GTEST_INCLUDE=../../externals/gtest/include/
 
 #    -- mavlink --
 MAVCONN_INCLUDE=../../../mav/mavconn/src/
