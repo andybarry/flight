@@ -21,6 +21,8 @@
 
 #include <Eigen/Core>
 
+#include "../../utils/utils/RealtimeUtils.hpp"
+
 using namespace std;
 
 
@@ -32,13 +34,20 @@ class TvlqrControl
 
         void SetTrajectory(Trajectory *trajectory);
 
-        Eigen::VectorXd GetControl(double t_along_trajectory, Eigen::VectorXd state);
+        Eigen::VectorXd GetControl(Eigen::VectorXd state);
 
 
     private:
+
+        void InitializeState(Eigen::VectorXd state);
+        double GetTNow();
+        Eigen::VectorXd GetStateMinusInit(Eigen::VectorXd state);
+
         Trajectory *current_trajectory_;
         Eigen::VectorXd initial_state_;
         bool state_initialized_;
+
+        int64_t t0_;
 
 };
 

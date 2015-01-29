@@ -1,5 +1,99 @@
 #include "RealtimeUtils.hpp"
 
+Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
+
+    // convert message to 12-state vector in the Drake frame
+
+    Eigen::VectorXd state(12);
+
+    // x, y, and z are direct
+    state(0) = msg->pos[0];
+    state(1) = msg->pos[1];
+    state(2) = msg->pos[2];
+
+    // roll, pitch, and yaw come from the quats
+    double rpy[3];
+
+    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy);
+
+    state(3) = rpy[0];
+    state(4) = rpy[1];
+    state(5) = rpy[2];
+
+    Eigen::Vector3d UVW; // in body frame
+    UVW(0) = msg->vel[0];
+    UVW(1) = msg->vel[1];
+    UVW(2) = msg->vel[2];
+
+    Eigen::Vector3d rpy_eigen(rpy);
+
+    // velocities are given in the body frame, we need to move them
+    // to the global frame
+
+    Eigen::Matrix3d R_body_to_world = rpy2rotmat(rpy_eigen);
+    //Eigen::Matrix3d R_world_to_body = R_body_to_world.Transpose();
+
+    Eigen::Vector3d vel_world_frame = R_body_to_world * UVW;
+
+    state(6) = vel_world_frame(0);
+    state(7) = vel_world_frame(1);
+    state(8) = vel_world_frame(2);
+
+    // rotation rates are given in body frame
+
+    Eigen::Vector3d PQR;
+    PQR(0) = msg->rotation_rate[0];
+    PQR(1) = msg->rotation_rate[1];
+    PQR(2) = msg->rotation_rate[2];
+
+    Eigen::Vector3d pqr = R_body_to_world * PQR;
+
+    // convert rotation rates into rolldot, pitchdot, yawdot
+
+    Eigen::Vector3d rpydot = angularvel2rpydot(rpy_eigen, pqr);
+
+    state(9) = rpydot(0);
+    state(10) = rpydot(1);
+    state(11) = rpydot(2);
+
+    return state;
+
+}
+
+TEST(Utils, StateEstimatorToDrakeVector) {
+
+    mav_pose_t msg;
+
+    msg.pos[0] = 0.5079;
+    msg.pos[1] = 0.0855;
+    msg.pos[2] = 0.2625;
+
+    msg.orientation[0] = 0.8258;
+    msg.orientation[1] = 0.3425;
+    msg.orientation[2] = 0.1866;
+    msg.orientation[3] = 0.4074;
+
+    msg.vel[0] = 0.7303;
+    msg.vel[1] = 0.4886;
+    msg.vel[2] = 0.5785;
+
+    msg.rotation_rate[0] = 0.2373;
+    msg.rotation_rate[1] = 0.4588;
+    msg.rotation_rate[2] = 0.9631;
+
+
+    Eigen::VectorXd output = StateEstimatorToDrakeVector(&msg);
+
+    Eigen::VectorXd matlab_output(12);
+
+    matlab_output << 0.5079, 0.0855, 0.2625, 0.8010, 0.0292, 0.9289, 0.5106, 0.5572, 0.7318, 0.2665, -0.3722, 1.0002;
+
+
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << endl << "Expected:" << endl << matlab_output << endl << "Got:" << endl << output << endl;
+
+
+}
+
 Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy) {
 
     // from Drake's rpy2rotmat

@@ -21,7 +21,7 @@ TvlqrControl control;
 
 bot_lcmgl_t* lcmgl;
 
-int64_t traj_timestamp;
+string deltawing_u_channel = "wingeron_u";
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
 
@@ -32,70 +32,24 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
 
 
-}
+    Eigen::VectorXd control_vec = control.GetControl(state_vec);
 
-Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
+    // send control out through LCM
 
-    // convert message to 12-state vector in the Drake frame
+    lcmt_deltawing_u u_msg;
 
-    Eigen::VectorXd state(12);
+    u_msg.timestamp = GetTimestampNow();
 
-    // x, y, and z are direct
-    state(0) = msg->pos[0];
-    state(1) = msg->pos[1];
-    state(2) = msg->pos[2];
+    u_msg.elevonL = control_vec(0);
+    u_msg.elevonR = control_vec(1);
+    u_msg.throttle = control_vec(2);
 
-    // roll, pitch, and yaw come from the quats
-    double rpy[3];
+    u_msg.is_autonomous = true;
+    u_msg.video_record = true; // todo, this isn't quite how this should be designed
 
-    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy);
-
-    state(3) = rpy[0];
-    state(4) = rpy[1];
-    state(5) = rpy[2];
-
-    Eigen::Vector3d UVW; // in body frame
-    UVW(0) = msg->vel[0];
-    UVW(1) = msg->vel[1];
-    UVW(2) = msg->vel[2];
-
-    Eigen::Vector3d rpy_eigen(rpy);
-
-    // velocities are given in the body frame, we need to move them
-    // to the global frame
-
-    Eigen::Matrix3d R_body_to_world = rpy2rotmat(rpy_eigen);
-    //Eigen::Matrix3d R_world_to_body = R_body_to_world.Transpose();
-
-    Eigen::Vector3d vel_world_frame = R_body_to_world * UVW;
-
-    state(6) = vel_world_frame(0);
-    state(7) = vel_world_frame(1);
-    state(8) = vel_world_frame(2);
-
-    // rotation rates are given in body frame
-
-    Eigen::Vector3d PQR;
-    PQR(0) = msg->rotation_rate[0];
-    PQR(1) = msg->rotation_rate[1];
-    PQR(2) = msg->rotation_rate[2];
-
-    Eigen::Vector3d pqr = R_body_to_world * PQR;
-
-    // convert rotation rates into rolldot, pitchdot, yawdot
-
-    Eigen::Vector3d rpydot = angularvel2rpydot(rpy_eigen, pqr);
-
-    state(9) = rpydot(0);
-    state(10) = rpydot(1);
-    state(11) = rpydot(2);
-
-    return state;
+    lcmt_deltawing_u_publish(lcm, deltawing_u_channel.c_str(), &u_msg);
 
 }
-
-
-
 
 void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
 
@@ -110,10 +64,8 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     control.SetTrajectory(traj);
 
-    traj_timestamp = GetTimestampNow();
 
-
-    cout << "Starting trajectory " << msg->trajectory_number << " at t = " << traj_timestamp << endl;
+    cout << "Starting trajectory " << msg->trajectory_number << endl;
 
 
 }

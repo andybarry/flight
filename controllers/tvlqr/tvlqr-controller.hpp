@@ -3,6 +3,7 @@
 
 #include "../../LCM/mav_pose_t.h"
 #include "../../LCM/lcmt_tvlqr_controller_action.h"
+#include "../../LCM/lcmt_deltawing_u.h"
 
 #include "../TrajectoryLibrary/TrajectoryLibrary.hpp"
 
@@ -18,7 +19,5 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
 void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user);
 
-
-Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg);
 
 #endif

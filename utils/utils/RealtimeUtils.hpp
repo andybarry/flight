@@ -17,11 +17,15 @@
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
 
+#include "../../LCM/mav_pose_t.h"
+
 #include <Eigen/Core>
 
 #include "gtest/gtest.h"
 
 using namespace std;
+
+Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg);
 
 Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy);
 Eigen::Vector3d angularvel2rpydot(Eigen::Vector3d rpy, Eigen::Vector3d omega);

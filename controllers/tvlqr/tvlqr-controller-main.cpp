@@ -20,7 +20,7 @@ extern TvlqrControl control;
 
 extern bot_lcmgl_t* lcmgl;
 
-extern int64_t traj_timestamp;
+extern string deltawing_u_channel;
 
 int main(int argc,char** argv) {
 
@@ -29,11 +29,13 @@ int main(int argc,char** argv) {
     string pose_channel = "STATE_ESTIMATOR_POSE";
     string tvlqr_action_channel = "tvlqr-action";
 
+
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
     parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
+    parser.add(deltawing_u_channel, "u", "deltawing-u-channel", "LCM channel to send control messages on.");
     parser.parse();
 
     if (trajectory_dir != "") {
@@ -69,7 +71,7 @@ int main(int argc,char** argv) {
 
     control.SetTrajectory(trajlib.GetTrajectoryByNumber(1));
 
-    printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\n", pose_channel.c_str(), tvlqr_action_channel.c_str());
+    printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\nSending LCM:\n\t%s\n", pose_channel.c_str(), tvlqr_action_channel.c_str(), deltawing_u_channel.c_str());
 
     while (true)
     {
