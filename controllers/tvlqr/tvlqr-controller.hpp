@@ -4,8 +4,6 @@
 #include "../../LCM/mav_pose_t.h"
 #include "../../LCM/lcmt_tvlqr_controller_action.h"
 
-#include "../../externals/ConciseArgs.hpp"
-
 #include "../TrajectoryLibrary/TrajectoryLibrary.hpp"
 
 #include "TvlqrControl.hpp"

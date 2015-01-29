@@ -94,39 +94,6 @@ Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
 
 }
 
-TEST(tvlqr, StateEstimatorToDrakeVector) {
-
-    mav_pose_t msg;
-
-    msg.pos[0] = 0.5079;
-    msg.pos[1] = 0.0855;
-    msg.pos[2] = 0.2625;
-
-    msg.orientation[0] = 0.8258;
-    msg.orientation[1] = 0.3425;
-    msg.orientation[2] = 0.1866;
-    msg.orientation[3] = 0.4074;
-
-    msg.vel[0] = 0.7303;
-    msg.vel[1] = 0.4886;
-    msg.vel[2] = 0.5785;
-
-    msg.rotation_rate[0] = 0.2373;
-    msg.rotation_rate[1] = 0.4588;
-    msg.rotation_rate[2] = 0.9631;
-
-
-    Eigen::VectorXd output = StateEstimatorToDrakeVector(&msg);
-
-    Eigen::VectorXd matlab_output(12);
-
-    matlab_output << 0.5079, 0.0855, 0.2625, 0.8010, 0.0292, 0.9289, 0.5106, 0.5572, 0.7318, 0.2665, -0.3722, 1.0002;
-
-
-    EXPECT_TRUE( output.isApprox(matlab_output, 0.0001) );
-
-
-}
 
 
 
@@ -151,64 +118,6 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
 }
 
-
-int main(int argc,char** argv) {
-
-    bool ttl_one = false;
-    string trajectory_dir = "";
-    string pose_channel = "STATE_ESTIMATOR_POSE";
-    string tvlqr_action_channel = "tvlqr-action";
-
-    ConciseArgs parser(argc, argv);
-    parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
-    parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
-    parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
-    parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
-    parser.parse();
-
-    if (trajectory_dir != "") {
-        // load a trajectory library
-        if (!trajlib.LoadLibrary(trajectory_dir)) {
-            cerr << "Error: failed to load trajectory library.  Quitting." << endl;
-            return 1;
-        }
-
-        //trajlib.Print();
-    }
-
-
-    if (ttl_one) {
-        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
-    } else {
-        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
-    }
-
-    if (!lcm)
-    {
-        fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
-        return 1;
-    }
-
-
-    mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
-
-    tvlqr_controller_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel.c_str(), &lcmt_tvlqr_controller_action_handler, NULL);
-
-    // control-c handler
-    signal(SIGINT,sighandler);
-
-    control.SetTrajectory(trajlib.GetTrajectoryByNumber(1));
-
-    printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\n", pose_channel.c_str(), tvlqr_action_channel.c_str());
-
-    while (true)
-    {
-        // read the LCM channel
-        lcm_handle (lcm);
-    }
-
-    return 0;
-}
 
 void sighandler(int dum)
 {

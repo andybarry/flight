@@ -13,6 +13,7 @@ LCM/mavlink_message_t.h.rej
 *.o
 *~
 *.dep
+controllers/tvlqr/test
 controllers/constant-control/constant-control
 utils/utils/utils-test
 controllers/tvlqr/tvlqr-controller
@@ -70,3 +71,9 @@ sensors/bm-stereo/*.eps
 sensors/bm-stereo/*.png
 sensors/bm-stereo/*.fig
 externals/timesync/pod-build/
+externals/gtest/CMakeCache.txt
+externals/gtest/CMakeFiles/
+externals/gtest/Makefile
+externals/gtest/cmake_install.cmake
+externals/gtest/libgtest.a
+externals/gtest/libgtest_main.a
