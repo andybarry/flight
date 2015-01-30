@@ -25,6 +25,7 @@ using namespace std;
 #include "../../LCM/lcmt_deltawing_u.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_beep.h"
+#include "../../LCM/lcmt_tvlqr_controller_action.h"
 
 
 #include <bot_core/bot_core.h>
@@ -88,6 +89,7 @@ lcmt_deltawing_u_subscription_t *deltawing_u_sub;
 lcmt_beep_subscription_t *beep_sub;
 
 int last_stereo_control = 0;
+int last_traj_switch = -1;
 
 uint8_t systemID = getSystemID();
 
@@ -140,9 +142,9 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
         beep = 1000;
     }
 
-	mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, elevonL, elevonR, throttle, 1000, 1000, 1000, 1000, beep);
-	// Publish the message on the LCM IPC bus
-	sendMAVLinkMessage(lcm, &mavmsg);
+    mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, elevonL, elevonR, throttle, 1000, 1000, 1000, 1000, beep);
+    // Publish the message on the LCM IPC bus
+    sendMAVLinkMessage(lcm, &mavmsg);
 
 }
 
@@ -154,14 +156,14 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     /*
     lcmt_deltawing_gains msg2 = ConvertFromMidiLcmToPlane(msg);
 
-	struct timeval thisTime;
-	gettimeofday(&thisTime, NULL);
+    struct timeval thisTime;
+    gettimeofday(&thisTime, NULL);
     msg2.timestamp = (thisTime.tv_sec * 1000.0) + (float)thisTime.tv_usec/1000.0 + 0.5;
 
     lastMsg = msg2;
 
-	// send via LCM
-	lcmt_deltawing_gains_publish (lcmSend, lcm_out, &msg2);
+    // send via LCM
+    lcmt_deltawing_gains_publish (lcmSend, lcm_out, &msg2);
 */
     // extract the message out of the container
     mavlink_message_t mavmsg = msg->msg;
@@ -395,22 +397,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 servoOutMsg.video_record = 0;
             }
 
-            if (servomsg.servo6_raw > 1700)
-            {
-                // switch position 0
+            // send the lcm message
+            lcmt_deltawing_u_publish(lcm, servo_out_channel.c_str(), &servoOutMsg);
 
-
-            } else if (servomsg.servo6_raw > 1300) {
-                // switch position 1
-
-
-
-            } else {
-                // switch position 2
-
-
-
-            }
 
             if (last_stereo_control != servoOutMsg.video_record)
             {
@@ -426,8 +415,35 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 last_stereo_control = servoOutMsg.video_record;
             }
 
-            // send the lcm message
-            lcmt_deltawing_u_publish(lcm, servo_out_channel.c_str(), &servoOutMsg);
+            int traj_switch;
+
+            if (servomsg.servo6_raw > 1700)
+            {
+                // switch position 0
+                traj_switch = 0;
+
+            } else if (servomsg.servo6_raw > 1300) {
+                // switch position 1
+
+                traj_switch = 1;
+
+            } else {
+                // switch position 2
+
+                traj_switch = 2;
+
+            }
+
+            if (traj_switch != last_traj_switch) {
+
+                lcmt_tvlqr_controller_action traj_msg;
+
+                traj_msg.timestamp = getTimestampNow();
+
+                traj_msg.trajectory_number = traj_switch;
+
+                last_traj_switch = traj_switch;
+            }
 
 
             break;
