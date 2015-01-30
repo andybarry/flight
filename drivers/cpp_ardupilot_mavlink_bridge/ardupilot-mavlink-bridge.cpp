@@ -34,6 +34,7 @@ using namespace std;
 #include "lcmtypes/mav_gps_data_t.h" // from pronto
 #include "lcmtypes/mav_altimeter_t.h" // from pronto
 #include "lcmtypes/mav_airspeed_t.h" // from pronto
+#include "lcmtypes/mav_sideslip_t.h" // from pronto
 
 #include "../../externals/ConciseArgs.hpp"
 
@@ -73,6 +74,7 @@ string mavlink_channel = "MAVLINK";
 string attitude_channel = "attitude";
 string airspeed_channel = "airspeed";
 string altimeter_channel = "altimeter";
+string sideslip_channel = "sideslip";
 string gps_channel = "gps";
 string battery_status_channel = "battery-status";
 string deltawing_u_channel = "wingeron_u";
@@ -307,12 +309,14 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // convert to LCM type
             mav_altimeter_t altimeter_msg;
             mav_airspeed_t airspeed_msg;
+            mav_sideslip_t sideslip_msg;
 
             int64_t msg_timestamp;
             msg_timestamp = getTimestampNow();
 
             altimeter_msg.utime = msg_timestamp;
             airspeed_msg.utime = msg_timestamp;
+            sideslip_msg.utime = msg_timestamp;
 
             airspeed_msg.airspeed = pressure.press_abs;   // HACK
             altimeter_msg.altitude = pressure.press_diff + elev_origin;  // HACK
@@ -324,8 +328,12 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
              //   airspeed_msg.airspeed = 0;
             }
 
+            sideslip_msg.sideslip = 0;
+
             mav_altimeter_t_publish(lcm, altimeter_channel.c_str(), &altimeter_msg);
             mav_airspeed_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
+            mav_sideslip_t_publish(lcm, sideslip_channel.c_str(), &sideslip_msg);
+
             break;
 
         case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
@@ -436,6 +444,7 @@ int main(int argc,char** argv)
     parser.add(mavlink_channel, "m", "mavlink-channel", "LCM channel for mavlink.");
     parser.add(attitude_channel, "i", "attitude-channel", "LCM channel for IMU messages.");
     parser.add(airspeed_channel, "s", "airspeed-channel", "LCM channel for pitot tube messages.");
+    parser.add(sideslip_channel, "l", "sideslip-channel", "LCM channel for sideslip messages.");
     parser.add(altimeter_channel, "a", "altimeter-channel", "LCM channel for the altimeter.");
     parser.add(gps_channel, "g", "gps-channel", "LCM channel for the GPS.");
     parser.add(battery_status_channel, "b", "batter-status-channel", "LCM channel for battery status.");
