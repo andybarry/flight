@@ -377,7 +377,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
              *  3: Throttle
              *  4:
              *  5: autonmous switch
-             *  6: video record switch
+             *  6: trajectory selection switch
              *  7:
              *  8:
              */
@@ -389,15 +389,27 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             if (servomsg.servo5_raw > 1500)
             {
                 servoOutMsg.is_autonomous = 1;
-            } else {
-                servoOutMsg.is_autonomous = 0;
-            }
-
-            if (servomsg.servo6_raw > 1500)
-            {
                 servoOutMsg.video_record = 1;
             } else {
+                servoOutMsg.is_autonomous = 0;
                 servoOutMsg.video_record = 0;
+            }
+
+            if (servomsg.servo6_raw > 1700)
+            {
+                // switch position 0
+
+
+            } else if (servomsg.servo6_raw > 1300) {
+                // switch position 1
+
+
+
+            } else {
+                // switch position 2
+
+
+
             }
 
             if (last_stereo_control != servoOutMsg.video_record)
