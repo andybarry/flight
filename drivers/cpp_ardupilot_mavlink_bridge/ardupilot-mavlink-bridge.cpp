@@ -82,6 +82,7 @@ string deltawing_u_channel = "wingeron_u";
 string servo_out_channel = "servo_out";
 string stereo_control_channel = "stereo-control";
 string beep_channel = "beep";
+string tvlqr_control_channel = "tvlqr-control";
 
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
@@ -400,6 +401,33 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // send the lcm message
             lcmt_deltawing_u_publish(lcm, servo_out_channel.c_str(), &servoOutMsg);
 
+            int traj_switch;
+
+            if (servomsg.servo6_raw > 1700) {
+                // switch position 0
+                traj_switch = 0;
+            } else if (servomsg.servo6_raw > 1300) {
+                // switch position 1
+
+                traj_switch = 1;
+            } else {
+                // switch position 2
+
+                traj_switch = 2;
+            }
+
+            if (traj_switch != last_traj_switch || last_stereo_control != servoOutMsg.video_record) {
+
+                lcmt_tvlqr_controller_action traj_msg;
+
+                traj_msg.timestamp = getTimestampNow();
+
+                traj_msg.trajectory_number = traj_switch;
+
+                last_traj_switch = traj_switch;
+
+                lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
+            }
 
             if (last_stereo_control != servoOutMsg.video_record)
             {
@@ -415,35 +443,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 last_stereo_control = servoOutMsg.video_record;
             }
 
-            int traj_switch;
 
-            if (servomsg.servo6_raw > 1700)
-            {
-                // switch position 0
-                traj_switch = 0;
-
-            } else if (servomsg.servo6_raw > 1300) {
-                // switch position 1
-
-                traj_switch = 1;
-
-            } else {
-                // switch position 2
-
-                traj_switch = 2;
-
-            }
-
-            if (traj_switch != last_traj_switch) {
-
-                lcmt_tvlqr_controller_action traj_msg;
-
-                traj_msg.timestamp = getTimestampNow();
-
-                traj_msg.trajectory_number = traj_switch;
-
-                last_traj_switch = traj_switch;
-            }
 
 
             break;
@@ -480,6 +480,7 @@ int main(int argc,char** argv)
     parser.add(servo_out_channel, "v", "servo-out-channel", "LCM channel for servo commands sent by the aircraft.");
     parser.add(stereo_control_channel, "c", "stereo-control-channel", "LCM channel for stereo control.");
     parser.add(beep_channel, "p", "beep-channel", "LCM channel for beep messages.");
+    parser.add(tvlqr_control_channel, "t", "tvlqr-control-channel", "LCM channel for TVLQR control messages.");
     parser.parse();
 
 
@@ -517,7 +518,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str());
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tTVLQR Control: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), tvlqr_control_channel.c_str());
 
     while (true)
     {
