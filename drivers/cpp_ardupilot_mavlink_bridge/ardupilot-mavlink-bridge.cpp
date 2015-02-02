@@ -416,19 +416,6 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 traj_switch = 2;
             }
 
-            if (traj_switch != last_traj_switch || last_stereo_control != servoOutMsg.video_record) {
-
-                lcmt_tvlqr_controller_action traj_msg;
-
-                traj_msg.timestamp = getTimestampNow();
-
-                traj_msg.trajectory_number = traj_switch;
-
-                last_traj_switch = traj_switch;
-
-                lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
-            }
-
             if (last_stereo_control != servoOutMsg.video_record)
             {
                 // something has changed, send a new message
@@ -441,6 +428,18 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                     &stereo_control_msg);
 
                 last_stereo_control = servoOutMsg.video_record;
+
+
+                // send trajectory messages with autonomous flight messages
+                lcmt_tvlqr_controller_action traj_msg;
+
+                traj_msg.timestamp = getTimestampNow();
+
+                traj_msg.trajectory_number = traj_switch;
+
+                last_traj_switch = traj_switch;
+
+                lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
             }
 
 
