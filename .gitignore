@@ -1,5 +1,6 @@
 LCM/*.c
 LCM/*.h
+LCM/*.hpp
 LCM/*.o
 LCM/*.py
 LCM/LCMtypes.jar
@@ -80,3 +81,5 @@ externals/gtest/Makefile
 externals/gtest/cmake_install.cmake
 externals/gtest/libgtest.a
 externals/gtest/libgtest_main.a
+ui/GoForFlight/GoForFlight.depend
+ui/GoForFlight/bin/
