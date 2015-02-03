@@ -82,7 +82,7 @@ string deltawing_u_channel = "wingeron_u";
 string servo_out_channel = "servo_out";
 string stereo_control_channel = "stereo-control";
 string beep_channel = "beep";
-string tvlqr_control_channel = "tvlqr-control";
+string tvlqr_control_channel = "tvlqr-action";
 
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
@@ -431,15 +431,17 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 
                 // send trajectory messages with autonomous flight messages
-                lcmt_tvlqr_controller_action traj_msg;
+                if (servoOutMsg.is_autonomous == 1) {
+                    lcmt_tvlqr_controller_action traj_msg;
 
-                traj_msg.timestamp = getTimestampNow();
+                    traj_msg.timestamp = getTimestampNow();
 
-                traj_msg.trajectory_number = traj_switch;
+                    traj_msg.trajectory_number = traj_switch;
 
-                last_traj_switch = traj_switch;
+                    last_traj_switch = traj_switch;
 
-                lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
+                    lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
+                }
             }
 
 

@@ -48,6 +48,8 @@ class ServoConverter {
 
         Eigen::Vector3i MinMaxCommands(Eigen::Vector3i commands);
 
+        Eigen::Vector3i GetTrimCommands();
+
 
     private:
         ServoConfig rad_to_servo_;
@@ -61,6 +63,10 @@ class ServoConverter {
 
         int throttle_min_;
         int throttle_max_;
+
+        int elevL_trim_;
+        int elevR_trim_;
+        int throttle_trim_;
 
 
 

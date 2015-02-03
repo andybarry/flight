@@ -30,6 +30,10 @@ ServoConverter::ServoConverter(BotParam *param) {
     throttle_min_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_min");
     throttle_max_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_max");
 
+    elevL_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_trim");
+    elevR_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevR_trim");
+    throttle_trim_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_trim");
+
 }
 
 Eigen::Vector3i ServoConverter::RadiansToServoCommands(Eigen::Vector3d commands) {
@@ -73,5 +77,15 @@ Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) {
 
     return output;
 
+}
+
+Eigen::Vector3i ServoConverter::GetTrimCommands() {
+    Eigen::Vector3i output;
+
+    output(0) = elevL_trim_;
+    output(1) = elevR_trim_;
+    output(2) = throttle_trim_;
+
+    return output;
 }
 

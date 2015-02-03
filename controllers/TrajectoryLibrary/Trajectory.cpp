@@ -189,6 +189,12 @@ int Trajectory::GetIndexFromTime(double t) {
 
 }
 
+double Trajectory::GetMaxTime() {
+    double tf = xpoints_(xpoints_.rows() - 1, 0);
+
+    return tf;
+}
+
 /**
  * Unpacks the gain matrix for a specific time t.
  *
@@ -204,13 +210,13 @@ Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
     Eigen::VectorXd k_row = kpoints_.row(index);
 
 
-    Eigen::MatrixXd k_mat(dimension_, udimension_);
+    Eigen::MatrixXd k_mat(udimension_, dimension_);
 
     for (int i = 0; i < udimension_; i++) {
 
         int start_pos = i * dimension_;
 
-        k_mat.col(i) = k_row.segment(start_pos, dimension_);
+        k_mat.row(i) = k_row.segment(start_pos, dimension_);
     }
 
     return k_mat;

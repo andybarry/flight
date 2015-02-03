@@ -15,6 +15,8 @@ LCM/mavlink_message_t.h.rej
 *.dep
 controllers/tvlqr/test
 utils/ServoConverter/test
+controllers/tvlqr/tvlqr-controller_d
+controllers/tvlqr/test_d
 controllers/constant-control/constant-control
 utils/utils/utils-test
 controllers/tvlqr/tvlqr-controller

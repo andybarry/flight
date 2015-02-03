@@ -46,6 +46,8 @@ class Trajectory
         void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
 
+        double GetMaxTime();
+
         Eigen::VectorXd GetState(double t);
         Eigen::VectorXd GetUCommand(double t);
 

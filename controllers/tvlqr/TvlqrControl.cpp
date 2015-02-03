@@ -31,6 +31,7 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     if (current_trajectory_ == NULL) {
         cerr << "Warning: NULL trajectory in GetControl." << endl;
+        return converter_->GetTrimCommands();
     }
 
     // check to see if this is the first state we've gotten along this trajectory
@@ -45,17 +46,24 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     double t_along_trajectory = GetTNow();
 
-    Eigen::VectorXd x0 = current_trajectory_->GetState(t_along_trajectory);
+    if (t_along_trajectory < current_trajectory_->GetMaxTime()) {
 
-    Eigen::MatrixXd gain_matrix = current_trajectory_->GetGainMatrix(t_along_trajectory);
+        Eigen::VectorXd x0 = current_trajectory_->GetState(t_along_trajectory);
 
-    Eigen::VectorXd additional_control_action = gain_matrix * (state - x0);
+        Eigen::MatrixXd gain_matrix = current_trajectory_->GetGainMatrix(t_along_trajectory);
 
-    Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
+        Eigen::VectorXd additional_control_action = gain_matrix * (state - x0);
+
+        Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
 
 
-    return converter_->RadiansToServoCommands(command_in_rad);
+        return converter_->RadiansToServoCommands(command_in_rad);
+    } else {
+        // we are past the max time, return nominal trims
 
+        return converter_->GetTrimCommands();
+
+    }
 }
 
 void TvlqrControl::InitializeState(Eigen::VectorXd state) {
