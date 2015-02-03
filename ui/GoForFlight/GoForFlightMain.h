@@ -24,6 +24,7 @@
 
 #include "LogSizeHandler.h"
 #include "StateEstimatorHandler.h"
+#include "GpsHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -46,6 +47,7 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT5;
         static const long ID_STATICTEXT3;
         static const long ID_STATICTEXT4;
+        static const long ID_STATICTEXT6;
         static const long ID_STATICTEXT1;
         static const long ID_PANEL1;
         static const long idMenuQuit;
@@ -60,6 +62,7 @@ class GoForFlightFrame: public wxFrame
         wxPanel* Panel1;
         wxStatusBar* StatusBar1;
         wxStaticText* lblTimestamp;
+        wxStaticText* lblGps;
         wxStaticText* lblLogging;
         wxTimer tmrUpdateLcm;
         wxStaticText* lblGoForFlight;
@@ -73,6 +76,7 @@ class GoForFlightFrame: public wxFrame
 
         LogSizeHandler log_size_handler_;
         StateEsimatorHandler state_estimator_handler_;
+        GpsHandler gps_handler_;
 
         DECLARE_EVENT_TABLE()
 };
