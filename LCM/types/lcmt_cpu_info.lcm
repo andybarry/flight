@@ -1,0 +1,8 @@
+struct lcmt_cpu_info
+{
+  int64_t timestamp;
+
+  int32_t cpu_freq; // in hz
+  float cpu_temp; // in deg C
+
+}
