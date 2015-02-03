@@ -22,7 +22,7 @@ ServoConverter *converter;
 
 bot_lcmgl_t* lcmgl;
 
-string deltawing_u_channel = "wingeron_u";
+string deltawing_u_channel = "deltawing_u";
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
 
