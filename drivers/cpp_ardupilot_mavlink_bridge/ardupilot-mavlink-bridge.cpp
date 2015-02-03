@@ -78,7 +78,7 @@ string altimeter_channel = "altimeter";
 string sideslip_channel = "sideslip";
 string gps_channel = "gps";
 string battery_status_channel = "battery-status";
-string deltawing_u_channel = "wingeron_u";
+string deltawing_u_channel = "deltawing_u";
 string servo_out_channel = "servo_out";
 string stereo_control_channel = "stereo-control";
 string beep_channel = "beep";
@@ -115,11 +115,6 @@ int64_t getTimestampNow()
     return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
 }
 
-int EightBitToServoCmd(int charInputIn)
-{
-    return 200/51 * charInputIn + 1000;
-}
-
 void beep_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_beep *msg, void *user)
 {
     global_beep = msg->beep;
@@ -130,10 +125,6 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
     // translate a local LCM message for servos into a message for the airplane over
     // mavlink
 
-    int elevonL = EightBitToServoCmd(msg->elevonL);
-    int elevonR = EightBitToServoCmd(msg->elevonR);
-    int throttle = EightBitToServoCmd(msg->throttle);
-
     mavlink_message_t mavmsg;
 
     int beep;
@@ -143,7 +134,7 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
         beep = 1000;
     }
 
-    mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, elevonL, elevonR, throttle, 1000, 1000, 1000, 1000, beep);
+    mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, msg->elevonL, msg->elevonR, msg->throttle, 1000, 1000, 1000, 1000, beep);
     // Publish the message on the LCM IPC bus
     sendMAVLinkMessage(lcm, &mavmsg);
 
