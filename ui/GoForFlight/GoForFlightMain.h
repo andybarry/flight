@@ -43,6 +43,7 @@ class GoForFlightFrame: public wxFrame
 
         //(*Identifiers(GoForFlightFrame)
         static const long ID_STATICTEXT2;
+        static const long ID_STATICTEXT5;
         static const long ID_STATICTEXT3;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT1;
@@ -58,6 +59,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblTimesync;
         wxPanel* Panel1;
         wxStatusBar* StatusBar1;
+        wxStaticText* lblTimestamp;
         wxStaticText* lblLogging;
         wxTimer tmrUpdateLcm;
         wxStaticText* lblGoForFlight;

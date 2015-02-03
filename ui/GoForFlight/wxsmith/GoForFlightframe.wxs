@@ -18,8 +18,27 @@
 									<option>1</option>
 								</object>
 								<object class="sizeritem">
+									<object class="wxBoxSizer" variable="BoxSizer4" member="no">
+										<object class="spacer">
+											<flag>wxALL|wxFIXED_MINSIZE|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<size>46,20</size>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="ID_STATICTEXT5" variable="lblTimestamp" member="yes">
+												<label>--:--:--</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT3" variable="lblLogging" member="yes">
-										<label>Logging: Offline</label>
+										<label>Logging: Offline (#--)</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>

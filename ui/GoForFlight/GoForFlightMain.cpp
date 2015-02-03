@@ -44,6 +44,7 @@ wxString wxbuildinfo(wxbuildinfoformat format)
 
 //(*IdInit(GoForFlightFrame)
 const long GoForFlightFrame::ID_STATICTEXT2 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT5 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT3 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT4 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT1 = wxNewId();
@@ -75,6 +76,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     wxBoxSizer* BoxSizer3;
     wxMenu* Menu1;
     wxBoxSizer* BoxSizer2;
+    wxBoxSizer* BoxSizer4;
     wxBoxSizer* BoxSizer1;
     wxMenuBar* MenuBar1;
     wxMenu* Menu2;
@@ -86,7 +88,12 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     BoxSizer3 = new wxBoxSizer(wxVERTICAL);
     lblTimesync = new wxStaticText(Panel1, ID_STATICTEXT2, _("Timesync: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
     BoxSizer3->Add(lblTimesync, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblLogging = new wxStaticText(Panel1, ID_STATICTEXT3, _("Logging: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
+    BoxSizer4->Add(46,20,0, wxALL|wxFIXED_MINSIZE|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    lblTimestamp = new wxStaticText(Panel1, ID_STATICTEXT5, _("--:--:--"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    BoxSizer4->Add(lblTimestamp, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer3->Add(BoxSizer4, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 0);
+    lblLogging = new wxStaticText(Panel1, ID_STATICTEXT3, _("Logging: Offline (#--)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     BoxSizer3->Add(lblLogging, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblStateEsimator = new wxStaticText(Panel1, ID_STATICTEXT4, _("State Esimator: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     BoxSizer3->Add(lblStateEsimator, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -128,7 +135,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
 
     log_size_handler_.SetLoggingLabel(lblLogging);
-    log_size_handler_.SetTimesyncLabel(lblTimesync);
+    log_size_handler_.SetTimesyncLabels(lblTimesync, lblTimestamp);
 
     state_estimator_handler_.SetLabel(lblStateEsimator);
 
