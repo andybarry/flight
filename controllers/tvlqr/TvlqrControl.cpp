@@ -9,6 +9,7 @@
 
 TvlqrControl::TvlqrControl(ServoConverter *converter) {
     current_trajectory_ = NULL;
+    state_estimator_initialized_ = false;
     state_initialized_ = false;
     t0_ = 0;
     converter_ = converter;
@@ -25,6 +26,12 @@ void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 
     state_initialized_ = false;
 
+    state_estimator_init_mutex.lock();
+
+    state_estimator_initialized_ = false;
+
+    state_estimator_init_mutex.unlock();
+
 }
 
 Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
@@ -34,11 +41,16 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
         return converter_->GetTrimCommands();
     }
 
+
+    state_estimator_init_mutex.unlock();
+
     // check to see if this is the first state we've gotten along this trajectory
 
     if (state_initialized_ == false) {
 
-        InitializeState(state);
+        if (!InitializeState(state)) {
+            // uh oh failed to init state because the state estimator isn't ready
+        }
 
     }
 
@@ -66,14 +78,23 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
     }
 }
 
-void TvlqrControl::InitializeState(Eigen::VectorXd state) {
+bool TvlqrControl::InitializeState(Eigen::VectorXd state) {
 
+    state_estimator_init_mutex.lock();
+
+    if (state_estimator_initialized_ != true) {
+        // not ready for a new trajectory
+        state_estimator_init_mutex.unlock();
+        return false;
+    }
 
     initial_state_ = state;
 
     t0_ = GetTimestampNow();
 
     state_initialized_ = true;
+
+    return true;
 
 }
 
@@ -91,6 +112,15 @@ Eigen::VectorXd TvlqrControl::GetStateMinusInit(Eigen::VectorXd state) {
 
     return state_minus_init;
 
+}
+
+void TvlqrControl::SetStateEstimatorInitialized() {
+
+    state_estimator_init_mutex.lock();
+
+    state_estimator_initialized_ = true;
+
+    state_estimator_init_mutex.unlock();
 }
 
 double TvlqrControl::GetTNow() {

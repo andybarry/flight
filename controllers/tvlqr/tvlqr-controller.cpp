@@ -27,7 +27,7 @@ string deltawing_u_channel = "deltawing_u";
 void pronto_reset_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
     // a pronto-reset has happened!  Charge forward with the new trajectory
-    control->StateEstimatorResetFinished();
+    control->SetStateEstimatorInitialized();
 
 
 }

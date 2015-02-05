@@ -12,6 +12,8 @@
 #include "../../utils/utils/RealtimeUtils.hpp"
 #include <bot_param/param_client.h>
 
+#include "lcmtypes/pronto_utime_t.h"
+
 using namespace std;
 
 void sighandler(int dum);
