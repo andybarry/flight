@@ -13,7 +13,6 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include <mutex>
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
@@ -46,16 +45,13 @@ class TvlqrControl
 
     private:
 
-        bool InitializeState(Eigen::VectorXd state);
+        void InitializeState(Eigen::VectorXd state);
         double GetTNow();
         Eigen::VectorXd GetStateMinusInit(Eigen::VectorXd state);
 
         Trajectory *current_trajectory_;
         Eigen::VectorXd initial_state_;
         bool state_initialized_;
-        bool state_estimator_initialized_;
-
-        mutex state_estimator_init_mutex;
 
         ServoConverter *converter_;
 

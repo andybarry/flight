@@ -10,6 +10,7 @@
 
 extern lcm_t * lcm;
 
+extern pronto_utime_t_subscription_t *pronto_reset_handler_sub;
 extern mav_pose_t_subscription_t *mav_pose_t_sub;
 extern lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 
@@ -22,6 +23,8 @@ extern ServoConverter *converter;
 extern bot_lcmgl_t* lcmgl;
 
 extern string deltawing_u_channel;
+extern string pronto_init_channel;
+extern string pronto_reset_complete_channel;
 
 int main(int argc,char** argv) {
 
@@ -37,6 +40,8 @@ int main(int argc,char** argv) {
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
     parser.add(deltawing_u_channel, "u", "deltawing-u-channel", "LCM channel to send control messages on.");
+    parser.add(pronto_init_channel, "i", "pronto-init-channel", "LCM channel to send pronto re-init messages on.");
+    parser.add(pronto_reset_complete_channel, "c", "pronto-reset-complete-channel", "LCM channel to listen for pronto's reset complete messages.");
     parser.parse();
 
     if (trajectory_dir != "") {
@@ -70,6 +75,8 @@ int main(int argc,char** argv) {
 
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
+
+    pronto_reset_handler_sub = pronto_utime_t_subscribe(lcm, pronto_reset_complete_channel.c_str(), &pronto_reset_complete_handler, NULL);
 
     tvlqr_controller_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel.c_str(), &lcmt_tvlqr_controller_action_handler, NULL);
 
