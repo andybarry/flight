@@ -40,6 +40,8 @@ class TvlqrControl
 
         Eigen::VectorXi GetControl(Eigen::VectorXd state);
 
+        void StateEstimatorResetFinished();
+
 
     private:
 
