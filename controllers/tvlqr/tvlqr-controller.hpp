@@ -27,6 +27,6 @@ void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* chann
 
 void SendStateEstimatorResetRequest();
 
-void SavePoseMsg(const mav_pose_t *msg);
+void SendStateEstimatorDefaultResetRequest();
 
 #endif
