@@ -33,6 +33,14 @@ mav_pose_t *last_pose_msg;
 
 mav_filter_state_t *last_filter_state = NULL;
 
+double sigma0_vb;
+
+double sigma0_delta_xy;
+double sigma0_delta_z;
+
+double sigma0_chi_xy;
+double sigma0_chi_z;
+
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
     // a pronto-reset has happened!  Charge forward with the new trajectory
@@ -127,14 +135,47 @@ void SendStateEstimatorResetRequest() {
 
     mav_filter_state_t *reset_request = mav_filter_state_t_copy(last_filter_state);
 
-    // reset the covariances on position
+    // reset the covariances on velocity
+    reset_request->cov[66] = sigma0_vb * sigma0_vb;
+    reset_request->cov[67] = 0;
+    reset_request->cov[68] = 0;
+    reset_request->cov[69] = 0;
+    reset_request->cov[70] = 0;
+    reset_request->cov[71] = 0;
+    reset_request->cov[72] = 0;
+    reset_request->cov[73] = 0;
+    reset_request->cov[74] = 0;
+
+    reset_request->cov[87] = 0;
+    reset_request->cov[88] = sigma0_vb * sigma0_vb;
+    reset_request->cov[89] = 0;
+    reset_request->cov[90] = 0;
+    reset_request->cov[91] = 0;
+    reset_request->cov[92] = 0;
+    reset_request->cov[93] = 0;
+    reset_request->cov[94] = 0;
+    reset_request->cov[95] = 0;
+/*
+    reset_request->cov[108] = 0;
+    reset_request->cov[109] = 0;
+    reset_request->cov[110] = sigma0_vb * sigma0_vb;
+    reset_request->cov[111] = 0;
+    reset_request->cov[112] = 0;
+    reset_request->cov[113] = 0;
+    reset_request->cov[114] = 0;
+    reset_request->cov[115] = 0;
+    reset_request->cov[116] = 0;
+*/
+
+
+    // reset the covariances on position (x, y)
     reset_request->cov[192] = 0;
     reset_request->cov[193] = 0;
     reset_request->cov[194] = 0;
     reset_request->cov[195] = 0;
     reset_request->cov[196] = 0;
     reset_request->cov[197] = 0;
-    reset_request->cov[198] = 0.25;
+    reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
     reset_request->cov[199] = 0;
     reset_request->cov[200] = 0;
 
@@ -146,7 +187,7 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[217] = 0;
     reset_request->cov[218] = 0;
     reset_request->cov[219] = 0;
-    reset_request->cov[220] = 0.25;
+    reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
     reset_request->cov[221] = 0;
 
 
@@ -243,14 +284,15 @@ void SendStateEstimatorDefaultResetRequest() {
         covs[i] = 0;
     }
 
-    covs[66] = 0.0225;
-    covs[88] = 0.0225;
-    covs[110] = 0.025;
-    covs[132] = 0.00274155677;
-    covs[154] = 0.00274155677;
-    covs[176] = 0.00274155677;
-    covs[198] = 0.25;
-    covs[220] = 0.25;
+    covs[66] = sigma0_vb * sigma0_vb;
+    covs[88] = sigma0_vb * sigma0_vb;
+    covs[110] = sigma0_vb * sigma0_vb;
+    covs[132] = sigma0_chi_xy * sigma0_chi_xy;
+    covs[154] = sigma0_chi_xy * sigma0_chi_xy;
+    covs[176] = sigma0_chi_z * sigma0_chi_z;
+    covs[198] = sigma0_delta_xy * sigma0_delta_xy;
+    covs[220] = sigma0_delta_xy * sigma0_delta_xy;
+    covs[242] = sigma0_delta_z * sigma0_delta_z;
 
     msg.cov = covs;
 

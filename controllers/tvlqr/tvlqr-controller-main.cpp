@@ -27,6 +27,14 @@ extern string deltawing_u_channel;
 extern string pronto_init_channel;
 extern string pronto_reset_complete_channel;
 
+extern double sigma0_vb;
+
+extern double sigma0_delta_xy;
+extern double sigma0_delta_z;
+
+extern double sigma0_chi_xy;
+extern double sigma0_chi_z;
+
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
@@ -73,6 +81,14 @@ int main(int argc,char** argv) {
     BotParam *param = bot_param_new_from_server(lcm, 0);
 
     ServoConverter *converter = new ServoConverter(param);
+
+    // get sigma0 data
+    sigma0_vb = bot_param_get_double_or_fail(param, "state_estimator.sigma0.vb");
+    sigma0_delta_xy = bot_param_get_double_or_fail(param, "state_estimator.sigma0.Delta_xy");
+    sigma0_delta_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.Delta_z");
+
+    sigma0_chi_xy = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_xy");
+    sigma0_chi_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_z");
 
     control = new TvlqrControl(converter);
 
