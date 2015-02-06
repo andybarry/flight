@@ -1,5 +1,7 @@
 #include "RealtimeUtils.hpp"
 
+#define PI 3.14159265359
+
 Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
 
     // convert message to 12-state vector in the Drake frame
@@ -226,4 +228,16 @@ TEST(Utils, TimestampSanity2015) {
     EXPECT_TRUE(GetTimestampNow() > 1422487159500367) << "Timestamp should be after Jan 28, 2015.";
 }
 
+double deg2rad(double input_in_deg) {
+    return PI/180.0d * input_in_deg;
+}
+
+TEST(Utils, deg2rad) {
+
+    EXPECT_NEAR( 0.0374446428, deg2rad(2.14542), 0.0001 );
+
+    EXPECT_EQ(0, deg2rad(0));
+
+    EXPECT_NEAR(-1.14664641, deg2rad(-65.698), 0.0001);
+}
 

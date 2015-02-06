@@ -31,6 +31,8 @@ Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy);
 Eigen::Vector3d angularvel2rpydot(Eigen::Vector3d rpy, Eigen::Vector3d omega);
 Eigen::Matrix3d angularvel2rpydotMatrix(Eigen::Vector3d rpy);
 
+double deg2rad(double input_in_deg);
+
 int64_t GetTimestampNow();
 
 

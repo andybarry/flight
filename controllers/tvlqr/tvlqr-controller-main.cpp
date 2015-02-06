@@ -88,7 +88,10 @@ int main(int argc,char** argv) {
     sigma0_delta_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.Delta_z");
 
     sigma0_chi_xy = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_xy");
+    sigma0_chi_xy = deg2rad(sigma0_chi_xy);
+
     sigma0_chi_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_z");
+    sigma0_chi_z = deg2rad(sigma0_chi_z);
 
     control = new TvlqrControl(converter);
 

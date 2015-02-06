@@ -35,11 +35,13 @@ LCM_PRONTO_LIB=../../../pronto-distro/build/lib/liblcmtypes_pronto-lcmtypes.a
 
 OCTOMAPLIB=../../../pronto-distro/build/lib/liboctomap.a ../../../pronto-distro/build/lib/liboctomath.a ../../../pronto-distro/build/lib/liblcmtypes_octomap-utils.a
 
+GTEST_LIB=../../externals/gtest/libgtest.a ../../externals/gtest/libgtest_main.a
+
 CXXFLAGS=-std=c++0x
 
 CPPFLAGS=-c -Wall -O3 -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394) -I$(GTEST_INCLUDE)
 
-LDPOSTFLAGS = `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN) $(FIREFLY_MV_UTILS_LIB) $(LCM_PRONTO_LIB) -L $(DC1394_LIB) -ldc1394
+LDPOSTFLAGS = `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN) $(FIREFLY_MV_UTILS_LIB) $(GTEST_LIB) $(LCM_PRONTO_LIB) -L $(DC1394_LIB) -ldc1394
 
 
 # include a standard makefile that uses these variables and builds everything
