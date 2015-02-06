@@ -14,6 +14,7 @@ lcm_t * lcm;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 pronto_utime_t_subscription_t *pronto_reset_handler_sub;
+mav_filter_state_t_subscription_t *pronto_state_handler_sub;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
@@ -25,6 +26,7 @@ bot_lcmgl_t* lcmgl;
 string deltawing_u_channel = "deltawing_u";
 string pronto_init_channel = "MAV_STATE_EST_INITIALIZER";
 string pronto_reset_complete_channel = "MAV_STATE_EST_INIT_COMPLETE";
+
 bool state_estimator_init = true;
 
 mav_pose_t *last_pose_msg;
@@ -263,6 +265,7 @@ void sighandler(int dum)
 
     mav_pose_t_unsubscribe(lcm, mav_pose_t_sub);
     lcmt_tvlqr_controller_action_unsubscribe(lcm, tvlqr_controller_action_sub);
+    mav_filter_state_t_unsubscribe(lcm, pronto_state_handler_sub);
 
     lcm_destroy (lcm);
 
