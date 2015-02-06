@@ -46,6 +46,8 @@ void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* chann
     // a pronto-reset has happened!  Charge forward with the new trajectory
     state_estimator_init = true;
 
+    cout << "Got state estimator reset" << endl;
+
 
 }
 
@@ -136,6 +138,7 @@ void SendStateEstimatorResetRequest() {
     mav_filter_state_t *reset_request = mav_filter_state_t_copy(last_filter_state);
 
     // reset the covariances on velocity
+/*
     reset_request->cov[66] = sigma0_vb * sigma0_vb;
     reset_request->cov[67] = 0;
     reset_request->cov[68] = 0;
@@ -155,7 +158,7 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[93] = 0;
     reset_request->cov[94] = 0;
     reset_request->cov[95] = 0;
-/*
+
     reset_request->cov[108] = 0;
     reset_request->cov[109] = 0;
     reset_request->cov[110] = sigma0_vb * sigma0_vb;
@@ -167,7 +170,7 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[116] = 0;
 */
 
-
+/*
     // reset the covariances on position (x, y)
     reset_request->cov[192] = 0;
     reset_request->cov[193] = 0;
@@ -189,6 +192,14 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[219] = 0;
     reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
     reset_request->cov[221] = 0;
+
+*/
+reset_request->cov[66] = sigma0_vb * sigma0_vb;
+reset_request->cov[88] = sigma0_vb * sigma0_vb;
+reset_request->cov[110] = sigma0_vb * sigma0_vb;
+
+reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
+reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
 
 
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), reset_request);
