@@ -27,7 +27,7 @@ void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* chann
 
 void mav_filter_state_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_filter_state_t *msg, void *user);
 
-void SendStateEstimatorResetRequest();
+//Disabled because it's not working: void SendStateEstimatorResetRequest();
 
 void SendStateEstimatorDefaultResetRequest();
 

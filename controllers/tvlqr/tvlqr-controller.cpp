@@ -122,11 +122,12 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     // request a state estimator init
 
-    SendStateEstimatorResetRequest();
+    SendStateEstimatorDefaultResetRequest();
 
 
 }
 
+#if 0 // This isn't working right now, so disabled
 void SendStateEstimatorResetRequest() {
     if (last_filter_state == NULL) {
         SendStateEstimatorDefaultResetRequest();
@@ -168,9 +169,7 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[114] = 0;
     reset_request->cov[115] = 0;
     reset_request->cov[116] = 0;
-*/
 
-/*
     // reset the covariances on position (x, y)
     reset_request->cov[192] = 0;
     reset_request->cov[193] = 0;
@@ -192,14 +191,13 @@ void SendStateEstimatorResetRequest() {
     reset_request->cov[219] = 0;
     reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
     reset_request->cov[221] = 0;
-
 */
-reset_request->cov[66] = sigma0_vb * sigma0_vb;
-reset_request->cov[88] = sigma0_vb * sigma0_vb;
-reset_request->cov[110] = sigma0_vb * sigma0_vb;
+    reset_request->cov[66] = sigma0_vb * sigma0_vb;
+    reset_request->cov[88] = sigma0_vb * sigma0_vb;
+    reset_request->cov[110] = sigma0_vb * sigma0_vb;
 
-reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
-reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
+    reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
+    reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
 
 
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), reset_request);
@@ -208,6 +206,7 @@ reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
 
     mav_filter_state_t_destroy(reset_request);
 }
+#endif
 
 void SendStateEstimatorDefaultResetRequest() {
 
