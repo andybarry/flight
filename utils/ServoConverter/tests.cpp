@@ -47,6 +47,22 @@ TEST_F(ServoConverterTest, RadiansToServo) {
 
 }
 
+TEST_F(ServoConverterTest, RadiansToServo2) {
+
+    Eigen::Vector3d tester;
+
+    tester << 0.2, 2, 4.8058;
+
+    Eigen::Vector3i matlab_output;
+
+    matlab_output << 1518, 1565, 1690;
+
+    Eigen::Vector3i output = converter_->RadiansToServoCommands(tester);
+
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+
+}
+
 
 
 int main(int argc, char **argv) {

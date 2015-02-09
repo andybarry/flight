@@ -1,15 +1,15 @@
 struct lcmt_deltawing_u
 {
-  int64_t timestamp; 
-
-  double throttle;
+  int64_t timestamp;
 
   double elevonL;
   double elevonR;
-  
+
+  double throttle;
+
   int8_t is_autonomous;
-  
+
   int8_t video_record;
 
- 
+
 }
