@@ -48,10 +48,9 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
     if (t_along_trajectory < current_trajectory_->GetMaxTime()) {
 
         Eigen::VectorXd x0 = current_trajectory_->GetState(t_along_trajectory);
-
         Eigen::MatrixXd gain_matrix = current_trajectory_->GetGainMatrix(t_along_trajectory);
 
-        Eigen::VectorXd additional_control_action = gain_matrix * (state - x0);
+        Eigen::VectorXd additional_control_action = gain_matrix * (state_minus_init - x0);
 
         Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
 
