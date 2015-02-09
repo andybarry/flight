@@ -35,11 +35,11 @@ TEST_F(ServoConverterTest, RadiansToServo) {
 
     Eigen::Vector3d tester;
 
-    tester << 0.5235, -2.1, 3.99;
+    tester << 0.5235, -1.1, 3.99;
 
     Eigen::Vector3i matlab_output;
 
-    matlab_output << 1672, 2517, 1610;
+    matlab_output << 1672, 2082, 1610;
 
     Eigen::Vector3i output = converter_->RadiansToServoCommands(tester);
 
@@ -51,13 +51,45 @@ TEST_F(ServoConverterTest, RadiansToServo2) {
 
     Eigen::Vector3d tester;
 
-    tester << 0.2, 2, 4.8058;
+    tester << 0.2, 0.2, 4.8058;
 
     Eigen::Vector3i matlab_output;
 
-    matlab_output << 1518, 1565, 1690;
+    matlab_output << 1519, 1517, 1691;
 
     Eigen::Vector3i output = converter_->RadiansToServoCommands(tester);
+
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+
+}
+
+TEST_F(ServoConverterTest, MinMaxCommands) {
+
+    Eigen::Vector3i tester;
+
+    tester << 1518, -570, 2800;
+
+    Eigen::Vector3i matlab_output;
+
+    matlab_output << 1518, 1050, 1892;
+
+    Eigen::Vector3i output = converter_->MinMaxCommands(tester);
+
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+
+}
+
+TEST_F(ServoConverterTest, MinMaxCommands2) {
+
+    Eigen::Vector3i tester;
+
+    tester << 1518, 152421, -124;
+
+    Eigen::Vector3i matlab_output;
+
+    matlab_output << 1518, 2090, 1103;
+
+    Eigen::Vector3i output = converter_->MinMaxCommands(tester);
 
     EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
 

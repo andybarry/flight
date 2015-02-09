@@ -22,7 +22,7 @@ ServoConverter::ServoConverter(BotParam *param) {
 
 
     elevL_min_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_min");
-    elevL_max_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_min");
+    elevL_max_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_max");
 
     elevR_min_ = bot_param_get_int_or_fail(param, "servo_commands.elevR_min");
     elevR_max_ = bot_param_get_int_or_fail(param, "servo_commands.elevR_max");
@@ -68,6 +68,7 @@ Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) {
 
     output(0) = max(commands(0), elevL_min_);
     output(0) = min(output(0), elevL_max_);
+
 
     output(1) = max(commands(1), elevR_min_);
     output(1) = min(output(1), elevR_max_);
