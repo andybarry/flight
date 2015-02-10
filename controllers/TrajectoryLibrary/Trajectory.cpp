@@ -214,7 +214,8 @@ Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
 
     for (int i = 0; i < udimension_; i++) {
 
-        int start_pos = i * dimension_;
+        // +1 because the column index is time
+        int start_pos = i * dimension_ + 1;
 
         k_mat.row(i) = k_row.segment(start_pos, dimension_);
     }

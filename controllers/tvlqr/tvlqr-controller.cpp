@@ -80,8 +80,10 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
     // whenever we get a state estimate, we want to output a new control action
 
-    Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
+    Eigen::VectorXd state_vec(12);// = StateEstimatorToDrakeVector(msg);
 
+state_vec << 0,0,0,0,0,0,0,0,0,0,0,0;
+//cout << "state_vec" << endl << state_vec << endl;
 
     Eigen::VectorXi control_vec = control->GetControl(state_vec);
 

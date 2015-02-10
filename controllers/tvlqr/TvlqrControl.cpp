@@ -50,10 +50,32 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
         Eigen::VectorXd x0 = current_trajectory_->GetState(t_along_trajectory);
         Eigen::MatrixXd gain_matrix = current_trajectory_->GetGainMatrix(t_along_trajectory);
 
-        Eigen::VectorXd additional_control_action = gain_matrix * (state_minus_init - x0);
+        Eigen::VectorXd state_error = state_minus_init - x0;
+
+gain_matrix(0,0) = 0;
+gain_matrix(1,0) = 0;
+gain_matrix(2,0) = 0;
+
+gain_matrix(0,1) = 0;
+gain_matrix(1,1) = 0;
+gain_matrix(2,1) = 0;
+
+gain_matrix(0,2) = 0;
+gain_matrix(1,2) = 0;
+gain_matrix(2,2) = 0;
+
+gain_matrix(0,6) = 0;
+gain_matrix(1,6) = 0;
+gain_matrix(2,6) = 0;
+
+        Eigen::VectorXd additional_control_action = gain_matrix * state_error;
+
+//cout << "t = " << t_along_trajectory << endl;
+//cout << "gain" << endl << gain_matrix << endl << "state_error" << endl << state_error << endl << "additional" << endl << additional_control_action << endl;
 
         Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
 
+//cout << "command_in_rad" << endl << command_in_rad << endl;
 
         return converter_->RadiansToServoCommands(command_in_rad);
     } else {
