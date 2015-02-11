@@ -31,16 +31,23 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="`wx-config --cflags`" />
+			<Add option="-std=c++0x" />
 			<Add option="-Wall" />
+			<Add option="`wx-config --cflags`" />
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
+			<Add option="`pkg-config --libs lcm`" />
 		</Linker>
 		<Unit filename="GoForFlightApp.cpp" />
 		<Unit filename="GoForFlightApp.h" />
 		<Unit filename="GoForFlightMain.cpp" />
 		<Unit filename="GoForFlightMain.h" />
+		<Unit filename="GpsHandler.h" />
+		<Unit filename="LogSizeHandler.h" />
+		<Unit filename="StateEstimatorHandler.h" />
+		<Unit filename="StatusHandler.h" />
+		<Unit filename="TimesyncHandler.h" />
 		<Unit filename="wxsmith/GoForFlightframe.wxs" />
 		<Extensions>
 			<code_completion />
