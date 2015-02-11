@@ -11,6 +11,7 @@ TvlqrControl::TvlqrControl(ServoConverter *converter) {
     current_trajectory_ = NULL;
     state_initialized_ = false;
     t0_ = 0;
+    last_ti_state_estimator_reset_ = 0;
     converter_ = converter;
 }
 
@@ -43,9 +44,16 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     Eigen::VectorXd state_minus_init = GetStateMinusInit(state);
 
-    double t_along_trajectory = GetTNow();
+    double t_along_trajectory;
 
-    if (t_along_trajectory < current_trajectory_->GetMaxTime()) {
+    // check for TILQR case
+    if (current_trajectory_->IsTimeInvariant()) {
+        t_along_trajectory = 0;
+    } else {
+        t_along_trajectory = GetTNow();
+    }
+
+    if (t_along_trajectory <= current_trajectory_->GetMaxTime()) {
 
         Eigen::VectorXd x0 = current_trajectory_->GetState(t_along_trajectory);
         Eigen::MatrixXd gain_matrix = current_trajectory_->GetGainMatrix(t_along_trajectory);

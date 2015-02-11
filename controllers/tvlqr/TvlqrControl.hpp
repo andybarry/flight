@@ -42,6 +42,7 @@ class TvlqrControl
 
         void SetStateEstimatorInitialized();
 
+        bool IsTimeInvariant() { return HasTrajectory() && current_trajectory_->IsTimeInvariant(); }
 
     private:
 
@@ -56,6 +57,7 @@ class TvlqrControl
         ServoConverter *converter_;
 
         int64_t t0_;
+        double last_ti_state_estimator_reset_;
 
 };
 

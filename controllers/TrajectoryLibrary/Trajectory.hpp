@@ -48,6 +48,8 @@ class Trajectory
 
         double GetMaxTime();
 
+        bool IsTimeInvariant() { return GetMaxTime() == 0; }
+
         Eigen::VectorXd GetState(double t);
         Eigen::VectorXd GetUCommand(double t);
 

@@ -41,6 +41,8 @@ double sigma0_delta_z;
 double sigma0_chi_xy;
 double sigma0_chi_z;
 
+int64_t last_ti_state_estimator_reset = 0;
+
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
     // a pronto-reset has happened!  Charge forward with the new trajectory
@@ -80,10 +82,15 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
     // whenever we get a state estimate, we want to output a new control action
 
-    Eigen::VectorXd state_vec(12);// = StateEstimatorToDrakeVector(msg);
+    Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
 
-state_vec << 0,0,0,0,0,0,0,0,0,0,0,0;
-//cout << "state_vec" << endl << state_vec << endl;
+    // check for time-invariant trajectory requiring state estimator reset
+    if (control->IsTimeInvariant() && GetTimestampNow() - last_ti_state_estimator_reset > 500000) {
+
+        last_ti_state_estimator_reset = GetTimestampNow();
+
+        SendStateEstimatorDefaultResetRequest();
+    }
 
     Eigen::VectorXi control_vec = control->GetControl(state_vec);
 
@@ -106,19 +113,42 @@ state_vec << 0,0,0,0,0,0,0,0,0,0,0,0;
 
 void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
 
+
+    int lib_num = 0;
+
+    switch (msg->trajectory_number) {
+        case 0:
+            lib_num = 0;
+            break;
+
+        case 1:
+            lib_num = 1;
+            break;
+
+        case 2:
+            lib_num = 10000; // trim trajectory
+            break;
+
+        default:
+            cerr << "Warning, unrecognized trajectory number: " << msg->trajectory_number << endl;
+
+            lib_num = 0;
+            break;
+    }
+
     // getting an action means we should start a new TVLQR controller!
 
-    Trajectory *traj = trajlib.GetTrajectoryByNumber(msg->trajectory_number);
+    Trajectory *traj = trajlib.GetTrajectoryByNumber(lib_num);
 
     if (traj == NULL) {
-        cerr << "Warning: trajectory number " << msg->trajectory_number << " was NULL!  Aborting trajectory run." << endl;
+        cerr << "Warning: trajectory number " << lib_num << " was NULL!  Aborting trajectory run." << endl;
         return;
     }
 
     control->SetTrajectory(traj);
 
 
-    cout << "Starting trajectory " << msg->trajectory_number << endl;
+    cout << "Starting trajectory " << lib_num << endl;
 
     state_estimator_init = false;
 
