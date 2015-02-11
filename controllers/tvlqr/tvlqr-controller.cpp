@@ -89,7 +89,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
         last_ti_state_estimator_reset = GetTimestampNow();
 
-        SendStateEstimatorDefaultResetRequest();
+        SendStateEstimatorResetRequest();
     }
 
     Eigen::VectorXi control_vec = control->GetControl(state_vec);
@@ -154,12 +154,11 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     // request a state estimator init
 
-    SendStateEstimatorDefaultResetRequest();
+    SendStateEstimatorResetRequest();
 
 
 }
 
-#if 0 // This isn't working right now, so disabled
 void SendStateEstimatorResetRequest() {
     if (last_filter_state == NULL) {
         SendStateEstimatorDefaultResetRequest();
@@ -170,63 +169,27 @@ void SendStateEstimatorResetRequest() {
 
     mav_filter_state_t *reset_request = mav_filter_state_t_copy(last_filter_state);
 
-    // reset the covariances on velocity
-/*
-    reset_request->cov[66] = sigma0_vb * sigma0_vb;
-    reset_request->cov[67] = 0;
-    reset_request->cov[68] = 0;
-    reset_request->cov[69] = 0;
-    reset_request->cov[70] = 0;
-    reset_request->cov[71] = 0;
-    reset_request->cov[72] = 0;
-    reset_request->cov[73] = 0;
-    reset_request->cov[74] = 0;
-
-    reset_request->cov[87] = 0;
-    reset_request->cov[88] = sigma0_vb * sigma0_vb;
-    reset_request->cov[89] = 0;
-    reset_request->cov[90] = 0;
-    reset_request->cov[91] = 0;
-    reset_request->cov[92] = 0;
-    reset_request->cov[93] = 0;
-    reset_request->cov[94] = 0;
-    reset_request->cov[95] = 0;
-
-    reset_request->cov[108] = 0;
-    reset_request->cov[109] = 0;
-    reset_request->cov[110] = sigma0_vb * sigma0_vb;
-    reset_request->cov[111] = 0;
-    reset_request->cov[112] = 0;
-    reset_request->cov[113] = 0;
-    reset_request->cov[114] = 0;
-    reset_request->cov[115] = 0;
-    reset_request->cov[116] = 0;
-
     // reset the covariances on position (x, y)
-    reset_request->cov[192] = 0;
-    reset_request->cov[193] = 0;
-    reset_request->cov[194] = 0;
-    reset_request->cov[195] = 0;
-    reset_request->cov[196] = 0;
-    reset_request->cov[197] = 0;
-    reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
-    reset_request->cov[199] = 0;
-    reset_request->cov[200] = 0;
 
+    // x-position row
+    for (int i = 189; i <= 209; i++) {
+        reset_request->cov[i] = 0;
+    }
 
-    reset_request->cov[213] = 0;
-    reset_request->cov[214] = 0;
-    reset_request->cov[215] = 0;
-    reset_request->cov[216] = 0;
-    reset_request->cov[217] = 0;
-    reset_request->cov[218] = 0;
-    reset_request->cov[219] = 0;
-    reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
-    reset_request->cov[221] = 0;
-*/
-    reset_request->cov[66] = sigma0_vb * sigma0_vb;
-    reset_request->cov[88] = sigma0_vb * sigma0_vb;
-    reset_request->cov[110] = sigma0_vb * sigma0_vb;
+    // x-position column
+    for (int i = 9; i <= 429; i+=21) {
+        reset_request->cov[i] = 0;
+    }
+
+    // y-position row
+    for (int i = 210; i <= 230; i++) {
+        reset_request->cov[i] = 0;
+    }
+
+    // y-position column
+    for (int i = 10; i <= 430; i+=21) {
+        reset_request->cov[i] = 0;
+    }
 
     reset_request->cov[198] = sigma0_delta_xy * sigma0_delta_xy;
     reset_request->cov[220] = sigma0_delta_xy * sigma0_delta_xy;
@@ -238,7 +201,6 @@ void SendStateEstimatorResetRequest() {
 
     mav_filter_state_t_destroy(reset_request);
 }
-#endif
 
 void SendStateEstimatorDefaultResetRequest() {
 
