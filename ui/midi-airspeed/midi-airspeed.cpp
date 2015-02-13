@@ -1,5 +1,5 @@
 /*
- * Implements a Time Varying Linear Quadratic Regulator using trajectories.
+ * Implements fake airspeed measurements via MIDI board for bench testing.
  *
  * Author: Andrew Barry, <abarry@csail.mit.edu> 2015
  *
