@@ -43,8 +43,8 @@ class Trajectory
 
         void Print();
 
-        void GetTransformedPoint(int index, BotTrans *transform, double *xyz);
-        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform);
+        void GetTransformedPoint(int index, const BotTrans *transform, double *xyz);
+        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform);
 
         double GetMaxTime();
 

@@ -254,7 +254,7 @@ void Trajectory::Print() {
     cout << affine_points_ << endl;
 }
 
-void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz)
+void Trajectory::GetTransformedPoint(int index, const BotTrans *transform, double *xyz)
 {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
@@ -269,7 +269,7 @@ void Trajectory::GetTransformedPoint(int index, BotTrans *transform, double *xyz
     */
 }
 
-void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, BotTrans *transform)
+void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform)
 {
     bot_lcmgl_line_width(lcmgl, 2.0f);
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);

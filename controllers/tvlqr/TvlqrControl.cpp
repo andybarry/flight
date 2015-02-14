@@ -7,7 +7,7 @@
 
 #include "TvlqrControl.hpp"
 
-TvlqrControl::TvlqrControl(ServoConverter *converter) {
+TvlqrControl::TvlqrControl(const ServoConverter *converter) {
     current_trajectory_ = NULL;
     state_initialized_ = false;
     t0_ = 0;

@@ -86,3 +86,4 @@ externals/gtest/libgtest.a
 externals/gtest/libgtest_main.a
 ui/GoForFlight/GoForFlight.depend
 ui/GoForFlight/bin/
+ui/GoForFlight/GoForFlight.layout
