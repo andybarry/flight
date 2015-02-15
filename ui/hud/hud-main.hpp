@@ -57,8 +57,8 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 // octomap handler
 void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user);
 
-void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points);
-void Draw2DPointsOnImage(Mat image, vector<Point> *points);
+void Get2DPointsFromLcmXY(const lcmt_stereo_with_xy *msg, vector<Point> *xy_points);
+void Draw2DPointsOnImage(Mat image, const vector<Point> *points);
 
 void OnMouse( int event, int x, int y, int flags, void* hud_in);
 void ResetBoxDrawing();

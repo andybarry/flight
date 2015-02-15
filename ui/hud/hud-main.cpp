@@ -706,13 +706,13 @@ void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 
 }
 
-void Get2DPointsFromLcmXY(lcmt_stereo_with_xy *msg, vector<Point> *xy_points) {
+void Get2DPointsFromLcmXY(const lcmt_stereo_with_xy *msg, vector<Point> *xy_points) {
     for (int i = 0; i < msg->number_of_points; i ++) {
         xy_points->push_back(Point(msg->frame_x[i], msg->frame_y[i]));
     }
 }
 
-void Draw2DPointsOnImage(Mat image, vector<Point> *points) {
+void Draw2DPointsOnImage(Mat image, const vector<Point> *points) {
     for (Point point : *points) {
         rectangle(image, Point(point.x-1, point.y-1), Point(point.x+1, point.y+1), Scalar(0, 0, 0.8));
     }
