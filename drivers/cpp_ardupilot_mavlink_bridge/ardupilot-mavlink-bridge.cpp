@@ -33,9 +33,7 @@ using namespace std;
 
 #include "lcmtypes/mav_ins_t.h" // from pronto
 #include "lcmtypes/mav_gps_data_t.h" // from pronto
-#include "lcmtypes/mav_altimeter_t.h" // from pronto
-#include "lcmtypes/mav_airspeed_t.h" // from pronto
-#include "lcmtypes/mav_sideslip_t.h" // from pronto
+#include "lcmtypes/mav_indexed_measurement_t.h" // from pronto
 
 #include "../../externals/ConciseArgs.hpp"
 
@@ -91,6 +89,8 @@ lcmt_beep_subscription_t *beep_sub;
 
 int last_stereo_control = 0;
 int last_traj_switch = -1;
+
+double altimeter_r, airspeed_r, sideslip_r;
 
 uint8_t systemID = getSystemID();
 
@@ -301,32 +301,94 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             mavlink_msg_scaled_pressure_decode(&mavmsg, &pressure);
 
             // convert to LCM type
-            mav_altimeter_t altimeter_msg;
-            mav_airspeed_t airspeed_msg;
-            mav_sideslip_t sideslip_msg;
+            mav_indexed_measurement_t altimeter_msg;
+            mav_indexed_measurement_t airspeed_msg;
+            mav_indexed_measurement_t sideslip_msg;
 
             int64_t msg_timestamp;
             msg_timestamp = getTimestampNow();
 
+
+            // altimeter
             altimeter_msg.utime = msg_timestamp;
+            altimeter_msg.state_utime = msg_timestamp;
+
+            double altitude;
+            altitude = pressure.press_diff + elev_origin;  // HACK
+
+            altimeter_msg.measured_dim = 1; // altitude only measures 1 dimension (z-axis)
+
+            int altimeter_z_ind[1];
+            altimeter_z_ind[0] = 2; // measurement on the Z axis (index = 2)
+            altimeter_msg.z_indices = altimeter_z_ind;
+
+            double altimeter_value[1];
+            altimeter_value[0] = altitude;
+            altimeter_msg.z_effective = altimeter_value;
+
+            altimeter_msg.measured_cov_dim = 1;
+
+            double altimeter_cov[1];
+            altimeter_cov[0] = altimeter_r;
+            altimeter_msg.R_effective = altimeter_cov;
+
+            //altimeter_msg.temperature = pressure.temperature;
+
+
+
             airspeed_msg.utime = msg_timestamp;
+            airspeed_msg.state_utime = msg_timestamp;
+
+            double airspeed;
+            airspeed = pressure.press_abs;  // HACK
+
+            airspeed_msg.measured_dim = 1; // altitude only measures 1 dimension (x-axis)
+
+            int airspeed_z_ind[1];
+            airspeed_z_ind[0] = 0; // measurement on the X axis (index = 0)
+            airspeed_msg.z_indices = airspeed_z_ind;
+
+            double airspeed_value[1];
+            airspeed_value[0] = airspeed;
+            airspeed_msg.z_effective = airspeed_value;
+
+            airspeed_msg.measured_cov_dim = 1;
+
+            double airspeed_cov[1];
+            airspeed_cov[0] = airspeed_r;
+            airspeed_msg.R_effective = airspeed_cov;
+
+
+
+
+
             sideslip_msg.utime = msg_timestamp;
+            sideslip_msg.state_utime = msg_timestamp;
 
-            airspeed_msg.airspeed = pressure.press_abs;   // HACK
-            altimeter_msg.altitude = pressure.press_diff + elev_origin;  // HACK
-            altimeter_msg.temperature = pressure.temperature;
+            double sideslip;
+            sideslip = 0;
 
-            // airspeed is unreliable under about 1.25 m/s
-            if (airspeed_msg.airspeed < 1.5)
-            {
-             //   airspeed_msg.airspeed = 0;
-            }
+            sideslip_msg.measured_dim = 1; // altitude only measures 1 dimension (y-axis)
 
-            sideslip_msg.sideslip = 0;
+            int sideslip_z_ind[1];
+            sideslip_z_ind[0] = 1; // measurement on the Y axis (index = 1)
+            sideslip_msg.z_indices = sideslip_z_ind;
 
-            mav_altimeter_t_publish(lcm, altimeter_channel.c_str(), &altimeter_msg);
-            mav_airspeed_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
-            mav_sideslip_t_publish(lcm, sideslip_channel.c_str(), &sideslip_msg);
+            double sideslip_value[1];
+            sideslip_value[0] = sideslip;
+            sideslip_msg.z_effective = sideslip_value;
+
+            sideslip_msg.measured_cov_dim = 1;
+
+            double sideslip_cov[1];
+            sideslip_cov[0] = sideslip_r;
+            sideslip_msg.R_effective = sideslip_cov;
+
+
+
+            mav_indexed_measurement_t_publish(lcm, altimeter_channel.c_str(), &altimeter_msg);
+            mav_indexed_measurement_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
+            mav_indexed_measurement_t_publish(lcm, sideslip_channel.c_str(), &sideslip_msg);
 
             break;
 
@@ -506,8 +568,18 @@ int main(int argc,char** argv)
             fprintf(stderr, "error: unable to get elev_origin from param server, using 0\n");
             elev_origin = 0;
         }
+
+        altimeter_r = bot_param_get_double_or_fail(param, "state_estimator.altimeter.r");
+        airspeed_r = bot_param_get_double_or_fail(param, "state_estimator.airspeed.r");
+        sideslip_r = bot_param_get_double_or_fail(param, "state_estimator.sideslip.r");
+
+
+
+
     } else {
-        fprintf(stderr, "error: no param server, no gps_origin.latlon\n");
+        fprintf(stderr, "Rrror: no param server, no gps_origin.latlon\n");
+        fprintf(stderr, "Error: no param server, can't find R values for state estimator.\n");
+        exit(1);
     }
 
     printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tTVLQR Control: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), tvlqr_control_channel.c_str());
