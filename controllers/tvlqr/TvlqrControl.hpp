@@ -32,7 +32,7 @@ class TvlqrControl
 {
 
     public:
-        TvlqrControl(ServoConverter *converter);
+        TvlqrControl(const ServoConverter *converter);
 
         void SetTrajectory(Trajectory *trajectory);
 
@@ -54,7 +54,7 @@ class TvlqrControl
         Eigen::VectorXd initial_state_;
         bool state_initialized_;
 
-        ServoConverter *converter_;
+        const ServoConverter *converter_;
 
         int64_t t0_;
         double last_ti_state_estimator_reset_;

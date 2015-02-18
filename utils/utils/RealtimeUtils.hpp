@@ -35,5 +35,7 @@ double deg2rad(double input_in_deg);
 
 int64_t GetTimestampNow();
 
+bool NonBlockingLcm(lcm_t *lcm);
+
 
 #endif

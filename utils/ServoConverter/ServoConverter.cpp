@@ -36,7 +36,7 @@ ServoConverter::ServoConverter(BotParam *param) {
 
 }
 
-Eigen::Vector3i ServoConverter::RadiansToServoCommands(Eigen::Vector3d commands) {
+Eigen::Vector3i ServoConverter::RadiansToServoCommands(Eigen::Vector3d commands) const {
 
     Eigen::Vector3i output;
 
@@ -48,7 +48,7 @@ Eigen::Vector3i ServoConverter::RadiansToServoCommands(Eigen::Vector3d commands)
 
 }
 
-Eigen::Vector3d ServoConverter::ServoCommandsToRadians(Eigen::Vector3i commands) {
+Eigen::Vector3d ServoConverter::ServoCommandsToRadians(Eigen::Vector3i commands) const {
 
     Eigen::Vector3d output;
 
@@ -62,7 +62,7 @@ Eigen::Vector3d ServoConverter::ServoCommandsToRadians(Eigen::Vector3i commands)
 
 }
 
-Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) {
+Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) const {
 
     Eigen::Vector3i output;
 
@@ -80,7 +80,7 @@ Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) {
 
 }
 
-Eigen::Vector3i ServoConverter::GetTrimCommands() {
+Eigen::Vector3i ServoConverter::GetTrimCommands() const {
     Eigen::Vector3i output;
 
     output(0) = elevL_trim_;

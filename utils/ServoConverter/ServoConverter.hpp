@@ -42,13 +42,13 @@ class ServoConverter {
     public:
         ServoConverter(BotParam *param);
 
-        Eigen::Vector3i RadiansToServoCommands(Eigen::Vector3d commands);
+        Eigen::Vector3i RadiansToServoCommands(Eigen::Vector3d commands) const;
 
-        Eigen::Vector3d ServoCommandsToRadians(Eigen::Vector3i commands);
+        Eigen::Vector3d ServoCommandsToRadians(Eigen::Vector3i commands) const;
 
-        Eigen::Vector3i MinMaxCommands(Eigen::Vector3i commands);
+        Eigen::Vector3i MinMaxCommands(Eigen::Vector3i commands) const;
 
-        Eigen::Vector3i GetTrimCommands();
+        Eigen::Vector3i GetTrimCommands() const;
 
 
     private:

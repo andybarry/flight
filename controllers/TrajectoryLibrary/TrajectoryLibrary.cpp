@@ -71,7 +71,7 @@ Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
     return NULL;
 }
 
-Trajectory* TrajectoryLibrary::FindFarthestTrajectory(OcTree *octree, BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
+Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const OcTree *octree, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
 
     /*
     double minProbability = -1;

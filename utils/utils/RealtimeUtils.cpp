@@ -241,3 +241,42 @@ TEST(Utils, deg2rad) {
     EXPECT_NEAR(-1.14664641, deg2rad(-65.698), 0.0001);
 }
 
+
+/**
+ * Processes LCM messages without blocking.
+ *
+ * @param lcm lcm object
+ *
+ * @retval true if processed a message
+ */
+bool NonBlockingLcm(lcm_t *lcm)
+{
+    // setup an lcm function that won't block when we read it
+    int lcm_fd = lcm_get_fileno(lcm);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(lcm_fd, &fds);
+
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+        0,  // seconds
+        1   // microseconds
+    };
+
+
+    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+
+    if(0 == status) {
+        // no messages
+        //do nothing
+        return false;
+
+    } else if(FD_ISSET(lcm_fd, &fds)) {
+        // LCM has events ready to be processed.
+        lcm_handle(lcm);
+        return true;
+    }
+    return false;
+
+}
+
