@@ -20,7 +20,7 @@ lcm_t * lcm;
 // globals for subscription functions, so we can unsubscribe in the control-c handler
 mav_pose_t_subscription_t *mav_pose_t_sub;
 mav_pose_t_subscription_t *mav_pose_t_replay_sub;
-mav_airspeed_t_subscription_t *mav_airspeed_t_sub;
+mav_indexed_measurement_t_subscription_t *airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
 lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
@@ -166,7 +166,7 @@ int main(int argc,char** argv) {
 
     char *airspeed_channel;
     if (bot_param_get_str(param, "lcm_channels.airspeed", &airspeed_channel) >= 0) {
-        mav_airspeed_t_sub = mav_airspeed_t_subscribe(lcm, airspeed_channel, &mav_airspeed_t_handler, &hud);
+        airspeed_sub = mav_indexed_measurement_t_subscribe(lcm, airspeed_channel, &airspeed_handler, &hud);
     }
 
     char *servo_out_channel;
@@ -645,10 +645,10 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 
 }
 
-void mav_airspeed_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_airspeed_t *msg, void *user) {
+void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
     Hud *hud = (Hud*)user;
 
-    hud->SetAirspeed(msg->airspeed);
+    hud->SetAirspeed(msg->z_effective[0]);
 }
 
 void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user) {

@@ -95,7 +95,7 @@ int main(int argc,char** argv) {
 
     ConciseArgs parser(argc, argv);
     parser.add(cpu_info_channel_str, "c", "cpu-info-channel",
-        "LCM channel for publishing CPU info. By default hostname will be replaced with the computers hostname.");
+        "LCM channel for publishing CPU info.");
     parser.add(cpu_freq_file, "f", "cpu-freq-file",
         "File to read containing CPU frequency.");
     parser.add(cpu_temp_file, "t", "cpu-temp-file",

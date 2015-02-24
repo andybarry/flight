@@ -12,7 +12,7 @@
 #include "../../LCM/mav_pose_t.h"
 
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
-#include "lcmtypes/mav_airspeed_t.h" // from pronto
+#include "lcmtypes/mav_indexed_measurement_t.h" // from pronto
 
 #include "../../externals/ConciseArgs.hpp"
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
@@ -48,7 +48,7 @@ void stereo_xy_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
 // sensor handlers
-void mav_airspeed_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_airspeed_t *msg, void *user);
+void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user);
 void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user);
 void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user);
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);

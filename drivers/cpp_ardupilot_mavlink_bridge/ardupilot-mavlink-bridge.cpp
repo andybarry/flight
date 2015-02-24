@@ -1,67 +1,17 @@
 /*
  * Bridges MAVLINK LCM messages and libbot LCM messages, using the ardupilot
  *
- * Author: Andrew Barry, <abarry@csail.mit.edu> 2013
+ * Author: Andrew Barry, <abarry@csail.mit.edu> 2013-2015
  *
  */
 
-#include <iostream>
-
-
-using namespace std;
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <signal.h>
-#include <time.h>
-#include <sys/time.h>
-
-#include "../../LCM/mavlink_msg_container_t.h"
-#include "../../LCM/lcmt_gps.h"
-#include "../../LCM/lcmt_battery_status.h"
-#include "../../LCM/lcmt_attitude.h"
-#include "../../LCM/lcmt_deltawing_u.h"
-#include "../../LCM/lcmt_stereo_control.h"
-#include "../../LCM/lcmt_beep.h"
-#include "../../LCM/lcmt_tvlqr_controller_action.h"
-
-
-#include <bot_core/bot_core.h>
-#include <bot_param/param_client.h>
-
-#include "lcmtypes/mav_ins_t.h" // from pronto
-#include "lcmtypes/mav_gps_data_t.h" // from pronto
-#include "lcmtypes/mav_indexed_measurement_t.h" // from pronto
-
-#include "../../externals/ConciseArgs.hpp"
-
-#include "mavconn.h" // from mavconn
-
-//#include "../../mavlink-generated/ardupilotmega/mavlink.h"
-#include "../../mavlink-generated2/csailrlg/mavlink.h"
-//#include "../../mavlink-generated2/csailrlg/mavlink_msg_scaled_pressure_and_airspeed.h"
-
-#define GRAVITY_MSS 9.80665f // this matches the ArduPilot definition
-
-/* XXX XXX XXX XXX
- *
- * You must add
- *      #include "../mavlink-generated2/ardupilotmega/mavlink.h"
- * to
- *      ../../LCM/mavlink_message_t.h
- * and comment out its definition of
- *  mavlink_message to make this work
- *
- * XXX XXX XXX XXX
- */
+#include "ardupilot-mavlink-bridge.hpp"
 
 #define IGNORE_SYS_ID1 99 // helen's fpga
 #define IGNORE_SYS_ID2 42 // this computer
 
 
-lcm_t * lcm;
+lcm_t * lcm_;
 
 int origin_init = 0;
 BotGPSLinearize gpsLinearize;
@@ -69,18 +19,18 @@ double elev_origin;
 
 int global_beep = 0;
 
-string mavlink_channel = "MAVLINK";
-string attitude_channel = "attitude";
-string airspeed_channel = "airspeed";
-string altimeter_channel = "altimeter";
-string sideslip_channel = "sideslip";
-string gps_channel = "gps";
-string battery_status_channel = "battery-status";
-string deltawing_u_channel = "deltawing_u";
-string servo_out_channel = "servo_out";
-string stereo_control_channel = "stereo-control";
-string beep_channel = "beep";
-string tvlqr_control_channel = "tvlqr-action";
+std::string mavlink_channel = "MAVLINK";
+std::string attitude_channel = "attitude";
+std::string airspeed_channel = "airspeed";
+std::string altimeter_channel = "altimeter";
+std::string sideslip_channel = "sideslip";
+std::string gps_channel = "gps";
+std::string battery_status_channel = "battery-status";
+std::string deltawing_u_channel = "deltawing_u";
+std::string servo_out_channel = "servo_out";
+std::string stereo_control_channel = "stereo-control";
+std::string beep_channel = "beep";
+std::string tvlqr_control_channel = "tvlqr-action";
 
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
@@ -98,10 +48,10 @@ void sighandler(int dum)
 {
     printf("\nClosing... ");
 
-    mavlink_msg_container_t_unsubscribe(lcm, mavlink_sub);
-    lcmt_deltawing_u_unsubscribe(lcm, deltawing_u_sub);
-    lcmt_beep_unsubscribe(lcm, beep_sub);
-    lcm_destroy (lcm);
+    mavlink_msg_container_t_unsubscribe(lcm_, mavlink_sub);
+    lcmt_deltawing_u_unsubscribe(lcm_, deltawing_u_sub);
+    lcmt_beep_unsubscribe(lcm_, beep_sub);
+    lcm_destroy (lcm_);
 
     printf("done.\n");
 
@@ -136,7 +86,7 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
 
     mavlink_msg_rc_channels_override_pack(systemID, 200, &mavmsg, 1, 200, msg->elevonL, msg->elevonR, msg->throttle, 1000, 1000, 1000, 1000, beep);
     // Publish the message on the LCM IPC bus
-    sendMAVLinkMessage(lcm, &mavmsg);
+    sendMAVLinkMessage(lcm_, &mavmsg);
 
 }
 
@@ -165,11 +115,13 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
         return;
     }
 
+    Eigen::Vector3i state_estimator_index;
+
     switch(mavmsg.msgid)
     {
         // process messages here
         case MAVLINK_MSG_ID_HEARTBEAT:
-            cout << "got a heartbeat" << endl;
+            std::cout << "got a heartbeat" << std::endl;
             break;
         case MAVLINK_MSG_ID_RAW_IMU:
             mavlink_raw_imu_t rawImu;
@@ -200,7 +152,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             insMsg.pressure = 0; // set somewhere else
             insMsg.rel_alt = 0; // set somewhere else
 
-            mav_ins_t_publish(lcm, attitude_channel.c_str(), &insMsg);
+            mav_ins_t_publish(lcm_, attitude_channel.c_str(), &insMsg);
 
             break;
         case MAVLINK_MSG_ID_ATTITUDE:
@@ -292,7 +244,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             xyz[2] = gpsMsg.elev - elev_origin;
             memcpy(gpsMsg.xyz_pos, xyz, 3 * sizeof(double));
 
-            mav_gps_data_t_publish (lcm, gps_channel.c_str(), &gpsMsg);
+            mav_gps_data_t_publish (lcm_, gps_channel.c_str(), &gpsMsg);
 
             break;
 
@@ -319,7 +271,10 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             altimeter_msg.measured_dim = 1; // altitude only measures 1 dimension (z-axis)
 
             int altimeter_z_ind[1];
-            altimeter_z_ind[0] = 2; // measurement on the Z axis (index = 2)
+
+            state_estimator_index = eigen_utils::RigidBodyState::positionInds();
+
+            altimeter_z_ind[0] = state_estimator_index[2]; // measurement on the Z axis (index = 2)
             altimeter_msg.z_indices = altimeter_z_ind;
 
             double altimeter_value[1];
@@ -345,7 +300,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             airspeed_msg.measured_dim = 1; // altitude only measures 1 dimension (x-axis)
 
             int airspeed_z_ind[1];
-            airspeed_z_ind[0] = 0; // measurement on the X axis (index = 0)
+            state_estimator_index = eigen_utils::RigidBodyState::velocityInds();
+            airspeed_z_ind[0] = state_estimator_index[0]; // measurement on the X axis (index = 0)
             airspeed_msg.z_indices = airspeed_z_ind;
 
             double airspeed_value[1];
@@ -371,7 +327,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             sideslip_msg.measured_dim = 1; // altitude only measures 1 dimension (y-axis)
 
             int sideslip_z_ind[1];
-            sideslip_z_ind[0] = 1; // measurement on the Y axis (index = 1)
+            state_estimator_index = eigen_utils::RigidBodyState::velocityInds();
+            sideslip_z_ind[0] = state_estimator_index[1]; // measurement on the Y axis (index = 1)
             sideslip_msg.z_indices = sideslip_z_ind;
 
             double sideslip_value[1];
@@ -386,9 +343,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 
 
-            mav_indexed_measurement_t_publish(lcm, altimeter_channel.c_str(), &altimeter_msg);
-            mav_indexed_measurement_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
-            mav_indexed_measurement_t_publish(lcm, sideslip_channel.c_str(), &sideslip_msg);
+            mav_indexed_measurement_t_publish(lcm_, altimeter_channel.c_str(), &altimeter_msg);
+            mav_indexed_measurement_t_publish(lcm_, airspeed_channel.c_str(), &airspeed_msg);
+            mav_indexed_measurement_t_publish(lcm_, sideslip_channel.c_str(), &sideslip_msg);
 
             break;
 
@@ -409,9 +366,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             lcmmsg.milliamp_hours_total = batmsg.voltage_cell_6/100.0;
             lcmmsg.percent_remaining = batmsg.battery_remaining;
 
-            //cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << endl;
+            //std::cout << "v: " << batmsg.voltage_cell_1/1000.0 << " curr: " << batmsg.current_battery/100.0 << " remain: " << batmsg.battery_remaining <<  " total amph " << batmsg.voltage_cell_6/100.0 << std::endl;
 
-            lcmt_battery_status_publish (lcm, battery_status_channel.c_str(), &lcmmsg);
+            lcmt_battery_status_publish (lcm_, battery_status_channel.c_str(), &lcmmsg);
             break;
 
         case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
@@ -452,7 +409,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             }
 
             // send the lcm message
-            lcmt_deltawing_u_publish(lcm, servo_out_channel.c_str(), &servoOutMsg);
+            lcmt_deltawing_u_publish(lcm_, servo_out_channel.c_str(), &servoOutMsg);
 
             int traj_switch;
 
@@ -477,7 +434,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 stereo_control_msg.stereo_control =
                      servoOutMsg.video_record;
 
-                lcmt_stereo_control_publish(lcm, stereo_control_channel.c_str(),
+                lcmt_stereo_control_publish(lcm_, stereo_control_channel.c_str(),
                     &stereo_control_msg);
 
                 last_stereo_control = servoOutMsg.video_record;
@@ -493,7 +450,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
                     last_traj_switch = traj_switch;
 
-                    lcmt_tvlqr_controller_action_publish(lcm, tvlqr_control_channel.c_str(), &traj_msg);
+                    lcmt_tvlqr_controller_action_publish(lcm_, tvlqr_control_channel.c_str(), &traj_msg);
                 }
             }
 
@@ -508,11 +465,11 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 
 
-            cout << "status text: " << textMsg.text << endl;
+            std::cout << "status text: " << textMsg.text << std::endl;
             break;
 
         default:
-            cout << "unknown message id = " << (int)mavmsg.msgid << " from sysid = " << (float)mavmsg.sysid << endl;
+            std::cout << "unknown message id = " << (int)mavmsg.msgid << " from sysid = " << (float)mavmsg.sysid << std::endl;
             break;
 
     }
@@ -538,22 +495,22 @@ int main(int argc,char** argv)
     parser.parse();
 
 
-    lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
-    if (!lcm)
+    lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+    if (!lcm_)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
         return 1;
     }
 
-    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm, mavlink_channel.c_str(), &mavlink_handler, NULL);
-    deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm, deltawing_u_channel.c_str(), &deltawing_u_handler, NULL);
-    beep_sub = lcmt_beep_subscribe(lcm, beep_channel.c_str(), &beep_handler, NULL);
+    mavlink_sub =  mavlink_msg_container_t_subscribe (lcm_, mavlink_channel.c_str(), &mavlink_handler, NULL);
+    deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm_, deltawing_u_channel.c_str(), &deltawing_u_handler, NULL);
+    beep_sub = lcmt_beep_subscribe(lcm_, beep_channel.c_str(), &beep_handler, NULL);
 
     signal(SIGINT,sighandler);
 
     // init GPS origin
     double latlong_origin[2];
-    BotParam *param = bot_param_new_from_server(lcm, 0);
+    BotParam *param = bot_param_new_from_server(lcm_, 0);
     if (param != NULL) {
         if (bot_param_get_double_array(param, "gps_origin.latlon", latlong_origin, 2) == -1) {
             fprintf(stderr, "error: unable to get gps_origin.latlon from param server\n");
@@ -587,7 +544,7 @@ int main(int argc,char** argv)
     while (true)
     {
         // read the LCM channel
-        lcm_handle (lcm);
+        lcm_handle (lcm_);
     }
 
     return 0;
