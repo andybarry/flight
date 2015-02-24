@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "flight-odroid2.cfg --> flight-odroid1.cfg..."
+
+sed 's/odroid-gps2/odroid-gps1/' flight-odroid2.cfg > flight-odroid1.cfg
+sed -i 's/odroid-cam2/odroid-cam1/' flight-odroid1.cfg
+
+echo "done."
