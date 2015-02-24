@@ -1,0 +1,17 @@
+New system setup:
+
+- Image HD
+- Change:
+    /etc/hostname
+    /etc/hosts
+        - for local hostname
+        - other hosts on the network
+    Networking configuration
+        - static IP
+
+- git pull on realtime folder
+    - compile stuff
+
+
+- add to the buttom of sudoers (using visudo)
+odroid ALL=(ALL) NOPASSWD:/sbin/shutdown
