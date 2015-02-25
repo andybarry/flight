@@ -56,3 +56,4 @@ export NO_AT_BRIDGE="1"
 export TEXTDOMAINDIR="/usr/share/locale/"
 export CEC_HDMI_PORT="2"
 export XAUTHORITY="/home/odroid/.Xauthority"
+export HOSTNAME=`cat /etc/hostname`
