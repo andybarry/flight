@@ -1,8 +1,10 @@
 struct lcmt_log_size
 {
-  int64_t timestamp; 
+  int64_t timestamp;
 
   int32_t log_number;
   int32_t log_size;
-  
+
+  double disk_space_free; // in MB
+
 }

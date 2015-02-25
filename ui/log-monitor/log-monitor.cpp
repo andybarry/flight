@@ -25,6 +25,7 @@ using namespace std;
 
 #include "../../utils/utils/RealtimeUtils.hpp"
 
+#include <sys/statvfs.h>
 
 lcm_t * lcm;
 
@@ -153,6 +154,16 @@ int main(int argc,char** argv) {
 
         }
 
+        // get disk space free
+        struct statvfs fiData;
+        double disk_free = -1;
+
+        if((statvfs(log_dir.c_str(), &fiData)) < 0 ) {
+            printf("Failed to stat %s:\n", log_dir.c_str());
+        } else {
+            disk_free = (double)fiData.f_bfree * (double)fiData.f_bsize / 1048576.0d;
+        }
+
         // publish to LCM
         lcmt_log_size msg;
 
@@ -160,6 +171,8 @@ int main(int argc,char** argv) {
 
         msg.log_number = largest_log;
         msg.log_size = log_size;
+
+        msg.disk_space_free = disk_free;
 
         lcmt_log_size_publish (lcm, log_info_channel_str.c_str(), &msg);
 
