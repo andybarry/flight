@@ -28,6 +28,7 @@
 #include "GpsHandler.h"
 #include "CpuInfoHandler.h"
 #include "BatteryStatusHandler.h"
+#include "StereoHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -65,6 +66,7 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT6;
         static const long ID_STATICTEXT32;
+        static const long ID_STATICTEXT33;
         static const long ID_CHECKBOX1;
         static const long ID_STATICTEXT1;
         static const long ID_STATICTEXT10;
@@ -125,6 +127,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblLogLocalLabel;
         wxStaticText* lblGoForFlight;
         wxStaticText* lblLogLocal;
+        wxStaticText* lblStereo;
         //*)
 
         void UpdateLabels();
@@ -138,6 +141,7 @@ class GoForFlightFrame: public wxFrame
         GpsHandler gps_handler_;
         CpuInfoHandler cpu_info_handler_;
         BatteryStatusHandler battery_status_handler_;
+        StereoHandler stereo_handler_;
 
         DECLARE_EVENT_TABLE()
 };

@@ -1,7 +1,7 @@
 #ifndef CPU_INFO_HANDLER_H
 #define CPU_INFO_HANDLER_H
 
-#define MAX_CPU_C_ODROID 75
+#define MAX_CPU_C_ODROID 81
 #define CPU_SPEED_ODROID 0
 
 #define MAX_CPU_C_LOCAL 95

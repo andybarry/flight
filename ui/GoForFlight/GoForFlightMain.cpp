@@ -61,6 +61,7 @@ const long GoForFlightFrame::ID_STATICTEXT9 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT4 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT6 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT32 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT33 = wxNewId();
 const long GoForFlightFrame::ID_CHECKBOX1 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT1 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT10 = wxNewId();
@@ -163,6 +164,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     BoxSizer3->Add(lblGps, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblBatteryStatus = new wxStaticText(Panel1, ID_STATICTEXT32, _("Battery Voltage: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT32"));
     BoxSizer3->Add(lblBatteryStatus, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    lblStereo = new wxStaticText(Panel1, ID_STATICTEXT33, _("Stereo: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT33"));
+    BoxSizer3->Add(lblStereo, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     chkGoPro = new wxCheckBox(Panel1, ID_CHECKBOX1, _("GoPro Rolling"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     chkGoPro->SetValue(false);
     BoxSizer3->Add(chkGoPro, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -197,7 +200,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     lblDiskFreeCam = new wxStaticText(Panel1, ID_STATICTEXT13, _("-- GB"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
     FlexGridSizer2->Add(lblDiskFreeCam, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer7->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer8->Add(BoxSizer7, 1, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer8->Add(BoxSizer7, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer9 = new wxBoxSizer(wxVERTICAL);
     lblCpu = new wxStaticText(Panel1, ID_STATICTEXT23, _("CPU: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT23"));
     BoxSizer9->Add(lblCpu, 0, wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -283,6 +286,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     battery_status_handler_.SetLabel(lblBatteryStatus);
 
+    stereo_handler_.SetLabel(lblStereo);
+
     UpdateLabels();
 
 
@@ -304,6 +309,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     lcm.subscribe("cpu-info-AAAZZZA", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
 
     lcm.subscribe("battery-status", &BatteryStatusHandler::handleMessage, &battery_status_handler_);
+
+    lcm.subscribe("stereo-monitor", &StereoHandler::handleMessage, &stereo_handler_);
 
     lcm.subscribe("STATE_ESTIMATOR_POSE", &StateEsimatorHandler::handleMessage, &state_estimator_handler_);
 
@@ -344,6 +351,7 @@ void GoForFlightFrame::UpdateLabels() {
     gps_handler_.Update();
     cpu_info_handler_.Update();
     battery_status_handler_.Update();
+    stereo_handler_.Update();
 
     chkGoPro->SetForegroundColour(StatusHandler::GetColour(chkGoPro->IsChecked()));
 
@@ -354,6 +362,7 @@ void GoForFlightFrame::UpdateLabels() {
         && gps_handler_.GetStatus()
         && cpu_info_handler_.GetStatus()
         && battery_status_handler_.GetStatus()
+        && stereo_handler_.GetStatus()
         && chkGoPro->IsChecked()
             ) {
 

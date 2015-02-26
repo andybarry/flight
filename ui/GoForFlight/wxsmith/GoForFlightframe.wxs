@@ -182,6 +182,14 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT33" variable="lblStereo" member="yes">
+										<label>Stereo: Offline</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
 									<object class="wxCheckBox" name="ID_CHECKBOX1" variable="chkGoPro" member="yes">
 										<label>GoPro Rolling</label>
 										<handler function="OnchkGoProClick" entry="EVT_CHECKBOX" />
@@ -309,7 +317,6 @@
 									</object>
 									<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
-									<option>1</option>
 								</object>
 								<object class="sizeritem">
 									<object class="wxBoxSizer" variable="BoxSizer9" member="no">
