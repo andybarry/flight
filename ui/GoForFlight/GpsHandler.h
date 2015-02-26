@@ -16,9 +16,10 @@ class GpsHandler : public StatusHandler
                            const mav::gps_data_t* msg) {
 
             if (msg->utime > last_utime2_ && msg->gps_lock >= 3) {
-                status_ = true;
+                SetStatus(true, msg->utime);
             } else {
-                status_ = false;
+                //status_ = false;
+                SetStatus(true, msg->utime);
             }
 
             last_utime2_ = last_utime_;
@@ -30,12 +31,12 @@ class GpsHandler : public StatusHandler
 
         void Update() {
             if (last_num_sats_ >= 0) {
-                lbl_to_update_->SetLabel(wxString::Format("GPS: %s (Sats: %d)", GetStatusString(status_), last_num_sats_));
+                SetText(std::string(wxString::Format("GPS: %s (Sats: %d)", GetStatusString(GetStatus()), last_num_sats_)));
             } else {
-                lbl_to_update_->SetLabel(wxString::Format("GPS: %s (Sats: --)", GetStatusString(status_)));
+                SetText(std::string(wxString::Format("GPS: %s (Sats: --)", GetStatusString(GetStatus()))));
             }
 
-            lbl_to_update_->SetForegroundColour(GetColour(status_));
+            SetColour(GetColour(GetStatus()));
 
         }
 

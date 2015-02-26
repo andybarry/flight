@@ -44,7 +44,7 @@ class CpuInfoHandler : public MultiStatusHandler
                 }
             }
 
-            SetStatus(index, status);
+            SetStatus(index, status, msg->timestamp);
 
         }
 

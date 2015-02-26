@@ -11,8 +11,7 @@
 #define NUM_TYPES 3
 enum ComputerType { LOCAL = 0, GPS = 1, CAM = 2 };
 
-class MultiStatusHandler : public StatusHandler
-{
+class MultiStatusHandler : public StatusHandler {
     public:
         MultiStatusHandler(std::string prepend_str = "") : StatusHandler(prepend_str) {
 
@@ -31,6 +30,22 @@ class MultiStatusHandler : public StatusHandler
             for (int i = 0; i < NUM_TYPES; i++) {
                 status_array_[i] = false;
             }
+
+            last_utime_.resize(NUM_TYPES);
+            for (int i = 0; i < NUM_TYPES; i++) {
+                last_utime_[i] = -1;
+            }
+
+            timeout_array_.resize(NUM_TYPES);
+            for (int i = 0; i < NUM_TYPES; i++) {
+                timeout_array_[i] = false;
+            }
+
+            label_text_.resize(NUM_TYPES);
+            for (int i = 0; i < NUM_TYPES; i++) {
+                label_text_[i] = "";
+            }
+
         }
 
         ~MultiStatusHandler() {}
@@ -40,7 +55,7 @@ class MultiStatusHandler : public StatusHandler
             lbl_values_[type] = value;
         }
 
-        void SetStatus(ComputerType type, bool value) {
+        void SetStatus(ComputerType type, bool value, long utime) {
             status_array_[type] = value;
 
             if (lbl_labels_[type] != NULL) {
@@ -50,13 +65,46 @@ class MultiStatusHandler : public StatusHandler
             if (lbl_values_[type] != NULL) {
                 lbl_values_[type]->SetForegroundColour(GetColour(value));
             }
+
+            last_utime_[type] = utime;
         }
 
+        bool GetStatus(ComputerType type) {
+            return status_array_[type];
+        }
+
+
         void SetText(ComputerType type, std::string text) {
+
+            label_text_[type] = text;
 
             if (lbl_values_[type] != NULL) {
                 lbl_values_[type]->SetLabel(text);
             }
+        }
+
+        void SetTimeout(ComputerType type, bool timeout) {
+            timeout_array_[type] = timeout;
+
+            if (GetStatus(type) == true && timeout_array_[type]) {
+
+                std::string text = label_text_[type] + " (timeout)";
+                SetStatus(type, false, last_utime_[type]);
+
+                if (lbl_values_[type] != NULL) {
+                    lbl_values_[type]->SetLabel(text);
+                }
+            }
+        }
+
+        std::string GetText(ComputerType type) {
+            std::string str = "";
+
+            if (lbl_values_[type] != NULL) {
+                str = std::string(lbl_values_[type]->GetLabel());
+            }
+
+            return str;
         }
 
         bool GetStatus() {
@@ -69,7 +117,11 @@ class MultiStatusHandler : public StatusHandler
         }
 
         void Update() {
-            StatusHandler::Update();
+
+            CheckTime();
+
+            StatusHandler::SetText(GetStatusString(GetStatus()));
+            SetColour(GetColour(GetStatus()));
 
 
             for (int i = 0; i < NUM_TYPES; i++) {
@@ -79,6 +131,21 @@ class MultiStatusHandler : public StatusHandler
 
                 if (lbl_values_[i] != NULL) {
                     lbl_values_[i]->SetForegroundColour(GetColour(status_array_[i]));
+                }
+            }
+
+
+        }
+
+        void CheckTime() {
+
+            StatusHandler::CheckTime();
+
+            for (int i = 0; i < NUM_TYPES; i++) {
+                if (abs(last_utime_[i] - StatusHandler::GetTimestampNow()) > MAX_MESSAGE_DELAY_USEC) {
+                    SetTimeout(ComputerType(i), true);
+                } else {
+                    SetTimeout(ComputerType(i), false);
                 }
             }
 
@@ -107,6 +174,9 @@ class MultiStatusHandler : public StatusHandler
         std::vector<wxStaticText*> lbl_values_;
 
         std::vector<bool> status_array_;
+        std::vector<long> last_utime_;
+        std::vector<bool> timeout_array_;
+        std::vector<std::string> label_text_;
 
 
 };
