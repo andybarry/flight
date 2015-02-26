@@ -28,7 +28,7 @@ class GpsHandler : public StatusHandler
 
         }
 
-        void UpdateLabel() {
+        void Update() {
             if (last_num_sats_ >= 0) {
                 lbl_to_update_->SetLabel(wxString::Format("GPS: %s (Sats: %d)", GetStatusString(status_), last_num_sats_));
             } else {

@@ -1,76 +1,121 @@
 #ifndef LOG_SIZE_HANDLER_HPP
 #define LOG_SIZE_HANDLER_HPP
 
-#include "StatusHandler.h"
+#include "MultiStatusHandler.h"
 #include "../../LCM/lcmt_log_size.hpp"
+#include <boost/format.hpp>
 
-class LogSizeHandler : public StatusHandler
+#define MIN_DISK_FREE_MB 5000
+
+class LogSizeHandler : public MultiStatusHandler
 {
     public:
-        LogSizeHandler() : StatusHandler("") {
+        LogSizeHandler() : MultiStatusHandler("Logging: ") {
+
+            last_log_number_.resize(3);
+            last_log_size_.resize(3);
+            last_timestamp_.resize(3);
+
+            for (int i = 0; i < 3; i++) {
+                last_log_size_[i] = -1;
+                last_log_number_[i] = -1;
+            }
+
+            timesync_handler_.SetPrependString("Timesync: ");
+
+            disk_free_handler_.SetPrependString("Disk Free: ");
+            disk_free_handler_.SetOnlineString("OK");
+            disk_free_handler_.SetOfflineString("Error");
         }
+
         ~LogSizeHandler() {}
 
-        void SetTimesyncLabels(wxStaticText *lbl_timesync, wxStaticText *lbl_timestamp) {
-            lbl_timesync_ = lbl_timesync;
-            lbl_timestamp_ = lbl_timestamp;
+
+        void SetTimesyncLabelMain(wxStaticText *lbl_timesync) {
+            timesync_handler_.SetLabel(lbl_timesync);
+        }
+        void SetTimesyncLabel(ComputerType index, wxStaticText *lbl_label, wxStaticText *lbl_value) {
+            timesync_handler_.AddLabel(index, lbl_label, lbl_value);
         }
 
-        void SetLoggingLabel(wxStaticText *lbl_logging) { lbl_logging_ = lbl_logging; }
+
+        void SetDiskFreeLabelMain(wxStaticText *lbl_disk_free) {
+            disk_free_handler_.SetLabel(lbl_disk_free);
+        }
+
+        void SetDiskFreeLabel(ComputerType index, wxStaticText *lbl_label, wxStaticText *lbl_value) {
+            disk_free_handler_.AddLabel(index, lbl_label, lbl_value);
+        }
+
 
         void handleMessage(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const lcmt_log_size* msg) {
 
-            if (msg->timestamp > last_timestamp_) {
-                status_timesync_ = true;
+            ComputerType index = GetIndexFromChannelName(chan);
+
+
+            if (msg->log_size > last_log_size_[index] && last_log_size_[index] != -1) {
+
+                SetStatus(index, true);
+
+                SetText(index, "#" + std::to_string(msg->log_number));
+
             } else {
-                status_timesync_ = false;
+                SetStatus(index, false);
+
+                if (last_log_number_[index] == -1) {
+                    SetText(index, "#--");
+                } else {
+                    SetText(index, "Static (#" + std::to_string(last_log_number_[index]) + ")");
+                }
             }
 
 
-            if (msg->log_size > last_log_size_) {
-                status_logging_ = true;
-                last_log_ = msg->log_number;
+            timesync_handler_.SetStatus(index, true); // TODO: check that timestamp is reasonable
+            timesync_handler_.SetText(index, ParseTime(msg->timestamp));
+
+            bool disk_ok;
+            std::string disk_str;
+
+            boost::format formatter = boost::format("%.1f GB") % (msg->disk_space_free / 1024.0);
+            disk_str = formatter.str();
+
+            if (msg->disk_space_free < MIN_DISK_FREE_MB) {
+                disk_ok = false;
+
             } else {
-                status_logging_ = false;
+                disk_ok = true;
             }
 
-            status_ = status_logging_ & status_timesync_;
+            disk_free_handler_.SetStatus(index, disk_ok);
+            disk_free_handler_.SetText(index, disk_str);
 
+            last_timestamp_[index] = msg->timestamp;
+            last_log_size_[index] = msg->log_size;
+            last_log_number_[index] = msg->log_number;
 
-            last_timestamp_ = msg->timestamp;
-            last_log_size_ = msg->log_size;
+            Update();
 
         }
 
-        void UpdateLabel() {
-            lbl_timesync_->SetLabel("Timesync: " + GetStatusString(status_timesync_));
-            lbl_timesync_->SetForegroundColour(GetColour(status_timesync_));
+        void Update() {
+            MultiStatusHandler::Update();
 
-            lbl_timestamp_->SetLabel(GetPlaneTime());
-            lbl_timestamp_->SetForegroundColour(GetColour(status_timesync_));
+            timesync_handler_.Update();
 
-            if (last_log_ < 0) {
-                lbl_logging_->SetLabel(wxString::Format("Logging: %s (#--)", GetStatusString(status_logging_)));
-            } else {
-                lbl_logging_->SetLabel(wxString::Format("Logging: %s (#%i)", GetStatusString(status_logging_), last_log_));
-            }
-            lbl_logging_->SetForegroundColour(GetColour(status_logging_));
+            disk_free_handler_.Update();
         }
 
     private:
 
-        std::string GetPlaneTime() {
-            if (status_timesync_ == false) {
-                return "--:--:--";
-            }
+        std::string ParseTime(long timestamp) {
 
             char tmbuf[64], buf[64];
 
             // figure out what time the plane thinks it is
             struct tm *nowtm;
-            time_t tv_sec = last_timestamp_ / 1000000.0;
+            time_t tv_sec = timestamp / 1000000.0;
             nowtm = localtime(&tv_sec);
             strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
             sprintf(buf, "%s", tmbuf);
@@ -78,19 +123,14 @@ class LogSizeHandler : public StatusHandler
             return std::string(buf);
         }
 
-        int last_log_size_ = -1;
-        long last_timestamp_ = -1;
+        std::vector<int> last_log_number_;
+        std::vector<int> last_log_size_;
 
-        int last_log_ = -1;
+        std::vector<long> last_timestamp_;
 
-        bool status_timesync_ = false;
-        bool status_logging_ = false;
-
-        wxStaticText *lbl_timesync_;
-        wxStaticText *lbl_timestamp_;
-        wxStaticText *lbl_logging_;
-
+        MultiStatusHandler timesync_handler_;
+        MultiStatusHandler disk_free_handler_;
 
 };
 
-#endif // LOG_SIZE_HANDLER_HPP
+#endif

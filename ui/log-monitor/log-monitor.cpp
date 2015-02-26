@@ -161,7 +161,7 @@ int main(int argc,char** argv) {
         if((statvfs(log_dir.c_str(), &fi_data)) < 0 ) {
             printf("Failed to stat %s:\n", log_dir.c_str());
         } else {
-            disk_free = (double)fi_data.f_bfree * (double)fi_data.f_bsize / 1048576.0d;
+            disk_free = (double)fi_data.f_bavail * (double)fi_data.f_bsize / 1048576.0d;
         }
 
         // publish to LCM

@@ -25,6 +25,7 @@
 #include "LogSizeHandler.h"
 #include "StateEstimatorHandler.h"
 #include "GpsHandler.h"
+#include "CpuInfoHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -44,11 +45,34 @@ class GoForFlightFrame: public wxFrame
 
         //(*Identifiers(GoForFlightFrame)
         static const long ID_STATICTEXT2;
+        static const long ID_STATICTEXT20;
         static const long ID_STATICTEXT5;
+        static const long ID_STATICTEXT21;
+        static const long ID_STATICTEXT22;
         static const long ID_STATICTEXT3;
+        static const long ID_STATICTEXT14;
+        static const long ID_STATICTEXT7;
+        static const long ID_STATICTEXT15;
+        static const long ID_STATICTEXT8;
+        static const long ID_STATICTEXT16;
+        static const long ID_STATICTEXT9;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT6;
+        static const long ID_STATICTEXT10;
+        static const long ID_STATICTEXT17;
+        static const long ID_STATICTEXT11;
+        static const long ID_STATICTEXT18;
+        static const long ID_STATICTEXT12;
+        static const long ID_STATICTEXT19;
+        static const long ID_STATICTEXT13;
         static const long ID_STATICTEXT1;
+        static const long ID_STATICTEXT23;
+        static const long ID_STATICTEXT24;
+        static const long ID_STATICTEXT25;
+        static const long ID_STATICTEXT26;
+        static const long ID_STATICTEXT27;
+        static const long ID_STATICTEXT28;
+        static const long ID_STATICTEXT29;
         static const long ID_PANEL1;
         static const long idMenuQuit;
         static const long idMenuAbout;
@@ -58,14 +82,37 @@ class GoForFlightFrame: public wxFrame
 
         //(*Declarations(GoForFlightFrame)
         wxStaticText* lblStateEsimator;
+        wxStaticText* lblDiskFreeLocal;
+        wxStaticText* lblLogCam;
         wxStaticText* lblTimesync;
+        wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
         wxStatusBar* StatusBar1;
-        wxStaticText* lblTimestamp;
+        wxStaticText* lblTimesyncGps;
+        wxStaticText* lblDiskFreeLabelCam;
+        wxStaticText* lblTimesyncLabelCam;
+        wxStaticText* lblCpuCam;
+        wxStaticText* lblCpuGpsLabel;
+        wxStaticText* lblDiskFreeCam;
+        wxStaticText* lblTimesyncCam;
+        wxStaticText* lblDiskFreeGps;
+        wxStaticText* lblLogGpsLabel;
+        wxStaticText* lblCpuLocal;
         wxStaticText* lblGps;
+        wxStaticText* lblTimesyncLabelGps;
+        wxStaticText* lblDiskFreeLabelGps;
+        wxStaticText* lblLogGps;
         wxStaticText* lblLogging;
+        wxStaticText* lblLogCamLabel;
+        wxStaticText* lblCpuGps;
+        wxStaticText* lblDiskFree;
         wxTimer tmrUpdateLcm;
+        wxStaticText* lblDiskFreeLabelLocal;
+        wxStaticText* lblCpu;
+        wxStaticText* lblCpuLocalLabel;
+        wxStaticText* lblLogLocalLabel;
         wxStaticText* lblGoForFlight;
+        wxStaticText* lblLogLocal;
         //*)
 
         void UpdateLabels();
@@ -77,6 +124,7 @@ class GoForFlightFrame: public wxFrame
         LogSizeHandler log_size_handler_;
         StateEsimatorHandler state_estimator_handler_;
         GpsHandler gps_handler_;
+        CpuInfoHandler cpu_info_handler_;
 
         DECLARE_EVENT_TABLE()
 };
