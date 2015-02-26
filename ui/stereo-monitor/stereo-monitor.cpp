@@ -88,6 +88,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         lcmt_stereo_monitor monitor_msg;
         monitor_msg.timestamp = getTimestampNow();
         
+        monitor_msg.video_number = msg->video_number;
         monitor_msg.frame_number = msg->frame_number;
         
         lcmt_stereo_monitor_publish(lcm, stereo_monitor_channel,
