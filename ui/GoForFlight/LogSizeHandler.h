@@ -5,6 +5,8 @@
 #include "../../LCM/lcmt_log_size.hpp"
 #include <boost/format.hpp>
 
+#define MIN_TIMESTAMP_OFFSET_USEC 1000000
+
 #define MIN_DISK_FREE_MB 5000
 
 class LogSizeHandler : public MultiStatusHandler
@@ -71,8 +73,12 @@ class LogSizeHandler : public MultiStatusHandler
                 }
             }
 
+            bool timestamp_ok = false;
+            if (abs(msg->timestamp - StatusHandler::GetTimestampNow()) < MIN_TIMESTAMP_OFFSET_USEC) {
+                timestamp_ok = true;
+            }
 
-            timesync_handler_.SetStatus(index, true, msg->timestamp); // TODO: check that timestamp is reasonable
+            timesync_handler_.SetStatus(index, timestamp_ok, msg->timestamp);
             timesync_handler_.SetText(index, ParseTime(msg->timestamp));
 
             bool disk_ok;

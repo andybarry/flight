@@ -18,8 +18,7 @@ class GpsHandler : public StatusHandler
             if (msg->utime > last_utime2_ && msg->gps_lock >= 3) {
                 SetStatus(true, msg->utime);
             } else {
-                //status_ = false;
-                SetStatus(true, msg->utime);
+                SetStatus(false, msg->utime);
             }
 
             last_utime2_ = last_utime_;

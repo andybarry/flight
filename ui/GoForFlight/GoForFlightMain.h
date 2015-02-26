@@ -11,6 +11,7 @@
 #define GOFORFLIGHTMAIN_H
 
 //(*Headers(GoForFlightFrame)
+#include <wx/checkbox.h>
 #include <wx/sizer.h>
 #include <wx/menu.h>
 #include <wx/panel.h>
@@ -26,6 +27,7 @@
 #include "StateEstimatorHandler.h"
 #include "GpsHandler.h"
 #include "CpuInfoHandler.h"
+#include "BatteryStatusHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -42,6 +44,7 @@ class GoForFlightFrame: public wxFrame
         void OnTimer1Trigger(wxTimerEvent& event);
         void OntmrUpdateLcmTrigger(wxTimerEvent& event);
         void OnClose(wxCloseEvent& event);
+        void OnchkGoProClick(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(GoForFlightFrame)
@@ -61,6 +64,9 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT9;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT6;
+        static const long ID_STATICTEXT32;
+        static const long ID_CHECKBOX1;
+        static const long ID_STATICTEXT1;
         static const long ID_STATICTEXT10;
         static const long ID_STATICTEXT17;
         static const long ID_STATICTEXT11;
@@ -68,7 +74,6 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT12;
         static const long ID_STATICTEXT19;
         static const long ID_STATICTEXT13;
-        static const long ID_STATICTEXT1;
         static const long ID_STATICTEXT23;
         static const long ID_STATICTEXT24;
         static const long ID_STATICTEXT25;
@@ -98,6 +103,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblTimesyncLocal;
         wxStaticText* lblCpuGpsLabel;
         wxStaticText* lblDiskFreeCam;
+        wxCheckBox* chkGoPro;
         wxStaticText* lblTimesyncCam;
         wxStaticText* lblDiskFreeGps;
         wxStaticText* lblLogGpsLabel;
@@ -108,6 +114,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblDiskFreeLabelGps;
         wxStaticText* lblLogGps;
         wxStaticText* lblLogging;
+        wxStaticText* lblBatteryStatus;
         wxStaticText* lblLogCamLabel;
         wxStaticText* lblCpuGps;
         wxStaticText* lblDiskFree;
@@ -130,6 +137,7 @@ class GoForFlightFrame: public wxFrame
         StateEsimatorHandler state_estimator_handler_;
         GpsHandler gps_handler_;
         CpuInfoHandler cpu_info_handler_;
+        BatteryStatusHandler battery_status_handler_;
 
         DECLARE_EVENT_TABLE()
 };

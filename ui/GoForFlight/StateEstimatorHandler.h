@@ -7,7 +7,7 @@
 class StateEsimatorHandler : public StatusHandler
 {
     public:
-        StateEsimatorHandler() : StatusHandler("State Esimator: ") {
+        StateEsimatorHandler() : StatusHandler("State Estimator: ") {
         }
         ~StateEsimatorHandler() {}
 
@@ -35,4 +35,4 @@ class StateEsimatorHandler : public StatusHandler
 
 };
 
-#endif // LOG_SIZE_HANDLER_HPP
+#endif

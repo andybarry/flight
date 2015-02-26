@@ -60,6 +60,9 @@ const long GoForFlightFrame::ID_STATICTEXT16 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT9 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT4 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT6 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT32 = wxNewId();
+const long GoForFlightFrame::ID_CHECKBOX1 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT1 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT10 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT17 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT11 = wxNewId();
@@ -67,7 +70,6 @@ const long GoForFlightFrame::ID_STATICTEXT18 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT12 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT19 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT13 = wxNewId();
-const long GoForFlightFrame::ID_STATICTEXT1 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT23 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT24 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT25 = wxNewId();
@@ -143,7 +145,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3 = new wxFlexGridSizer(0, 2, 0, 0);
     lblLogLocalLabel = new wxStaticText(Panel1, ID_STATICTEXT14, _("Local:"), wxDefaultPosition, wxSize(59,20), 0, _T("ID_STATICTEXT14"));
     FlexGridSizer3->Add(lblLogLocalLabel, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblLogLocal = new wxStaticText(Panel1, ID_STATICTEXT7, _("#--"), wxDefaultPosition, wxSize(60,20), 0, _T("ID_STATICTEXT7"));
+    lblLogLocal = new wxStaticText(Panel1, ID_STATICTEXT7, _("#--"), wxDefaultPosition, wxSize(127,20), 0, _T("ID_STATICTEXT7"));
     FlexGridSizer3->Add(lblLogLocal, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblLogGpsLabel = new wxStaticText(Panel1, ID_STATICTEXT15, _("GPS:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
     FlexGridSizer3->Add(lblLogGpsLabel, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -155,12 +157,29 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3->Add(lblLogCam, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer5->Add(FlexGridSizer3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer3->Add(BoxSizer5, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblStateEsimator = new wxStaticText(Panel1, ID_STATICTEXT4, _("State Esimator: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    lblStateEsimator = new wxStaticText(Panel1, ID_STATICTEXT4, _("State Estimator: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     BoxSizer3->Add(lblStateEsimator, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblGps = new wxStaticText(Panel1, ID_STATICTEXT6, _("GPS: Offline (Sats: --)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
     BoxSizer3->Add(lblGps, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    lblBatteryStatus = new wxStaticText(Panel1, ID_STATICTEXT32, _("Battery Voltage: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT32"));
+    BoxSizer3->Add(lblBatteryStatus, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    chkGoPro = new wxCheckBox(Panel1, ID_CHECKBOX1, _("GoPro Rolling"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    chkGoPro->SetValue(false);
+    BoxSizer3->Add(chkGoPro, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer2->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer8 = new wxBoxSizer(wxVERTICAL);
+    StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, Panel1, wxEmptyString);
+    BoxSizer6 = new wxBoxSizer(wxHORIZONTAL);
+    BoxSizer6->Add(0,0,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    lblGoForFlight = new wxStaticText(Panel1, ID_STATICTEXT1, _("No Go"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE, _T("ID_STATICTEXT1"));
+    wxFont lblGoForFlightFont(20,wxSWISS,wxFONTSTYLE_NORMAL,wxNORMAL,false,_T("Sans"),wxFONTENCODING_DEFAULT);
+    lblGoForFlight->SetFont(lblGoForFlightFont);
+    BoxSizer6->Add(lblGoForFlight, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer6->Add(0,0,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer1->Add(BoxSizer6, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer8->Add(StaticBoxSizer1, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     lblDiskFree = new wxStaticText(Panel1, ID_STATICTEXT10, _("Disk Free: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
-    BoxSizer3->Add(lblDiskFree, 0, wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer8->Add(lblDiskFree, 0, wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer7 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer7->Add(46,20,0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
@@ -178,20 +197,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     lblDiskFreeCam = new wxStaticText(Panel1, ID_STATICTEXT13, _("-- GB"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
     FlexGridSizer2->Add(lblDiskFreeCam, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer7->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer3->Add(BoxSizer7, 1, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer2->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer8 = new wxBoxSizer(wxVERTICAL);
-    StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, Panel1, wxEmptyString);
-    BoxSizer6 = new wxBoxSizer(wxHORIZONTAL);
-    BoxSizer6->Add(0,0,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    lblGoForFlight = new wxStaticText(Panel1, ID_STATICTEXT1, _("No Go"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE, _T("ID_STATICTEXT1"));
-    wxFont lblGoForFlightFont(20,wxSWISS,wxFONTSTYLE_NORMAL,wxNORMAL,false,_T("Sans"),wxFONTENCODING_DEFAULT);
-    lblGoForFlight->SetFont(lblGoForFlightFont);
-    BoxSizer6->Add(lblGoForFlight, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer6->Add(0,0,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer1->Add(BoxSizer6, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer8->Add(StaticBoxSizer1, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer8->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer8->Add(BoxSizer7, 1, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer9 = new wxBoxSizer(wxVERTICAL);
     lblCpu = new wxStaticText(Panel1, ID_STATICTEXT23, _("CPU: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT23"));
     BoxSizer9->Add(lblCpu, 0, wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -240,6 +246,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
+    Connect(ID_CHECKBOX1,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&GoForFlightFrame::OnchkGoProClick);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&GoForFlightFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&GoForFlightFrame::OnAbout);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&GoForFlightFrame::OntmrUpdateLcmTrigger);
@@ -274,6 +281,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     cpu_info_handler_.AddLabel(GPS, lblCpuGpsLabel, lblCpuGps);
     cpu_info_handler_.AddLabel(CAM, lblCpuCamLabel, lblCpuCam);
 
+    battery_status_handler_.SetLabel(lblBatteryStatus);
+
     UpdateLabels();
 
 
@@ -293,6 +302,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     lcm.subscribe("log-info-AAAZZZA", &LogSizeHandler::handleMessage, &log_size_handler_);
     lcm.subscribe("cpu-info-AAAZZZA", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
+
+    lcm.subscribe("battery-status", &BatteryStatusHandler::handleMessage, &battery_status_handler_);
 
     lcm.subscribe("STATE_ESTIMATOR_POSE", &StateEsimatorHandler::handleMessage, &state_estimator_handler_);
 
@@ -332,6 +343,9 @@ void GoForFlightFrame::UpdateLabels() {
     state_estimator_handler_.Update();
     gps_handler_.Update();
     cpu_info_handler_.Update();
+    battery_status_handler_.Update();
+
+    chkGoPro->SetForegroundColour(StatusHandler::GetColour(chkGoPro->IsChecked()));
 
 
 
@@ -339,6 +353,8 @@ void GoForFlightFrame::UpdateLabels() {
         && state_estimator_handler_.GetStatus()
         && gps_handler_.GetStatus()
         && cpu_info_handler_.GetStatus()
+        && battery_status_handler_.GetStatus()
+        && chkGoPro->IsChecked()
             ) {
 
         lblGoForFlight->SetLabel("Go");
@@ -389,4 +405,9 @@ bool GoForFlightFrame::NonBlockingLcm(lcm::LCM *lcm)
     }
     return false;
 
+}
+
+void GoForFlightFrame::OnchkGoProClick(wxCommandEvent& event)
+{
+    UpdateLabels();
 }
