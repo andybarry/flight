@@ -13,7 +13,13 @@
 #   * * * * * /home/odroid/realtime/startup/cronStartup "/home/odroid/realtime/externals/timesync/build/bin/timesync -s -p 10000" "timesync" | /usr/bin/logger -t "timesync-cron"
 #
 # USER CRONTAB:
-#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
+#
+# GPS:
+#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy --name gps-deputy -u udpm://239.255.76.67:7667?ttl=1" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
+#   * * * * * /home/odroid/realtime/startup/cronStartup "-l udpm://239.255.76.67:7667?ttl=1" "bot-lcm-tunnel" | /usr/bin/logger -t "lcm-tunnel-cron"
+#
+# CAM:
+#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy --name cam-deputy --lcmurl udpm://239.255.76.67:7667?ttl=1" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
 #
 #
 
