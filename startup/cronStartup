@@ -4,20 +4,21 @@
 # call this every minute from cron to always have the process
 #
 # crontab exampless
-# 
-# ROOT'S CRONTAB:
-#	(master -- for laptop)
-#	* * * * * /home/abarry/realtime/externals/timesync/cronTimesync "/home/odroid/realtime/externals/timesync/build/bin/timesync -m -p 10000" | /usr/bin/logger -t "timesync-cron"
 #
-#	(slave -- for odroid)
-#   * * * * * /home/odroid/realtime/externals/timesync/cronTimesync "/home/odroid/realtime/externals/timesync/build/bin/timesync -s -p 10000" | /usr/bin/logger -t "timesync-cron"
+# ROOT'S CRONTAB:
+#   (master -- for laptop)
+#   * * * * * /home/abarry/realtime/startup/cronStartup "/home/abarry/realtime/externals/timesync/build/bin/timesync -m -p 10000" "timesync" | /usr/bin/logger -t "timesync-cron"
+#
+#   (slave -- for odroid)
+#   * * * * * /home/odroid/realtime/startup/cronStartup "/home/odroid/realtime/externals/timesync/build/bin/timesync -s -p 10000" "timesync" | /usr/bin/logger -t "timesync-cron"
 #
 # USER CRONTAB:
-#	* * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
-#	
+#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
+#
 #
 
-ENV_SCRIPT=/home/odroid/realtime/scripts/setEnv
+ENV_SCRIPT_FILE1=/home/odroid/realtime/scripts/setEnv
+ENV_SCRIPT_FILE2=/home/abarry/realtime/scripts/setEnv
 
 # check for command line arguments
 if (( $# < 2 ))
@@ -34,6 +35,14 @@ COMMAND=$1
 
 # set this for the string to search for in ps -A
 PS_SEARCH=$2
+
+if [ -e "$ENV_SCRIPT_FILE1" ]
+then
+    ENV_SCRIPT="$ENV_SCRIPT_FILE1"
+elif [ -e "$ENV_SCRIPT_FILE2" ]
+then
+    ENV_SCRIPT="$ENV_SCRIPT_FILE2"
+fi
 
 
 # check for existing prgram running
