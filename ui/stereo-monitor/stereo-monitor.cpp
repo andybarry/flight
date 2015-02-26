@@ -50,7 +50,7 @@ int64_t last_beep_time = 0;
 int last_rec_frame = -1;
 
 string stereo_channel_str = "stereo";
-string stereo_monitor_channel_str = "stereo_monitor";
+string stereo_monitor_channel_str = "stereo-monitor";
 string beep_channel_str = "beep";
 
 lcmt_stereo_subscription_t *stereo_sub;
