@@ -16,7 +16,7 @@
 #
 # GPS:
 #   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy --name gps-deputy -u udpm://239.255.76.67:7667?ttl=1" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"
-#   * * * * * /home/odroid/realtime/startup/cronStartup "-l udpm://239.255.76.67:7667?ttl=1" "bot-lcm-tunnel" | /usr/bin/logger -t "lcm-tunnel-cron"
+#   * * * * * /home/odroid/realtime/startup/cronStartup "bot-lcm-tunnel -l udpm://239.255.76.67:7667?ttl=1" "bot-lcm-tunnel" | /usr/bin/logger -t "lcm-tunnel-cron"
 #
 # CAM:
 #   * * * * * /home/odroid/realtime/startup/cronStartup "bot-procman-deputy --name cam-deputy --lcmurl udpm://239.255.76.67:7667?ttl=1" "bot-procman-dep" | /usr/bin/logger -t "bot-procman-cron"

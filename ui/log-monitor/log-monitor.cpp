@@ -106,7 +106,7 @@ int main(int argc,char** argv) {
         string lcm_prefix = "lcmlog-" + string(date_string) + ".";
 
         int largest_log = -1;
-        int log_size = -1;
+        long log_size = -1;
         string the_log;
 
         DIR *dir;
