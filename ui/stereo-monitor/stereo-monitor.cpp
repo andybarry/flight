@@ -50,7 +50,7 @@ int64_t last_beep_time = 0;
 int last_rec_frame = -1;
 
 string stereo_channel_str = "stereo";
-string stereo_monitor_channel_str = "stereo_monitor";
+string stereo_monitor_channel_str = "stereo-monitor";
 string beep_channel_str = "beep";
 
 lcmt_stereo_subscription_t *stereo_sub;
@@ -88,6 +88,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         lcmt_stereo_monitor monitor_msg;
         monitor_msg.timestamp = getTimestampNow();
         
+        monitor_msg.video_number = msg->video_number;
         monitor_msg.frame_number = msg->frame_number;
         
         lcmt_stereo_monitor_publish(lcm, stereo_monitor_channel,
