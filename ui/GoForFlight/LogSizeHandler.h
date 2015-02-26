@@ -57,12 +57,12 @@ class LogSizeHandler : public MultiStatusHandler
 
             if (msg->log_size > last_log_size_[index] && last_log_size_[index] != -1) {
 
-                SetStatus(index, true);
+                SetStatus(index, true, msg->timestamp);
 
                 SetText(index, "#" + std::to_string(msg->log_number));
 
             } else {
-                SetStatus(index, false);
+                SetStatus(index, false, msg->timestamp);
 
                 if (last_log_number_[index] == -1) {
                     SetText(index, "#--");
@@ -72,7 +72,7 @@ class LogSizeHandler : public MultiStatusHandler
             }
 
 
-            timesync_handler_.SetStatus(index, true); // TODO: check that timestamp is reasonable
+            timesync_handler_.SetStatus(index, true, msg->timestamp); // TODO: check that timestamp is reasonable
             timesync_handler_.SetText(index, ParseTime(msg->timestamp));
 
             bool disk_ok;
@@ -88,7 +88,7 @@ class LogSizeHandler : public MultiStatusHandler
                 disk_ok = true;
             }
 
-            disk_free_handler_.SetStatus(index, disk_ok);
+            disk_free_handler_.SetStatus(index, disk_ok, msg->timestamp);
             disk_free_handler_.SetText(index, disk_str);
 
             last_timestamp_[index] = msg->timestamp;
@@ -117,14 +117,14 @@ class LogSizeHandler : public MultiStatusHandler
             struct tm *nowtm;
             time_t tv_sec = timestamp / 1000000.0;
             nowtm = localtime(&tv_sec);
-            strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+            strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d | %H:%M:%S", nowtm);
             sprintf(buf, "%s", tmbuf);
 
             return std::string(buf);
         }
 
         std::vector<int> last_log_number_;
-        std::vector<int> last_log_size_;
+        std::vector<long> last_log_size_;
 
         std::vector<long> last_timestamp_;
 

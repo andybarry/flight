@@ -41,10 +41,13 @@ class GoForFlightFrame: public wxFrame
         void OnAbout(wxCommandEvent& event);
         void OnTimer1Trigger(wxTimerEvent& event);
         void OntmrUpdateLcmTrigger(wxTimerEvent& event);
+        void OnClose(wxCloseEvent& event);
         //*)
 
         //(*Identifiers(GoForFlightFrame)
         static const long ID_STATICTEXT2;
+        static const long ID_STATICTEXT30;
+        static const long ID_STATICTEXT31;
         static const long ID_STATICTEXT20;
         static const long ID_STATICTEXT5;
         static const long ID_STATICTEXT21;
@@ -92,12 +95,14 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblDiskFreeLabelCam;
         wxStaticText* lblTimesyncLabelCam;
         wxStaticText* lblCpuCam;
+        wxStaticText* lblTimesyncLocal;
         wxStaticText* lblCpuGpsLabel;
         wxStaticText* lblDiskFreeCam;
         wxStaticText* lblTimesyncCam;
         wxStaticText* lblDiskFreeGps;
         wxStaticText* lblLogGpsLabel;
         wxStaticText* lblCpuLocal;
+        wxStaticText* lblTimesyncLabelLocal;
         wxStaticText* lblGps;
         wxStaticText* lblTimesyncLabelGps;
         wxStaticText* lblDiskFreeLabelGps;

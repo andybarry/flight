@@ -16,9 +16,9 @@ class StateEsimatorHandler : public StatusHandler
                            const mav::pose_t* msg) {
 
             if (msg->utime > last_utime_) {
-                status_ = true;
+                SetStatus(true, msg->utime);
             } else {
-                status_ = false;
+                SetStatus(false, msg->utime);
             }
 
             last_utime_ = msg->utime;
@@ -26,7 +26,11 @@ class StateEsimatorHandler : public StatusHandler
         }
 
     private:
+
+
+
         long last_utime_ = -1;
+
 
 
 };
