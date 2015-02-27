@@ -35,7 +35,7 @@ New system setup:
 - add to the buttom of sudoers (using visudo)
 odroid ALL=(ALL) NOPASSWD:/sbin/shutdown
 
-set cloned MAC address:
+set cloned MAC address for wired:
 
 gps1: C2:22:09:F2:5F:10
 cam1: C2:22:09:F2:5F:11
@@ -44,3 +44,12 @@ gps2: C2:22:09:F2:5F:20
 cam2: C2:22:09:F2:5F:21
 
 
+set cloned MAC addresses for wireless:
+
+gps2: 00:A8:2B:00:05:20
+
+
+
+Update
+    sudo crontab -e
+    crontab -e
