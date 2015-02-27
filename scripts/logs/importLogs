@@ -48,7 +48,7 @@ ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard $VIDEODIR/$DATESTR-$DIRNAME/onboard
 while true; do
     read -p "Do you want to download logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs $LOGDIR/$DATESTR-$DIRNAME u2gps;;
+        [Yy]* ) ./downloadLogs $LOGDIR/$DATESTR-$DIRNAME;;
         [Nn]* ) exit;;
         * ) echo "Please answer yes or no.";;
     esac
@@ -57,7 +57,7 @@ done
 while true; do
     read -p "Do you want to download videos now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadVideos $LOGDIR/$DATESTR-$DIRNAME u2cam;;
+        [Yy]* ) ./downloadVideos $LOGDIR/$DATESTR-$DIRNAME;;
         [Nn]* ) exit;;
         * ) echo "Please answer yes or no.";;
     esac
