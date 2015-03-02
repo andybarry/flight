@@ -44,12 +44,6 @@ gps2: C2:22:09:F2:5F:20
 cam2: C2:22:09:F2:5F:21
 
 
-set cloned MAC addresses for wireless:
-
-gps2: 00:A8:2B:00:05:20
-
-
-
 Update
     sudo crontab -e
     crontab -e
