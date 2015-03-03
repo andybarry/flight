@@ -53,3 +53,6 @@ gps2: 00:A8:2B:00:05:20
 Update
     sudo crontab -e
     crontab -e
+
+
+UPDATE ARDUREAD
