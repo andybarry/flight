@@ -8,15 +8,15 @@
 #include "midi-airspeed.hpp"
 #include "../../externals/ConciseArgs.hpp"
 
-lcm_t * lcm;
+lcm_t * lcm_;
 
 lcmt_midi_subscription_t *midi_sub;
-mav_altimeter_t_subscription_t *altimeter_sub;
+mav_indexed_measurement_t_subscription_t *altimeter_sub;
 
-string midi_channel = "midi-out";
-string airspeed_channel = "airspeed";
+std::string midi_channel = "midi-out";
+std::string airspeed_channel = "airspeed";
 
-double airspeed = 0;
+double airspeed = 0, airspeed_r;
 
 void lcmt_midi_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_midi *msg, void *user) {
 
@@ -29,22 +29,43 @@ void lcmt_midi_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 
 
 // trigger messages to be sent on altimeter receive
-void mav_altimeter_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_altimeter_t *msg, void *user) {
+void altimeter_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
 
-    mav_airspeed_t airspeed_msg;
+    mav_indexed_measurement_t airspeed_msg;
 
-    airspeed_msg.utime = GetTimestampNow();
+    long msg_timestamp = GetTimestampNow();
 
-    airspeed_msg.airspeed = airspeed;
+    airspeed_msg.utime = msg_timestamp;
+    airspeed_msg.state_utime = msg_timestamp;
 
-    mav_airspeed_t_publish(lcm, airspeed_channel.c_str(), &airspeed_msg);
+    airspeed_msg.measured_dim = 1; // altitude only measures 1 dimension (x-axis)
+
+    int airspeed_z_ind[1];
+
+    Eigen::Vector3i state_estimator_index;
+    state_estimator_index = eigen_utils::RigidBodyState::velocityInds();
+
+    airspeed_z_ind[0] = state_estimator_index[0]; // measurement on the X axis (index = 0)
+    airspeed_msg.z_indices = airspeed_z_ind;
+
+    double airspeed_value[1];
+    airspeed_value[0] = airspeed;
+    airspeed_msg.z_effective = airspeed_value;
+
+    airspeed_msg.measured_cov_dim = 1;
+
+    double airspeed_cov[1];
+    airspeed_cov[0] = airspeed_r;
+    airspeed_msg.R_effective = airspeed_cov;
+
+    mav_indexed_measurement_t_publish(lcm_, airspeed_channel.c_str(), &airspeed_msg);
 
 }
 
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
-    string altimeter_channel = "altimeter";
+    std::string altimeter_channel = "altimeter";
 
 
     ConciseArgs parser(argc, argv);
@@ -57,21 +78,28 @@ int main(int argc,char** argv) {
 
 
     if (ttl_one) {
-        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
+        lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     } else {
-        lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
+        lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
     }
 
-    if (!lcm)
+    if (!lcm_)
     {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
         return 1;
     }
 
 
-    midi_sub = lcmt_midi_subscribe(lcm, midi_channel.c_str(), &lcmt_midi_handler, NULL);
+    BotParam *param = bot_param_new_from_server(lcm_, 0);
+    if (param != NULL) {
+        airspeed_r = bot_param_get_double_or_fail(param, "state_estimator.airspeed.r");
+    } else {
+        std::cerr << "Failed to get a parameter server, aborting." << std::endl;
+    }
 
-    altimeter_sub = mav_altimeter_t_subscribe(lcm, altimeter_channel.c_str(), &mav_altimeter_t_handler, NULL);
+    midi_sub = lcmt_midi_subscribe(lcm_, midi_channel.c_str(), &lcmt_midi_handler, NULL);
+
+    altimeter_sub = mav_indexed_measurement_t_subscribe(lcm_, altimeter_channel.c_str(), &altimeter_handler, NULL);
 
     // control-c handler
     signal(SIGINT,sighandler);
@@ -81,7 +109,7 @@ int main(int argc,char** argv) {
     while (true)
     {
         // read the LCM channel
-        lcm_handle (lcm);
+        lcm_handle (lcm_);
     }
 
     return 0;
@@ -92,10 +120,10 @@ void sighandler(int dum)
 {
     printf("\n\nclosing... ");
 
-    lcmt_midi_unsubscribe(lcm, midi_sub);
-    mav_altimeter_t_unsubscribe(lcm, altimeter_sub);
+    lcmt_midi_unsubscribe(lcm_, midi_sub);
+    mav_indexed_measurement_t_unsubscribe(lcm_, altimeter_sub);
 
-    lcm_destroy (lcm);
+    lcm_destroy (lcm_);
 
     printf("done.\n");
 

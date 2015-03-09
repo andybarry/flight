@@ -23,8 +23,6 @@
 
 #include "gtest/gtest.h"
 
-using namespace std;
-
 Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg);
 
 Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy);

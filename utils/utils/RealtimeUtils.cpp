@@ -91,7 +91,7 @@ TEST(Utils, StateEstimatorToDrakeVector) {
     matlab_output << 0.5079, 0.0855, 0.2625, 0.8010, 0.0292, 0.9289, 0.5106, 0.5572, 0.7318, 0.2665, -0.3722, 1.0002;
 
 
-    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << endl << "Expected:" << endl << matlab_output << endl << "Got:" << endl << output << endl;
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
 
 
 }
@@ -140,7 +140,7 @@ TEST(Utils, rpy2rotmat) {
             -0.2552,    0.1071,    0.9609;
 
 
-    EXPECT_TRUE(result.isApprox(result_from_matlab, 0.001)) << "Expected:" << endl <<result << endl << "Actual:" << endl << result_from_matlab;
+    EXPECT_TRUE(result.isApprox(result_from_matlab, 0.001)) << "Expected:" << std::endl <<result << std::endl << "Actual:" << std::endl << result_from_matlab;
 
 }
 
