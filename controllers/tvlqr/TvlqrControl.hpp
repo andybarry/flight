@@ -51,7 +51,7 @@ class TvlqrControl
         Eigen::VectorXd GetStateMinusInit(Eigen::VectorXd state);
 
         Trajectory *current_trajectory_;
-        Eigen::VectorXd initial_state_;
+        mav_pose_t initial_state_;
         bool state_initialized_;
 
         const ServoConverter *converter_;

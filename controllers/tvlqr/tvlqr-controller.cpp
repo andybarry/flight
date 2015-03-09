@@ -82,8 +82,6 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
     // whenever we get a state estimate, we want to output a new control action
 
-    Eigen::VectorXd state_vec = StateEstimatorToDrakeVector(msg);
-
     // check for time-invariant trajectory requiring state estimator reset
     if (control->IsTimeInvariant() && GetTimestampNow() - last_ti_state_estimator_reset > 500000) {
 
@@ -92,7 +90,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
         SendStateEstimatorResetRequest();
     }
 
-    Eigen::VectorXi control_vec = control->GetControl(state_vec);
+    Eigen::VectorXi control_vec = control->GetControl(msg);
 
     // send control out through LCM
 

@@ -28,7 +28,7 @@ void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 
 }
 
-Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
+Eigen::VectorXi TvlqrControl::GetControl(mav_pose_t msg) {
 
     if (current_trajectory_ == NULL) {
         cerr << "Warning: NULL trajectory in GetControl." << endl;
@@ -39,8 +39,10 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
     if (state_initialized_ == false) {
 
-        InitializeState(state);
+        InitializeState(msg);
     }
+
+    cout << "state = " << endl << state << endl;
 
     Eigen::VectorXd state_minus_init = GetStateMinusInit(state);
 
@@ -60,6 +62,8 @@ Eigen::VectorXi TvlqrControl::GetControl(Eigen::VectorXd state) {
 
         Eigen::VectorXd state_error = state_minus_init - x0;
 
+        cout << "state error = " << endl << state_error << endl;
+
 gain_matrix(0,0) = 0;
 gain_matrix(1,0) = 0;
 gain_matrix(2,0) = 0;
@@ -78,6 +82,8 @@ gain_matrix(2,6) = 0;
 
         Eigen::VectorXd additional_control_action = gain_matrix * state_error;
 
+        cout << "additional control action = " << endl << additional_control_action << endl;
+
 //cout << "t = " << t_along_trajectory << endl;
 //cout << "gain" << endl << gain_matrix << endl << "state_error" << endl << state_error << endl << "additional" << endl << additional_control_action << endl;
 
@@ -94,9 +100,10 @@ gain_matrix(2,6) = 0;
     }
 }
 
-void TvlqrControl::InitializeState(Eigen::VectorXd state) {
+void TvlqrControl::InitializeState(mav_pose_t *msg) {
 
-    initial_state_ = state;
+
+    initial_state_ = mav_pose_t_copy(msg);
 
     t0_ = GetTimestampNow();
 
@@ -104,9 +111,11 @@ void TvlqrControl::InitializeState(Eigen::VectorXd state) {
 
 }
 
-Eigen::VectorXd TvlqrControl::GetStateMinusInit(Eigen::VectorXd state) {
+mav_pose_t TvlqrControl::GetStateMinusInit(mav_pose_t *msg) {
 
     // subtract out x0, y0, z0 and yaw0
+
+    mav_pose_t msg_out // TODO
 
     Eigen::VectorXd state_minus_init = state;
 

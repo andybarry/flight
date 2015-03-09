@@ -33,7 +33,7 @@ void altimeter_handler(const lcm_recv_buf_t *rbuf, const char* channel, const ma
 
     mav_indexed_measurement_t airspeed_msg;
 
-    long msg_timestamp = GetTimestampNow();
+    int64_t msg_timestamp = GetTimestampNow();
 
     airspeed_msg.utime = msg_timestamp;
     airspeed_msg.state_utime = msg_timestamp;
