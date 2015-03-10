@@ -18,6 +18,7 @@
 #include <bot_frames/bot_frames.h>
 
 #include "../TrajectoryLibrary/Trajectory.hpp"
+#include "../../LCM/mav_pose_t.h"
 
 #include <Eigen/Core>
 
@@ -38,7 +39,7 @@ class TvlqrControl
 
         bool HasTrajectory() { return current_trajectory_ != NULL; }
 
-        Eigen::VectorXi GetControl(Eigen::VectorXd state);
+        Eigen::VectorXi GetControl(const mav_pose_t *msg);
 
         void SetStateEstimatorInitialized();
 
@@ -46,12 +47,15 @@ class TvlqrControl
 
     private:
 
-        void InitializeState(Eigen::VectorXd state);
+        void InitializeState(const mav_pose_t *msg);
         double GetTNow();
-        Eigen::VectorXd GetStateMinusInit(Eigen::VectorXd state);
+        Eigen::VectorXd GetStateMinusInit(const mav_pose_t *msg);
 
         Trajectory *current_trajectory_;
-        mav_pose_t initial_state_;
+
+        Eigen::VectorXd initial_state_;
+        Eigen::Matrix3d Mz_; // rotation matrix that transforms global state into local state by removing yaw
+
         bool state_initialized_;
 
         const ServoConverter *converter_;

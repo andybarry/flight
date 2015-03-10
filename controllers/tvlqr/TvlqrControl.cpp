@@ -28,7 +28,7 @@ void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 
 }
 
-Eigen::VectorXi TvlqrControl::GetControl(mav_pose_t msg) {
+Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
     if (current_trajectory_ == NULL) {
         cerr << "Warning: NULL trajectory in GetControl." << endl;
@@ -42,9 +42,7 @@ Eigen::VectorXi TvlqrControl::GetControl(mav_pose_t msg) {
         InitializeState(msg);
     }
 
-    cout << "state = " << endl << state << endl;
-
-    Eigen::VectorXd state_minus_init = GetStateMinusInit(state);
+    Eigen::VectorXd state_minus_init = GetStateMinusInit(msg);
 
     double t_along_trajectory;
 
@@ -100,10 +98,17 @@ gain_matrix(2,6) = 0;
     }
 }
 
-void TvlqrControl::InitializeState(mav_pose_t *msg) {
+void TvlqrControl::InitializeState(const mav_pose_t *msg) {
 
+    initial_state_ = StateEstimatorToDrakeVector(msg);
 
-    initial_state_ = mav_pose_t_copy(msg);
+    // get the yaw from the initial state
+
+    double rpy[3];
+
+    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy);
+
+    Mz_ = rotz(-rpy[2]);
 
     t0_ = GetTimestampNow();
 
@@ -111,21 +116,21 @@ void TvlqrControl::InitializeState(mav_pose_t *msg) {
 
 }
 
-mav_pose_t TvlqrControl::GetStateMinusInit(mav_pose_t *msg) {
+Eigen::VectorXd TvlqrControl::GetStateMinusInit(const mav_pose_t *msg) {
 
-    // subtract out x0, y0, z0 and yaw0
+    // subtract out x0, y0, z0
 
-    mav_pose_t msg_out // TODO
+    mav_pose_t *msg2 = mav_pose_t_copy(msg);
 
-    Eigen::VectorXd state_minus_init = state;
+    msg2->pos[0] -= initial_state_(0); // x
+    msg2->pos[1] -= initial_state_(1); // y
+    msg2->pos[2] -= initial_state_(2); // z
 
-    state_minus_init(0) -= initial_state_(0); // x
-    state_minus_init(1) -= initial_state_(1); // y
-    state_minus_init(2) -= initial_state_(2); // z
+    Eigen::VectorXd state = StateEstimatorToDrakeVector(msg2, Mz_);
 
-    state_minus_init(5) -= initial_state_(5); //yaw
+    mav_pose_t_destroy(msg2);
 
-    return state_minus_init;
+    return state;
 
 }
 
