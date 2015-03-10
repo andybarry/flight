@@ -60,27 +60,11 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
         Eigen::VectorXd state_error = state_minus_init - x0;
 
-        cout << "state error = " << endl << state_error << endl;
-
-gain_matrix(0,0) = 0;
-gain_matrix(1,0) = 0;
-gain_matrix(2,0) = 0;
-
-gain_matrix(0,1) = 0;
-gain_matrix(1,1) = 0;
-gain_matrix(2,1) = 0;
-
-gain_matrix(0,2) = 0;
-gain_matrix(1,2) = 0;
-gain_matrix(2,2) = 0;
-
-gain_matrix(0,6) = 0;
-gain_matrix(1,6) = 0;
-gain_matrix(2,6) = 0;
+        //cout << "state error = " << endl << state_error << endl;
 
         Eigen::VectorXd additional_control_action = gain_matrix * state_error;
 
-        cout << "additional control action = " << endl << additional_control_action << endl;
+        //cout << "additional control action = " << endl << additional_control_action << endl;
 
 //cout << "t = " << t_along_trajectory << endl;
 //cout << "gain" << endl << gain_matrix << endl << "state_error" << endl << state_error << endl << "additional" << endl << additional_control_action << endl;

@@ -116,15 +116,15 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     switch (msg->trajectory_number) {
         case 0:
-            lib_num = 0;
+            lib_num = 10000; // trim trajectory
             break;
 
         case 1:
-            lib_num = 1;
+            lib_num = 10001; // trim trajectory
             break;
 
         case 2:
-            lib_num = 10000; // trim trajectory
+            lib_num = 10002; // trim trajectory
             break;
 
         default:
