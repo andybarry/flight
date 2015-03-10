@@ -2,32 +2,53 @@
 
 #define PI 3.14159265359
 
-Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
+Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz) {
 
     // convert message to 12-state vector in the Drake frame
 
     Eigen::VectorXd state(12);
 
-    // x, y, and z are direct
-    state(0) = msg->pos[0];
-    state(1) = msg->pos[1];
-    state(2) = msg->pos[2];
+    Eigen::Vector3d pos_eigen;
 
-    // roll, pitch, and yaw come from the quats
-    double rpy[3];
 
-    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy);
+    pos_eigen(0) = msg->pos[0];
+    pos_eigen(1) = msg->pos[1];
+    pos_eigen(2) = msg->pos[2];
 
-    state(3) = rpy[0];
-    state(4) = rpy[1];
-    state(5) = rpy[2];
+    // x, y, and z are direct (already in global frame), excepting any custom rotation
+    Eigen::Vector3d pos_global = Mz * pos_eigen;
+
+    state(0) = pos_global(0);
+    state(1) = pos_global(1);
+    state(2) = pos_global(2);
+
+    // roll, pitch, and yaw come from the quats in the message
+
+    Eigen::Vector4d q_eigen;
+    q_eigen(0) = msg->orientation[0];
+    q_eigen(1) = msg->orientation[1];
+    q_eigen(2) = msg->orientation[2];
+    q_eigen(3) = msg->orientation[3];
+
+    double rpy_array[3];
+    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy_array);
+
+    Eigen::Vector3d rpy_eigen(rpy_array);
+
+    Eigen::Matrix3d rot_mat = quat2rotmat(q_eigen);
+
+    Eigen::Vector3d rpy = rotmat2rpy(Mz * rot_mat);
+
+    state(3) = rpy(0);
+    state(4) = rpy(1);
+    state(5) = rpy(2);
 
     Eigen::Vector3d UVW; // in body frame
     UVW(0) = msg->vel[0];
     UVW(1) = msg->vel[1];
     UVW(2) = msg->vel[2];
 
-    Eigen::Vector3d rpy_eigen(rpy);
+
 
     // velocities are given in the body frame, we need to move them
     // to the global frame
@@ -35,7 +56,7 @@ Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
     Eigen::Matrix3d R_body_to_world = rpy2rotmat(rpy_eigen);
     //Eigen::Matrix3d R_world_to_body = R_body_to_world.Transpose();
 
-    Eigen::Vector3d vel_world_frame = R_body_to_world * UVW;
+    Eigen::Vector3d vel_world_frame = Mz * R_body_to_world * UVW;
 
     state(6) = vel_world_frame(0);
     state(7) = vel_world_frame(1);
@@ -48,7 +69,7 @@ Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg) {
     PQR(1) = msg->rotation_rate[1];
     PQR(2) = msg->rotation_rate[2];
 
-    Eigen::Vector3d pqr = R_body_to_world * PQR;
+    Eigen::Vector3d pqr = Mz * R_body_to_world * PQR;
 
     // convert rotation rates into rolldot, pitchdot, yawdot
 
@@ -89,6 +110,46 @@ TEST(Utils, StateEstimatorToDrakeVector) {
     Eigen::VectorXd matlab_output(12);
 
     matlab_output << 0.5079, 0.0855, 0.2625, 0.8010, 0.0292, 0.9289, 0.5106, 0.5572, 0.7318, 0.2665, -0.3722, 1.0002;
+
+
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
+
+
+}
+
+TEST(Utils, StateEstimatorToDrakeVectorMz) {
+
+    mav_pose_t msg;
+
+    msg.pos[0] = 643;
+    msg.pos[1] =  -19.59;
+    msg.pos[2] = -14.06;
+
+    msg.orientation[0] = 0.92042916327673;
+    msg.orientation[1] = 0.075662452847708837;
+    msg.orientation[2] = -0.3131459922391228;
+    msg.orientation[3] = -0.22142871003294068;
+
+    msg.vel[0] = 12.358;
+    msg.vel[1] = -0.37176;
+    msg.vel[2] = -7.321641;
+
+    msg.rotation_rate[0] = -0.00431;
+    msg.rotation_rate[1] = 0.02377;
+    msg.rotation_rate[2] = 1.199e-4;
+
+
+    double rpy[3];
+
+    bot_quat_to_roll_pitch_yaw(msg.orientation, rpy);
+
+    Eigen::Matrix3d rotz_mat = rotz(-rpy[2]);
+
+    Eigen::VectorXd output = StateEstimatorToDrakeVector(&msg, rotz_mat);
+
+    Eigen::VectorXd matlab_output(12);
+
+    matlab_output << 551.0521, 331.9253, -14.0600, 0.3374, -0.5739,  0, 14.1958, 2.0726, 0.8045, -0.0095, 0.0224, 0.0095;
 
 
     EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
@@ -216,6 +277,102 @@ TEST(Utils, AngularVel2RpyDot) {
 
 }
 
+Eigen::Matrix3d quat2rotmat(Eigen::Vector4d q) {
+
+    double qdotq = q.dot(q);
+
+    double norm_q = sqrt(qdotq);
+
+    Eigen::Vector4d q_norm = q/norm_q;
+
+
+    double w = q_norm(0);
+    double x = q_norm(1);
+    double y = q_norm(2);
+    double z = q_norm(3);
+
+    Eigen::Matrix3d rot_mat;
+
+    rot_mat << w*w + x*x - y*y - z*z, 2*x*y - 2*w*z, 2*x*z + 2*w*y,
+        2*x*y + 2*w*z,  w*w + y*y - x*x - z*z, 2*y*z - 2*w*x,
+        2*x*z - 2*w*y, 2*y*z + 2*w*x, w*w + z*z - x*x - y*y;
+
+    return rot_mat;
+
+}
+
+TEST(Utils, quat2rotmat) {
+
+    Eigen::Vector4d q;
+
+    q << -0.9355137319401352, 0.14485829821440904, -0.23100540100248626, -0.2246478037392905;
+
+    Eigen::Matrix3d output = quat2rotmat(q);
+
+    double q_array[4];
+    q_array[0] = q(0);
+    q_array[1] = q(1);
+    q_array[2] = q(2);
+    q_array[3] = q(3);
+
+    double rpy[3];
+
+    bot_quat_to_roll_pitch_yaw(q_array, rpy);
+
+    Eigen::Vector3d rpy_eigen;
+    rpy_eigen(0) = rpy[0];
+    rpy_eigen(1) = rpy[1];
+    rpy_eigen(2) = rpy[2];
+
+    Eigen::Matrix3d other_functions_output = rpy2rotmat(rpy_eigen);
+
+
+    EXPECT_TRUE(other_functions_output.isApprox(output, 0.0001));
+
+
+    Eigen::Vector4d q2;
+    q2 << 0.8177, 0.3668, 0.2438, 0.3708;
+
+    Eigen::Matrix3d output2 = quat2rotmat(q2);
+
+    Eigen::Matrix3d matlab_output;
+    matlab_output << 0.6062, -0.4275, 0.6707,
+        0.7852, 0.4560, -0.4190,
+        -0.1267, 0.7806, 0.6121;
+
+
+    EXPECT_TRUE(matlab_output.isApprox(output2, 0.0001));
+
+
+}
+
+Eigen::Vector3d rotmat2rpy(Eigen::Matrix3d R) {
+
+    Eigen::Vector3d rpy;
+
+    rpy(0) = atan2(R(2,1), R(2,2));
+    rpy(1) = atan2(-R(2,0), sqrt(R(2,1)*R(2,1) + R(2,2)*R(2,2)));
+    rpy(2) = atan2(R(1,0),R(0,0));
+
+    return rpy;
+}
+
+TEST(Utils, rotmat2rpy) {
+
+    Eigen::Matrix3d rot_mat;
+    rot_mat <<  0.9569,   -0.1664,    0.2380,
+                0.2736,    0.7914,   -0.5467,
+               -0.0974,    0.5882,    0.8028;
+
+    Eigen::Vector3d output = rotmat2rpy(rot_mat);
+
+    Eigen::Vector3d matlab_output;
+    matlab_output << 0.6323, 0.0976, 0.2785;
+
+    EXPECT_TRUE(matlab_output.isApprox(output, 0.0001));
+
+}
+
 
 int64_t GetTimestampNow() {
     struct timeval thisTime;
@@ -228,15 +385,17 @@ TEST(Utils, TimestampSanity2015) {
     EXPECT_TRUE(GetTimestampNow() > 1422487159500367) << "Timestamp should be after Jan 28, 2015.";
 }
 
+
 double deg2rad(double input_in_deg) {
     return PI/180.0d * input_in_deg;
 }
+
 
 TEST(Utils, deg2rad) {
 
     EXPECT_NEAR( 0.0374446428, deg2rad(2.14542), 0.0001 );
 
-    EXPECT_EQ(0, deg2rad(0));
+    EXPECT_NEAR(0, deg2rad(0), 0.00001) << "Issue with deg2rad(0)";
 
     EXPECT_NEAR(-1.14664641, deg2rad(-65.698), 0.0001);
 }
@@ -280,3 +439,48 @@ bool NonBlockingLcm(lcm_t *lcm)
 
 }
 
+Eigen::Matrix3d rotz(double rotation_around_z) {
+
+    Eigen::Matrix3d rot_mat;
+
+    double s = sin(rotation_around_z);
+    double c = cos(rotation_around_z);
+
+    rot_mat(0,0) = c;
+    rot_mat(0,1) = -s;
+    rot_mat(0,2) = 0;
+
+    rot_mat(1,0) = s;
+    rot_mat(1,1) = c;
+    rot_mat(1,2) = 0;
+
+    rot_mat(2,0) = 0;
+    rot_mat(2,1) = 0;
+    rot_mat(2,2) = 1;
+
+    return rot_mat;
+}
+
+
+TEST(Utils, rotz) {
+
+    double theta = 0.8147;
+
+    Eigen::Matrix3d matlab_output;
+    matlab_output << 0.6861, -0.7275, 0, 0.7275, 0.6861, 0, 0, 0, 1;
+
+
+    Eigen::Matrix3d output = rotz(theta);
+
+    EXPECT_TRUE(matlab_output.isApprox(output, 0.0001));
+
+
+    double theta2 = 3.235;
+    Eigen::Matrix3d matlab_output2;
+    matlab_output2 << -0.9956, 0.0933, 0, -0.0933, -0.9956, 0, 0, 0, 1;
+
+    Eigen::Matrix3d output2 = rotz(theta2);
+
+    EXPECT_TRUE(matlab_output2.isApprox(output2, 0.0001));
+
+}
