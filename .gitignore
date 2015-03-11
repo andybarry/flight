@@ -14,6 +14,7 @@ LCM/mavlink_message_t.h.rej
 *.o
 *~
 *.dep
+ui/midi-control/midi-control
 drivers/midi/midi-lcm
 ui/midi-airspeed/midi-airspeed
 ui/cpu-monitor/cpu-monitor
