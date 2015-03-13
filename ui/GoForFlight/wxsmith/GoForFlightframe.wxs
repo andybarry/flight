@@ -161,6 +161,13 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT6" variable="lblGps" member="yes">
+										<label>GPS: Offline (Sats: --)</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT4" variable="lblStateEsimator" member="yes">
 										<label>State Estimator: Offline</label>
 									</object>
@@ -168,11 +175,12 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
-									<object class="wxStaticText" name="ID_STATICTEXT6" variable="lblGps" member="yes">
-										<label>GPS: Offline (Sats: --)</label>
+									<object class="wxStaticText" name="ID_STATICTEXT34" variable="lblController" member="yes">
+										<label>Controller: Offline</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
+									<option>1</option>
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT32" variable="lblBatteryStatus" member="yes">
