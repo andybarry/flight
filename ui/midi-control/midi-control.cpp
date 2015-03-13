@@ -18,6 +18,8 @@ std::string deltawing_u_channel = "deltawing_u";
 
 int elevon_l = 1500, elevon_r = 1500, throttle = 1109;
 
+int debug_count = 0;
+
 void lcmt_midi_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_midi *msg, void *user) {
 
     int value = round(6.2992 * msg->event[2]) + 1100;
@@ -48,6 +50,17 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
     msg_out.video_record = 0;
 
     lcmt_deltawing_u_publish(lcm_, deltawing_u_channel.c_str(), &msg_out);
+
+    if (debug_count % 150 == 0) {
+        debug_count = 0;
+
+        lcmt_debug debug_msg;
+        debug_msg.utime = GetTimestampNow();
+        debug_msg.debug = "midi-control";
+
+        lcmt_debug_publish(lcm_, "debug", &debug_msg);
+    }
+    debug_count ++;
 
 }
 

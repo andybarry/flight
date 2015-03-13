@@ -1,0 +1,7 @@
+struct lcmt_debug
+{
+  int64_t utime;
+
+  string debug;
+
+}

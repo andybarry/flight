@@ -18,6 +18,8 @@ std::string airspeed_channel = "airspeed";
 
 double airspeed = 0, airspeed_r;
 
+int debug_count = 0;
+
 void lcmt_midi_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_midi *msg, void *user) {
 
     if (msg->event[1] == 0) {
@@ -59,6 +61,19 @@ void altimeter_handler(const lcm_recv_buf_t *rbuf, const char* channel, const ma
     airspeed_msg.R_effective = airspeed_cov;
 
     mav_indexed_measurement_t_publish(lcm_, airspeed_channel.c_str(), &airspeed_msg);
+
+    // also publish a message on the debug channel indicating that we are in debug mode
+
+    if (debug_count % 150 == 0) {
+        debug_count = 0;
+
+        lcmt_debug debug_msg;
+        debug_msg.utime = GetTimestampNow();
+        debug_msg.debug = "midi-airspeed";
+
+        lcmt_debug_publish(lcm_, "debug", &debug_msg);
+    }
+    debug_count ++;
 
 }
 

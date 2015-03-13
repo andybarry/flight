@@ -3,6 +3,7 @@
 
 #include "../../LCM/lcmt_midi.h"
 #include "../../LCM/lcmt_deltawing_u.h"
+#include "../../LCM/lcmt_debug.h"
 #include "../../utils/utils/RealtimeUtils.hpp"
 
 #include "lcmtypes/mav_indexed_measurement_t.h" // from pronto

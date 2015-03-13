@@ -3,7 +3,8 @@ import sys
 
 lc = lcm.LCM()
 
-sys.path.insert(0, '../')
+#sys.path.insert(0, '../')
+sys.path.insert(0, '/home/odroid/realtime/LCM/')
 
 from lcmt_midi import lcmt_midi
 
