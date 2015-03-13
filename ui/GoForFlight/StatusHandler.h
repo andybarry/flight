@@ -84,6 +84,8 @@ class StatusHandler
             }
         }
 
+        long GetLastUtime() { return utime_; }
+
         void CheckTime() {
             if (abs(utime_ - StatusHandler::GetTimestampNow()) > MAX_MESSAGE_DELAY_USEC) {
                 if (GetStatus() == true) {

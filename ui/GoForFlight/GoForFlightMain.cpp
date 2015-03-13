@@ -79,6 +79,7 @@ const long GoForFlightFrame::ID_STATICTEXT26 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT27 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT28 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT29 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT35 = wxNewId();
 const long GoForFlightFrame::ID_PANEL1 = wxNewId();
 const long GoForFlightFrame::idMenuQuit = wxNewId();
 const long GoForFlightFrame::idMenuAbout = wxNewId();
@@ -224,6 +225,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->Add(lblCpuCam, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer10->Add(FlexGridSizer1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer9->Add(BoxSizer10, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    lblDebug = new wxStaticText(Panel1, ID_STATICTEXT35, _("Debug: OK"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT35"));
+    BoxSizer9->Add(lblDebug, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer8->Add(BoxSizer9, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer2->Add(BoxSizer8, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel1->SetSizer(BoxSizer2);
@@ -292,6 +295,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     stereo_handler_.SetLabel(lblStereo);
 
+    debug_handler_.SetLabel(lblDebug);
+
     UpdateLabels();
 
 
@@ -313,6 +318,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     lcm.subscribe("cpu-info-AAAZZZA", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
 
     lcm.subscribe("battery-status", &BatteryStatusHandler::handleMessage, &battery_status_handler_);
+
+    lcm.subscribe("debug", &DebugHandler::handleMessage, &debug_handler_);
 
     lcm.subscribe("deltawing_u", &ControllerHandler::handleMessage, &controller_handler_);
 
@@ -359,6 +366,7 @@ void GoForFlightFrame::UpdateLabels() {
     battery_status_handler_.Update();
     stereo_handler_.Update();
     controller_handler_.Update();
+    debug_handler_.Update();
 
     chkGoPro->SetForegroundColour(StatusHandler::GetColour(chkGoPro->IsChecked()));
 
@@ -371,6 +379,7 @@ void GoForFlightFrame::UpdateLabels() {
         && battery_status_handler_.GetStatus()
         && stereo_handler_.GetStatus()
         && controller_handler_.GetStatus()
+        && debug_handler_.GetStatus()
         && chkGoPro->IsChecked()
             ) {
 

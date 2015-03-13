@@ -30,6 +30,7 @@
 #include "BatteryStatusHandler.h"
 #include "StereoHandler.h"
 #include "ControllerHandler.h"
+#include "DebugHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -85,6 +86,7 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT27;
         static const long ID_STATICTEXT28;
         static const long ID_STATICTEXT29;
+        static const long ID_STATICTEXT35;
         static const long ID_PANEL1;
         static const long idMenuQuit;
         static const long idMenuAbout;
@@ -99,6 +101,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblTimesync;
         wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
+        wxStaticText* lblDebug;
         wxStatusBar* StatusBar1;
         wxStaticText* lblTimesyncGps;
         wxStaticText* lblDiskFreeLabelCam;
@@ -146,6 +149,7 @@ class GoForFlightFrame: public wxFrame
         BatteryStatusHandler battery_status_handler_;
         StereoHandler stereo_handler_;
         ControllerHandler controller_handler_;
+        DebugHandler debug_handler_;
 
         DECLARE_EVENT_TABLE()
 };

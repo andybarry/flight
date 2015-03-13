@@ -41,7 +41,9 @@
 			<Add option="`pkg-config --libs lcm glib-2.0`" />
 		</Linker>
 		<Unit filename="BatteryStatusHandler.h" />
+		<Unit filename="ControllerHandler.h" />
 		<Unit filename="CpuInfoHandler.h" />
+		<Unit filename="DebugHandler.h" />
 		<Unit filename="GoForFlightApp.cpp" />
 		<Unit filename="GoForFlightApp.h" />
 		<Unit filename="GoForFlightMain.cpp" />
