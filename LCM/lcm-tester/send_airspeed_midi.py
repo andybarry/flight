@@ -11,7 +11,7 @@ msg = lcmt_midi();
 
 msg.timestamp = 0;
 
-msg.event[0] = 0;
+msg.event[0] = 176;
 msg.event[1] = 0;
 msg.event[2] = 65;
 
