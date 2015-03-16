@@ -5,19 +5,32 @@ echo "Please enter the hostname:"
 echo -n "odroid-"
 read HOST_END
 
-HOST="odroid-$HOST_END"
+REMOTE_DIR="$1"
+LOCAL_DIR="$2"
 
-# get the date out of the input string
+RECURSE=$3
 
-THISDATE=`expr match $1 ".*\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)"`
+if [[ $HOST_END == *"cam"* ]]
+then
+    # this is a multi-hop download
+    echo "Detected multihop.  Please enter the gps hostname:"
+    echo -n "    odroid-"
+    read HOST_END_MIDDLE
 
-#echo "Compressing logs for $THISDATE on $HOST..."
+    SSH_TRANSPORT="-e ssh -A odroid@odroid-$HOST_END_MIDDLE ssh odroid@odroid-$HOST_END"
 
-#ssh linaro@$HOST "tar -cvzf logs-$HOST-$THISDATE.tar.gz lcmlog-$THISDATE.*"
+else
+    SSH_TRANSPORT="odroid@odroid-$HOST_END"
+fi
 
-echo "Downloading logs for $THISDATE from $HOST..."
+echo "Downloading logs for from: $SSH_TRANSPORT..."
 
-#scp linaro@$HOST:/home/linaro/logs-$HOST-$THISDATE.tar.gz $1
+echo rsync --progress "$RECURSE" -z "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
 
-echo $HOST
-rsync --progress --no-inc-recursive -z odroid@$HOST:lcmlog-$THISDATE.* $1
+if [[ $HOST_END == *"cam"* ]]
+then
+    rsync --progress --no-inc-recursive $RECURSE -z "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
+else
+    rsync --progress  --no-inc-recursive $RECURSE -z "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
+fi
+

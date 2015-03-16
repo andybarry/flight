@@ -30,35 +30,67 @@ echo "Creating directories..."
 echo "$VIDEODIR/$DATESTR-$DIRNAME"
 mkdir $VIDEODIR/$DATESTR-$DIRNAME
 
-echo "$LOGDIR/$DATESTR-$DIRNAME/onboard"
-mkdir  -p $LOGDIR/$DATESTR-$DIRNAME/onboard
+echo "$LOGDIR/$DATESTR-$DIRNAME/onboard-vids"
+mkdir  -p $LOGDIR/$DATESTR-$DIRNAME/onboard-vids
 
 echo "$LOGDIR/$DATESTR-$DIRNAME/mat"
 mkdir -p $LOGDIR/$DATESTR-$DIRNAME/mat
+
+echo "$LOGDIR/$DATESTR-$DIRNAME/local-logs"
+mkdir -p $LOGDIR/$DATESTR-$DIRNAME/local-logs
+
+echo "$LOGDIR/$DATESTR-$DIRNAME/gps-logs"
+mkdir -p $LOGDIR/$DATESTR-$DIRNAME/gps-logs
+
+echo "$LOGDIR/$DATESTR-$DIRNAME/cam-logs"
+mkdir -p $LOGDIR/$DATESTR-$DIRNAME/cam-logs
 
 echo "Creating symlinks..."
 echo "$VIDEODIR/$DATESTR-$DIRNAME -> $LOGDIR/$DATESTR-$DIRNAME/ground-vids"
 ln -s $VIDEODIR/$DATESTR-$DIRNAME $LOGDIR/$DATESTR-$DIRNAME/ground-vids
 
-echo "$LOGDIR/$DATESTR-$DIRNAME/onboard -> $VIDEODIR/$DATESTR-$DIRNAME/onboard"
-ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard $VIDEODIR/$DATESTR-$DIRNAME/onboard
+echo "$LOGDIR/$DATESTR-$DIRNAME/onboard-vids -> $VIDEODIR/$DATESTR-$DIRNAME/onboard-vids"
+ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard-vids $VIDEODIR/$DATESTR-$DIRNAME/onboard-vids
 
 
 # download logs
 while true; do
-    read -p "Do you want to download logs now? [Y/N] " yn
+    read -p "Do you want to copy local logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs $LOGDIR/$DATESTR-$DIRNAME;;
-        [Nn]* ) exit;;
+        [Yy]* ) ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
+    break;
+done
+
+
+while true; do
+    read -p "Do you want to download GPS logs now? [Y/N] " yn
+    case $yn in
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/gps-logs;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+    break;
+done
+
+while true; do
+    read -p "Do you want to download CAM logs now? [Y/N] " yn
+    case $yn in
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/cam-logs;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+    break;
 done
 
 while true; do
     read -p "Do you want to download videos now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadVideos $LOGDIR/$DATESTR-$DIRNAME;;
-        [Nn]* ) exit;;
+        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r";;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
+    break;
 done
