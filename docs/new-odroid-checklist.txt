@@ -47,6 +47,7 @@ cam2: C2:22:09:F2:5F:21
 Update
     sudo crontab -e
     crontab -e
+        procman deputy name
 
 
 UPDATE ARDUREAD
