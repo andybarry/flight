@@ -68,7 +68,7 @@ done
 while true; do
     read -p "Do you want to download GPS logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/gps-logs;;
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/gps-logs "-z";;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
@@ -78,7 +78,7 @@ done
 while true; do
     read -p "Do you want to download CAM logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/cam-logs;;
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/cam-logs "-z";;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
@@ -88,7 +88,7 @@ done
 while true; do
     read -p "Do you want to download videos now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r";;
+        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z";;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac

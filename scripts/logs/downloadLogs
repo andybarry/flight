@@ -8,7 +8,7 @@ read HOST_END
 REMOTE_DIR="$1"
 LOCAL_DIR="$2"
 
-RECURSE=$3
+OPTIONS=$3
 
 if [[ $HOST_END == *"cam"* ]]
 then
@@ -25,12 +25,13 @@ fi
 
 echo "Downloading logs for from: $SSH_TRANSPORT..."
 
-echo rsync --progress "$RECURSE" -z "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
 
 if [[ $HOST_END == *"cam"* ]]
 then
-    rsync --progress --no-inc-recursive $RECURSE -z "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
+    echo rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
+    rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
 else
-    rsync --progress  --no-inc-recursive $RECURSE -z "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
+    echo rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
+    rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
 fi
 
