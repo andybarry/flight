@@ -161,6 +161,14 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT36" variable="lblAirspeed" member="yes">
+										<label>Airspeed: Offline (Mean: -- / Std Dev: --)</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT6" variable="lblGps" member="yes">
 										<label>GPS: Offline (Sats: --)</label>
 									</object>
@@ -192,15 +200,6 @@
 								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT33" variable="lblStereo" member="yes">
 										<label>Stereo: Offline</label>
-									</object>
-									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<option>1</option>
-								</object>
-								<object class="sizeritem">
-									<object class="wxCheckBox" name="ID_CHECKBOX1" variable="chkGoPro" member="yes">
-										<label>GoPro Rolling</label>
-										<handler function="OnchkGoProClick" entry="EVT_CHECKBOX" />
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
@@ -402,6 +401,15 @@
 										<object class="sizeritem">
 											<object class="wxStaticText" name="ID_STATICTEXT35" variable="lblDebug" member="yes">
 												<label>Debug: OK</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="ID_CHECKBOX1" variable="chkGoPro" member="yes">
+												<label>GoPro Rolling</label>
+												<handler function="OnchkGoProClick" entry="EVT_CHECKBOX" />
 											</object>
 											<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>

@@ -2,7 +2,7 @@
 #define CPU_INFO_HANDLER_H
 
 #define MAX_CPU_C_ODROID 81
-#define CPU_SPEED_ODROID 0
+#define CPU_SPEED_ODROID 1704000
 
 #define MAX_CPU_C_LOCAL 95
 
@@ -37,12 +37,13 @@ class CpuInfoHandler : public MultiStatusHandler
                     status = true;
                 }
             } else {
-                if (msg->cpu_temp >= MAX_CPU_C_ODROID) {
+                if (msg->cpu_temp >= MAX_CPU_C_ODROID || msg->cpu_freq < CPU_SPEED_ODROID) {
                     status = false;
                 } else {
                     status = true;
                 }
             }
+
 
             SetStatus(index, status, msg->timestamp);
 

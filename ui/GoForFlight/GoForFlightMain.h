@@ -31,6 +31,7 @@
 #include "StereoHandler.h"
 #include "ControllerHandler.h"
 #include "DebugHandler.h"
+#include "AirspeedHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -65,12 +66,12 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT8;
         static const long ID_STATICTEXT16;
         static const long ID_STATICTEXT9;
+        static const long ID_STATICTEXT36;
         static const long ID_STATICTEXT6;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT34;
         static const long ID_STATICTEXT32;
         static const long ID_STATICTEXT33;
-        static const long ID_CHECKBOX1;
         static const long ID_STATICTEXT1;
         static const long ID_STATICTEXT10;
         static const long ID_STATICTEXT17;
@@ -87,6 +88,7 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT28;
         static const long ID_STATICTEXT29;
         static const long ID_STATICTEXT35;
+        static const long ID_CHECKBOX1;
         static const long ID_PANEL1;
         static const long idMenuQuit;
         static const long idMenuAbout;
@@ -99,6 +101,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblDiskFreeLocal;
         wxStaticText* lblLogCam;
         wxStaticText* lblTimesync;
+        wxStaticText* lblAirspeed;
         wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
         wxStaticText* lblDebug;
@@ -150,6 +153,7 @@ class GoForFlightFrame: public wxFrame
         StereoHandler stereo_handler_;
         ControllerHandler controller_handler_;
         DebugHandler debug_handler_;
+        AirspeedHandler airspeed_handler_;
 
         DECLARE_EVENT_TABLE()
 };

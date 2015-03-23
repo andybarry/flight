@@ -40,6 +40,7 @@
 			<Add option="`wx-config --libs`" />
 			<Add option="`pkg-config --libs lcm glib-2.0`" />
 		</Linker>
+		<Unit filename="AirspeedHandler.h" />
 		<Unit filename="BatteryStatusHandler.h" />
 		<Unit filename="ControllerHandler.h" />
 		<Unit filename="CpuInfoHandler.h" />
