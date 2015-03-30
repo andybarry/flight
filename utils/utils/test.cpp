@@ -1,4 +1,5 @@
 #include "RealtimeUtils.hpp"
+#include "../RollingStatistics/RollingStatistics.hpp"
 #include "gtest/gtest.h"
 
 int main(int argc, char **argv) {
