@@ -21,7 +21,7 @@ int global_beep = 0;
 
 std::string mavlink_channel = "MAVLINK";
 std::string attitude_channel = "attitude";
-std::string airspeed_channel = "airspeed";
+std::string airspeed_channel = "airspeed_unchecked";
 std::string altimeter_channel = "altimeter";
 std::string sideslip_channel = "sideslip";
 std::string gps_channel = "gps";
@@ -534,7 +534,7 @@ int main(int argc,char** argv)
 
 
     } else {
-        fprintf(stderr, "Rrror: no param server, no gps_origin.latlon\n");
+        fprintf(stderr, "Error: no param server, no gps_origin.latlon\n");
         fprintf(stderr, "Error: no param server, can't find R values for state estimator.\n");
         exit(1);
     }
