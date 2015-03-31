@@ -11,7 +11,7 @@
 
 #define MIN_EXPECTED_MPS 0.2
 #define MAX_EXPECTED_GROUND_MPS 5
-#define MIN_EXPECTED_STAND_DEV 0.5
+#define MIN_EXPECTED_STAND_DEV 0.1
 #define NUMBER_MEASUREMENTS_ROLLING 70 // about 1 second
 
 #define MAX_GPS_AIRSPEED_DIFF_MPS 3.5
@@ -68,6 +68,7 @@ void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav
                 // GPS and airspeed differ
 
                 SendNewAirspeedMessage(last_gps_msg->speed, msg);
+                SendDebugMessage("airspeed-check-gps");
 
             } else {
                 // GPS and airspeed agree
@@ -93,11 +94,10 @@ void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav
                 // we also send a debug message to let the user know that something bad is happening
 
                 SendNewAirspeedMessage(FALLBACK_AIRSPEED, msg);
-                SendDebugMessage();
+                SendDebugMessage("airspeed-check-fallback");
 
             } else {
                 // on the ground -- probably nothing is wrong
-
                 SendExistingAirspeedMessage(msg);
             }
 
@@ -176,13 +176,13 @@ void SendExistingAirspeedMessage(const mav_indexed_measurement_t *msg) {
     mav_indexed_measurement_t_publish(lcm_, airspeed_out_channel.c_str(), msg);
 }
 
-void SendDebugMessage() {
+void SendDebugMessage(char *debug_str) {
     if (debug_count % 70 == 0) {
         debug_count = 0;
 
         lcmt_debug debug_msg;
         debug_msg.utime = GetTimestampNow();
-        debug_msg.debug = "airspeed-check";
+        debug_msg.debug = debug_str;
 
         lcmt_debug_publish(lcm_, "debug", &debug_msg);
     }
