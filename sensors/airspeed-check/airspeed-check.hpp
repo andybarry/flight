@@ -21,6 +21,6 @@ void gps_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_
 void SendNewAirspeedMessage(double new_speed, const mav_indexed_measurement_t *old_msg);
 void SendExistingAirspeedMessage(const mav_indexed_measurement_t *msg);
 
-void SendDebugMessage();
+void SendDebugMessage(char *debug_str);
 
 #endif
