@@ -29,7 +29,7 @@ mav_gps_data_t *last_gps_msg = NULL;
 mav_indexed_measurement_t *last_altimeter_msg = NULL;
 
 
-std::string airspeed_in_channel = "airspeed_unchecked";
+std::string airspeed_in_channel = "airspeed-unchecked";
 std::string airspeed_out_channel = "airspeed";
 std::string altimeter_channel = "altitude";
 std::string gps_channel = "gps";

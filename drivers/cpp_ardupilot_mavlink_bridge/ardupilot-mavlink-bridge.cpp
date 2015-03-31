@@ -21,7 +21,7 @@ int global_beep = 0;
 
 std::string mavlink_channel = "MAVLINK";
 std::string attitude_channel = "attitude";
-std::string airspeed_channel = "airspeed_unchecked";
+std::string airspeed_channel = "airspeed-unchecked";
 std::string altimeter_channel = "altimeter";
 std::string sideslip_channel = "sideslip";
 std::string gps_channel = "gps";
