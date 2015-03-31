@@ -326,7 +326,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     lcm.subscribe("debug", &DebugHandler::handleMessage, &debug_handler_);
 
-    lcm.subscribe("airspeed", &AirspeedHandler::handleMessage, &airspeed_handler_);
+    lcm.subscribe("airspeed-unchecked", &AirspeedHandler::handleMessage, &airspeed_handler_);
 
     lcm.subscribe("deltawing_u", &ControllerHandler::handleMessage, &controller_handler_);
 
