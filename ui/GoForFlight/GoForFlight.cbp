@@ -35,11 +35,15 @@
 			<Add option="-Wall" />
 			<Add option="`wx-config --cflags`" />
 			<Add option="`pkg-config --cflags glib-2.0`" />
+			<Add directory="../../externals/gtest/include" />
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
 			<Add option="`pkg-config --libs lcm glib-2.0`" />
+			<Add library="../../externals/gtest/libgtest.a" />
+			<Add library="../../externals/gtest/libgtest_main.a" />
 		</Linker>
+		<Unit filename="../../utils/RollingStatistics/RollingStatistics.cpp" />
 		<Unit filename="AirspeedHandler.h" />
 		<Unit filename="BatteryStatusHandler.h" />
 		<Unit filename="ControllerHandler.h" />
