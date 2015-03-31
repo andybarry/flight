@@ -79,7 +79,7 @@ void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav
             // GPS offline AND potentially bad airspeed
 
             // check the altimeter
-            if (abs(last_altimeter_msg->z_effective[0] - min_altitude) > ALTITUDE_DIFFERENCE_TO_BE_IN_AIR_METERS) {
+            if (last_altimeter_msg != NULL && abs(last_altimeter_msg->z_effective[0] - min_altitude) > ALTITUDE_DIFFERENCE_TO_BE_IN_AIR_METERS) {
                 // in the air
 
                 // if we are here, we have NO CLUE what is going on:
