@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# converts lcm logs in the standard log directory structure to .mat files
+
+CONVERT_DIR=$1
+
+# convert logs in the gps folder
+
+for file in $CONVERT_DIR/gps-logs/*
+do
+    echo "./convertDeltawingSingle $file"
+done
