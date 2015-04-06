@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# converts lcm logs in the standard log directory structure to .mat files
+
+if [[ $1 == "" ]]
+then
+    echo "Usage: convertAllDogs [log directory]"
+    exit 1
+fi
+
+CONVERT_DIR=$1
+
+# convert logs in the gps folder
+
+#for file in `ls $CONVERT_DIR/gps-logs/lcmlog-* |grep -v ".jlp"`
+#do
+    #./convertDeltawingSingle $file
+#done
+
+echo "------------------------"
+echo "Converting local logs..."
+echo "------------------------"
+find $CONVERT_DIR/local-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
+echo "Converting gps logs..."
+echo "------------------------"
+
+find $CONVERT_DIR/gps-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
+echo "Converting cam logs..."
+echo "------------------------"
+
+find $CONVERT_DIR/cam-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+

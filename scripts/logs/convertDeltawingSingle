@@ -1,7 +1,11 @@
 #!/bin/bash
 
+
 TYPELIST=`find $HOME/realtime/LCM/*.py -printf ",%f" | cut -c  2- | sed s/.py//g`
 
+# for some reason the mavlink_msg_container_t causes issues
+TYPELIST=${TYPELIST/,mavlink_msg_container_t/}
 
+export PYTHONPATH=$PYTHONPATH:$HOME/realtime/LCM:$HOME/pronto-distro/build/lib/python2.7/dist-packages/mav
 
-python $HOME/realtime/scripts/logs/log_to_mat.py -f -l $TYPELIST,pose_t,pose_t,ins_t,gps_data_t $1
+python $HOME/realtime/scripts/logs/log_to_mat.py -m -f -l $TYPELIST,pose_t,pose_t,ins_t,gps_data_t $1

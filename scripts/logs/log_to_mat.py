@@ -1,9 +1,9 @@
 #!/usr/bin/python
 #
 #Converts a LCM log to a "matrix" format that is easier to work with in external
-#tools such as Matlab. The set of messages on a given channel can be represented 
+#tools such as Matlab. The set of messages on a given channel can be represented
 #as a matrix, where the columns of this matrix are the the fields of the lcm type
-#with one message per row 
+#with one message per row
 
 import os
 import sys
@@ -36,6 +36,7 @@ def usage():
     -o --outfile=ofname       output data to [ofname] instead of default [filename.mat or stdout]
     -l --lcmtype_pkgs=pkgs    load python modules from comma seperated list of packages [pkgs] defaults to ["botlcm"]
     -v                        Verbose
+    -m --no-m-file            Don't output .m files.
 
     """
     sys.exit()
@@ -53,10 +54,13 @@ class LCMTypeDatabase:
         self.klasses = {}
         for pkg in [ sys.modules[n] for n in package_names ]:
             for mname in dir(pkg):
-                module = getattr(pkg, mname)
-                if type(module) != types.TypeType:
-                    continue
-                self.klasses[module._get_packed_fingerprint()] = module
+                try:
+                    module = getattr(pkg, mname)
+                    if type(module) != types.TypeType:
+                        continue
+                    self.klasses[module._get_packed_fingerprint()] = module
+                except:
+                    pass
 
     def find_type(self, packed_fingerprint):
         return self.klasses.get(packed_fingerprint, None)
@@ -81,7 +85,7 @@ def make_obj_list_accessor(fieldname, func):
 #        for elem in msg_lst:
 #            func(lst, elem)
 #    return list_accessor
-#    
+#
 
 
 def make_lcmtype_accessor(msg):
@@ -148,7 +152,7 @@ def make_lcmtype_string(msg, base=True):
             # check the data type of the array
             if arr.dtype.kind in "bif":
                 # numeric data type
-                
+
                 if base:
                     typeStr.append("%d- %s(%d)" % (count + 1, fieldname, len(arr.ravel())))
                 else:
@@ -191,7 +195,7 @@ def deleteStatusMsg(statMsg):
 longOpts = ["help", "print", "format", "separator", "channelsToProcess", "ignore", "outfile", "lcm_packages"]
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "hpvfs:c:i:o:l:", longOpts)
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "hpvfms:c:i:o:l:", longOpts)
 except getopt.GetoptError, err:
     # print help information and exit:
     print str(err) # will print something like "option -a not recognized"
@@ -221,6 +225,7 @@ channelsToIgnore = ""
 checkIgnore = False
 channelsToProcess = ".*"
 separator = ' '
+output_m_file = True
 for o, a in opts:
     if o == "-v":
         verbose = True
@@ -242,6 +247,8 @@ for o, a in opts:
         checkIgnore = True
     elif o in ("-l", "--lcm_packages="):
         lcm_packages = a.split(",")
+    elif o in ("-m", "--no-m-file"):
+        output_m_file = False
     else:
         assert False, "unhandled option"
 
@@ -271,9 +278,9 @@ statusMsg = ""
 startTime = 0
 
 for e in log:
-    if msgCount == 0: 
+    if msgCount == 0:
         startTime = e.timestamp
-        
+
     if e.channel in ignored_channels:
         continue
     if ((checkIgnore and channelsToIgnore.match(e.channel) and len(channelsToIgnore.match(e.channel).group())==len(e.channel)) \
@@ -294,14 +301,14 @@ for e in log:
     except:
         sys.stderr.write("error: couldn't decode msg on channel %s" % e.channel)
         continue
-    
+
     msgCount = msgCount + 1
     if (msgCount % 5000) == 0:
         statusMsg = deleteStatusMsg(statusMsg)
         statusMsg = "read % d messages, % d %% done" % (msgCount, log.tell() / float(log.size())*100)
         sys.stderr.write(statusMsg)
         sys.stderr.flush()
-    
+
     if e.channel in flatteners:
         flattener = flatteners[e.channel]
     else:
@@ -312,10 +319,10 @@ for e in log:
             statusMsg = deleteStatusMsg(statusMsg)
             typeStr, fieldCount = make_lcmtype_string(msg)
             typeStr.append("%d- log_timestamp" % (fieldCount + 1))
-            
+
             typeStr = "\n#%s  %s :\n#[\n#%s\n#]\n" % (e.channel, lcmtype, "\n#".join(typeStr))
             sys.stderr.write(typeStr)
-                
+
 
 
     a = flattener(msg)
@@ -336,9 +343,9 @@ for e in log:
     else:
         # change all "-" to "_" in the channel names, otherwise we'll have inaccessible matlab variables
         data[e.channel.replace("-","_")].append(a)
-        
-       
-    
+
+
+
 
 deleteStatusMsg(statusMsg)
 if not printOutput:
@@ -354,8 +361,8 @@ if not printOutput:
                 pad = numpy.zeros(maxLen - lengths[count])
                 i.extend(pad)
                 count = count + 1
-            
-            
+
+
     sys.stderr.write("loaded all %d messages, saving to % s\n" % (msgCount, outFname))
 
     if sys.version_info < (2, 6):
@@ -363,9 +370,9 @@ if not printOutput:
     else:
         scipy.io.matlab.mio.savemat(outFname, data)
 
-    
-    mfile = open(dirname + "/" + outBaseName + ".m", "w")
-    loadFunc = """function [d imFnames]=%s()
+    if output_m_file:
+        mfile = open(dirname + "/" + outBaseName + ".m", "w")
+        loadFunc = """function [d imFnames]=%s()
 full_fname = '%s';
 fname = '%s';
 if (exist(full_fname,'file'))
@@ -376,7 +383,5 @@ end
 d = load(filename);
 """ % (outBaseName, outFname, fullPathName)
 
-    
-    
-    mfile.write(loadFunc);
-    mfile.close()
+        mfile.write(loadFunc);
+        mfile.close()

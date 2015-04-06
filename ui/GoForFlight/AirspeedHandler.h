@@ -2,8 +2,7 @@
 #define AIRSPEED_HANDLER_H
 
 #include "../../../pronto-distro/build/include/lcmtypes/mav/indexed_measurement_t.hpp"
-
-#include <deque>
+#include "../../utils/RollingStatistics/RollingStatistics.hpp"
 
 #define MAX_EXPECTED_GROUND_MPS 5
 #define MIN_EXPECTED_CHANGE 0.5
@@ -14,10 +13,13 @@ class AirspeedHandler : public StatusHandler
     public:
         AirspeedHandler() : StatusHandler("Airspeed: ") {
             SetOfflineString("Offline (Mean: -- / Std Dev: --)");
-            total_measurements_ = 0;
+
+            rolling_stats_ = new RollingStatistics(MAX_NUM_IN_MEAN);
 
         }
-        ~AirspeedHandler() {}
+        ~AirspeedHandler() {
+            delete rolling_stats_;
+        }
 
         void handleMessage(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
@@ -31,34 +33,14 @@ class AirspeedHandler : public StatusHandler
 
             // compute a running mean of the speed, and of the standard deviation
 
-            speed_values_.push_back(msg->z_effective[0]);
+            rolling_stats_->AddValue(msg->z_effective[0]);
 
-            if (speed_values_.size() > MAX_NUM_IN_MEAN) {
-                speed_values_.pop_front();
-            }
-
-            // compute statistics
-            std::deque<double>::iterator iter;
-
-            double sum = 0;
-
-            for (iter = speed_values_.begin(); iter != speed_values_.end(); iter++) {
-                sum += *iter;
-            }
-
-            double mean = sum/speed_values_.size();
-
-            double std_dev = 0;
-
-            for (iter = speed_values_.begin(); iter != speed_values_.end(); iter++) {
-                std_dev += (*iter - mean) * (*iter - mean);
-            }
-
-            std_dev = sqrt ( std_dev / speed_values_.size() );
+            double mean = rolling_stats_->GetMean();
+            double std_dev = rolling_stats_->GetStandardDeviation();
 
             boost::format formatter = boost::format("(Mean: %.1f / Std Dev: %.1f)") % mean % std_dev;
 
-            if (mean > MAX_EXPECTED_GROUND_MPS || std_dev < MIN_EXPECTED_CHANGE) {
+            if (mean > MAX_EXPECTED_GROUND_MPS || isnan(std_dev) || std_dev < MIN_EXPECTED_CHANGE) {
                 SetStatus(false, msg->utime);
                 SetOfflineString("Offline " + formatter.str());
             } else {
@@ -70,11 +52,7 @@ class AirspeedHandler : public StatusHandler
 
     private:
 
-        std::deque<double> speed_values_;
-        int total_measurements_;
-
-        double rolling_mean_;
-        double rolling_stand_div_;
+        RollingStatistics *rolling_stats_;
 
 
 
