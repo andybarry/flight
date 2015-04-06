@@ -45,7 +45,7 @@ mav_indexed_measurement_t_subscription_t *airspeed_in_sub;
 mav_indexed_measurement_t_subscription_t *altitude_sub;
 mav_gps_data_t_subscription_t *gps_sub;
 
-
+bool force_fallback_airspeed = false;
 
 
 void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
@@ -54,6 +54,12 @@ void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav
     double airspeed = msg->z_effective[0];
 
     rolling_stats->AddValue(airspeed);
+
+    if (force_fallback_airspeed) {
+        SendNewAirspeedMessage(FALLBACK_AIRSPEED, msg);
+        SendDebugMessage("airspeed-check-fallback");
+        return;
+    }
 
     if (rolling_stats->GetMean() < MIN_EXPECTED_MPS || rolling_stats->GetStandardDeviation() < MIN_EXPECTED_STAND_DEV) {
         // potentially bad value (low mean or low stand dev)
@@ -201,6 +207,7 @@ int main(int argc,char** argv) {
     parser.add(airspeed_out_channel, "o", "airspeed-out-channel", "LCM channel to send corrected airspeed messages on.");
     parser.add(altimeter_channel, "a", "altimeter-channel", "LCM channel to receive altitude messages on.");
     parser.add(gps_channel, "g", "gps-channel", "LCM channel to receive GPS messages on.");
+    parser.add(force_fallback_airspeed, "f", "force-fallback-airspeed", "Force the system to send fallback airspeed messages.");
     parser.parse();
 
 
@@ -227,6 +234,10 @@ int main(int argc,char** argv) {
     signal(SIGINT,sighandler);
 
     printf("Receiving LCM:\n\tAirspeed:%s\n\tGPS: %s\n\tAltitude: %s\n\nSending LCM:\n\t%s\n", airspeed_in_channel.c_str(), gps_channel.c_str(), altimeter_channel.c_str(), airspeed_out_channel.c_str());
+
+    if (force_fallback_airspeed) {
+        printf("WARNING: Fallback airspeed FORCED.\n");
+    }
 
     while (true)
     {
