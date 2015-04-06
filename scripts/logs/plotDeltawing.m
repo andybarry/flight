@@ -4,8 +4,8 @@
 %dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 clear
-dir = '2014-04-18-near-goalposts/mat/';
-filename = 'pass3.mat';
+dir = '2015-03-31-field-test/gps-logs/';
+filename = 'lcmlog_2015_03_31_11.mat';
 
 
 
@@ -19,7 +19,7 @@ loadDeltawing
 [throttle_start, throttle_end] = FindActiveTimes(u.logtime, u.throttle, 1150);
 
 % get altitude start and end times
-[alt_start, alt_end] = FindActiveTimes(baro.logtime, baro.altitude, 7);
+[alt_start, alt_end] = FindActiveTimes(altimeter.logtime, altimeter.altitude, 7);
 % now plot relevant things
 
 start_times = throttle_start - 1;
@@ -27,7 +27,7 @@ end_times = throttle_end + 1;
 
 figure(1)
 clf
-plot(baro.logtime, baro.altitude);
+plot(altimeter.logtime, altimeter.altitude);
 xlim([start_times(1) - 1, end_times(end) + 1]);
 title('Barometric Altitude');
 xlabel('Log time (s)');
@@ -35,7 +35,7 @@ ylabel('Altitude');
 
 hold on
 
-plot(baro.logtime, baro.airspeed.*.44704,'r');
+plot(airspeed.logtime, airspeed.airspeed.*.44704,'r');
 title('Airspeed');
 xlabel('Log time (s)');
 ylabel('Airspeed / Altitude');
