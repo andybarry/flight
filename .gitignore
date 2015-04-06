@@ -16,6 +16,8 @@ LCM/mavlink_message_t.h.rej
 *.dep
 sensors/airspeed-check/airspeed-check
 sensors/airspeed-check/airspeed-check_d
+ui/video-playback/video-playback
+ui/video-playback/video-playback_d
 ui/midi-control/midi-control
 drivers/midi/midi-lcm
 ui/midi-airspeed/midi-airspeed
