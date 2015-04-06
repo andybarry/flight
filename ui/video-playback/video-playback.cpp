@@ -40,7 +40,7 @@ int main(int argc,char** argv) {
 
 
 
-    GstElement *pipeline, *source, *sink;
+    GstElement *pipeline, *sink;
     GstBus *bus;
     GstMessage *msg;
     GstStateChangeReturn ret;
@@ -51,30 +51,33 @@ int main(int argc,char** argv) {
     /* Build the pipeline */
     std::string gstreamer_uri = "playbin2 uri=file://" + filename;
     pipeline = gst_parse_launch(gstreamer_uri.c_str(), NULL);
-    //http://docs.gstreamer.com/media/sintel_trailer-480p.webm", NULL);
+    //pipeline = gst_parse_launch("playbin2 uri=http://docs.gstreamer.com/media/sintel_trailer-480p.webm", NULL);
 
-    sink = gst_element_factory_make ("mfw_v4lsink", "sink");
-    g_object_set(pipeline, "video-sink", sink);
+    //sink = gst_element_factory_make ("mfw_v4lsink", "sink");
 
 
-    /* Create the empty pipeline */
-    pipeline = gst_pipeline_new ("test-pipeline");
-
-    if (!pipeline || !source || !sink) {
-        g_printerr ("Not all elements could be created.\n");
+    if (!pipeline) {
+        g_printerr ("Pipeline could be created.\n");
         return -1;
     }
+
+    //if (!sink) {
+      //  g_printerr ("sink could be created.\n");
+      //  return -1;
+    //}
+
+    //g_object_set( GST_OBJECT(pipeline), "video-sink", sink, NULL);
 
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), source, sink, NULL);
-    if (gst_element_link (source, sink) != TRUE) {
-        g_printerr ("Elements could not be linked.\n");
-        gst_object_unref (pipeline);
-        return -1;
-    }
+    //gst_bin_add_many (GST_BIN (pipeline), source, sink, NULL);
+    //if (gst_element_link (source, sink) != TRUE) {
+        //g_printerr ("Elements could not be linked.\n");
+        //gst_object_unref (pipeline);
+        //return -1;
+    //}
 
   /* Modify the source's properties */
-  g_object_set (source, "pattern", 0, NULL);
+  //g_object_set (source, "pattern", 0, NULL);
 
   /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
