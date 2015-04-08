@@ -15,9 +15,10 @@ function est = TrimEst(start_time, end_time, est_in)
   est.orientation.q2 = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.q2);
   est.orientation.q3 = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.q3);
   
-  est.orientation.yaw = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.yaw);
-  est.orientation.pitch = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.pitch);
   est.orientation.roll = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.roll);
+  est.orientation.pitch = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.pitch);
+  est.orientation.yaw = TrimTimes(start_time, end_time, est_in.logtime, est_in.orientation.yaw);
+  
   
   est.rotation_rate.x = TrimTimes(start_time, end_time, est_in.logtime, est_in.rotation_rate.x);
   est.rotation_rate.y = TrimTimes(start_time, end_time, est_in.logtime, est_in.rotation_rate.y);
@@ -26,6 +27,11 @@ function est = TrimEst(start_time, end_time, est_in)
   est.accel.x = TrimTimes(start_time, end_time, est_in.logtime, est_in.accel.x);
   est.accel.y = TrimTimes(start_time, end_time, est_in.logtime, est_in.accel.y);
   est.accel.z = TrimTimes(start_time, end_time, est_in.logtime, est_in.accel.z);
+
+  for i = 1 : 12
+    est.est_frame(:,i) = TrimTimes(start_time, end_time, est_in.logtime, est_in.est_frame(:,i));
+    %est.drake_frame(:,i) = TrimTimes(start_time, end_time, est_in.logtime, est_in.drake_frame(:,i));
+  end
   
   est.logtime = TrimTimes(start_time, end_time, est_in.logtime, est_in.logtime);
 

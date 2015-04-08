@@ -6,6 +6,7 @@
 
 %filename2 = 'laptop_lcmlog_2013_04_17_00.mat';
 
+
 clear STATE_ESTIMATOR_POSE battery_status stereoBmVals u
 clear imu stereoReplayVals wind_groundspeed attitude est stereoVals 
 clear wind_gspeed baro log stereo_bm wingeron_u airspeed sideslip gps
@@ -21,6 +22,42 @@ clear stereo_octomap stereoOctomapVals
 
 load(strcat(dir, filename));
 %load(strcat(dir, filename2));
+
+if exist('cpu_info_odroid_gps1', 'var')
+  cpu.gps.utime = cpu_info_odroid_gps1(:,1);
+  cpu.gps.freq = cpu_info_odroid_gps1(:,2);
+  cpu.gps.temp = cpu_info_odroid_gps1(:,3);
+  cpu.gps.logtime = cpu_info_odroid_gps1(:,4);
+  log.aircraft_number = 1;
+  clear cpu_info_odroid_gps1
+end
+
+if exist('cpu_info_odroid_gps2', 'var')
+  cpu.gps.utime = cpu_info_odroid_gps2(:,1);
+  cpu.gps.freq = cpu_info_odroid_gps2(:,2);
+  cpu.gps.temp = cpu_info_odroid_gps2(:,3);
+  cpu.gps.logtime = cpu_info_odroid_gps2(:,4);
+  log.aircraft_number = 2;
+  clear cpu_info_odroid_gps2
+end
+
+if exist('cpu_info_odroid_cam1', 'var')
+  cpu.cam.utime = cpu_info_odroid_cam1(:,1);
+  cpu.cam.freq = cpu_info_odroid_cam1(:,2);
+  cpu.cam.temp = cpu_info_odroid_cam1(:,3);
+  cpu.cam.logtime = cpu_info_odroid_cam1(:,4);
+  clear cpu_info_odroid_cam1
+end
+
+if exist('cpu_info_odroid_cam2', 'var')
+  cpu.cam.utime = cpu_info_odroid_cam2(:,1);
+  cpu.cam.freq = cpu_info_odroid_cam2(:,2);
+  cpu.cam.temp = cpu_info_odroid_cam2(:,3);
+  cpu.cam.logtime = cpu_info_odroid_cam2(:,4);
+  clear cpu_info_odroid_cam2
+end
+
+
 
 % grab estimator values
 if (exist('STATE_ESTIMATOR_POSE', 'var'))
@@ -46,13 +83,21 @@ if (exist('STATE_ESTIMATOR_POSE', 'var'))
   est.accel.x = STATE_ESTIMATOR_POSE(:,15);
   est.accel.y = STATE_ESTIMATOR_POSE(:,16);
   est.accel.z = STATE_ESTIMATOR_POSE(:,17);
-
+  
+  % get rpy
+  this_rpy = quat2rpy_array(est.orientation.q0, est.orientation.q1, est.orientation.q2, est.orientation.q3);
+  
+  est.orientation.roll = this_rpy(:,1);
+  est.orientation.pitch = this_rpy(:,2);
+  est.orientation.yaw = this_rpy(:,3);
+  
+  est.est_frame = [est.pos.x, est.pos.y, est.pos.z, this_rpy, ...
+    est.vel.x, est.vel.y, est.vel.z, ...
+    est.rotation_rate.x, est.rotation_rate.y, est.rotation_rate.z];
+  
+  clear this_rpy;
+  
   est.logtime = STATE_ESTIMATOR_POSE(:,18);
-
-  % compute yaw pitch and roll
-  [est.orientation.yaw, est.orientation.pitch, est.orientation.roll] = ...
-    quat2angle( [est.orientation.q0 est.orientation.q1 est.orientation.q2 ...
-    est.orientation.q3]);
   
 end
 clear STATE_ESTIMATOR_POSE;
@@ -280,7 +325,7 @@ altimeter.logtime = altimeterValues(:,8);
 clear altimeterValues
 
 % trajectory number
-if (exist('trajnum'))
+if (exist('trajnum', 'var'))
   trajnum.utime = trajectory_number(:,1);
   trajnum.trajnum = trajectory_number(:,2);
   trajnum.logtime = trajectory_number(:,3);
@@ -296,7 +341,7 @@ end
 #]
 %}
 
-if exist('stereo_control')
+if exist('stereo_control', 'var')
   stereo_controlValues = stereo_control;
   clear stereo_control
   stereo_control.utime = stereo_controlValues(:,1);
@@ -315,7 +360,7 @@ end
 #]
 %}
 
-if exist('tvlqr_action')
+if exist('tvlqr_action', 'var')
   tvlqr.utime = tvlqr_action(:,1);
   tvlqr.trajectory_number = tvlqr_action(:,2);
   tvlqr.logtime = tvlqr_action(:,3);
@@ -327,7 +372,7 @@ end
 
 
 % optotrak
-if (exist('wingeron_x_quat'))
+if (exist('wingeron_x_quat', 'var'))
   optotrak.utime = wingeron_x_quat(:,1);
   optotrak.sec = (optotrak.utime - optotrak.utime(1)) / 1000;
   optotrak.number_of_rigid_bodies = wingeron_x_quat(:,2);
@@ -346,7 +391,7 @@ if (exist('wingeron_x_quat'))
 
 end
 
-if exist('cpu_info_AAAZZZA')
+if exist('cpu_info_AAAZZZA', 'var')
   cpu.laptop.utime = cpu_info_AAAZZZA(:,1);
   cpu.laptop.freq = cpu_info_AAAZZZA(:,2);
   cpu.laptop.temp = cpu_info_AAAZZZA(:,3);
@@ -354,37 +399,7 @@ if exist('cpu_info_AAAZZZA')
   clear cpu_info_AAAZZZA
 end
 
-if exist('cpu_info_odroid_gps1')
-  cpu.gps.utime = cpu_info_odroid_gps1(:,1);
-  cpu.gps.freq = cpu_info_odroid_gps1(:,2);
-  cpu.gps.temp = cpu_info_odroid_gps1(:,3);
-  cpu.gps.logtime = cpu_info_odroid_gps1(:,4);
-  clear cpu_info_odroid_gps1
-end
 
-if exist('cpu_info_odroid_gps2')
-  cpu.gps.utime = cpu_info_odroid_gps2(:,1);
-  cpu.gps.freq = cpu_info_odroid_gps2(:,2);
-  cpu.gps.temp = cpu_info_odroid_gps2(:,3);
-  cpu.gps.logtime = cpu_info_odroid_gps2(:,4);
-  clear cpu_info_odroid_gps2
-end
-
-if exist('cpu_info_odroid_cam1')
-  cpu.cam.utime = cpu_info_odroid_cam1(:,1);
-  cpu.cam.freq = cpu_info_odroid_cam1(:,2);
-  cpu.cam.temp = cpu_info_odroid_cam1(:,3);
-  cpu.cam.logtime = cpu_info_odroid_cam1(:,4);
-  clear cpu_info_odroid_cam1
-end
-
-if exist('cpu_info_odroid_cam2')
-  cpu.cam.utime = cpu_info_odroid_cam2(:,1);
-  cpu.cam.freq = cpu_info_odroid_cam2(:,2);
-  cpu.cam.temp = cpu_info_odroid_cam2(:,3);
-  cpu.cam.logtime = cpu_info_odroid_cam2(:,4);
-  clear cpu_info_odroid_cam2
-end
 
 %{
 #log-info-AAAZZZA  <class 'lcmt_log_size.lcmt_log_size'> :
@@ -397,7 +412,7 @@ end
 #]
 %}
 
-if exist('log_info_odroid_gps2')
+if exist('log_info_odroid_gps2', 'var')
   log.info.gps.utime = log_info_odroid_gps2(:,1);
   log.info.gps.log_number = log_info_odroid_gps2(:,2);
   log.info.gps.log_size = log_info_odroid_gps2(:,3);
@@ -406,7 +421,7 @@ if exist('log_info_odroid_gps2')
   clear log_info_odroid_gps2
 end
 
-if exist('log_info_odroid_gps1')
+if exist('log_info_odroid_gps1', 'var')
   log.info.gps.utime = log_info_odroid_gps1(:,1);
   log.info.gps.log_number = log_info_odroid_gps1(:,2);
   log.info.gps.log_size = log_info_odroid_gps1(:,3);
@@ -415,7 +430,7 @@ if exist('log_info_odroid_gps1')
   clear log_info_odroid_gps1
 end
 
-if exist('log_info_odroid_cam1')
+if exist('log_info_odroid_cam1', 'var')
   log.info.cam.utime = log_info_odroid_cam1(:,1);
   log.info.cam.log_number = log_info_odroid_cam1(:,2);
   log.info.cam.log_size = log_info_odroid_cam1(:,3);
@@ -424,7 +439,7 @@ if exist('log_info_odroid_cam1')
   clear log_info_odroid_cam1
 end
 
-if exist('log_info_odroid_cam2')
+if exist('log_info_odroid_cam2', 'var')
   log.info.cam.utime = log_info_odroid_cam2(:,1);
   log.info.cam.log_number = log_info_odroid_cam2(:,2);
   log.info.cam.log_size = log_info_odroid_cam2(:,3);
@@ -433,7 +448,7 @@ if exist('log_info_odroid_cam2')
   clear log_info_odroid_cam2
 end
 
-if exist('log_info_AAAZZZA')
+if exist('log_info_AAAZZZA', 'var')
   log.info.laptop.utime = log_info_AAAZZZA(:,1);
   log.info.laptop.log_number = log_info_AAAZZZA(:,2);
   log.info.laptop.log_size = log_info_AAAZZZA(:,3);
@@ -444,7 +459,7 @@ end
 
 
 
-if exist('debug')
+if exist('debug', 'var')
   debugValues = debug;
   clear debug;
   debug.utime = debugValues(:,1);
@@ -457,7 +472,7 @@ end
 log.number = filename(end-5:end-4);
 
 mypath = strsplit([dir filename], '/');
-log.name = mypath{end-1};
+log.name = mypath{end};
 clear mypath;
 
 

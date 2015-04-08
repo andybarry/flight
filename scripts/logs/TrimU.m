@@ -6,9 +6,15 @@ function u = TrimU(start_time, end_time, u_in)
   u.elevonR = TrimTimes(start_time, end_time, u_in.logtime, u_in.elevonR);
   u.is_autonomous = TrimTimes(start_time, end_time, u_in.logtime, u_in.is_autonomous);
   u.video_record = TrimTimes(start_time, end_time, u_in.logtime, u_in.video_record);
-  u.elevonL_command = TrimTimes(start_time, end_time, u_in.logtime, u_in.elevonL_command);
-  u.elevonR_command = TrimTimes(start_time, end_time, u_in.logtime, u_in.elevonR_command);
-  u.throttle_command = TrimTimes(start_time, end_time, u_in.logtime, u_in.throttle_command);
+  
+  u.cmd.utime = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.utime);
+  u.cmd.throttle = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.throttle);
+  u.cmd.elevonL = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.elevonL);
+  u.cmd.elevonR = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.elevonR);
+  u.cmd.is_autonomous = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.is_autonomous);
+  u.cmd.video_record = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.video_record);
+  u.cmd.logtime = TrimTimes(start_time, end_time, u_in.logtime, u_in.cmd.logtime);
+  
   u.logtime = TrimTimes(start_time, end_time, u_in.logtime, u_in.logtime);
 
 end
