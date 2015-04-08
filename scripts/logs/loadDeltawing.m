@@ -57,8 +57,6 @@ if exist('cpu_info_odroid_cam2', 'var')
   clear cpu_info_odroid_cam2
 end
 
-
-
 % grab estimator values
 if (exist('STATE_ESTIMATOR_POSE', 'var'))
   est.utime = STATE_ESTIMATOR_POSE(:,1);
@@ -153,24 +151,33 @@ gps.logtime = gpsValues(:,15);
 clear gpsValues
 
 
-%#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
-%#[
-%#1- timestamp
-%#2- throttle
-%#3- elevonLairspeed
-%#4- elevonR
-%#5- is_autonomous
-%#6- video_record
-%#7- log_timestamp
-%#]
+% read servo configuration values
+[rad_to_servo, servo_to_rad, servo_minmax] = ReadSimpleConfigServos(['/home/abarry/realtime/config/plane-odroid-gps' num2str(log.aircraft_number) '.cfg']);
+
+% #servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+% #[
+% #1- timestamp
+% #2- elevonL
+% #3- elevonR
+% #4- throttle
+% #5- is_autonomous
+% #6- video_record
+% #7- log_timestamp
+% #]
+
 
 u.utime = servo_out(:,1);
-u.throttle = servo_out(:,2);
-u.elevonL = servo_out(:,3);
-u.elevonR = servo_out(:,4);
+u.elevonL = servo_out(:,2);
+u.elevonR = servo_out(:,3);
+u.throttle = servo_out(:,4);
 u.is_autonomous = servo_out(:,5);
 u.video_record = servo_out(:,6);
 u.logtime = servo_out(:,7);
+
+u.rad.elevonL = servo_to_rad.elevL_slope .* u.elevonL + servo_to_rad.elevL_y_intercept;
+u.rad.elevonR = servo_to_rad.elevR_slope .* u.elevonR + servo_to_rad.elevR_y_intercept;
+u.rad.throttle = servo_to_rad.throttle_slope .* u.throttle + servo_to_rad.throttle_y_intercept;
+
 clear servo_out
 
 u.cmd.utime = deltawing_u(:,1);
@@ -179,6 +186,12 @@ u.cmd.elevonL = deltawing_u(:,3);
 u.cmd.elevonR = deltawing_u(:,4);
 u.cmd.is_autonomous = deltawing_u(:,5);
 u.cmd.video_record = deltawing_u(:,6);
+
+u.cmd.rad.elevonL = servo_to_rad.elevL_slope .* u.cmd.elevonL + servo_to_rad.elevL_y_intercept;
+u.cmd.rad.elevonR = servo_to_rad.elevR_slope .* u.cmd.elevonR + servo_to_rad.elevR_y_intercept;
+u.cmd.rad.throttle = servo_to_rad.throttle_slope .* u.cmd.throttle + servo_to_rad.throttle_y_intercept;
+
+
 u.cmd.logtime = deltawing_u(:,7);
 clear deltawing_u
 
