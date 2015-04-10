@@ -6,14 +6,56 @@
 
 %filename2 = 'laptop_lcmlog_2013_04_17_00.mat';
 
+
 clear STATE_ESTIMATOR_POSE battery_status stereoBmVals u
 clear imu stereoReplayVals wind_groundspeed attitude est stereoVals 
-clear wind_gspeed baro log stereo_bm wingeron_u baro_airspeed gps
+clear wind_gspeed baro log stereo_bm wingeron_u airspeed sideslip gps
+clear cpu_info_AAAZZZA cpu_info_odroid_gps1 cpu_info_odroid_cam1
+clear cpu_info_odroid_gps2 cpu_info_odroid_cam2
+clear log_info_odroid_gps1 log_info_odroid_cam1
+clear log_info_odroid_gps2 log_info_odroid_cam2
+clear log_info_AAAZZZA deltawing_u tvlqr_action
+clear stereo_control
+clear debug airspeed_unchecked altimeter
 clear servo_out stereo_replay battery gpsValues stereo this_number
 clear stereo_octomap stereoOctomapVals
 
 load(strcat(dir, filename));
 %load(strcat(dir, filename2));
+
+if exist('cpu_info_odroid_gps1', 'var')
+  cpu.gps.utime = cpu_info_odroid_gps1(:,1);
+  cpu.gps.freq = cpu_info_odroid_gps1(:,2);
+  cpu.gps.temp = cpu_info_odroid_gps1(:,3);
+  cpu.gps.logtime = cpu_info_odroid_gps1(:,4);
+  log.aircraft_number = 1;
+  clear cpu_info_odroid_gps1
+end
+
+if exist('cpu_info_odroid_gps2', 'var')
+  cpu.gps.utime = cpu_info_odroid_gps2(:,1);
+  cpu.gps.freq = cpu_info_odroid_gps2(:,2);
+  cpu.gps.temp = cpu_info_odroid_gps2(:,3);
+  cpu.gps.logtime = cpu_info_odroid_gps2(:,4);
+  log.aircraft_number = 2;
+  clear cpu_info_odroid_gps2
+end
+
+if exist('cpu_info_odroid_cam1', 'var')
+  cpu.cam.utime = cpu_info_odroid_cam1(:,1);
+  cpu.cam.freq = cpu_info_odroid_cam1(:,2);
+  cpu.cam.temp = cpu_info_odroid_cam1(:,3);
+  cpu.cam.logtime = cpu_info_odroid_cam1(:,4);
+  clear cpu_info_odroid_cam1
+end
+
+if exist('cpu_info_odroid_cam2', 'var')
+  cpu.cam.utime = cpu_info_odroid_cam2(:,1);
+  cpu.cam.freq = cpu_info_odroid_cam2(:,2);
+  cpu.cam.temp = cpu_info_odroid_cam2(:,3);
+  cpu.cam.logtime = cpu_info_odroid_cam2(:,4);
+  clear cpu_info_odroid_cam2
+end
 
 % grab estimator values
 if (exist('STATE_ESTIMATOR_POSE', 'var'))
@@ -39,15 +81,24 @@ if (exist('STATE_ESTIMATOR_POSE', 'var'))
   est.accel.x = STATE_ESTIMATOR_POSE(:,15);
   est.accel.y = STATE_ESTIMATOR_POSE(:,16);
   est.accel.z = STATE_ESTIMATOR_POSE(:,17);
-
+  
+  % get rpy
+  this_rpy = quat2rpy_array(est.orientation.q0, est.orientation.q1, est.orientation.q2, est.orientation.q3);
+  
+  est.orientation.roll = this_rpy(:,1);
+  est.orientation.pitch = this_rpy(:,2);
+  est.orientation.yaw = this_rpy(:,3);
+  
+  est.est_frame = [est.pos.x, est.pos.y, est.pos.z, this_rpy, ...
+    est.vel.x, est.vel.y, est.vel.z, ...
+    est.rotation_rate.x, est.rotation_rate.y, est.rotation_rate.z];
+  
+  clear this_rpy;
+  
   est.logtime = STATE_ESTIMATOR_POSE(:,18);
-
-  % compute yaw pitch and roll
-  [est.orientation.yaw, est.orientation.pitch, est.orientation.roll] = ...
-    quat2angle( [est.orientation.q0 est.orientation.q1 est.orientation.q2 ...
-    est.orientation.q3]);
   
 end
+clear STATE_ESTIMATOR_POSE;
 
 % battery values
 battery.utime = battery_status(:,1);
@@ -58,6 +109,8 @@ battery.milliamp_hours_total = battery_status(:,4);
 battery.percent_remaining = battery_status(:,5);
 
 battery.logtime = battery_status(:,6);
+clear battery_status;
+
 
 % imu values
 imu.utime = attitude(:,1);
@@ -75,12 +128,7 @@ imu.accel.y = attitude(:,10);
 imu.accel.z = attitude(:,11);
 
 imu.logtime = attitude(:,18);
-
-baro.utime = baro_airspeed(:,1);
-baro.airspeed = baro_airspeed(:,2);
-baro.altitude = baro_airspeed(:,3);
-baro.temperature = baro_airspeed(:,4);
-baro.logtime = baro_airspeed(:,5);
+clear attitude;
 
 %gps
 gpsValues = gps;
@@ -100,26 +148,52 @@ gps.y = gpsValues(:,12);
 gps.z = gpsValues(:,13);
 gps.gps_time = gpsValues(:,14);
 gps.logtime = gpsValues(:,15);
+clear gpsValues
 
 
-%#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
-%#[
-%#1- timestamp
-%#2- throttle
-%#3- elevonL
-%#4- elevonR
-%#5- is_autonomous
-%#6- video_record
-%#7- log_timestamp
-%#]
+% read servo configuration values
+[rad_to_servo, servo_to_rad, servo_minmax] = ReadSimpleConfigServos(['/home/abarry/realtime/config/plane-odroid-gps' num2str(log.aircraft_number) '.cfg']);
+
+% #servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+% #[
+% #1- timestamp
+% #2- elevonL
+% #3- elevonR
+% #4- throttle
+% #5- is_autonomous
+% #6- video_record
+% #7- log_timestamp
+% #]
+
 
 u.utime = servo_out(:,1);
-u.throttle = servo_out(:,2);
-u.elevonL = servo_out(:,3);
-u.elevonR = servo_out(:,4);
+u.elevonL = servo_out(:,2);
+u.elevonR = servo_out(:,3);
+u.throttle = servo_out(:,4);
 u.is_autonomous = servo_out(:,5);
 u.video_record = servo_out(:,6);
 u.logtime = servo_out(:,7);
+
+u.rad.elevonL = servo_to_rad.elevL_slope .* u.elevonL + servo_to_rad.elevL_y_intercept;
+u.rad.elevonR = servo_to_rad.elevR_slope .* u.elevonR + servo_to_rad.elevR_y_intercept;
+u.rad.throttle = servo_to_rad.throttle_slope .* u.throttle + servo_to_rad.throttle_y_intercept;
+
+clear servo_out
+
+u.cmd.utime = deltawing_u(:,1);
+u.cmd.throttle = deltawing_u(:,2);
+u.cmd.elevonL = deltawing_u(:,3);
+u.cmd.elevonR = deltawing_u(:,4);
+u.cmd.is_autonomous = deltawing_u(:,5);
+u.cmd.video_record = deltawing_u(:,6);
+
+u.cmd.rad.elevonL = servo_to_rad.elevL_slope .* u.cmd.elevonL + servo_to_rad.elevL_y_intercept;
+u.cmd.rad.elevonR = servo_to_rad.elevR_slope .* u.cmd.elevonR + servo_to_rad.elevR_y_intercept;
+u.cmd.rad.throttle = servo_to_rad.throttle_slope .* u.cmd.throttle + servo_to_rad.throttle_y_intercept;
+
+
+u.cmd.logtime = deltawing_u(:,7);
+clear deltawing_u
 
 
 
@@ -220,40 +294,100 @@ end
 
 %}
 
+sideslipValues = sideslip;
+clear sideslip;
+sideslip.utime = sideslipValues(:,1);
+sideslip.sideslip = sideslipValues(:,4);
+sideslip.logtime = sideslipValues(:,8);
+clear sideslipValues
 
 
-% wind_groundspeed
+airspeedValues = airspeed;
+clear airspeed;
+airspeed.utime = airspeedValues(:,1);
+airspeed.airspeed = airspeedValues(:,4);
+airspeed.logtime = airspeedValues(:,8);
+clear airspeedValues
 
-if (exist('wind_groundspeed'))
-  wind_gspeed.utime = wind_groundspeed(:,1);
-  wind_gspeed.airspeed = wind_groundspeed(:,2);
-  wind_gspeed.estimated_ground_speed = wind_groundspeed(:,3);
-  wind_gspeed.wind_x = wind_groundspeed(:,4);
-  wind_gspeed.wind_y = wind_groundspeed(:,5);
-  wind_gspeed.wind_z = wind_groundspeed(:,6);
+airspeed_uncheckedValues = airspeed_unchecked;
+clear airspeed_unchecked;
+airspeed_unchecked.utime = airspeed_uncheckedValues(:,1);
+airspeed_unchecked.airspeed = airspeed_uncheckedValues(:,4);
+airspeed_unchecked.logtime = airspeed_uncheckedValues(:,8);
+clear airspeed_uncheckedValues
 
-  wind_gspeed.logtime = wind_groundspeed(:,7);
-end
+%{
+#altimeter  <class 'indexed_measurement_t.indexed_measurement_t'> :
+#[
+#1- utime
+#2- state_utime
+#3- measured_dim
+#4- z_effective(1)
+#5- z_indices(1)
+#6- measured_cov_dim
+#7- R_effective(1)
+#8- log_timestamp
+#]
+%}
 
-
-% baro_airspeed
-baro.utime = baro_airspeed(:,1);
-baro.airspeed = baro_airspeed(:,2);
-baro.baro_altitude = baro_airspeed(:,3);
-baro.temperature = baro_airspeed(:,4);
-baro.logtime = baro_airspeed(:,5);
+altimeterValues = altimeter;
+clear altimeter
+altimeter.utime = altimeterValues(:,1);
+altimeter.altitude = altimeterValues(:,4);
+altimeter.logtime = altimeterValues(:,8);
+clear altimeterValues
 
 % trajectory number
-if (exist('trajnum'))
+if (exist('trajnum', 'var'))
   trajnum.utime = trajectory_number(:,1);
   trajnum.trajnum = trajectory_number(:,2);
   trajnum.logtime = trajectory_number(:,3);
+  clear trajectory_number
 end
 
+%{
+#stereo-control  <class 'lcmt_stereo_control.lcmt_stereo_control'> :
+#[
+#1- timestamp
+#2- stereo_control
+#3- log_timestamp
+#]
+%}
+
+if exist('stereo_control', 'var')
+  stereo_controlValues = stereo_control;
+  clear stereo_control
+  stereo_control.utime = stereo_controlValues(:,1);
+  stereo_control.stereo_control = stereo_controlValues(:,2);
+  stereo_control.logtime = stereo_controlValues(:,3);
+  
+  clear stereo_controlValues;
+end
+
+%{
+#tvlqr-action  <class 'lcmt_tvlqr_controller_action.lcmt_tvlqr_controller_action'> :
+#[
+#1- timestamp
+#2- trajectory_number
+#3- log_timestamp
+#]
+%}
+
+if exist('tvlqr_action', 'var')
+  tvlqr.utime = tvlqr_action(:,1);
+  tvlqr.trajectory_number = tvlqr_action(:,2);
+  tvlqr.logtime = tvlqr_action(:,3);
+  clear tvlqr_action
+end
+
+
+
+
+
 % optotrak
-if (exist('wingeron_x_quat'))
-  optotrak.timestamp = wingeron_x_quat(:,1);
-  optotrak.sec = (optotrak.timestamp - optotrak.timestamp(1)) / 1000;
+if (exist('wingeron_x_quat', 'var'))
+  optotrak.utime = wingeron_x_quat(:,1);
+  optotrak.sec = (optotrak.utime - optotrak.utime(1)) / 1000;
   optotrak.number_of_rigid_bodies = wingeron_x_quat(:,2);
 
   optotrak.x = wingeron_x_quat(:,3);
@@ -266,95 +400,147 @@ if (exist('wingeron_x_quat'))
   optotrak.qz = wingeron_x_quat(:,9);
 
   optotrak.logtime = wingeron_x_quat(:,10);
+  clear wingeron_x_quat
 
+end
+
+if exist('cpu_info_AAAZZZA', 'var')
+  cpu.laptop.utime = cpu_info_AAAZZZA(:,1);
+  cpu.laptop.freq = cpu_info_AAAZZZA(:,2);
+  cpu.laptop.temp = cpu_info_AAAZZZA(:,3);
+  cpu.laptop.logtime = cpu_info_AAAZZZA(:,4);
+  clear cpu_info_AAAZZZA
+end
+
+
+
+%{
+#log-info-AAAZZZA  <class 'lcmt_log_size.lcmt_log_size'> :
+#[
+#1- timestamp
+#2- log_number
+#3- log_size
+#4- disk_space_free
+#5- log_timestamp
+#]
+%}
+
+if exist('log_info_odroid_gps2', 'var')
+  log.info.gps.utime = log_info_odroid_gps2(:,1);
+  log.info.gps.log_number = log_info_odroid_gps2(:,2);
+  log.info.gps.log_size = log_info_odroid_gps2(:,3);
+  log.info.gps.disk_free = log_info_odroid_gps2(:,4);
+  log.info.gps.logtime = log_info_odroid_gps2(:,5);
+  clear log_info_odroid_gps2
+end
+
+if exist('log_info_odroid_gps1', 'var')
+  log.info.gps.utime = log_info_odroid_gps1(:,1);
+  log.info.gps.log_number = log_info_odroid_gps1(:,2);
+  log.info.gps.log_size = log_info_odroid_gps1(:,3);
+  log.info.gps.disk_free = log_info_odroid_gps1(:,4);
+  log.info.gps.logtime = log_info_odroid_gps1(:,5);
+  clear log_info_odroid_gps1
+end
+
+if exist('log_info_odroid_cam1', 'var')
+  log.info.cam.utime = log_info_odroid_cam1(:,1);
+  log.info.cam.log_number = log_info_odroid_cam1(:,2);
+  log.info.cam.log_size = log_info_odroid_cam1(:,3);
+  log.info.cam.disk_free = log_info_odroid_cam1(:,4);
+  log.info.cam.logtime = log_info_odroid_cam1(:,5);
+  clear log_info_odroid_cam1
+end
+
+if exist('log_info_odroid_cam2', 'var')
+  log.info.cam.utime = log_info_odroid_cam2(:,1);
+  log.info.cam.log_number = log_info_odroid_cam2(:,2);
+  log.info.cam.log_size = log_info_odroid_cam2(:,3);
+  log.info.cam.disk_free = log_info_odroid_cam2(:,4);
+  log.info.cam.logtime = log_info_odroid_cam2(:,5);
+  clear log_info_odroid_cam2
+end
+
+if exist('log_info_AAAZZZA', 'var')
+  log.info.laptop.utime = log_info_AAAZZZA(:,1);
+  log.info.laptop.log_number = log_info_AAAZZZA(:,2);
+  log.info.laptop.log_size = log_info_AAAZZZA(:,3);
+  log.info.laptop.disk_free = log_info_AAAZZZA(:,4);
+  log.info.laptop.logtime = log_info_AAAZZZA(:,5);
+  clear log_info_AAAZZZA
+end
+
+
+
+if exist('debug', 'var')
+  debugValues = debug;
+  clear debug;
+  debug.utime = debugValues(:,1);
+  debug.logtime = debugValues(:,2);
+  
+  clear debugValues
 end
 
 % get the run number
 log.number = filename(end-5:end-4);
 
 mypath = strsplit([dir filename], '/');
-log.name = mypath{end-1};
+log.name = mypath{end};
+clear mypath;
 
 
 
 %{
 
-#attitude  <class 'ins_t.ins_t'> :
+#cpu-info-AAAZZZA  <class 'lcmt_cpu_info.lcmt_cpu_info'> :
 #[
-#1- utime
-#2- device_time
-#3- gyro(3)
-#6- mag(3)
-#9- accel(3)
-#12- quat(4)
-#16- pressure
-#17- rel_alt
-#18- log_timestamp
+#1- timestamp
+#2- cpu_freq
+#3- cpu_temp
+#4- log_timestamp
 #]
 
-#baro-airspeed  <class 'lcmt_baro_airspeed.lcmt_baro_airspeed'> :
+#log-info-AAAZZZA  <class 'lcmt_log_size.lcmt_log_size'> :
 #[
-#1- utime
-#2- airspeed
-#3- baro_altitude
-#4- temperature
+#1- timestamp
+#2- log_number
+#3- log_size
+#4- disk_space_free
 #5- log_timestamp
 #]
 
-#wind-groundspeed  <class 'lcmt_wind_groundspeed.lcmt_wind_groundspeed'> :
-#[
-#1- utime
-#2- airspeed
-#3- estimatedGroundSpeed
-#4- wind_x
-#5- wind_y
-#6- wind_z
-#7- log_timestamp
-#]
-
-#STATE_ESTIMATOR_POSE  <class 'pose_t.pose_t'> :
-#[
-#1- utime
-#2- pos(3)
-#5- vel(3)
-#8- orientation(4)
-#12- rotation_rate(3)
-#15- accel(3)
-#18- log_timestamp
-#]
-
-#wingeron_u  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#cpu-info-odroid-cam2  <class 'lcmt_cpu_info.lcmt_cpu_info'> :
 #[
 #1- timestamp
-#2- throttle
-#3- elevonL
-#4- elevonR
-#5- is_autonomous
-#6- video_record
-#7- log_timestamp
+#2- cpu_freq
+#3- cpu_temp
+#4- log_timestamp
 #]
 
-#stereo  <class 'lcmt_stereo.lcmt_stereo'> :
+#log-info-odroid-cam2  <class 'lcmt_log_size.lcmt_log_size'> :
 #[
 #1- timestamp
-#2- number_of_points
-#3- frame_number
-#4- video_number
-#5- x(0)
-#5- y(0)
-#5- z(0)
+#2- log_number
+#3- log_size
+#4- disk_space_free
 #5- log_timestamp
 #]
 
-#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#cpu-info-odroid-gps2  <class 'lcmt_cpu_info.lcmt_cpu_info'> :
 #[
 #1- timestamp
-#2- throttle
-#3- elevonL
-#4- elevonR
-#5- is_autonomous
-#6- video_record
-#7- log_timestamp
+#2- cpu_freq
+#3- cpu_temp
+#4- log_timestamp
+#]
+
+#log-info-odroid-gps2  <class 'lcmt_log_size.lcmt_log_size'> :
+#[
+#1- timestamp
+#2- log_number
+#3- log_size
+#4- disk_space_free
+#5- log_timestamp
 #]
 
 #gps  <class 'gps_data_t.gps_data_t'> :
@@ -383,4 +569,119 @@ log.name = mypath{end-1};
 #5- percent_remaining
 #6- log_timestamp
 #]
+
+#altimeter  <class 'indexed_measurement_t.indexed_measurement_t'> :
+#[
+#1- utime
+#2- state_utime
+#3- measured_dim
+#4- z_effective(1)
+#5- z_indices(1)
+#6- measured_cov_dim
+#7- R_effective(1)
+#8- log_timestamp
+#]
+
+#airspeed-unchecked  <class 'indexed_measurement_t.indexed_measurement_t'> :
+#[
+#1- utime
+#2- state_utime
+#3- measured_dim
+#4- z_effective(1)
+#5- z_indices(1)
+#6- measured_cov_dim
+#7- R_effective(1)
+#8- log_timestamp
+#]
+
+#sideslip  <class 'indexed_measurement_t.indexed_measurement_t'> :
+#[
+#1- utime
+#2- state_utime
+#3- measured_dim
+#4- z_effective(1)
+#5- z_indices(1)
+#6- measured_cov_dim
+#7- R_effective(1)
+#8- log_timestamp
+#]
+
+#airspeed  <class 'indexed_measurement_t.indexed_measurement_t'> :
+#[
+#1- utime
+#2- state_utime
+#3- measured_dim
+#4- z_effective(1)
+#5- z_indices(1)
+#6- measured_cov_dim
+#7- R_effective(1)
+#8- log_timestamp
+#]
+
+#debug  <class 'lcmt_debug.lcmt_debug'> :
+#[
+#1- utime
+#2- log_timestamp
+#]
+
+#servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#[
+#1- timestamp
+#2- elevonL
+#3- elevonR
+#4- throttle
+#5- is_autonomous
+#6- video_record
+#7- log_timestamp
+#]
+
+#attitude  <class 'ins_t.ins_t'> :
+#[
+#1- utime
+#2- device_time
+#3- gyro(3)
+#6- mag(3)
+#9- accel(3)
+#12- quat(4)
+#16- pressure
+#17- rel_alt
+#18- log_timestamp
+#]
+
+#STATE_ESTIMATOR_POSE  <class 'pose_t.pose_t'> :
+#[
+#1- utime
+#2- pos(3)
+#5- vel(3)
+#8- orientation(4)
+#12- rotation_rate(3)
+#15- accel(3)
+#18- log_timestamp
+#]
+
+#deltawing_u  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
+#[
+#1- timestamp
+#2- elevonL
+#3- elevonR
+#4- throttle
+#5- is_autonomous
+#6- video_record
+#7- log_timestamp
+#]
+                                
+#stereo-control  <class 'lcmt_stereo_control.lcmt_stereo_control'> :
+#[
+#1- timestamp
+#2- stereo_control
+#3- log_timestamp
+#]
+
+#tvlqr-action  <class 'lcmt_tvlqr_controller_action.lcmt_tvlqr_controller_action'> :
+#[
+#1- timestamp
+#2- trajectory_number
+#3- log_timestamp
+#]
+
 %}
