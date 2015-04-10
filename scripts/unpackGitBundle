@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: unpackGitBundle <git bundle file>"
+    exit 1
+fi
+
+cd $HOME/realtime
+echo "Adding remote..."
+git remote add bundle $1
+
+echo "Merging to HEAD..."
+git pull bundle HEAD && git remote remove bundle && echo "Backing up bundle..." && mv $1 $1.merged.`date "+%F.%T"`
