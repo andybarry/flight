@@ -15,6 +15,8 @@
 #include "lcmtypes/pronto_utime_t.h"
 #include "lcmtypes/mav_filter_state_t.h"
 
+#define MAX_SWITCH_MAPPING 20
+
 using namespace std;
 
 void sighandler(int dum);

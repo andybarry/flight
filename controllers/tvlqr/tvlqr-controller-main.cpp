@@ -26,6 +26,10 @@ extern bot_lcmgl_t* lcmgl;
 extern string deltawing_u_channel;
 extern string pronto_init_channel;
 extern string pronto_reset_complete_channel;
+extern string tvlqr_action_out_channel;
+
+extern int number_of_switch_positions;
+extern int switch_mapping[100];
 
 extern double sigma0_vb;
 
@@ -49,6 +53,7 @@ int main(int argc,char** argv) {
     parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
+    parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
     parser.add(deltawing_u_channel, "u", "deltawing-u-channel", "LCM channel to send control messages on.");
     parser.add(pronto_init_channel, "i", "pronto-init-channel", "LCM channel to send pronto re-init messages on.");
     parser.add(pronto_state_channel, "s", "pronto-state-channel", "LCM channel that pronto publishes its state on.");
@@ -92,6 +97,11 @@ int main(int argc,char** argv) {
 
     sigma0_chi_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_z");
     sigma0_chi_z = deg2rad(sigma0_chi_z);
+
+    number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
+
+    bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_mapping", switch_mapping, number_of_switch_positions);
+
 
     control = new TvlqrControl(converter);
 

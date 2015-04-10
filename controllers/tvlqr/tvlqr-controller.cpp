@@ -26,6 +26,7 @@ bot_lcmgl_t* lcmgl;
 string deltawing_u_channel = "deltawing_u";
 string pronto_init_channel = "MAV_STATE_EST_INITIALIZER";
 string pronto_reset_complete_channel = "MAV_STATE_EST_INIT_COMPLETE";
+string tvlqr_action_out_channel = "tvlqr-action-out";
 
 bool state_estimator_init = true;
 
@@ -42,6 +43,9 @@ double sigma0_chi_xy;
 double sigma0_chi_z;
 
 int64_t last_ti_state_estimator_reset = 0;
+
+int number_of_switch_positions = -1;
+int switch_mapping[MAX_SWITCH_MAPPING];
 
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
@@ -114,25 +118,12 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     int lib_num = 0;
 
-    switch (msg->trajectory_number) {
-        case 0:
-            lib_num = 10000; // trim trajectory
-            break;
-
-        case 1:
-            lib_num = 10001; // trim trajectory
-            break;
-
-        case 2:
-            lib_num = 10002; // trim trajectory
-            break;
-
-        default:
-            cerr << "Warning, unrecognized trajectory number: " << msg->trajectory_number << endl;
-
-            lib_num = 0;
-            break;
+    if (number_of_switch_positions < 0 || msg->trajectory_number > number_of_switch_positions) {
+        std::cerr << "ERROR: number of switch positions is " << number_of_switch_positions << " but msg->trajectory_number is " << msg->trajectory_number << std::endl;
+        return;
     }
+
+    lib_num = switch_mapping[msg->trajectory_number];
 
     // getting an action means we should start a new TVLQR controller!
 
@@ -142,6 +133,11 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
         cerr << "Warning: trajectory number " << lib_num << " was NULL!  Aborting trajectory run." << endl;
         return;
     }
+
+    lcmt_tvlqr_controller_action msg_out;
+    msg_out.timestamp = GetTimestampNow();
+    msg_out.trajectory_number = lib_num;
+    lcmt_tvlqr_controller_action_publish(lcm, tvlqr_action_out_channel.c_str(), &msg_out);
 
     control->SetTrajectory(traj);
 
