@@ -4,7 +4,7 @@
 
 LCMDIR=../../LCM/
 
-REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv octomap gstreamer-0.10'
+REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv octomap'
 
 
 # -------- includes ----------

@@ -413,18 +413,23 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
             int traj_switch;
 
-            if (servomsg.servo6_raw > 1700) {
-                // switch position 0
-                traj_switch = 0;
-            } else if (servomsg.servo6_raw > 1300) {
-                // switch position 1
+            //std::cout << servomsg.servo6_raw << " ";
 
-                traj_switch = 1;
-            } else {
-                // switch position 2
-
+            if (servomsg.servo6_raw > 1800) {
                 traj_switch = 2;
+            } else if (servomsg.servo6_raw > 1600) {
+                traj_switch = 1;
+            } else if (servomsg.servo6_raw > 1400) {
+                traj_switch = 0;
+            } else if (servomsg.servo6_raw > 1200) {
+                traj_switch = 5;
+            } else if (servomsg.servo6_raw > 1000) {
+                traj_switch = 4;
+            } else {
+                traj_switch = 3;
             }
+
+            //std::cout << traj_switch << std::endl;
 
             if (last_stereo_control != servoOutMsg.video_record)
             {
