@@ -181,9 +181,9 @@ u.rad.throttle = servo_to_rad.throttle_slope .* u.throttle + servo_to_rad.thrott
 clear servo_out
 
 u.cmd.utime = deltawing_u(:,1);
-u.cmd.throttle = deltawing_u(:,2);
-u.cmd.elevonL = deltawing_u(:,3);
-u.cmd.elevonR = deltawing_u(:,4);
+u.cmd.elevonL = deltawing_u(:,2);
+u.cmd.elevonR = deltawing_u(:,3);
+u.cmd.throttle = deltawing_u(:,4);
 u.cmd.is_autonomous = deltawing_u(:,5);
 u.cmd.video_record = deltawing_u(:,6);
 
