@@ -7,4 +7,4 @@ Parameters =
 0.000     
 0.036     
 
-K_pd from APM WITH aggressive YAW
+K_pd from APM WITH YAW
