@@ -168,11 +168,24 @@ void Hud::DrawAirspeed(Mat hud_img) {
     Point text_orgin(airspeed_left + airspeed_box_width - text_size.width,
         airspeed_top + airspeed_box_height - baseline);
 
+    PutHudText(hud_img, airspeed_str, text_orgin);
 
-    if (airspeed_ == airspeed_unchecked_) {
-        PutHudText(hud_img, airspeed_str, text_orgin);
-    } else {
-        putText(hud_img, airspeed_str, text_orgin, text_font_, hud_font_scale_, Scalar(0, 0, 0.8));
+    if (airspeed_ != airspeed_unchecked_) {
+
+        string airspeed_unchecked_str;
+        if (airspeed_unchecked_ > -10000) {
+            char airspeed_unchecked_char[100];
+
+            sprintf(airspeed_unchecked_char, " %.0f", airspeed_unchecked_);
+
+            airspeed_unchecked_str = airspeed_unchecked_char;
+        } else {
+            airspeed_unchecked_str = "--";
+        }
+
+        Point text_unchecked_orgin(airspeed_left, airspeed_top + airspeed_box_height + baseline + text_size.height);
+
+        putText(hud_img, airspeed_unchecked_str, text_unchecked_orgin, text_font_, hud_font_scale_, Scalar(0, 0, 0.8));
     }
 }
 
