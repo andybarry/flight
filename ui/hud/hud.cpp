@@ -170,7 +170,7 @@ void Hud::DrawAirspeed(Mat hud_img) {
 
     PutHudText(hud_img, airspeed_str, text_orgin);
 
-    if (airspeed_ != airspeed_unchecked_) {
+    if (abs(airspeed_ - airspeed_unchecked_) > 2.0) {
 
         string airspeed_unchecked_str;
         if (airspeed_unchecked_ > -10000) {
