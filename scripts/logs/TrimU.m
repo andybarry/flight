@@ -7,9 +7,13 @@ function u = TrimU(start_time, end_time, u_in)
   u.is_autonomous = TrimTimes(start_time, end_time, u_in.logtime, u_in.is_autonomous);
   u.video_record = TrimTimes(start_time, end_time, u_in.logtime, u_in.video_record);
   
+  u.trim = u_in.trim;
+  
   u.rad.elevonL = TrimTimes(start_time, end_time, u_in.logtime, u_in.rad.elevonL);
   u.rad.elevonR = TrimTimes(start_time, end_time, u_in.logtime, u_in.rad.elevonR);
   u.rad.throttle = TrimTimes(start_time, end_time, u_in.logtime, u_in.rad.throttle);
+  
+  u.rad.trim = u_in.rad.trim;
   
   u.cmd.utime = TrimTimes(start_time, end_time, u_in.cmd.logtime, u_in.cmd.utime);
   u.cmd.throttle = TrimTimes(start_time, end_time, u_in.cmd.logtime, u_in.cmd.throttle);
