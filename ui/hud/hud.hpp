@@ -15,7 +15,7 @@ using namespace std;
 class Hud {
 
     private:
-        float airspeed_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
+        float airspeed_, airspeed_unchecked_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
         long timestamp_;
         int frame_number_, video_number_;
         int scale_factor_;
@@ -28,6 +28,7 @@ class Hud {
         float pitch_range_of_lens_;
         int is_autonomous_;
         int clutter_level_;
+        int traj_number_;
 
 
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
@@ -71,6 +72,10 @@ class Hud {
 
         void SetAirspeed(float airspeed_in_mps) { airspeed_
             = 2.23694*airspeed_in_mps; }
+
+        void SetAirspeedUnchecked(float airspeed_unchecked_in_mps) { airspeed_unchecked_
+            = 2.23694*airspeed_unchecked_in_mps; }
+
         void SetAltitude(float altitude_in_meters) { altitude_ = 3.28084*altitude_in_meters; }
 
         void SetGpsSpeed(float gps_speed_in_mps) { gps_speed_ = gps_speed_in_mps * 2.23694; }
@@ -111,6 +116,8 @@ class Hud {
         void SetFrameNumber(int frame_number_in) { frame_number_ = frame_number_in; }
 
         void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
+
+        void SetTrajectoryNumber(int traj_number) { traj_number_ = traj_number; }
 
         void SetImageScaling(float scale_factor) { scale_factor_ = scale_factor; }
         int GetImageScaling() { return scale_factor_; }

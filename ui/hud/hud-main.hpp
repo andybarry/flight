@@ -8,6 +8,7 @@
 #include "../../LCM/lcmt_optotrak.h"
 #include "../../LCM/lcmt_battery_status.h"
 #include "../../LCM/lcmt_deltawing_u.h"
+#include "../../LCM/lcmt_tvlqr_controller_action.h"
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
 
@@ -49,10 +50,16 @@ void stereo_bm_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 
 // sensor handlers
 void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user);
+
+void airspeed_unchecked_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user);
+
 void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user);
 void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user);
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
+
+// trajectory handler
+void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user);
 
 // octomap handler
 void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user);

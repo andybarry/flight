@@ -11,6 +11,7 @@ Hud::Hud(Scalar hud_color) {
     pitch_range_of_lens_ = 108.2; // measured for the calibrated and rectified image
 
     airspeed_ = -10001;
+    airspeed_unchecked_ = -10001;
     altitude_ = -10001;
     gps_speed_= -10001;
     battery_voltage_ = -10001;
@@ -29,6 +30,7 @@ Hud::Hud(Scalar hud_color) {
     q3_ = 0;
     is_autonomous_ = 0;
     clutter_level_ = 5;
+    traj_number_ = -1;
 }
 
 
@@ -167,6 +169,24 @@ void Hud::DrawAirspeed(Mat hud_img) {
         airspeed_top + airspeed_box_height - baseline);
 
     PutHudText(hud_img, airspeed_str, text_orgin);
+
+    if (abs(airspeed_ - airspeed_unchecked_) > 2.0) {
+
+        string airspeed_unchecked_str;
+        if (airspeed_unchecked_ > -10000) {
+            char airspeed_unchecked_char[100];
+
+            sprintf(airspeed_unchecked_char, " %.0f", airspeed_unchecked_);
+
+            airspeed_unchecked_str = airspeed_unchecked_char;
+        } else {
+            airspeed_unchecked_str = "--";
+        }
+
+        Point text_unchecked_orgin(airspeed_left, airspeed_top + airspeed_box_height + baseline + text_size.height);
+
+        putText(hud_img, airspeed_unchecked_str, text_unchecked_orgin, text_font_, hud_font_scale_, Scalar(0, 0, 0.8));
+    }
 }
 
 void Hud::DrawAltitude(Mat hud_img) {
@@ -957,6 +977,23 @@ void Hud::DrawAutonomous(Mat hud_img) {
     if (is_autonomous_ == 1) {
         str = "AUTONOMOUS";
         left = 0.70 * hud_img.cols;
+
+        // check for trajectory number
+        if (traj_number_ >= 0) {
+            // draw the trajectory number
+
+            int baseline = 0;
+            Size text_size_autonomous = getTextSize(str, text_font_, hud_font_scale_, text_thickness_, &baseline);
+
+            string traj_str = "T: " + std::to_string(traj_number_);
+
+            Size text_size_traj = getTextSize(traj_str, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+
+            int left_traj = left + text_size_autonomous.width - text_size_traj.width;
+
+            PutHudTextSmall(hud_img, traj_str, Point(left_traj, top + text_size_autonomous.height));
+        }
+
     } else {
         str = "MANUAL";
         left = 0.82 * hud_img.cols;

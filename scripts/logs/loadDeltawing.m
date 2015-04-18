@@ -152,7 +152,7 @@ clear gpsValues
 
 
 % read servo configuration values
-[rad_to_servo, servo_to_rad, servo_minmax] = ReadSimpleConfigServos(['/home/abarry/realtime/config/plane-odroid-gps' num2str(log.aircraft_number) '.cfg']);
+[rad_to_servo, servo_to_rad, servo_minmaxtrim] = ReadSimpleConfigServos(['/home/abarry/realtime/config/plane-odroid-gps' num2str(log.aircraft_number) '.cfg']);
 
 % #servo_out  <class 'lcmt_deltawing_u.lcmt_deltawing_u'> :
 % #[
@@ -174,13 +174,26 @@ u.is_autonomous = servo_out(:,5);
 u.video_record = servo_out(:,6);
 u.logtime = servo_out(:,7);
 
+u.trim.zero.elevonL = servo_minmaxtrim.elevL_trim;
+u.trim.zero.elevonR = servo_minmaxtrim.elevR_trim;
+
+u.trim.flight.elevonL = servo_minmaxtrim.elevL_flight_trim;
+u.trim.flight.elevonR = servo_minmaxtrim.elevR_flight_trim;
+
 % throttle can exceed the top value, but don't do that since that confuses
 % scripts down the line. Just max it out at the top value
-u.throttle = min(u.throttle, servo_minmax.throttle_max);
+u.throttle = min(u.throttle, servo_minmaxtrim.throttle_max);
 
 u.rad.elevonL = servo_to_rad.elevL_slope .* u.elevonL + servo_to_rad.elevL_y_intercept;
 u.rad.elevonR = servo_to_rad.elevR_slope .* u.elevonR + servo_to_rad.elevR_y_intercept;
 u.rad.throttle = servo_to_rad.throttle_slope .* u.throttle + servo_to_rad.throttle_y_intercept;
+
+u.rad.trim.zero.elevonL = servo_to_rad.elevL_slope .* u.trim.zero.elevonL + servo_to_rad.elevL_y_intercept;
+u.rad.trim.zero.elevonR = servo_to_rad.elevR_slope .* u.trim.zero.elevonR + servo_to_rad.elevR_y_intercept;
+
+
+u.rad.trim.flight.elevonL = servo_to_rad.elevL_slope .* u.trim.flight.elevonL + servo_to_rad.elevL_y_intercept;
+u.rad.trim.flight.elevonR = servo_to_rad.elevR_slope .* u.trim.flight.elevonR + servo_to_rad.elevR_y_intercept;
 
 clear servo_out
 
@@ -192,14 +205,14 @@ u.cmd.is_autonomous = deltawing_u(:,5);
 u.cmd.video_record = deltawing_u(:,6);
 
 % ensure commands never exceed allowed values
-u.cmd.elevonL = max(u.cmd.elevonL, servo_minmax.elevL_min);
-u.cmd.elevonL = min(u.cmd.elevonL, servo_minmax.elevL_max);
+u.cmd.elevonL = max(u.cmd.elevonL, servo_minmaxtrim.elevL_min);
+u.cmd.elevonL = min(u.cmd.elevonL, servo_minmaxtrim.elevL_max);
 
-u.cmd.elevonR = max(u.cmd.elevonR, servo_minmax.elevR_min);
-u.cmd.elevonR = min(u.cmd.elevonR, servo_minmax.elevR_max);
+u.cmd.elevonR = max(u.cmd.elevonR, servo_minmaxtrim.elevR_min);
+u.cmd.elevonR = min(u.cmd.elevonR, servo_minmaxtrim.elevR_max);
 
-u.cmd.throttle = max(u.cmd.throttle, servo_minmax.throttle_min);
-u.cmd.throttle = min(u.cmd.throttle, servo_minmax.throttle_max);
+u.cmd.throttle = max(u.cmd.throttle, servo_minmaxtrim.throttle_min);
+u.cmd.throttle = min(u.cmd.throttle, servo_minmaxtrim.throttle_max);
 
 u.cmd.rad.elevonL = servo_to_rad.elevL_slope .* u.cmd.elevonL + servo_to_rad.elevL_y_intercept;
 u.cmd.rad.elevonR = servo_to_rad.elevR_slope .* u.cmd.elevonR + servo_to_rad.elevR_y_intercept;

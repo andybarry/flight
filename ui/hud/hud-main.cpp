@@ -21,6 +21,7 @@ lcm_t * lcm;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 mav_pose_t_subscription_t *mav_pose_t_replay_sub;
 mav_indexed_measurement_t_subscription_t *airspeed_sub;
+mav_indexed_measurement_t_subscription_t *airspeed_unchecked_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
 lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
@@ -29,7 +30,9 @@ lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_stereo_subscription_t *stereo_sub;
 lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
+lcmt_tvlqr_controller_action_subscription_t *tvlqr_action_sub;
 octomap_raw_t_subscription_t *octomap_sub;
+
 
 mutex image_mutex;
 Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in the stereo handler and in the main loop
@@ -169,6 +172,11 @@ int main(int argc,char** argv) {
         airspeed_sub = mav_indexed_measurement_t_subscribe(lcm, airspeed_channel, &airspeed_handler, &hud);
     }
 
+    char *airspeed_unchecked_channel;
+    if (bot_param_get_str(param, "lcm_channels.airspeed_unchecked", &airspeed_unchecked_channel) >= 0) {
+        airspeed_unchecked_sub = mav_indexed_measurement_t_subscribe(lcm, airspeed_unchecked_channel, &airspeed_unchecked_handler, &hud);
+    }
+
     char *servo_out_channel;
     if (bot_param_get_str(param, "lcm_channels.servo_out", &servo_out_channel) >= 0) {
         servo_out_sub = lcmt_deltawing_u_subscribe(lcm, servo_out_channel, &servo_out_handler, &hud);
@@ -207,6 +215,11 @@ int main(int argc,char** argv) {
     char *stereo_bm_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo_bm", &stereo_bm_channel) >= 0) {
         stereo_bm_sub = lcmt_stereo_subscribe(lcm, stereo_bm_channel, &stereo_bm_handler, NULL);
+    }
+
+    char *tvlqr_action_channel;
+    if (bot_param_get_str(param, "lcm_channels.tvlqr_action", &tvlqr_action_channel) >= 0) {
+        tvlqr_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel, &tvlqr_action_handler, &hud);
     }
 
     // control-c handler
@@ -651,6 +664,14 @@ void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav
     hud->SetAirspeed(msg->z_effective[0]);
 }
 
+void airspeed_unchecked_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
+
+    Hud *hud = (Hud*)user;
+
+    hud->SetAirspeedUnchecked(msg->z_effective[0]);
+
+}
+
 void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_battery_status *msg, void *user) {
     Hud *hud = (Hud*)user;
 
@@ -705,6 +726,13 @@ void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     octomap_mutex.unlock();
 
 }
+
+void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
+    Hud *hud = (Hud*)user;
+
+    hud->SetTrajectoryNumber(msg->trajectory_number);
+}
+
 
 void Get2DPointsFromLcmXY(const lcmt_stereo_with_xy *msg, vector<Point> *xy_points) {
     for (int i = 0; i < msg->number_of_points; i ++) {
