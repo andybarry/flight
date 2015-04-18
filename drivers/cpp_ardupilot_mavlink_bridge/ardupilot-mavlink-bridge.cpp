@@ -411,23 +411,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // send the lcm message
             lcmt_deltawing_u_publish(lcm_, servo_out_channel.c_str(), &servoOutMsg);
 
-            int traj_switch;
-
             //std::cout << servomsg.servo6_raw << " ";
 
-            if (servomsg.servo6_raw > 1800) {
-                traj_switch = 2;
-            } else if (servomsg.servo6_raw > 1600) {
-                traj_switch = 1;
-            } else if (servomsg.servo6_raw > 1400) {
-                traj_switch = 0;
-            } else if (servomsg.servo6_raw > 1200) {
-                traj_switch = 5;
-            } else if (servomsg.servo6_raw > 1000) {
-                traj_switch = 4;
-            } else {
-                traj_switch = 3;
-            }
+
 
             //std::cout << traj_switch << std::endl;
 
@@ -447,6 +433,10 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
                 // send trajectory messages with autonomous flight messages
                 if (servoOutMsg.is_autonomous == 1) {
+
+                    int traj_switch;
+                    traj_switch = ServoToTrajSwitch(servomsg.servo6_raw);
+
                     lcmt_tvlqr_controller_action traj_msg;
 
                     traj_msg.timestamp = getTimestampNow();
@@ -478,6 +468,28 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             break;
 
     }
+}
+
+int ServoToTrajSwitch(int servo_value) {
+    std::cout << servo_value << std::endl;
+
+    int traj_switch;
+
+    if (servo_value > 1800) {
+        traj_switch = 2;
+    } else if (servo_value > 1600) {
+        traj_switch = 1;
+    } else if (servo_value > 1400) {
+        traj_switch = 0;
+    } else if (servo_value > 1200) {
+        traj_switch = 5;
+    } else if (servo_value > 1000) {
+        traj_switch = 4;
+    } else {
+        traj_switch = 3;
+    }
+
+    return traj_switch;
 }
 
 
