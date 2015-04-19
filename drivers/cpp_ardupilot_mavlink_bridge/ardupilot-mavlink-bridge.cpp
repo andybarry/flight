@@ -19,6 +19,9 @@ double elev_origin;
 
 int global_beep = 0;
 
+int number_of_switch_positions;
+int switch_rc_us[100];
+
 std::string mavlink_channel = "MAVLINK";
 std::string attitude_channel = "attitude";
 std::string airspeed_channel = "airspeed-unchecked";
@@ -473,23 +476,20 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 int ServoToTrajSwitch(int servo_value) {
     std::cout << servo_value << std::endl;
 
-    int traj_switch;
+    int min_delta = -1;
+    int min_index = -1;
 
-    if (servo_value > 1800) {
-        traj_switch = 2;
-    } else if (servo_value > 1600) {
-        traj_switch = 1;
-    } else if (servo_value > 1400) {
-        traj_switch = 0;
-    } else if (servo_value > 1200) {
-        traj_switch = 5;
-    } else if (servo_value > 1000) {
-        traj_switch = 4;
-    } else {
-        traj_switch = 3;
+    for (int i = 0; i < number_of_switch_positions; i++)
+    {
+        int delta = abs(servo_value - switch_rc_us[i]);
+
+        if (min_index < 0 || delta < min_delta) {
+            min_delta = delta;
+            min_index = i;
+        }
     }
 
-    return traj_switch;
+    return min_index;
 }
 
 
@@ -547,12 +547,17 @@ int main(int argc,char** argv)
         airspeed_r = bot_param_get_double_or_fail(param, "state_estimator.airspeed.r");
         sideslip_r = bot_param_get_double_or_fail(param, "state_estimator.sideslip.r");
 
+        number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
+
+        bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_rc_us", switch_rc_us, number_of_switch_positions);
+
 
 
 
     } else {
         fprintf(stderr, "Error: no param server, no gps_origin.latlon\n");
         fprintf(stderr, "Error: no param server, can't find R values for state estimator.\n");
+        fprintf(stderr, "Error: no param server, can't find trajectory switch mappings.\n");
         exit(1);
     }
 
