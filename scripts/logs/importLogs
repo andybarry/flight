@@ -1,4 +1,4 @@
-#!/bin/bash
+    #!/bin/bash
 
 # automatically create directories for a new log
 
@@ -20,11 +20,48 @@ if [ -z "$DATESTR" ]; then
     DATESTR=`date "+%Y-%m-%d"`
 fi
 
-# query the user for the name of the directory
+counter=1
+for dir in $LOGDIR/$DATESTR-*
+do
+    if [ -d $dir ]
+    then
+        if [ $counter -eq 1 ]
+        then
+            echo "[0]: <new directory>"
+        fi
 
-echo "Please enter the name:"
-echo -n "$DATESTR-"
-read DIRNAME
+        echo "[$counter]: $dir"
+        dir_array[$counter]=$dir
+        counter=$((counter+1))
+    fi
+done
+
+if [ $counter -gt 1 ]
+then
+    while [ -z $DIRNAME ]
+    do
+        echo -n "Selection: "
+        read SELECTION
+
+        if [ "$SELECTION" -eq 0 ]
+        then
+            # got something else
+            echo "Please enter the name:"
+            echo -n "$DATESTR-"
+            read DIRNAME
+        else
+            selected_dir=${dir_array[$SELECTION]}
+
+            DIRNAME=${selected_dir/"$LOGDIR/$DATESTR-"/}
+        fi
+    done
+else
+    # query the user for the name of the directory
+
+    echo "Please enter the name:"
+    echo -n "$DATESTR-"
+    read DIRNAME
+fi
 
 echo "Creating directories..."
 echo "$VIDEODIR/$DATESTR-$DIRNAME"
