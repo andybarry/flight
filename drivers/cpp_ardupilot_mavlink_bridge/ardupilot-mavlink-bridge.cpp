@@ -410,7 +410,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // send the lcm message
             lcmt_deltawing_u_publish(lcm_, servo_out_channel.c_str(), &servoOutMsg);
 
-            std::cout << servomsg.servo6_raw << std::endl;
+            //std::cout << servomsg.servo6_raw << std::endl;
 
             if (last_stereo_control != servoOutMsg.video_record)
             {

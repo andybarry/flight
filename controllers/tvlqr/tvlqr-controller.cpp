@@ -157,7 +157,6 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 }
 
 int ServoToTrajectorySwitchPosition(int servo_value) {
-    std::cout << servo_value << std::endl;
 
     int min_delta = -1;
     int min_index = -1;
