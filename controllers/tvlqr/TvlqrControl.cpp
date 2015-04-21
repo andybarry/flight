@@ -7,12 +7,13 @@
 
 #include "TvlqrControl.hpp"
 
-TvlqrControl::TvlqrControl(const ServoConverter *converter) {
+TvlqrControl::TvlqrControl(const ServoConverter *converter, Trajectory *stable_controller) {
     current_trajectory_ = NULL;
     state_initialized_ = false;
     t0_ = 0;
     last_ti_state_estimator_reset_ = 0;
     converter_ = converter;
+    stable_controller_ = stable_controller;
 }
 
 
@@ -75,9 +76,11 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
         return converter_->RadiansToServoCommands(command_in_rad);
     } else {
-        // we are past the max time, return nominal trims
+        // we are past the max time, return stabilizing controller
+        SetTrajectory(stable_controller_);
+        return GetControl(msg);
 
-        return converter_->GetTrimCommands();
+        //return converter_->GetTrimCommands();
 
     }
 }

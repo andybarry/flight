@@ -44,6 +44,7 @@ double sigma0_chi_z;
 
 int64_t last_ti_state_estimator_reset = 0;
 
+int stable_controller;
 int number_of_switch_positions = -1;
 int switch_mapping[MAX_SWITCH_MAPPING];
 int switch_rc_us[MAX_SWITCH_MAPPING];

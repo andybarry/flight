@@ -31,6 +31,7 @@ extern string tvlqr_action_out_channel;
 extern int number_of_switch_positions;
 extern int switch_mapping[MAX_SWITCH_MAPPING];
 extern int switch_rc_us[MAX_SWITCH_MAPPING];
+extern int stable_controller;
 
 extern double sigma0_vb;
 
@@ -104,6 +105,8 @@ int main(int argc,char** argv) {
     sigma0_chi_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_z");
     sigma0_chi_z = deg2rad(sigma0_chi_z);
 
+    stable_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
+
     number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
 
     bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_rc_us", switch_rc_us, number_of_switch_positions);
@@ -113,7 +116,7 @@ int main(int argc,char** argv) {
 
 
 
-    control = new TvlqrControl(converter);
+    control = new TvlqrControl(converter, trajlib.GetTrajectoryByNumber(stable_controller));
 
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
@@ -127,7 +130,7 @@ int main(int argc,char** argv) {
     // control-c handler
     signal(SIGINT,sighandler);
 
-    control->SetTrajectory(trajlib.GetTrajectoryByNumber(1));
+    control->SetTrajectory(trajlib.GetTrajectoryByNumber(stable_controller));
 
     printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\nSending LCM:\n\t%s\n", pose_channel.c_str(), tvlqr_action_channel.c_str(), deltawing_u_channel.c_str());
 

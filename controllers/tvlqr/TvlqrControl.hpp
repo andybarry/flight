@@ -33,7 +33,7 @@ class TvlqrControl
 {
 
     public:
-        TvlqrControl(const ServoConverter *converter);
+        TvlqrControl(const ServoConverter *converter, Trajectory *stable_controller);
 
         void SetTrajectory(Trajectory *trajectory);
 
@@ -52,6 +52,7 @@ class TvlqrControl
         Eigen::VectorXd GetStateMinusInit(const mav_pose_t *msg);
 
         Trajectory *current_trajectory_;
+        Trajectory *stable_controller_;
 
         Eigen::VectorXd initial_state_;
         Eigen::Matrix3d Mz_; // rotation matrix that transforms global state into local state by removing yaw
