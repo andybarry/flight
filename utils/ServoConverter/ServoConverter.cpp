@@ -30,9 +30,9 @@ ServoConverter::ServoConverter(BotParam *param) {
     throttle_min_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_min");
     throttle_max_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_max");
 
-    elevL_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_trim_flight");
-    elevR_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevR_trim_flight");
-    throttle_trim_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_trim_flight");
+    elevL_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevL_flight_trim");
+    elevR_trim_ = bot_param_get_int_or_fail(param, "servo_commands.elevR_flight_trim");
+    throttle_trim_ = bot_param_get_int_or_fail(param, "servo_commands.throttle_flight_trim");
 
 }
 
