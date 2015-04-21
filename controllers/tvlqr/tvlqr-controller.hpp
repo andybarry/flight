@@ -29,6 +29,8 @@ void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* chann
 
 void mav_filter_state_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_filter_state_t *msg, void *user);
 
+int ServoToTrajectorySwitchPosition(int servo_value);
+
 void SendStateEstimatorResetRequest();
 
 void SendStateEstimatorDefaultResetRequest();

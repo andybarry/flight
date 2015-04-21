@@ -29,7 +29,8 @@ extern string pronto_reset_complete_channel;
 extern string tvlqr_action_out_channel;
 
 extern int number_of_switch_positions;
-extern int switch_mapping[100];
+extern int switch_mapping[MAX_SWITCH_MAPPING];
+extern int switch_rc_us[MAX_SWITCH_MAPPING];
 
 extern double sigma0_vb;
 
@@ -85,6 +86,11 @@ int main(int argc,char** argv) {
 
     BotParam *param = bot_param_new_from_server(lcm, 0);
 
+    if (param == NULL) {
+        fprintf(stderr, "Error: no param server.  Quitting.\n");
+        return 1;
+    }
+
     ServoConverter *converter = new ServoConverter(param);
 
     // get sigma0 data
@@ -100,7 +106,11 @@ int main(int argc,char** argv) {
 
     number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
 
+    bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_rc_us", switch_rc_us, number_of_switch_positions);
+
     bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_mapping", switch_mapping, number_of_switch_positions);
+
+
 
 
     control = new TvlqrControl(converter);

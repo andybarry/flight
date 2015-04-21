@@ -19,9 +19,6 @@ double elev_origin;
 
 int global_beep = 0;
 
-int number_of_switch_positions;
-int switch_rc_us[100];
-
 std::string mavlink_channel = "MAVLINK";
 std::string attitude_channel = "attitude";
 std::string airspeed_channel = "airspeed-unchecked";
@@ -41,7 +38,6 @@ lcmt_deltawing_u_subscription_t *deltawing_u_sub;
 lcmt_beep_subscription_t *beep_sub;
 
 int last_stereo_control = 0;
-int last_traj_switch = -1;
 
 double altimeter_r, airspeed_r, sideslip_r;
 
@@ -414,11 +410,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             // send the lcm message
             lcmt_deltawing_u_publish(lcm_, servo_out_channel.c_str(), &servoOutMsg);
 
-            //std::cout << servomsg.servo6_raw << " ";
-
-
-
-            //std::cout << traj_switch << std::endl;
+            std::cout << servomsg.servo6_raw << std::endl;
 
             if (last_stereo_control != servoOutMsg.video_record)
             {
@@ -437,16 +429,11 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 // send trajectory messages with autonomous flight messages
                 if (servoOutMsg.is_autonomous == 1) {
 
-                    int traj_switch;
-                    traj_switch = ServoToTrajSwitch(servomsg.servo6_raw);
-
                     lcmt_tvlqr_controller_action traj_msg;
 
                     traj_msg.timestamp = getTimestampNow();
 
-                    traj_msg.trajectory_number = traj_switch;
-
-                    last_traj_switch = traj_switch;
+                    traj_msg.trajectory_number = servomsg.servo6_raw;
 
                     lcmt_tvlqr_controller_action_publish(lcm_, tvlqr_control_channel.c_str(), &traj_msg);
                 }
@@ -471,25 +458,6 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             break;
 
     }
-}
-
-int ServoToTrajSwitch(int servo_value) {
-    std::cout << servo_value << std::endl;
-
-    int min_delta = -1;
-    int min_index = -1;
-
-    for (int i = 0; i < number_of_switch_positions; i++)
-    {
-        int delta = abs(servo_value - switch_rc_us[i]);
-
-        if (min_index < 0 || delta < min_delta) {
-            min_delta = delta;
-            min_index = i;
-        }
-    }
-
-    return min_index;
 }
 
 
@@ -547,17 +515,10 @@ int main(int argc,char** argv)
         airspeed_r = bot_param_get_double_or_fail(param, "state_estimator.airspeed.r");
         sideslip_r = bot_param_get_double_or_fail(param, "state_estimator.sideslip.r");
 
-        number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
-
-        bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_rc_us", switch_rc_us, number_of_switch_positions);
-
-
-
-
     } else {
         fprintf(stderr, "Error: no param server, no gps_origin.latlon\n");
         fprintf(stderr, "Error: no param server, can't find R values for state estimator.\n");
-        fprintf(stderr, "Error: no param server, can't find trajectory switch mappings.\n");
+
         exit(1);
     }
 

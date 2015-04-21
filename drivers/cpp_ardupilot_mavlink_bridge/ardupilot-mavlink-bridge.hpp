@@ -74,7 +74,5 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user);
 
-int ServoToTrajSwitch(int servo_value);
-
 #endif
 
