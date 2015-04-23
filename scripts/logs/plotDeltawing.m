@@ -4,10 +4,10 @@
 %dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 clear
-dir = '2015-03-31-field-test/gps-logs/';
-filename = 'lcmlog_2015_03_31_11.mat';
+dir = '2015-04-21-field-test/gps-logs/';
+filename = 'lcmlog_2015_04_21_04.mat';
 
-
+addpath('/home/abarry/simflight/');
 
 dir_prefix = '/home/abarry/rlg/logs/';
 dir = [ dir_prefix dir ];
@@ -52,6 +52,8 @@ plot(u.logtime, u.elevonL, 'r');
 plot(u.logtime, u.video_record, 'k');
 legend('Throttle', 'ElevonL', 'Video rec');
 
+figure(3)
+plot(u.logtime, u.is_autonomous);
 
 % 
 % figure(3)

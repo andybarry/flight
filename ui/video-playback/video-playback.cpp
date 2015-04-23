@@ -8,11 +8,38 @@
 
 #include "video-playback.hpp"
 #include "../../externals/ConciseArgs.hpp"
+#include <highgui.h>
+#include "opencv2/opencv.hpp"
 
 lcm_t * lcm_;
 
 std::string video_channel = "ground-video";
 std::string servo_out_channel = "servo_out";
+
+lcmt_deltawing_u_subscription_t *servo_out_sub;
+
+
+int nth_frame = 0;
+long nth_frame_time;
+
+double at_frame = 0;
+int fps = 120;
+
+void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user) {
+
+    double delta_t = (msg->timestamp - nth_frame_time) / 1000000.0;
+
+    //at_frame = delta_t * fps - nth_frame;
+    at_frame = delta_t * 1000;
+
+    if (at_frame < 0) {
+        at_frame = 0;
+    }
+
+    std::cout << "delta: " << delta_t << " at_frame: " << at_frame << std::endl;
+}
+
+
 
 int main(int argc,char** argv) {
 
@@ -22,96 +49,54 @@ int main(int argc,char** argv) {
     parser.add(video_channel, "v", "video-channel", "LCM channel to send video messages on.");
     parser.add(servo_out_channel, "s", "servo-out-channel", "LCM channel to receive servo messages on (for sync).");
     parser.add(filename, "f", "file", "Video file to play", true);
+    parser.add(nth_frame, "n", "nth-frame", "Frame to record timestamp of.");
+    parser.add(nth_frame_time, "t", "nth-frame-time", "Timestamp of the Nth frame", true);
+    parser.add(fps, "p", "fps", "FPS of the video");
     parser.parse();
 
 
     lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
 
-    if (!lcm_)
-    {
+    if (!lcm_) {
         fprintf(stderr, "lcm_create for recieve failed.  Quitting.\n");
         return 1;
     }
+
+    servo_out_sub = lcmt_deltawing_u_subscribe(lcm_, servo_out_channel.c_str(), &servo_out_handler, NULL);
 
     // control-c handler
     signal(SIGINT,sighandler);
 
     // open the MP4 file
 
+    cvNamedWindow("Ground Video", CV_WINDOW_AUTOSIZE);
 
+    cv::VideoCapture capture(filename);
 
-    GstElement *pipeline, *sink;
-    GstBus *bus;
-    GstMessage *msg;
-    GstStateChangeReturn ret;
+    cv::Mat frame;
 
-    /* Initialize GStreamer */
-    gst_init (&argc, &argv);
+    printf("LCM:\n\t%s\n", video_channel.c_str());
 
-    /* Build the pipeline */
-    std::string gstreamer_uri = "playbin2 uri=file://" + filename;
-    pipeline = gst_parse_launch(gstreamer_uri.c_str(), NULL);
-    //pipeline = gst_parse_launch("playbin2 uri=http://docs.gstreamer.com/media/sintel_trailer-480p.webm", NULL);
+    capture.set(CV_CAP_PROP_FPS, 5000);
 
-    //sink = gst_element_factory_make ("mfw_v4lsink", "sink");
-
-
-    if (!pipeline) {
-        g_printerr ("Pipeline could be created.\n");
-        return -1;
-    }
-
-    //if (!sink) {
-      //  g_printerr ("sink could be created.\n");
-      //  return -1;
-    //}
-
-    //g_object_set( GST_OBJECT(pipeline), "video-sink", sink, NULL);
-
-    /* Build the pipeline */
-    //gst_bin_add_many (GST_BIN (pipeline), source, sink, NULL);
-    //if (gst_element_link (source, sink) != TRUE) {
-        //g_printerr ("Elements could not be linked.\n");
-        //gst_object_unref (pipeline);
-        //return -1;
-    //}
-
-  /* Modify the source's properties */
-  //g_object_set (source, "pattern", 0, NULL);
-
-  /* Start playing */
-    ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
-    if (ret == GST_STATE_CHANGE_FAILURE) {
-        g_printerr ("Unable to set the pipeline to the playing state.\n");
-        gst_object_unref (pipeline);
-        return -1;
-    }
-
-    /* Start playing */
-//    gst_element_set_state (pipeline, GST_STATE_PLAYING);
-
-    /* Wait until error or EOS */
-    bus = gst_element_get_bus (pipeline);
-    msg = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, GstMessageType( GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
-
-    /* Free resources */
-    if (msg != NULL) {
-        gst_message_unref (msg);
-    }
-    gst_object_unref (bus);
-    gst_element_set_state (pipeline, GST_STATE_NULL);
-    gst_object_unref (pipeline);
-/*
-    printf("Sending LCM:\n\t%s\n", video_channel.c_str());
-
-    while (true)
-    {
+    while (true) {
         // read the LCM channel
-        lcm_handle (lcm_);
+        NonBlockingLcm(lcm_);
+
+        capture.set(CV_CAP_PROP_POS_MSEC, at_frame);
+
+        //frameIndex += 4;
+        /* grab frame image, and retrieve */
+        capture >> frame;
+
+        imshow("Ground Video", frame);
+        /* if ESC is pressed then exit loop */
+        char c = cvWaitKey(1);
+        std::cout << "." << std::endl;
     }
 
     return 0;
-    */
+
 }
 
 
@@ -122,6 +107,8 @@ void sighandler(int dum)
     lcm_destroy (lcm_);
 
     printf("done.\n");
+
+    cvDestroyWindow("Ground Video");
 
     exit(0);
 }

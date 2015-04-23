@@ -81,6 +81,7 @@ int main(int argc,char** argv) {
     parser.add(replay_hud_bool, "r", "replay-hud", "Enable a second HUD on the channel STATE_ESTIMATOR_POSE_REPLAY");
     parser.add(clutter_level, "C", "clutter-level", "Sets clutter level for HUD display from 0 (just image) to 5 (full HUD)");
     parser.add(record_hud, "R", "record-hud", "Enable recording to disk.");
+    parser.add(real_frame_loaded, "f", "force-recording", "Start recording immediately, not when the first image is played.");
     parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
     parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
