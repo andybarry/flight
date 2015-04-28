@@ -21,7 +21,7 @@ ui/video-playback/video-playback_d
 ui/midi-control/midi-control
 drivers/midi/midi-lcm
 ui/midi-airspeed/midi-airspeed
-ui/cpu-monitor/cpu-monitor
+drivers/cpu-monitor/cpu-monitor
 controllers/tvlqr/test
 utils/ServoConverter/test
 controllers/tvlqr/tvlqr-controller_d
