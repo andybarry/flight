@@ -1,0 +1,5 @@
+hud
+log-monitor
+midi-airspeed
+midi-control
+stereo-monitor

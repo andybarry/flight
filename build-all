@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# make bash bail out if anything errors
+set -e
+set -o pipefail
+
+# error out if the date is before the year 2014
+# since that indicates the clock isn't set
+
+if [ `date +%s` -lt 1430231759 ]
+then
+    echo "Error: time/date is not set correctly."
+    echo "Current time/date: `date`"
+    exit 1
+fi
+
+# read the file
+FILE=tobuild.txt
+
+while read line; do
+    # ignore comments
+    case "$line" in \#*) continue ;; esac
+
+    # ignore empty lines
+    if [ -z $line ]
+    then
+        continue
+    fi
+
+    echo "-----------------------------"
+    echo "   Building: $line"
+    echo "-----------------------------"
+
+    cd $line
+    # check for makefile
+    if [ -e Makefile ]
+    then
+        make "$@"
+    else
+        pwd
+        ./build-all "$@"
+    fi
+
+    cd ..
+
+
+done < $FILE
+
+

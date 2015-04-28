@@ -1,0 +1,3 @@
+cpp_ardupilot_mavlink_bridge
+cpu-monitor
+midi
