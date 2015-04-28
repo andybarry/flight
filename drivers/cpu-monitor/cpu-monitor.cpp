@@ -69,12 +69,40 @@ void SetFanSpeed(float cpu_temp, int fan_pwm) {
 
     int new_pwm;
 
-    if (cpu_temp > 69) {
+    cout << fan_pwm << endl;
+
+    if (cpu_temp >= 70) {
         new_pwm = 255;
-    } else if (cpu_temp > 62) {
-        new_pwm = 128;
     } else {
-        new_pwm = 0;
+
+        if (cpu_temp >= 65) {
+
+            if (fan_pwm == 128) {
+                new_pwm = 128;
+            } else {
+                new_pwm = 255;
+            }
+        } else {
+
+            if (cpu_temp >= 60) {
+
+                if (fan_pwm < 5) {
+
+                    new_pwm = fan_pwm;
+
+                } else {
+                    new_pwm = 128;
+                }
+            } else {
+
+                if (fan_pwm > 5) { // 0 doesn't report 0, it reports a small number
+                    new_pwm = 0;
+                } else {
+                    new_pwm = fan_pwm;
+                }
+            }
+
+        }
     }
 
     if (new_pwm != fan_pwm) {
