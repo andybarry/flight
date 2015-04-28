@@ -69,8 +69,6 @@ void SetFanSpeed(float cpu_temp, int fan_pwm) {
 
     int new_pwm;
 
-    cout << fan_pwm << endl;
-
     if (cpu_temp >= 70) {
         new_pwm = 255;
     } else {
