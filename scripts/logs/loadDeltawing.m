@@ -95,6 +95,10 @@ if (exist('STATE_ESTIMATOR_POSE', 'var'))
   
   clear this_rpy;
   
+  for i = 1 : size(est.est_frame, 1)
+    est.drake_frame(i, :) = ConvertStateEstimatorToDrakeFrame(est.est_frame(i,:));
+  end
+  
   est.logtime = STATE_ESTIMATOR_POSE(:,18);
   
 end

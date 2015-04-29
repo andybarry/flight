@@ -30,7 +30,7 @@ function est = TrimEst(start_time, end_time, est_in)
 
   for i = 1 : 12
     est.est_frame(:,i) = TrimTimes(start_time, end_time, est_in.logtime, est_in.est_frame(:,i));
-    %est.drake_frame(:,i) = TrimTimes(start_time, end_time, est_in.logtime, est_in.drake_frame(:,i));
+    est.drake_frame(:,i) = TrimTimes(start_time, end_time, est_in.logtime, est_in.drake_frame(:,i));
   end
   
   est.logtime = TrimTimes(start_time, end_time, est_in.logtime, est_in.logtime);
