@@ -2,6 +2,8 @@
 #define OPENCV_SINGLE_CALIB_TEST_HPP
 
 #include "opencv-stereo-util.hpp"
+#include "RecordingManager.hpp"
+#include "../../LCM/lcmt_stereo.h"
 
 #include <cv.h>
 #include <highgui.h>

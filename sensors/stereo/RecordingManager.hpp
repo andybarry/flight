@@ -42,25 +42,26 @@ class RecordingManager {
         bool UsingLiveCameras() { return !using_video_from_disk_; }
 
         int GetRecVideoNumber() { return video_number_; }
+        int GetHudVideoNumber() { return hud_video_number_; }
 
         void SetHudNumbers(Hud hud);
 
         void RestartRecHud() { record_hud_setup_ = false; }
-        void RecFrameHud(Mat hud_frame);
+        void RecFrameHud(Mat hud_frame, bool is_color = true);
 
         void SetQuietMode(bool x) { quiet_mode_ = x; }
 
     private:
 
         string SetupVideoWriterPGM(string dirnamePrefix, bool increment_number);
-        VideoWriter SetupVideoWriterAVI(string filenamePrefix, Size frameSize, bool increment_number, bool is_color = false);
+        VideoWriter SetupVideoWriterAVI(string filenamePrefix, Size frameSize, bool increment_number, bool is_color = false, int *this_video_number = NULL);
 
         int LoadVideoFileFromDir(long long timestamp, int video_number);
 
         void GetFramePGM(Mat &left_image, Mat &right_image);
         void GetFrameAVI(Mat &left_image, Mat &right_image);
 
-        string GetNextVideoFilename(string filename_prefix, bool use_pgm, bool increment_number);
+        string GetNextVideoFilename(string filename_prefix, bool use_pgm, bool increment_number, int *this_video_number = NULL);
         int GetNextVideoNumber(bool use_pgm, bool increment_number);
 
         int MatchVideoFile(string directory, string datestr, bool using_avi = false, int match_number = -1);
@@ -86,6 +87,7 @@ class RecordingManager {
 
         int rec_num_frames_;
         int video_number_;
+        int hud_video_number_;
         bool recording_on_;
         bool reading_pgm_;
 

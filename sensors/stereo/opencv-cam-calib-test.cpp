@@ -3,11 +3,16 @@
 bool left_camera_on = false;
 bool right_camera_on = false;
 
+bool quiet_mode = false;
+
+
 dc1394_t        *d;
-dc1394camera_t  *camera;
+dc1394camera_t  *camera = NULL;
 
 dc1394_t        *d2;
-dc1394camera_t  *camera2;
+dc1394camera_t  *camera2 = NULL;
+
+RecordingManager recording_manager;
 
 
 int main(int argc, char *argv[]) {
@@ -34,16 +39,32 @@ int main(int argc, char *argv[]) {
     ConciseArgs parser(argc, argv);
     parser.add(config_file, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(left_camera_on, "l", "left-camera", "View just the left camera, requires stereo_camera_calibrate/M1 and D1-single.xml to exist");
+
     parser.add(right_camera_on, "r", "right-camera", "View just the right camera, requires stereo_camera_calibrate/M2 and D2-single.xml to exist");
+
+    parser.add(quiet_mode, "q", "quiet", "Reduce text output.");
     parser.parse();
 
 
     // parse the config file
-    if (ParseConfigFile(config_file, &stereo_config) != true)
-    {
+    if (ParseConfigFile(config_file, &stereo_config) != true) {
         fprintf(stderr, "Failed to parse configuration file, quitting.\n");
         return -1;
     }
+
+    string config_dir_prefix = "";
+
+    if (config_file.find_last_of('/') != string::npos) {
+        config_dir_prefix = config_file.substr(0, config_file.find_last_of('/'));
+
+        if (!config_dir_prefix.empty()) {
+            config_dir_prefix = string(config_dir_prefix) + "/";
+        }
+    }
+
+
+    recording_manager.Init(stereo_config);
+    recording_manager.SetQuietMode(quiet_mode);
 
 
     // read in parameter values
@@ -53,58 +74,8 @@ int main(int argc, char *argv[]) {
         right_camera_on = true;
     }
 
-    if (left_camera_on) {
-        printf("Attemping to load camera paramters:\n\tstereo_camera_calibrate/M1-single.xml\n\tstereo_camera_calibrate/D1-single.xml\n");
-
-        CvMat *M1p = (CvMat *)cvLoad("stereo_camera_calibrate/M1-single.xml",NULL,NULL,NULL);
-        if (M1p == NULL)
-        {
-            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M1-single.xml\n");
-            exit(-1);
-        } else {
-            m1_mat = Mat(M1p, true);
-        }
-
-        CvMat *D1p = (CvMat *)cvLoad("stereo_camera_calibrate/D1-single.xml",NULL,NULL,NULL);
-        if (D1p == NULL)
-        {
-            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D1-single.xml\n");
-            exit(-1);
-        } else {
-            d1_mat = Mat(D1p, true);
-        }
-    }
-    printf("done.\n");
-
-
-    if (right_camera_on) {
-        printf("Attemping to load camera paramters:\n\tstereo_camera_calibrate/M2-single.xml\n\tstereo_camera_calibrate/D2-single.xml\n");
-
-        CvMat *M2p = (CvMat *)cvLoad("stereo_camera_calibrate/M2-single.xml",NULL,NULL,NULL);
-        if (M2p == NULL)
-        {
-            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M2-single.xml\n");
-            exit(-1);
-        } else {
-            m2_mat = Mat(M2p, true);
-        }
-
-        CvMat *D2p = (CvMat *)cvLoad("stereo_camera_calibrate/D2-single.xml",NULL,NULL,NULL);
-        if (D2p == NULL)
-        {
-            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D2-single.xml\n");
-            exit(-1);
-        } else {
-            d2_mat = Mat(D2p, true);
-        }
-    }
-    printf("done.\n");
-
-
-    printf("XML files loaded successfully.\n");
-
-
-    // ---------- load up the cameras -----------
+    lcm_t * lcm;
+    lcm = lcm_create (stereo_config.lcmUrl.c_str());
 
     uint64 guid = stereo_config.guidLeft;
     uint64 guid2 = stereo_config.guidRight;
@@ -118,46 +89,129 @@ int main(int argc, char *argv[]) {
     if (!d)
         g_critical("Could not create dc1394 context");
 
-    camera = dc1394_camera_new (d, guid);
-    if (!camera)
-        g_critical("Could not create dc1394 camera");
 
-    camera2 = dc1394_camera_new (d2, guid2);
-    if (!camera2)
-        g_critical("Could not create dc1394 camera for camera 2");
+    string file1, file2;
 
-    // setup
-    err = setup_gray_capture(camera, DC1394_VIDEO_MODE_FORMAT7_1);
-    DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not setup camera");
+    if (left_camera_on) {
 
-    err = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
-    DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not setup camera number 2");
+        file1 = config_dir_prefix + "stereo_camera_calibrate/M1-single.xml";
+        file2 = config_dir_prefix + "stereo_camera_calibrate/D1-single.xml";
 
-    // enable auto-exposure
-    // turn on the auto exposure feature
-    err = dc1394_feature_set_power(camera, DC1394_FEATURE_EXPOSURE, DC1394_ON);
-    DC1394_ERR_RTN(err,"Could not turn on the exposure feature");
+        printf("Attemping to load camera paramters:\n\t%s\n\t%s\n", file1.c_str(), file2.c_str());
 
-    err = dc1394_feature_set_mode(camera, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
-    DC1394_ERR_RTN(err,"Could not turn on Auto-exposure");
 
-    // enable auto-exposure
-    // turn on the auto exposure feature
-    err = dc1394_feature_set_power(camera2, DC1394_FEATURE_EXPOSURE, DC1394_ON);
-    DC1394_ERR_RTN(err,"Could not turn on the exposure feature for cam2");
 
-    err = dc1394_feature_set_mode(camera2, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
-    DC1394_ERR_RTN(err,"Could not turn on Auto-exposure for cam2");
+        CvMat *M1p = (CvMat *)cvLoad(file1.c_str(), NULL,NULL,NULL);
+        if (M1p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M1-single.xml\n");
+            exit(-1);
+        } else {
+            m1_mat = Mat(M1p, true);
+        }
 
-    // enable camera
-    err = dc1394_video_set_transmission(camera, DC1394_ON);
-    DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
-    err = dc1394_video_set_transmission(camera2, DC1394_ON);
-    DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
 
-    // ------------ end load cameras ------------
 
-    InitBrightnessSettings(camera, camera2);
+        CvMat *D1p = (CvMat *)cvLoad(file2.c_str(), NULL,NULL,NULL);
+        if (D1p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D1-single.xml\n");
+            exit(-1);
+        } else {
+            d1_mat = Mat(D1p, true);
+        }
+        printf("done.\n");
+
+        printf("Attempting to start left camera...\n");
+        camera = dc1394_camera_new (d, guid);
+        if (!camera)
+            g_critical("Could not create dc1394 camera");
+
+        err = setup_gray_capture(camera, DC1394_VIDEO_MODE_FORMAT7_1);
+        DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not setup camera");
+
+        err = dc1394_feature_set_power(camera, DC1394_FEATURE_EXPOSURE, DC1394_ON);
+        DC1394_ERR_RTN(err,"Could not turn on the exposure feature");
+
+        err = dc1394_feature_set_mode(camera, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
+        DC1394_ERR_RTN(err,"Could not turn on Auto-exposure");
+
+        err = dc1394_feature_set_power(camera2, DC1394_FEATURE_EXPOSURE, DC1394_ON);
+        DC1394_ERR_RTN(err,"Could not turn on the exposure feature for cam2");
+
+        err = dc1394_video_set_transmission(camera, DC1394_ON);
+        DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
+
+        printf("done.\n");
+    }
+
+
+
+    if (right_camera_on) {
+
+        file1 = config_dir_prefix + "stereo_camera_calibrate/M2-single.xml";
+
+        file2 = config_dir_prefix + "stereo_camera_calibrate/D2-single.xml";
+
+        printf("Attemping to load camera paramters:\n\t%s\n\t%s\n", file1.c_str(), file2.c_str());
+
+
+
+        CvMat *M2p = (CvMat *)cvLoad(file1.c_str(), NULL,NULL,NULL);
+        if (M2p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/M2-single.xml\n");
+            exit(-1);
+        } else {
+            m2_mat = Mat(M2p, true);
+        }
+
+        CvMat *D2p = (CvMat *)cvLoad(file2.c_str(), NULL,NULL,NULL);
+        if (D2p == NULL)
+        {
+            fprintf(stderr, "Error: Failed to load stereo_camera_calibrate/D2-single.xml\n");
+            exit(-1);
+        } else {
+            d2_mat = Mat(D2p, true);
+        }
+        printf("done.\n");
+
+        printf("Attempting to start right camera...\n");
+        camera2 = dc1394_camera_new (d2, guid2);
+        if (!camera2)
+            g_critical("Could not create dc1394 camera for camera 2");
+
+        // setup
+
+        err = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
+        DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not setup camera number 2");
+
+        // enable auto-exposure
+        // turn on the auto exposure feature
+
+
+        // enable auto-exposure
+        // turn on the auto exposure feature
+        err = dc1394_feature_set_power(camera2, DC1394_FEATURE_EXPOSURE, DC1394_ON);
+        DC1394_ERR_RTN(err,"Could not turn on the exposure feature for cam2");
+
+        err = dc1394_feature_set_mode(camera2, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
+        DC1394_ERR_RTN(err,"Could not turn on Auto-exposure for cam2");
+
+        // enable camera
+
+        err = dc1394_video_set_transmission(camera2, DC1394_ON);
+        DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not start camera iso transmission for camera number 2");
+
+
+        printf("done.\n");
+    }
+
+    if (left_camera_on) {
+        InitBrightnessSettings(camera, camera2);
+    } else {
+        InitBrightnessSettings(camera2, NULL);
+    }
 
     // now we've loaded the calibrations, start showing images!
 
@@ -178,14 +232,46 @@ int main(int argc, char *argv[]) {
     	moveWindow("Undistort Right", 478, 369);
     }
 
-    MatchBrightnessSettings(camera, camera2, true);
+    if (left_camera_on && right_camera_on) {
+        MatchBrightnessSettings(camera, camera2, true);
+    }
 
     bool done = false;
 
+    Mat left, right;
+
+    // grab init images
+    if (left_camera_on) {
+        left = GetFrameFormat7(camera);
+    }
+
+    if (right_camera_on) {
+        right = GetFrameFormat7(camera2);
+    }
+
+    if (left_camera_on && right_camera_on) {
+        // stereo recording
+
+        if (recording_manager.InitRecording(left, right) != true) {
+            // failed to init recording, things are going bad.  bail.
+            return -1;
+        }
+    } else {
+        // mono recording
+
+        recording_manager.RestartRecHud();
+    }
+
+
+    int numFrames = 0;
+    unsigned long elapsed;
+
+    // start the framerate clock
+    struct timeval start, now;
+    gettimeofday( &start, NULL );
+
     while (done == false) {
         // grab frames
-
-        Mat left, right;
 
         if (left_camera_on) {
             left = GetFrameFormat7(camera);
@@ -195,29 +281,68 @@ int main(int argc, char *argv[]) {
             undistort(left, left_ud, m1_mat, d1_mat);
 
             // display
-            imshow("Input Left", left);
+            //imshow("Input Left", left);
 
-            imshow("Undistort Left", left_ud);
+            //imshow("Undistort Left", left_ud);
         }
 
         if (right_camera_on) {
             right = GetFrameFormat7(camera2);
             // use calibration to undistort image
             Mat right_ud;
-            undistort(right, right_ud, m2_mat, d2_mat);
+            //undistort(right, right_ud, m2_mat, d2_mat);
 
-            imshow("Input Right", right);
+            //imshow("Input Right", right);
 
-            imshow("Undistort Right", right_ud);
+            //imshow("Undistort Right", right_ud);
         }
 
-        char key = waitKey(5);
+        if (left_camera_on && right_camera_on) {
+            // stereo recording
+        } else {
+            Mat img;
+            if (left_camera_on) {
+                img = left;
+            } else {
+                img = right;
+            }
 
-         switch (key) {
-            case 'q':
-                done = true;
-                break;
+            recording_manager.RecFrameHud(img, false);
         }
+
+
+        lcmt_stereo msg;
+        msg.timestamp = getTimestampNow();
+        msg.number_of_points = 0;
+        msg.frame_number = numFrames;
+
+        msg.video_number = recording_manager.GetHudVideoNumber();
+
+        // publish the LCM message
+        lcmt_stereo_publish(lcm, "stereo-mono", &msg);
+
+        numFrames ++;
+
+        if (quiet_mode == false || numFrames % 100 == 0) {
+            // compute framerate
+            gettimeofday( &now, NULL );
+
+            elapsed = (now.tv_usec / 1000 + now.tv_sec * 1000) -
+            (start.tv_usec / 1000 + start.tv_sec * 1000);
+
+            printf("\r%d frames (%lu ms) - %4.1f fps | %4.1f ms/frame", numFrames, elapsed, (float)numFrames/elapsed * 1000, elapsed/(float)numFrames);
+            fflush(stdout);
+        }
+
+        //char key = waitKey(5);
+
+         //switch (key) {
+            //case 'q':
+                //done = true;
+                //break;
+        //}
+
+        usleep(30000);
     }
 
 
@@ -229,6 +354,11 @@ int main(int argc, char *argv[]) {
 
 
 void CleanUp() {
+
+    //cout << "\tpress ctrl+\\ to quit while writing video." << endl;
+
+    //recording_manager.FlushBufferToDisk();
+
     if (left_camera_on) {
 
         StopCapture(d, camera);
@@ -252,7 +382,6 @@ void control_c_handler(int s)
     cout << endl << "exiting via ctrl-c" << endl;
 
     CleanUp();
-
 
     exit(0);
 }
