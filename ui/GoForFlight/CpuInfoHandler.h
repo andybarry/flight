@@ -22,8 +22,13 @@ class CpuInfoHandler : public MultiStatusHandler
 
 
             ComputerType index = GetIndexFromChannelName(chan);
+            boost::format formatter;
 
-            boost::format formatter = boost::format("%.1f Ghz / %.0f C") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp;
+            if (msg->fan_pwm > 0) {
+                formatter = boost::format("%.1f Ghz / %.0f C / PWM: %d") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp % msg->fan_pwm;
+            } else {
+                formatter = boost::format("%.1f Ghz / %.0f C") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp;
+            }
             std::string text = formatter.str();
 
             SetText(index, text);
