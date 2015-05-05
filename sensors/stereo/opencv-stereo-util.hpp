@@ -96,6 +96,8 @@ struct OpenCvStereoCalibration
 
 Mat GetFrameFormat7(dc1394camera_t *camera);
 
+void FlushCameraBuffer(dc1394camera_t *camera);
+
 int64_t getTimestampNow();
 
 bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct);

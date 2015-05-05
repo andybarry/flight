@@ -136,8 +136,6 @@ int main(int argc, char *argv[]) {
         err = dc1394_feature_set_mode(camera, DC1394_FEATURE_EXPOSURE, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
         DC1394_ERR_RTN(err,"Could not turn on Auto-exposure");
 
-        err = dc1394_feature_set_power(camera2, DC1394_FEATURE_EXPOSURE, DC1394_ON);
-        DC1394_ERR_RTN(err,"Could not turn on the exposure feature for cam2");
 
         err = dc1394_video_set_transmission(camera, DC1394_ON);
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not start camera iso transmission");
@@ -183,7 +181,23 @@ int main(int argc, char *argv[]) {
 
         // setup
 
-        err = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
+        //err = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
+{
+    dc1394error_t err;
+
+    err=dc1394_camera_reset(camera2);
+    DC1394_ERR_RTN(err, "Could not reset camera");
+
+    err = dc1394_video_set_iso_speed(camera2, DC1394_ISO_SPEED_200);
+    DC1394_ERR_RTN(err,"Could not setup camera ISO speed");
+
+    err=dc1394_video_set_mode(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
+    DC1394_ERR_RTN(err,"Could not set video mode");
+
+    err=dc1394_capture_setup(camera2, 4, DC1394_CAPTURE_FLAGS_DEFAULT);
+    DC1394_ERR_RTN(err,"Could not setup camera - make sure that the video mode is supported by your camera");
+
+}
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not setup camera number 2");
 
         // enable auto-exposure
@@ -263,6 +277,16 @@ int main(int argc, char *argv[]) {
     }
 
 
+    // flush buffer
+    for (int i = 0; i < 100; i++) {
+        if (left_camera_on) {
+            left = GetFrameFormat7(camera);
+        }
+        if (right_camera_on) {
+            right = GetFrameFormat7(camera2);
+        }
+    }
+
     int numFrames = 0;
     unsigned long elapsed;
 
@@ -287,6 +311,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (right_camera_on) {
+            // flush buffer
+            //usleep(900000);
+            FlushCameraBuffer(camera2);
+
             right = GetFrameFormat7(camera2);
             // use calibration to undistort image
             Mat right_ud;
@@ -296,7 +324,6 @@ int main(int argc, char *argv[]) {
 
             //imshow("Undistort Right", right_ud);
         }
-
         if (left_camera_on && right_camera_on) {
             // stereo recording
         } else {
@@ -308,6 +335,7 @@ int main(int argc, char *argv[]) {
             }
 
             recording_manager.RecFrameHud(img, false);
+
         }
 
 
@@ -317,6 +345,7 @@ int main(int argc, char *argv[]) {
         msg.frame_number = numFrames;
 
         msg.video_number = recording_manager.GetHudVideoNumber();
+
 
         // publish the LCM message
         lcmt_stereo_publish(lcm, "stereo-mono", &msg);
@@ -343,6 +372,7 @@ int main(int argc, char *argv[]) {
         //}
 
         usleep(30000);
+        //usleep(900000);
     }
 
 

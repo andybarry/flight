@@ -7,7 +7,6 @@
 
 #include "opencv-stereo-util.hpp"
 
-
 /**
  * Gets a Format7 frame from a Firefly MV USB camera.
  * The frame will be CV_8UC1 and black and white.
@@ -52,6 +51,35 @@ Mat GetFrameFormat7(dc1394camera_t *camera)
     DC1394_WRN(err,"releasing buffer");
 
     return matOut;
+}
+
+/**
+ * Flushes the camera buffer to ensure
+ * that we are returning the most recent frames
+ *
+ * @param camera the camera object
+ */
+void FlushCameraBuffer(dc1394camera_t *camera) {
+    dc1394error_t err;
+    dc1394video_frame_t *frame;
+
+    int counter = 0;
+
+    while (true) {
+        err = dc1394_capture_dequeue(camera, DC1394_CAPTURE_POLICY_POLL, &frame);
+        DC1394_WRN(err,"Could not capture a frame");
+
+        if (frame != NULL) {
+            err = dc1394_capture_enqueue(camera, frame);
+            DC1394_WRN(err,"releasing buffer after failure");
+            counter ++;
+        } else {
+            // the buffer is empty, we're done
+            break;
+        }
+    }
+
+    cout << counter << endl;
 }
 
 int64_t getTimestampNow()
