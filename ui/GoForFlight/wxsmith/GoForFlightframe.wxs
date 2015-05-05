@@ -199,7 +199,7 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT33" variable="lblStereo" member="yes">
-										<label>Stereo: Offline</label>
+										<label>Vision: Offline</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>

@@ -8,7 +8,7 @@
 class StereoHandler : public StatusHandler
 {
     public:
-        StereoHandler() : StatusHandler("Stereo: ") {
+        StereoHandler() : StatusHandler("Vision: ") {
         }
         ~StereoHandler() {}
 
