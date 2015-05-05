@@ -8,6 +8,7 @@ RecordingManager::RecordingManager() {
     record_hud_setup_ = false;
     video_directory_ = "";
     video_number_ = -1;
+    hud_video_number_ = -1;
 
     quiet_mode_ = false;
 
@@ -178,18 +179,19 @@ void RecordingManager::FlushBufferToDisk() {
  *   systems if you want to have a left and right video with
  *   the same number (ie set to false for the second writer
  *   you initialize.)
+ * @param this_video_number (optional) if non-null, then the video number will be supplied
  * @param is_color true if it is color
  *  @default false
  *
  * @retval VideoWriter object
  */
-VideoWriter RecordingManager::SetupVideoWriterAVI(string filenamePrefix, Size frameSize, bool increment_number, bool is_color) {
+VideoWriter RecordingManager::SetupVideoWriterAVI(string filenamePrefix, Size frameSize, bool increment_number, bool is_color, int *this_video_number) {
 
     VideoWriter recorder;
 
     CheckOrCreateDirectory(stereo_config_.videoSaveDir);
 
-    string filename = GetNextVideoFilename(filenamePrefix, false, increment_number);
+    string filename = GetNextVideoFilename(filenamePrefix, false, increment_number, this_video_number);
 
     char fourcc1 = stereo_config_.fourcc.at(0);
     char fourcc2 = stereo_config_.fourcc.at(1);
@@ -489,15 +491,24 @@ void RecordingManager::SetPlaybackFrameNumber(int frame_number) {
 }
 
 
-string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_pgm, bool increment_number) {
+string RecordingManager::GetNextVideoFilename(string filename_prefix, bool use_pgm, bool increment_number, int *this_video_number) {
 
     // format the number string
     char filenumber[100];
 
+
     if (video_number_ < 0) {
-        sprintf(filenumber, "%02d", GetNextVideoNumber(use_pgm, increment_number));
+        int vidnum = GetNextVideoNumber(use_pgm, increment_number);
+
+        sprintf(filenumber, "%02d", vidnum);
+        if (this_video_number != NULL) {
+            *this_video_number = vidnum;
+        }
     } else {
         sprintf(filenumber, "%02d", video_number_);
+        if (this_video_number != NULL) {
+            *this_video_number = video_number_;
+        }
     }
 
     string retstring = stereo_config_.videoSaveDir
@@ -562,14 +573,19 @@ void RecordingManager::SetHudNumbers(Hud hud) {
     hud.SetVideoNumber(GetFrameNumber());
 }
 
-void RecordingManager::RecFrameHud(Mat hud_frame) {
+void RecordingManager::RecFrameHud(Mat hud_frame, bool is_color) {
     if (!record_hud_setup_) {
-        record_hud_writer_ = SetupVideoWriterAVI("HUD", hud_frame.size(), true, true);
+        record_hud_writer_ = SetupVideoWriterAVI("HUD", hud_frame.size(), true, is_color, &hud_video_number_);
         record_hud_setup_ = true;
     }
 
     Mat write_hud;
-    hud_frame.convertTo(write_hud, CV_8UC3, 255.0);
+
+    if (is_color) {
+        hud_frame.convertTo(write_hud, CV_8UC3, 255.0);
+    } else {
+        write_hud = hud_frame;
+    }
 
     record_hud_writer_ << write_hud;
 }

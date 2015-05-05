@@ -95,6 +95,10 @@ if (exist('STATE_ESTIMATOR_POSE', 'var'))
   
   clear this_rpy;
   
+  for i = 1 : size(est.est_frame, 1)
+    est.drake_frame(i, :) = ConvertStateEstimatorToDrakeFrame(est.est_frame(i,:));
+  end
+  
   est.logtime = STATE_ESTIMATOR_POSE(:,18);
   
 end
@@ -403,11 +407,18 @@ end
 
 if exist('tvlqr_action', 'var')
   tvlqr.utime = tvlqr_action(:,1);
-  tvlqr.trajectory_number = tvlqr_action(:,2);
+  tvlqr.pwm = tvlqr_action(:,2);
   tvlqr.logtime = tvlqr_action(:,3);
   clear tvlqr_action
 end
 
+
+if exist('tvlqr_action_out', 'var')
+  tvlqr_out.utime = tvlqr_action_out(:,1);
+  tvlqr_out.trajectory_number = tvlqr_action_out(:,2);
+  tvlqr_out.logtime = tvlqr_action_out(:,3);
+  clear tvlqr_action_out
+end
 
 
 
