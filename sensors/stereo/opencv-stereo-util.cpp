@@ -614,8 +614,11 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
 void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_quality) {
 
     if (!image.isContinuous()) {
-        cout << "Image not continuous. LCM transport not implemented." << endl;
-        return;
+        //cout << "Image not continuous. LCM transport not implemented." << endl;
+        //return;
+
+        image = image.clone();
+
     }
 
     // create LCM message

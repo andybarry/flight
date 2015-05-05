@@ -4,14 +4,21 @@
 %dir = '2013-11-05-delta-crash/';
 %filename = 'lcmlog_2013_11_05_00.mat';
 clear
-dir = '2015-04-21-field-test/gps-logs/';
-filename = 'lcmlog_2015_04_21_04.mat';
+date = '2015-04-21';
+name = 'field-test';
+log_number = '04';
 
-addpath('/home/abarry/simflight/');
+
+
+dir = [date '-' name '/gps-logs/'];
+filename = ['lcmlog_' strrep(date, '-', '_') '_' log_number '.mat'];
+
+
 
 dir_prefix = '/home/abarry/rlg/logs/';
 dir = [ dir_prefix dir ];
 
+addpath('/home/abarry/realtime/scripts/logs');
 loadDeltawing
 
 
