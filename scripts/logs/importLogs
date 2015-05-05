@@ -1,4 +1,4 @@
-    #!/bin/bash
+#!/bin/bash
 
 # automatically create directories for a new log
 
@@ -94,40 +94,47 @@ ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard-vids $VIDEODIR/$DATESTR-$DIRNAME/onboard
 while true; do
     read -p "Do you want to copy local logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs;;
+        [Yy]* ) ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
-    break;
 done
 
 
 while true; do
     read -p "Do you want to download GPS logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/gps-logs "-z";;
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/gps-logs "-z"; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
-    break;
 done
 
 while true; do
     read -p "Do you want to download CAM logs now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/cam-logs "-z";;
+        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/cam-logs "-z"; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
-    break;
 done
 
 while true; do
-    read -p "Do you want to download videos now? [Y/N] " yn
+    read -p "Do you want to download mono videos now? [Y/N] " yn
     case $yn in
-        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z";;
+        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/mono-*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-z"; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
-    break;
+
+done
+
+while true; do
+    read -p "Do you want to download stereo videos now? [Y/N] " yn
+    case $yn in
+        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z"; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+
 done

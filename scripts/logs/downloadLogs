@@ -28,10 +28,10 @@ echo "Downloading logs for from: $SSH_TRANSPORT..."
 
 if [[ $HOST_END == *"cam"* ]]
 then
-    echo rsync --progress --no-inc-recursive --ignore-existing $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
-    rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
+    echo rsync --progress --no-inc-recursive --ignore-existing -a $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
+    rsync --progress --no-inc-recursive --ignore-existing -a $OPTIONS "$SSH_TRANSPORT" :$REMOTE_DIR $LOCAL_DIR
 else
-    echo rsync --progress --no-inc-recursive --ignore-existing $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
-    rsync --progress --no-inc-recursive $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
+    echo rsync --progress --no-inc-recursive --ignore-existing -a $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
+    rsync --progress --no-inc-recursive --ignore-existing -a $OPTIONS "$SSH_TRANSPORT":$REMOTE_DIR $LOCAL_DIR
 fi
 

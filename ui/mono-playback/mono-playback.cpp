@@ -22,6 +22,8 @@ cv::VideoCapture video_capture;
 
 int current_video_number = -1;
 
+int frame_offset = 0;
+
 
 void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
     // open the frame of the video specified by the message
@@ -42,7 +44,7 @@ void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_st
         current_video_number = msg->video_number;
     }
 
-    video_capture.set(CV_CAP_PROP_POS_FRAMES, msg->frame_number);
+    video_capture.set(CV_CAP_PROP_POS_FRAMES, msg->frame_number + frame_offset);
 
     cv::Mat frame;
 
@@ -57,7 +59,7 @@ std::string GetMonoFilename(int number) {
 
     // TODO: extract date from directory
 
-    boost::format formatter = boost::format("mono-2015-05-01.%02d.avi") % number;
+    boost::format formatter = boost::format("mono-2015-05-05.%02d.avi") % number;
     return video_directory + formatter.str();
 }
 
@@ -68,9 +70,10 @@ int main(int argc,char** argv) {
 
 
     ConciseArgs parser(argc, argv);
+    parser.add(video_directory, "d", "directory", "Directory to read video files from", true);
     parser.add(mono_channel, "m", "stereo-mono-channel", "LCM channel to receive stereo-mono messages on.");
     parser.add(image_channel, "i", "image-channel", "LCM channel to publish images on to.");
-    parser.add(video_directory, "d", "directory", "Directory to read video files from", true);
+    parser.add(frame_offset, "o", "frame-offset", "Offset frames this amount (to correct for sync issues.");
     parser.parse();
 
 
