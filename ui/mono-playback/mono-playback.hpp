@@ -11,6 +11,8 @@ void sighandler(int dum);
 
 void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
-std::string GetMonoFilename(int number);
+std::string GetMonoFilename(long timestamp, int video_number);
+
+std::string GetVideoDirectory(std::string date_str);
 
 #endif
