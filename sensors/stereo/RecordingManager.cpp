@@ -573,9 +573,9 @@ void RecordingManager::SetHudNumbers(Hud hud) {
     hud.SetVideoNumber(GetFrameNumber());
 }
 
-void RecordingManager::RecFrameHud(Mat hud_frame, bool is_color) {
+void RecordingManager::RecFrameHud(Mat hud_frame, bool is_color, std::string prepend_str) {
     if (!record_hud_setup_) {
-        record_hud_writer_ = SetupVideoWriterAVI("HUD", hud_frame.size(), true, is_color, &hud_video_number_);
+        record_hud_writer_ = SetupVideoWriterAVI(prepend_str, hud_frame.size(), true, is_color, &hud_video_number_);
         record_hud_setup_ = true;
     }
 

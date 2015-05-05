@@ -182,22 +182,23 @@ int main(int argc, char *argv[]) {
         // setup
 
         //err = setup_gray_capture(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
-{
-    dc1394error_t err;
+        // this is setup_gray_capture, except I increased the dma buffer size
+        {
+            dc1394error_t err;
 
-    err=dc1394_camera_reset(camera2);
-    DC1394_ERR_RTN(err, "Could not reset camera");
+            err=dc1394_camera_reset(camera2);
+            DC1394_ERR_RTN(err, "Could not reset camera");
 
-    err = dc1394_video_set_iso_speed(camera2, DC1394_ISO_SPEED_200);
-    DC1394_ERR_RTN(err,"Could not setup camera ISO speed");
+            err = dc1394_video_set_iso_speed(camera2, DC1394_ISO_SPEED_200);
+            DC1394_ERR_RTN(err,"Could not setup camera ISO speed");
 
-    err=dc1394_video_set_mode(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
-    DC1394_ERR_RTN(err,"Could not set video mode");
+            err=dc1394_video_set_mode(camera2, DC1394_VIDEO_MODE_FORMAT7_1);
+            DC1394_ERR_RTN(err,"Could not set video mode");
 
-    err=dc1394_capture_setup(camera2, 4, DC1394_CAPTURE_FLAGS_DEFAULT);
-    DC1394_ERR_RTN(err,"Could not setup camera - make sure that the video mode is supported by your camera");
+            err=dc1394_capture_setup(camera2, 16, DC1394_CAPTURE_FLAGS_DEFAULT);
+            DC1394_ERR_RTN(err,"Could not setup camera - make sure that the video mode is supported by your camera");
 
-}
+        }
         DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera2), "Could not setup camera number 2");
 
         // enable auto-exposure
@@ -334,7 +335,7 @@ int main(int argc, char *argv[]) {
                 img = right;
             }
 
-            recording_manager.RecFrameHud(img, false);
+            recording_manager.RecFrameHud(img, false, "mono");
 
         }
 

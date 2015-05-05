@@ -78,8 +78,6 @@ void FlushCameraBuffer(dc1394camera_t *camera) {
             break;
         }
     }
-
-    cout << counter << endl;
 }
 
 int64_t getTimestampNow()
