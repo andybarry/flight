@@ -127,8 +127,23 @@ int main(int argc, char *argv[]) {
         if (!camera)
             g_critical("Could not create dc1394 camera");
 
-        err = setup_gray_capture(camera, DC1394_VIDEO_MODE_FORMAT7_1);
-        DC1394_ERR_CLN_RTN(err, cleanup_and_exit(camera), "Could not setup camera");
+        // this is setup_gray_capture, except I increased the dma buffer size
+        {
+            dc1394error_t err;
+
+            err=dc1394_camera_reset(camera);
+            DC1394_ERR_RTN(err, "Could not reset camera");
+
+            err = dc1394_video_set_iso_speed(camera, DC1394_ISO_SPEED_200);
+            DC1394_ERR_RTN(err,"Could not setup camera ISO speed");
+
+            err=dc1394_video_set_mode(camera, DC1394_VIDEO_MODE_FORMAT7_1);
+            DC1394_ERR_RTN(err,"Could not set video mode");
+
+            err=dc1394_capture_setup(camera, 16, DC1394_CAPTURE_FLAGS_DEFAULT);
+            DC1394_ERR_RTN(err,"Could not setup camera - make sure that the video mode is supported by your camera");
+
+        }
 
         err = dc1394_feature_set_power(camera, DC1394_FEATURE_EXPOSURE, DC1394_ON);
         DC1394_ERR_RTN(err,"Could not turn on the exposure feature");
@@ -299,6 +314,9 @@ int main(int argc, char *argv[]) {
         // grab frames
 
         if (left_camera_on) {
+            // flush buffer
+            FlushCameraBuffer(camera);
+
             left = GetFrameFormat7(camera);
 
             // use calibration to undistort image
@@ -313,7 +331,6 @@ int main(int argc, char *argv[]) {
 
         if (right_camera_on) {
             // flush buffer
-            //usleep(900000);
             FlushCameraBuffer(camera2);
 
             right = GetFrameFormat7(camera2);
