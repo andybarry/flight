@@ -188,6 +188,10 @@ int main(int argc,char** argv) {
 
     printf("LCM:\n\t%s\n\t%s\nVideo directory: %s\n", mono_channel.c_str(), image_channel.c_str(), dir.c_str());
 
+    if (frame_offset != 0) {
+        std::cerr << "WARNING: frame offset: " << frame_offset << std::endl;
+    }
+
 
     while (true) {
         // read the LCM channel
