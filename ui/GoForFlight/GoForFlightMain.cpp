@@ -213,7 +213,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);
     lblCpuLocalLabel = new wxStaticText(Panel1, ID_STATICTEXT24, _("Local:"), wxDefaultPosition, wxSize(59,20), 0, _T("ID_STATICTEXT24"));
     FlexGridSizer1->Add(lblCpuLocalLabel, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblCpuLocal = new wxStaticText(Panel1, ID_STATICTEXT25, _("-- Ghz / -- C"), wxDefaultPosition, wxSize(152,20), 0, _T("ID_STATICTEXT25"));
+    lblCpuLocal = new wxStaticText(Panel1, ID_STATICTEXT25, _("-- Ghz / -- C"), wxDefaultPosition, wxSize(180,20), 0, _T("ID_STATICTEXT25"));
     FlexGridSizer1->Add(lblCpuLocal, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblCpuGpsLabel = new wxStaticText(Panel1, ID_STATICTEXT26, _("GPS:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT26"));
     FlexGridSizer1->Add(lblCpuGpsLabel, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);

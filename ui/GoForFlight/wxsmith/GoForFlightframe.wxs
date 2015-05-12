@@ -356,7 +356,7 @@
 														<object class="sizeritem">
 															<object class="wxStaticText" name="ID_STATICTEXT25" variable="lblCpuLocal" member="yes">
 																<label>-- Ghz / -- C</label>
-																<size>152,20</size>
+																<size>180,20</size>
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>

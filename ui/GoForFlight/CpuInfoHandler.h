@@ -25,7 +25,11 @@ class CpuInfoHandler : public MultiStatusHandler
             boost::format formatter;
 
             if (msg->fan_pwm > 0) {
-                formatter = boost::format("%.1f Ghz / %.0f C / PWM: %d") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp % msg->fan_pwm;
+                double percent = msg->fan_pwm / 255.0 * 100.0;
+                if (msg->fan_pwm == 1) {
+                    percent = 0;
+                }
+                formatter = boost::format("%.1f Ghz / %.0f C / Fan: %.0f%%") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp % percent;
             } else {
                 formatter = boost::format("%.1f Ghz / %.0f C") % (msg->cpu_freq / 1000000.0) % msg->cpu_temp;
             }
