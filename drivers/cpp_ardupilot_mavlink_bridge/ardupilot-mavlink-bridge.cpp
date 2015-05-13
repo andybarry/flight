@@ -38,6 +38,8 @@ lcmt_deltawing_u_subscription_t *deltawing_u_sub;
 lcmt_beep_subscription_t *beep_sub;
 
 int last_stereo_control = 0;
+int last_is_autonomous = 0;
+int last_stabilization_mode = 0;
 
 double altimeter_r, airspeed_r, sideslip_r;
 
@@ -115,6 +117,7 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
     }
 
     Eigen::Vector3i state_estimator_index;
+    int stabilization_mode;
 
     switch(mavmsg.msgid)
     {
@@ -398,11 +401,19 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             servoOutMsg.elevonR = servomsg.servo2_raw;
             servoOutMsg.throttle = servomsg.servo3_raw;
 
-            if (servomsg.servo5_raw > 1500)
-            {
+            stabilization_mode = 0;
+
+            if (servomsg.servo5_raw > 1703) {
+                // fully autonomous
                 servoOutMsg.is_autonomous = 1;
                 servoOutMsg.video_record = 1;
+            } else if (servomsg.servo5_raw > 1303) {
+                // stabilization
+                servoOutMsg.is_autonomous = 1;
+                servoOutMsg.video_record = 1;
+                stabilization_mode = 1;
             } else {
+                // manual
                 servoOutMsg.is_autonomous = 0;
                 servoOutMsg.video_record = 0;
             }
@@ -411,6 +422,29 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             lcmt_deltawing_u_publish(lcm_, servo_out_channel.c_str(), &servoOutMsg);
 
             //std::cout << servomsg.servo6_raw << std::endl;
+
+
+            if (last_is_autonomous != servoOutMsg.is_autonomous ||
+                last_stabilization_mode != stabilization_mode) {
+                // send trajectory messages with autonomous flight messages
+                if (servoOutMsg.is_autonomous > 0) {
+
+                    lcmt_tvlqr_controller_action traj_msg;
+                    traj_msg.timestamp = getTimestampNow();
+
+                    if (stabilization_mode > 0) {
+                        traj_msg.trajectory_number = -1;
+                    } else {
+                        traj_msg.trajectory_number = servomsg.servo6_raw;
+                    }
+
+
+                    lcmt_tvlqr_controller_action_publish(lcm_, tvlqr_control_channel.c_str(), &traj_msg);
+                }
+                last_is_autonomous = servoOutMsg.is_autonomous;
+                last_stabilization_mode = stabilization_mode;
+            }
+
 
             if (last_stereo_control != servoOutMsg.video_record)
             {
@@ -425,18 +459,6 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
                 last_stereo_control = servoOutMsg.video_record;
 
-
-                // send trajectory messages with autonomous flight messages
-                if (servoOutMsg.is_autonomous == 1) {
-
-                    lcmt_tvlqr_controller_action traj_msg;
-
-                    traj_msg.timestamp = getTimestampNow();
-
-                    traj_msg.trajectory_number = servomsg.servo6_raw;
-
-                    lcmt_tvlqr_controller_action_publish(lcm_, tvlqr_control_channel.c_str(), &traj_msg);
-                }
             }
 
 

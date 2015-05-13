@@ -122,12 +122,15 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     int trajectory_number = ServoToTrajectorySwitchPosition(msg->trajectory_number);
 
-    if (number_of_switch_positions < 0 || trajectory_number > number_of_switch_positions) {
-        std::cerr << "ERROR: number of switch positions is " << number_of_switch_positions << " but msg->trajectory_number is " << trajectory_number << std::endl;
+    if (trajectory_number < 0) {
+        // stabilization controller
+        lib_num = stable_controller;
+    } else if (number_of_switch_positions < 0 || trajectory_number >= number_of_switch_positions) {
+        std::cerr << "ERROR: number of switch positions is " << number_of_switch_positions << " but trajectory_number is " << trajectory_number << std::endl;
         return;
+    } else {
+        lib_num = switch_mapping[trajectory_number];
     }
-
-    lib_num = switch_mapping[trajectory_number];
 
     // getting an action means we should start a new TVLQR controller!
 
@@ -158,6 +161,11 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 }
 
 int ServoToTrajectorySwitchPosition(int servo_value) {
+
+    if (servo_value < 0) {
+        // this is the stabilization mode
+        return servo_value;
+    }
 
     int min_delta = -1;
     int min_index = -1;
