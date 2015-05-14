@@ -110,8 +110,8 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
         if (row_num == 1) {
             dt_ = matrix(1, 0) - matrix(0, 0);
         } else if (row_num > 1) {
-            if (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_ > std::numeric_limits<double>::epsilon()) {
-                cerr << "Error: non-constant dt. Expected dt = " << dt_ << " but got matrix[" << row_num << "][0] - matrix[" << row_num - 1 << "][0] = " << matrix(row_num, 0) - matrix(row_num - 1, 0) << endl;
+            if (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_ > 5*std::numeric_limits<double>::epsilon()) {
+                cerr << "Error: non-constant dt. Expected dt = " << dt_ << " but got matrix[" << row_num << "][0] - matrix[" << row_num - 1 << "][0] = " << matrix(row_num, 0) - matrix(row_num - 1, 0) << " (residual = " << (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_) << endl;
 
                 cout << matrix << endl;
                 exit(1);
