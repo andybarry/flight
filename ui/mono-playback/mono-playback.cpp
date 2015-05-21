@@ -41,6 +41,7 @@ void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_st
 
         if (!video_capture.open(newfile)) {
             std::cerr << "Failed to open file: " << newfile << std::endl;
+            return;
         }
         current_video_number = msg->video_number;
     }

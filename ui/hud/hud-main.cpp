@@ -27,6 +27,7 @@ lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
+lcmt_stereo_subscription_t *mono_sub;
 lcmt_stereo_subscription_t *stereo_sub;
 lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
@@ -51,6 +52,7 @@ bool ui_box_first_click = false;
 bool ui_box_done = false;
 
 bool real_frame_loaded = false;
+bool new_camera_frame = false;
 
 
 Point2d box_top(-1, -1);
@@ -70,6 +72,7 @@ int main(int argc,char** argv) {
     bool show_unremapped = false;
     bool depth_crop_bm = false;
     bool draw_stereo_replay = false;
+    bool rec_only_vision = true;
     int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
@@ -86,6 +89,7 @@ int main(int argc,char** argv) {
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
     parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
     parser.add(draw_stereo_replay, "s", "draw_stereo_replay", "Display stereo points from the stereo_replay channel.");
+    parser.add(rec_only_vision, "o", "Record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -191,6 +195,11 @@ int main(int argc,char** argv) {
     char *stereo_replay_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo_replay", &stereo_replay_channel) >= 0) {
         stereo_replay_sub = lcmt_stereo_subscribe(lcm, stereo_replay_channel, &stereo_replay_handler, &hud);
+    }
+
+    char *mono_channel;
+    if (bot_param_get_str(param, "lcm_channels.mono_video", &mono_channel) >= 0) {
+        mono_sub = lcmt_stereo_subscribe(lcm, mono_channel, &mono_handler, &hud);
     }
 
     char *stereo_channel;
@@ -410,15 +419,15 @@ int main(int argc,char** argv) {
             }
 
 
-            if (record_hud && real_frame_loaded_and_run) {
+            if (record_hud && real_frame_loaded_and_run && (!rec_only_vision || new_camera_frame)) {
                 // put this frame into the HUD recording
                 recording_manager.RecFrameHud(hud_image);
+                new_camera_frame = false;
             }
 
             imshow("HUD", hud_image);
 
         }
-
 
 
         char key = waitKey(1);
@@ -640,6 +649,7 @@ void stereo_image_left_handler(const lcm_recv_buf_t *rbuf, const char* channel, 
 
 
     real_frame_loaded = true;
+    new_camera_frame = true;
 
 
     image_mutex.unlock();
@@ -656,6 +666,14 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     stereo_replay_mutex.lock();
     last_stereo_replay_msg = lcmt_stereo_copy(msg);
     stereo_replay_mutex.unlock();
+
+}
+
+void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    Hud *hud = (Hud*)user;
+
+    hud->SetFrameNumber(msg->frame_number);
+    hud->SetVideoNumber(msg->video_number);
 
 }
 
