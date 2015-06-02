@@ -678,16 +678,16 @@ void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_st
 }
 
 void airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
-    Hud *hud = (Hud*)user;
+    //Hud *hud = (Hud*)user;
 
-    hud->SetAirspeed(msg->z_effective[0]);
+    //hud->SetAirspeed(msg->z_effective[0]);
 }
 
 void airspeed_unchecked_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_indexed_measurement_t *msg, void *user) {
 
-    Hud *hud = (Hud*)user;
+    //Hud *hud = (Hud*)user;
 
-    hud->SetAirspeedUnchecked(msg->z_effective[0]);
+    //hud->SetAirspeedUnchecked(msg->z_effective[0]);
 
 }
 
@@ -720,6 +720,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAltitude(msg->pos[2]);
     hud->SetOrientation(msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3]);
     hud->SetAcceleration(msg->accel[0], msg->accel[1], msg->accel[2]);
+    hud->SetAirspeed(msg->vel[0]);
 
     hud->SetTimestamp(msg->utime);
 }

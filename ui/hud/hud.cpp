@@ -170,6 +170,7 @@ void Hud::DrawAirspeed(Mat hud_img) {
 
     PutHudText(hud_img, airspeed_str, text_orgin);
 
+    /*
     if (abs(airspeed_ - airspeed_unchecked_) > 2.0) {
 
         string airspeed_unchecked_str;
@@ -187,6 +188,7 @@ void Hud::DrawAirspeed(Mat hud_img) {
 
         putText(hud_img, airspeed_unchecked_str, text_unchecked_orgin, text_font_, hud_font_scale_, Scalar(0, 0, 0.8));
     }
+    */
 }
 
 void Hud::DrawAltitude(Mat hud_img) {
@@ -276,7 +278,7 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
     int total_number_span = number_of_lines * minor_increment;
 
     // figure out what the top pixel would correspond to
-    float value_per_px = (bottom - top) / total_number_span;
+    float value_per_px = float(bottom - top) / (float)total_number_span;
 
     float top_px_value = number_of_lines / 2 * minor_increment + value;
 
@@ -288,7 +290,9 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
 
     int diff_from_minor_increment = int(round(top_px_value)) % minor_increment;
     int top_line_value = int(round(top_px_value)) - diff_from_minor_increment;
-    int top_line_position = top - (float)diff_from_minor_increment / value_per_px;
+    float float_diff_from_minor_increment = top_px_value - top_line_value;
+    int top_line_position = top + round(float_diff_from_minor_increment * value_per_px);
+
 
     int extra_height;
 
