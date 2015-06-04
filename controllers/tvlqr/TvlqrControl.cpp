@@ -87,7 +87,7 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
 void TvlqrControl::InitializeState(const mav_pose_t *msg) {
 
-    initial_state_ = StateEstimatorToDrakeVector(msg);
+    initial_state_ = PoseMsgToStateEstimatorVector(msg);
 
     // get the yaw from the initial state
 
@@ -113,7 +113,7 @@ Eigen::VectorXd TvlqrControl::GetStateMinusInit(const mav_pose_t *msg) {
     msg2->pos[1] -= initial_state_(1); // y
     msg2->pos[2] -= initial_state_(2); // z
 
-    Eigen::VectorXd state = StateEstimatorToDrakeVector(msg2, Mz_);
+    Eigen::VectorXd state = PoseMsgToStateEstimatorVector(msg2, Mz_);
 
     mav_pose_t_destroy(msg2);
 

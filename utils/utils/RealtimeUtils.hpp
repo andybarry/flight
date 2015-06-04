@@ -23,6 +23,12 @@
 
 #include "gtest/gtest.h"
 
+/** Converts mav_pose_t message into the state estimator frame
+ * Supports an optional rotation matrix to rotate about yaw, allowing the user to use a local frame that sets yaw to a specified value.
+ *
+ */
+Eigen::VectorXd PoseMsgToStateEstimatorVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz = Eigen::Matrix3d::Identity());
+
 /**
  * Converts mav_pose_t message into the Drake global frame.
  *

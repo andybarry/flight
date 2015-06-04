@@ -2,6 +2,132 @@
 
 #define PI 3.14159265359
 
+Eigen::VectorXd PoseMsgToStateEstimatorVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz) {
+    // convert message to 12-state vector in the Drake frame
+
+    Eigen::VectorXd state(12);
+
+    Eigen::Vector3d pos_eigen;
+
+
+    pos_eigen(0) = msg->pos[0];
+    pos_eigen(1) = msg->pos[1];
+    pos_eigen(2) = msg->pos[2];
+
+    // x, y, and z are always in global frame (add in any custom rotation)
+    Eigen::Vector3d pos_global = Mz * pos_eigen;
+
+    state(0) = pos_global(0);
+    state(1) = pos_global(1);
+    state(2) = pos_global(2);
+
+    // roll, pitch, and yaw come from the quats in the message
+
+    Eigen::Vector4d q_eigen;
+    q_eigen(0) = msg->orientation[0];
+    q_eigen(1) = msg->orientation[1];
+    q_eigen(2) = msg->orientation[2];
+    q_eigen(3) = msg->orientation[3];
+
+    double rpy_array[3];
+    bot_quat_to_roll_pitch_yaw(msg->orientation, rpy_array);
+
+    Eigen::Matrix3d rot_mat = quat2rotmat(q_eigen);
+
+    Eigen::Vector3d rpy = rotmat2rpy(Mz * rot_mat);
+
+    state(3) = rpy(0);
+    state(4) = rpy(1);
+    state(5) = rpy(2);
+
+    // velocities are in body frame
+    state(6) = msg->vel[0];
+    state(7) = msg->vel[1];
+    state(8) = msg->vel[2];
+
+    // rotation rates are given in body frame
+    // as angular velocities
+
+    state(9) = msg->rotation_rate[0];
+    state(10) = msg->rotation_rate[1];
+    state(11) = msg->rotation_rate[2];
+
+    return state;
+}
+
+
+TEST(Utils, PoseMsgToStateEstimatorVector) {
+
+    mav_pose_t msg;
+
+    msg.pos[0] = 0.1829;
+    msg.pos[1] = 0.2399;
+    msg.pos[2] = 0.8865;
+
+    msg.orientation[0] = 0.9669;
+    msg.orientation[1] = -0.0065;
+    msg.orientation[2] = 0.2428;
+    msg.orientation[3] = 0.0779;
+
+    msg.vel[0] = 0.9787;
+    msg.vel[1] = 0.7127;
+    msg.vel[2] = 0.5005;
+
+    msg.rotation_rate[0] = 0.4711;
+    msg.rotation_rate[1] = 0.0596;
+    msg.rotation_rate[2] = 0.6820;
+
+
+    Eigen::VectorXd output = PoseMsgToStateEstimatorVector(&msg);
+
+    Eigen::VectorXd matlab_output(12);
+
+    matlab_output << 0.1829, 0.2399, 0.8865, 0.0287, 0.4899, 0.1679, 0.9787, 0.7127, 0.5005, 0.4711, 0.0596, 0.6820;
+
+
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
+
+}
+
+TEST(Utils, PoseMsgToStateEstimatorVectorMz) {
+
+    mav_pose_t msg;
+
+    msg.pos[0] = 0.1829;
+    msg.pos[1] = 0.2399;
+    msg.pos[2] = 0.8865;
+
+    msg.orientation[0] = 0.9669;
+    msg.orientation[1] = -0.0065;
+    msg.orientation[2] = 0.2428;
+    msg.orientation[3] = 0.0779;
+
+    msg.vel[0] = 0.9787;
+    msg.vel[1] = 0.7127;
+    msg.vel[2] = 0.5005;
+
+    msg.rotation_rate[0] = 0.4711;
+    msg.rotation_rate[1] = 0.0596;
+    msg.rotation_rate[2] = 0.6820;
+
+    double rpy[3];
+    bot_quat_to_roll_pitch_yaw(msg.orientation, rpy);
+    Eigen::Matrix3d rotz_mat = rotz(-rpy[2]);
+
+
+    Eigen::VectorXd output = PoseMsgToStateEstimatorVector(&msg, rotz_mat);
+
+    Eigen::VectorXd matlab_output(12);
+
+    matlab_output << 0.2205, 0.2060, 0.8865, 0.0287, 0.4899, 0, 0.9787, 0.7127, 0.5005, 0.4711, 0.0596, 0.6820;
+
+
+    EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
+
+}
+
+
+
 Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz) {
 
     // convert message to 12-state vector in the Drake frame
