@@ -3,3 +3,4 @@ log-monitor
 midi-airspeed
 midi-control
 stereo-monitor
+mono-playback
