@@ -16,7 +16,6 @@ then
     ODROID_NUMBER=${HOST_END: -1}
 
     echo "Detected multihop through odroid-gps$ODROID_NUMBER"
-    echo -n "    odroid-"
 
     SSH_TRANSPORT="-e ssh -A odroid@odroid-gps$ODROID_NUMBER ssh odroid@odroid-$HOST_END"
 
@@ -26,7 +25,7 @@ fi
 
 mkdir -p $LOCAL_DIR/odroid-$HOST_END
 
-echo "Downloading logs for from: $SSH_TRANSPORT..."
+echo "Downloading logs from: $SSH_TRANSPORT..."
 
 
 if [[ $HOST_END == *"cam"* ]]
