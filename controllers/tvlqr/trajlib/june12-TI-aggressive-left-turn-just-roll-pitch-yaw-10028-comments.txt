@@ -1,0 +1,6 @@
+TI-aggressive-left-turn-just-roll-pitch-yawParameters =
+--------------------------------------------------
+1.027     0.001     -0.094     -0.115     0.000     
+
+
+
