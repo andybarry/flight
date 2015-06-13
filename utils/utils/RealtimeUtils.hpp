@@ -23,9 +23,10 @@
 
 #include "gtest/gtest.h"
 
-/** Converts mav_pose_t message into the state estimator frame
- * Supports an optional rotation matrix to rotate about yaw, allowing the user to use a local frame that sets yaw to a specified value.
- *
+/**
+ * Converts mav_pose_t message into a 12-state vector in the State Estimator frame.
+ * @param msg message to convert
+ * @param Mz (optional) yaw rotation
  */
 Eigen::VectorXd PoseMsgToStateEstimatorVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz = Eigen::Matrix3d::Identity());
 
@@ -37,6 +38,16 @@ Eigen::VectorXd PoseMsgToStateEstimatorVector(const mav_pose_t *msg, const Eigen
  */
 Eigen::VectorXd StateEstimatorToDrakeVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz = Eigen::Matrix3d::Identity());
 
+/**
+ * Computes an angle that removes wrapping and minimizes the jump between the last angle
+ * and the current angle, assuming that the difference between them is small.
+ *
+ * @param angle_rad_in angle input (in radians)
+ * @param last_angle_rad last angle (in radians) to attempt to find something close to
+ *
+ * @retval angle without wrapping
+ */
+double AngleUnwrap(double angle_rad_in, double last_angle_rad);
 
 Eigen::Matrix3d rpy2rotmat(Eigen::Vector3d rpy);
 Eigen::Vector3d angularvel2rpydot(Eigen::Vector3d rpy, Eigen::Vector3d omega);

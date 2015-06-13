@@ -55,6 +55,7 @@ class TvlqrControl
         Trajectory *stable_controller_;
 
         Eigen::VectorXd initial_state_;
+        Eigen::VectorXd last_state_; // keep so we can do angle unwrapping
         Eigen::Matrix3d Mz_; // rotation matrix that transforms global state into local state by removing yaw
 
         bool state_initialized_;
@@ -63,6 +64,7 @@ class TvlqrControl
 
         int64_t t0_;
         double last_ti_state_estimator_reset_;
+
 
 };
 

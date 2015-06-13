@@ -14,6 +14,7 @@ LCM/mavlink_message_t.h.rej
 *.o
 *~
 *.dep
+utils/utils/utils-test_d
 LCM/lcm-tester/lcm-tester
 ui/mono-playback/mono-playback
 sensors/airspeed-check/airspeed-check

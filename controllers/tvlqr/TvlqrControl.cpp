@@ -36,6 +36,8 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
         return converter_->GetTrimCommands();
     }
 
+    //std::cout << "in GetControl" << std::endl;
+
     // check to see if this is the first state we've gotten along this trajectory
 
     if (state_initialized_ == false) {
@@ -44,7 +46,18 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
     }
 
     Eigen::VectorXd state_minus_init = GetStateMinusInit(msg);
+/*
+    printf("BEFORE\troll: %f\tpitch: %f\tyaw: %f\n", state_minus_init(3), state_minus_init(4), state_minus_init(5));
 
+    // unwrap angles
+    state_minus_init(3) = AngleUnwrap(state_minus_init(3), last_state_(3));
+    state_minus_init(4) = AngleUnwrap(state_minus_init(4), last_state_(4));
+    state_minus_init(5) = AngleUnwrap(state_minus_init(5), last_state_(5));
+
+    printf("AFTER\troll: %f\tpitch: %f\tyaw: %f\n", state_minus_init(3), state_minus_init(4), state_minus_init(5));
+
+    last_state_ = state_minus_init;
+*/
     double t_along_trajectory;
 
     // check for TILQR case
@@ -116,6 +129,8 @@ Eigen::VectorXd TvlqrControl::GetStateMinusInit(const mav_pose_t *msg) {
     Eigen::VectorXd state = PoseMsgToStateEstimatorVector(msg2, Mz_);
 
     mav_pose_t_destroy(msg2);
+
+    last_state_ = state;
 
     return state;
 

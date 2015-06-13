@@ -2,8 +2,9 @@
 
 #define PI 3.14159265359
 
+
 Eigen::VectorXd PoseMsgToStateEstimatorVector(const mav_pose_t *msg, const Eigen::Matrix3d Mz) {
-    // convert message to 12-state vector in the Drake frame
+    // convert message to 12-state vector in the State estimator frame
 
     Eigen::VectorXd state(12);
 
@@ -87,6 +88,17 @@ TEST(Utils, PoseMsgToStateEstimatorVector) {
 
     EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
 
+    //Eigen::VectorXd matlab_output2 = matlab_output;
+    //matlab_output2(4) = matlab_output(4) + 2*PI;
+
+    //output = PoseMsgToStateEstimatorVector(&msg, &matlab_output2);
+    //EXPECT_TRUE( output.isApprox(matlab_output2, 0.001) ) << std::endl << "(testing angle unwrap) Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
+
+    //matlab_output2(4) = matlab_output(4) + .3*PI;
+
+    //output = PoseMsgToStateEstimatorVector(&msg, &matlab_output2);
+    //EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "(testing angle unwrap2) Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
+
 }
 
 TEST(Utils, PoseMsgToStateEstimatorVectorMz) {
@@ -124,6 +136,57 @@ TEST(Utils, PoseMsgToStateEstimatorVectorMz) {
 
     EXPECT_TRUE( output.isApprox(matlab_output, 0.001) ) << std::endl << "Expected:" << std::endl << matlab_output << std::endl << "Got:" << std::endl << output << std::endl;
 
+}
+
+double AngleUnwrap(double angle_rad_in, double last_angle_rad) {
+
+    // compute 5 options:
+    //  1: no change
+    //  2: -360 deg
+    //  3: +360 deg
+    //  4: -360*2 deg
+    //  5: +360*2 ded
+
+    double angle_options[10];
+    angle_options[0] = angle_rad_in;
+    angle_options[1] = angle_rad_in - 2*PI;
+    angle_options[2] = angle_rad_in + 2*PI;
+    angle_options[3] = angle_rad_in - 4*PI;
+    angle_options[4] = angle_rad_in + 4*PI;
+
+    double best_angle = angle_rad_in;
+    double best_dist = -1;
+
+    // find the minimum distance
+    for (int i = 0; i < 5; i++) {
+
+        double this_dist = abs(last_angle_rad - angle_options[i]);
+
+        if (best_dist < 0 || this_dist < best_dist) {
+            best_dist = this_dist;
+
+            best_angle = angle_options[i];
+        }
+
+
+    }
+
+    return best_angle;
+}
+
+TEST(Utils, AngleUnwrap) {
+
+
+
+    EXPECT_NEAR( 1.0, AngleUnwrap(1.0, 0.9), 0.0001);
+    EXPECT_NEAR( 2*PI + .01, AngleUnwrap(0.01, 2*PI), 0.0001 );
+    EXPECT_NEAR( -2*PI + .01, AngleUnwrap(0.01, -2*PI), 0.0001 );
+    EXPECT_NEAR( 2*PI, AngleUnwrap(2*PI, 6.0), 0.0001 );
+    EXPECT_NEAR( -2*PI-.1, AngleUnwrap(-.1, -2*PI), 0.0001 );
+
+    EXPECT_NEAR( .78, AngleUnwrap(.78, .77), 0.0001);
+
+    EXPECT_NEAR( 3.2732, AngleUnwrap(-3.01, 3.11), 0.0001);
 }
 
 
