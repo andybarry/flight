@@ -192,8 +192,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
     lblDiskFreeLabelLocal = new wxStaticText(Panel1, ID_STATICTEXT17, _("Local:"), wxDefaultPosition, wxSize(59,20), 0, _T("ID_STATICTEXT17"));
     FlexGridSizer2->Add(lblDiskFreeLabelLocal, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblDiskFreeLocal = new wxStaticText(Panel1, ID_STATICTEXT11, _("-- GB"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
-    lblDiskFreeLocal->SetMinSize(wxSize(60,-1));
+    lblDiskFreeLocal = new wxStaticText(Panel1, ID_STATICTEXT11, _("233.3 GB"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
+    lblDiskFreeLocal->SetMinSize(wxSize(100,-1));
     FlexGridSizer2->Add(lblDiskFreeLocal, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblDiskFreeLabelGps = new wxStaticText(Panel1, ID_STATICTEXT18, _("GPS:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT18"));
     FlexGridSizer2->Add(lblDiskFreeLabelGps, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);

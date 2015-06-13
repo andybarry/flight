@@ -280,8 +280,8 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT11" variable="lblDiskFreeLocal" member="yes">
-														<label>-- GB</label>
-														<minsize>60,-1</minsize>
+														<label>233.3 GB</label>
+														<minsize>100,-1</minsize>
 													</object>
 													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
