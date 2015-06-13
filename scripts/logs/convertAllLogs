@@ -23,14 +23,25 @@ echo "------------------------"
 find $CONVERT_DIR/local-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
 
 echo "------------------------"
-echo "Converting gps logs..."
+echo "Converting odroid-gps1 logs..."
 echo "------------------------"
 
-find $CONVERT_DIR/gps-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+find $CONVERT_DIR/odroid-gps1/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
 
 echo "------------------------"
-echo "Converting cam logs..."
+echo "Converting odroid-gps2 logs..."
+echo "------------------------"
+find $CONVERT_DIR/odroid-gps2/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
+echo "Converting odroid-cam1 logs..."
 echo "------------------------"
 
-find $CONVERT_DIR/cam-logs/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+find $CONVERT_DIR/odroid-cam1/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
+echo "Converting odroid-cam2 logs..."
+echo "------------------------"
+
+find $CONVERT_DIR/odroid-cam2/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
 
