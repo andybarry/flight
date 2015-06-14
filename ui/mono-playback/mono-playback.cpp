@@ -18,12 +18,16 @@ std::string video_directory = "";
 std::string log_directory = "";
 
 lcmt_stereo_subscription_t *stereo_sub;
+lcmt_cpu_info_subscription_t *cpu_info_sub1;
+lcmt_cpu_info_subscription_t *cpu_info_sub2;
 
 cv::VideoCapture video_capture;
 
 int current_video_number = -1;
 
 int frame_offset = 0;
+
+char computer_number_char = 'x';
 
 
 void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
@@ -36,6 +40,10 @@ void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_st
         video_capture.release();
 
         std::string newfile = GetMonoFilename(msg->timestamp, msg->video_number);
+
+        if (newfile.empty()) {
+            return;
+        }
 
         std::cout << "Opening file: " << newfile << std::endl;
 
@@ -56,8 +64,23 @@ void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_st
 
 }
 
+void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_cpu_info *msg, void *user) {
+    // we just use this to figure out the hostname of the cam computer
+
+    std::string channel_name(channel);
+
+    computer_number_char = channel_name.back();
+
+}
+
 
 std::string GetMonoFilename(long timestamp, int video_number) {
+
+    if (computer_number_char == 'x') {
+        // wait for a computer number
+        std::cout << "Waiting for hostname..." << std::endl;
+        return "";
+    }
 
     char tmbuf[64], buf[64];
 
@@ -88,6 +111,7 @@ std::string GetMonoFilename(long timestamp, int video_number) {
 
     std::string path = dir + boost::filesystem::path::preferred_separator +
         "onboard-vids" + boost::filesystem::path::preferred_separator +
+        + "odroid-cam" + computer_number_char + boost::filesystem::path::preferred_separator
         + "mono-" + date_str + formatter.str();
 
     return path;
@@ -186,6 +210,9 @@ int main(int argc,char** argv) {
 
 
     stereo_sub = lcmt_stereo_subscribe(lcm_, mono_channel.c_str(), &mono_handler, NULL);
+
+    cpu_info_sub1 = lcmt_cpu_info_subscribe(lcm_, "cpu-info-odroid-cam1", &cpu_info_handler, NULL);
+    cpu_info_sub2 = lcmt_cpu_info_subscribe(lcm_, "cpu-info-odroid-cam2", &cpu_info_handler, NULL);
 
     printf("LCM:\n\t%s\n\t%s\nVideo directory: %s\n", mono_channel.c_str(), image_channel.c_str(), dir.c_str());
 
