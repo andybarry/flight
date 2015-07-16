@@ -25,10 +25,6 @@
 
 #include "../../externals/jpeg-utils/jpeg-utils.h"
 
-#include <lcmtypes/octomap_raw_t.h>
-#include <octomap/OcTree.h>
-#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
-
 #include "opencv2/opencv.hpp"
 #include <cv.h>
 
@@ -36,7 +32,6 @@
 #include <fstream>
 
 using namespace std;
-using namespace octomap;
 
 void sighandler(int dum);
 
@@ -61,9 +56,6 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 
 // trajectory handler
 void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user);
-
-// octomap handler
-void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user);
 
 void Get2DPointsFromLcmXY(const lcmt_stereo_with_xy *msg, vector<Point> *xy_points);
 void Draw2DPointsOnImage(Mat image, const vector<Point> *points);

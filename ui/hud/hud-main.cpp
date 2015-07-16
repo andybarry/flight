@@ -32,7 +32,6 @@ lcmt_stereo_subscription_t *stereo_sub;
 lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_action_sub;
-octomap_raw_t_subscription_t *octomap_sub;
 
 
 mutex image_mutex;
@@ -43,9 +42,6 @@ ofstream box_file;
 mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
 lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg, *last_stereo_replay_msg;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
-
-OcTree *octree = NULL;
-mutex octomap_mutex;
 
 bool ui_box = false;
 bool ui_box_first_click = false;
@@ -63,7 +59,6 @@ int main(int argc,char** argv) {
     Scalar bm_color(.5, .5, .5);
     Scalar block_match_color(.8, 0, 0);
     Scalar block_match_fill_color(1, 1, 1);
-    Scalar octomap_color(1, 0, .4);
 
     string config_file = "";
     int move_window_x = -1, move_window_y = -1;
@@ -145,8 +140,6 @@ int main(int argc,char** argv) {
         bm_depth_max = BM_DEPTH_MAX;
     }
 
-    BotFrames *bot_frames = bot_frames_new(lcm, param);
-
     RecordingManager recording_manager;
     recording_manager.Init(stereo_config);
 
@@ -215,11 +208,6 @@ int main(int argc,char** argv) {
     char *stereo_image_left_channel;
     if (bot_param_get_str(param, "lcm_channels.stereo_image_left", &stereo_image_left_channel) >= 0) {
         stereo_image_left_sub = bot_core_image_t_subscribe(lcm, stereo_image_left_channel, &stereo_image_left_handler, &hud);
-    }
-
-    char *octomap_channel;
-    if (bot_param_get_str(param, "lcm_channels.octomap", &octomap_channel) >= 0) {
-        octomap_sub = octomap_raw_t_subscribe(lcm, octomap_channel, &octomap_raw_t_handler, NULL);
     }
 
     char *stereo_bm_channel;
@@ -307,18 +295,18 @@ int main(int argc,char** argv) {
 
 
             // -- octomap -- //
-            vector<Point3f> octomap_points;
+            //vector<Point3f> octomap_points;
 
-            BotTrans global_to_body;
-            bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
+            //BotTrans global_to_body;
+            //bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body);
 
-            octomap_mutex.lock();
-            if (octree != NULL) {
-                StereoOctomap::GetOctomapPoints(octree, &octomap_points, &global_to_body, true);
+            //octomap_mutex.lock();
+            //if (octree != NULL) {
+                //StereoOctomap::GetOctomapPoints(octree, &octomap_points, &global_to_body, true);
 
-                //Draw3DPointsOnImage(color_img, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
-            }
-            octomap_mutex.unlock();
+                ////Draw3DPointsOnImage(color_img, &octomap_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, 128);
+            //}
+            //octomap_mutex.unlock();
 
             // -- stereo -- //
 
@@ -725,27 +713,6 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetTimestamp(msg->utime);
 }
 
-
-void octomap_raw_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const octomap_raw_t *msg, void *user) {
-    // get an octomap and load it into memory
-
-    octomap_mutex.lock();
-
-    if (octree) {
-        delete octree;
-    }
-
-    std::stringstream datastream;
-    datastream.write((const char*) msg->data, msg->length);
-
-    octree = new octomap::OcTree(1); //resolution will be set by data from message
-    octree->readBinary(datastream);
-
-    octree->toMaxLikelihood();
-
-    octomap_mutex.unlock();
-
-}
 
 void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
     Hud *hud = (Hud*)user;
