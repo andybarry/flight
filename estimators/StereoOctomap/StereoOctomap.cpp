@@ -1,11 +1,21 @@
 #include "StereoOctomap.hpp"
 
+#define OCTREE_RESOLUTION 128.0f // TODO: set me
+
 
 StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
     bot_frames_ = bot_frames;
 
-    current_octree_ = new OcTree(0.1);
-    building_octree_ = new OcTree(0.1);
+    current_cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+    building_cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+
+
+    current_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+    current_octree_->setInputCloud((pcl::PointCloud<pcl::PointXYZ>::Ptr)current_cloud_);
+
+    building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+    building_octree_->setInputCloud(building_cloud_);
+
 
     current_octree_timestamp_ = -1;
     building_octree_timestamp_ = -1;
@@ -31,21 +41,20 @@ void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
 }
 
 void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local) {
-    // get the new origin
-    double origin[3];
-    origin[0] = 0;
-    origin[1] = 0;
-    origin[2] = 0;
 
-    double plane_origin[3];
-    bot_trans_apply_vec(body_to_local, origin, plane_origin);
-    octomath::Vector3 vec_plane_origin(plane_origin[0], plane_origin[1], plane_origin[2]);
+    // get the new origin
+    //double origin[3];
+    //origin[0] = 0;
+    //origin[1] = 0;
+    //origin[2] = 0;
+    //
+    //double plane_origin[3];
+    //bot_trans_apply_vec(body_to_local, origin, plane_origin);
     //octomath::Vector3 vec_plane_origin(0, 0, 0);
 
 
-    // now apply this matrix to each point
-    for (int i = 0; i<msg->number_of_points; i++)
-    {
+    // apply this matrix to each point
+    for (int i = 0; i<msg->number_of_points; i++) {
         double this_point_d[3];
         double trans_point[3];
 
@@ -56,13 +65,11 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
         // add the position vector
         bot_trans_apply_vec(to_open_cv, this_point_d, trans_point);
 
-        octomath::Vector3 vec_new_point(trans_point[0], trans_point[1], trans_point[2]);
-        //octomath::Vector3 vec_new_point(0, 0, 5);
 
-        // add this point to the octree
-        current_octree_->insertRay(vec_plane_origin, vec_new_point);
-        building_octree_->insertRay(vec_plane_origin, vec_new_point);
-
+        // add point to cloud
+        pcl::PointXYZ this_point(trans_point[0], trans_point[1], trans_point[2]);
+        current_octree_->addPointToCloud(this_point, current_cloud_);
+        building_octree_->addPointToCloud(this_point, building_cloud_);
     }
 }
 
@@ -79,11 +86,19 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
         delete current_octree_;
         delete building_octree_;
 
+        // we don't have to delete the clouds since they are shared pointers and will auto-delete
+
         current_octree_timestamp_ = last_msg_time;
         building_octree_timestamp_ = last_msg_time + OCTREE_LIFE/2;
 
-        current_octree_ = new OcTree(0.1);
-        building_octree_ = new OcTree(0.1);
+        current_cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+        building_cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+
+        current_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+        current_octree_->setInputCloud((pcl::PointCloud<pcl::PointXYZ>::Ptr)current_cloud_);
+
+        building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+        building_octree_->setInputCloud((pcl::PointCloud<pcl::PointXYZ>::Ptr)building_cloud_);
 
         cout << endl << "swapping octrees because jump back in time" << endl;
 
@@ -96,11 +111,10 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
         building_octree_timestamp_ = last_msg_time;
 
         current_octree_ = building_octree_;
-        building_octree_ = new OcTree(0.1);
+        building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
 
         cout << endl << "swapping octrees" << endl;
     }
-    //currentOctree->degradeOutdatedNodes(2);
 }
 
 /*
@@ -110,6 +124,7 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
  * @param lcm initialized lcm object
  *
  */
+/*
 void StereoOctomap::PublishOctomap(lcm_t *lcm) {
 
     // publish octomap to LCM
@@ -132,8 +147,9 @@ void StereoOctomap::PublishOctomap(lcm_t *lcm) {
 
     octomap_raw_t_publish(lcm, "OCTOMAP", &oc_msg);
 }
+*/
 
-/*
+/**
  * Publishes the entire octomap to a lcmt_stereo
  * lcm type.  Useful for comparisons, but likely
  * slow.  Note: transforms points into a local
@@ -144,6 +160,7 @@ void StereoOctomap::PublishOctomap(lcm_t *lcm) {
  * @param video_number video number to publish with the data
  *
  */
+/*
 void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_number) {
 
     if (stereo_calibration_set_ != true) {
@@ -222,8 +239,9 @@ void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_numb
 
 
 }
+*/
 
-/*
+/**
  * Returns the full list of points in an octree, optionally projected with a transform
  *
  * @param octomap Octree to process
@@ -235,6 +253,7 @@ void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_numb
  *  Default: false
  *
  */
+/*
 void StereoOctomap::GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform, bool discard_behind) {
 
 
@@ -274,11 +293,4 @@ void StereoOctomap::GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octom
         }
     }
 }
-
-int64_t StereoOctomap::getTimestampNow() {
-    struct timeval thisTime;
-    gettimeofday(&thisTime, NULL);
-    return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
-}
-
-
+*/

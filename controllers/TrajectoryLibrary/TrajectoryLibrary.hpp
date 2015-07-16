@@ -15,8 +15,6 @@
 #include <sstream>
 
 #include <dirent.h>
-#include <octomap/OcTree.h>
-#include <octomap/octomap.h>
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
@@ -27,7 +25,6 @@
 #include "Trajectory.hpp"
 
 using namespace std;
-using namespace octomap;
 
 
 class TrajectoryLibrary
@@ -40,7 +37,7 @@ class TrajectoryLibrary
 
         bool LoadLibrary(string dirname);  // loads a trajectory from a directory of .csv files
 
-        Trajectory* FindFarthestTrajectory(const OcTree *octree, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = NULL);
+        //Trajectory* FindFarthestTrajectory(const OcTree *octree, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = NULL);
 
         void Print();
 

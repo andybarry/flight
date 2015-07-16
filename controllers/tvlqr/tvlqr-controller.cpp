@@ -7,14 +7,13 @@
 
 #include "tvlqr-controller.hpp"
 
-using namespace std;
-
 lcm_t * lcm;
 
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 pronto_utime_t_subscription_t *pronto_reset_handler_sub;
 mav_filter_state_t_subscription_t *pronto_state_handler_sub;
+lcmt_stereo_subscription_t *stereo_sub;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
@@ -48,6 +47,8 @@ int stable_controller;
 int number_of_switch_positions = -1;
 int switch_mapping[MAX_SWITCH_MAPPING];
 int switch_rc_us[MAX_SWITCH_MAPPING];
+
+StereoOctomap *octomap;
 
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
@@ -327,6 +328,10 @@ void SendStateEstimatorDefaultResetRequest() {
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), &msg);
 
     cout << "State estimator DEFAULT reset message sent." << endl;
+}
+
+void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+
 }
 
 void sighandler(int dum)

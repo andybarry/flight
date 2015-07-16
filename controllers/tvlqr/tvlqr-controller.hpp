@@ -4,6 +4,8 @@
 #include "../../LCM/mav_pose_t.h"
 #include "../../LCM/lcmt_tvlqr_controller_action.h"
 #include "../../LCM/lcmt_deltawing_u.h"
+#include "../../LCM/lcmt_stereo.h"
+#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
 #include "../TrajectoryLibrary/TrajectoryLibrary.hpp"
 
@@ -28,6 +30,8 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user);
 
 void mav_filter_state_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_filter_state_t *msg, void *user);
+
+void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
 int ServoToTrajectorySwitchPosition(int servo_value);
 

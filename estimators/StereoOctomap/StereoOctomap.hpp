@@ -1,3 +1,12 @@
+/**
+ * Implements a octree data structure using PCL as a backend
+ * for pushbroom stereo data.
+ *
+ * Supports checking trajectories against the octree to determine nearest neighbor.
+ *
+ * (C) 2015 Andrew Barry <abarry@csail.mit.edu>
+ */
+
 #ifndef STEREO_OCTOMAP_H_
 #define STEREO_OCTOMAP_H_
 
@@ -14,7 +23,8 @@
 #include <bot_frames/bot_frames.h>
 #include <bot_param/param_client.h>
 #include <lcmtypes/octomap_raw_t.h>
-#include <octomap/OcTree.h>
+#include <pcl/point_cloud.h>
+#include <pcl/octree/octree.h>
 #include "../../LCM/lcmt_stereo_with_xy.h"
 #include "../../LCM/lcmt_stereo.h"
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
@@ -23,10 +33,6 @@
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
-
-using namespace std;
-using namespace octomap;
-
 
 
 class StereoOctomap {
@@ -38,7 +44,7 @@ class StereoOctomap {
         void ProcessStereoMessage(const lcmt_stereo *msg);
 
         void PublishOctomap(lcm_t *lcm);
-        void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
+        //void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
 
         void SetStereoConfig(OpenCvStereoConfig stereo_config, OpenCvStereoCalibration stereo_calibration) {
             stereo_config_  = stereo_config;
@@ -46,25 +52,27 @@ class StereoOctomap {
             stereo_calibration_set_ = true;
         }
 
-        static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
+        //static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
 
 
     private:
 
         void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
         void RemoveOldPoints(int64_t last_msg_time);
-        int64_t getTimestampNow();
 
         OpenCvStereoCalibration stereo_calibration_;
         OpenCvStereoConfig stereo_config_;
         bool stereo_calibration_set_;
 
-        OcTree *current_octree_;
-        OcTree *building_octree_;
+        pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> *current_octree_;
+        pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> *building_octree_;
 
         int64_t current_octree_timestamp_, building_octree_timestamp_;
 
         BotFrames *bot_frames_;
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr current_cloud_;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr building_cloud_;
 
 
 

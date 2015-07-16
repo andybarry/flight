@@ -4,7 +4,7 @@
 
 LCMDIR=../../LCM/
 
-REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv octomap'
+REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv pcl_octree-1.7'
 
 
 # -------- includes ----------

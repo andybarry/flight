@@ -14,6 +14,7 @@ extern pronto_utime_t_subscription_t *pronto_reset_handler_sub;
 extern mav_pose_t_subscription_t *mav_pose_t_sub;
 extern lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 extern mav_filter_state_t_subscription_t *pronto_state_handler_sub;
+extern lcmt_stereo_subscription_t *stereo_sub;
 
 // global trajectory library
 extern TrajectoryLibrary trajlib;
@@ -41,6 +42,8 @@ extern double sigma0_delta_z;
 extern double sigma0_chi_xy;
 extern double sigma0_chi_z;
 
+extern StereoOctomap *octomap;
+
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
@@ -48,6 +51,7 @@ int main(int argc,char** argv) {
     string pose_channel = "STATE_ESTIMATOR_POSE";
     string tvlqr_action_channel = "tvlqr-action";
     string pronto_state_channel = "STATE_ESTIMATOR_STATE";
+    string stereo_channel = "stereo";
 
 
     ConciseArgs parser(argc, argv);
@@ -60,6 +64,7 @@ int main(int argc,char** argv) {
     parser.add(pronto_init_channel, "i", "pronto-init-channel", "LCM channel to send pronto re-init messages on.");
     parser.add(pronto_state_channel, "s", "pronto-state-channel", "LCM channel that pronto publishes its state on.");
     parser.add(pronto_reset_complete_channel, "c", "pronto-reset-complete-channel", "LCM channel to listen for pronto's reset complete messages.");
+    parser.add(stereo_channel, "e", "stereo-channel", "LCM channel to listen to stereo messages on.");
     parser.parse();
 
     if (trajectory_dir != "") {
@@ -114,6 +119,8 @@ int main(int argc,char** argv) {
     bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_mapping", switch_mapping, number_of_switch_positions);
 
 
+    BotFrames *bot_frames = bot_frames_new(lcm, param);
+    octomap = new StereoOctomap(bot_frames);
 
 
     control = new TvlqrControl(converter, trajlib.GetTrajectoryByNumber(stable_controller));
@@ -124,6 +131,8 @@ int main(int argc,char** argv) {
     pronto_reset_handler_sub = pronto_utime_t_subscribe(lcm, pronto_reset_complete_channel.c_str(), &pronto_reset_complete_handler, NULL);
 
     pronto_state_handler_sub = mav_filter_state_t_subscribe(lcm, pronto_state_channel.c_str(), &mav_filter_state_t_handler, NULL);
+
+    stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel.c_str(), &stereo_handler, NULL);
 
     tvlqr_controller_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel.c_str(), &lcmt_tvlqr_controller_action_handler, NULL);
 
