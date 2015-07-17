@@ -64,7 +64,7 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
 
         // add the position vector
         bot_trans_apply_vec(to_open_cv, this_point_d, trans_point);
-
+std::cout << trans_point[0] << " "<< trans_point[1] << " "<< trans_point[2] << std::endl;
 
         // add point to cloud
         pcl::PointXYZ this_point(trans_point[0], trans_point[1], trans_point[2]);
@@ -135,6 +135,12 @@ double StereoOctomap::NearestNeighbor(double point[3]) const {
     std::vector<int> point_out_indices;
     std::vector<float> k_sqr_distances;
 
+    // ensure there is at least one point in the tree
+    if (current_octree_->getLeafCount() < 1) {
+        // no points in octree
+        return -1;
+    }
+
     int num_points_found = current_octree_->nearestKSearch(search_point, 1, point_out_indices, k_sqr_distances);
 
     if (num_points_found < 1) {
@@ -146,6 +152,8 @@ double StereoOctomap::NearestNeighbor(double point[3]) const {
     }
 
 }
+
+
 
 
 
