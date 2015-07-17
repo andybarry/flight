@@ -48,8 +48,6 @@ int number_of_switch_positions = -1;
 int switch_mapping[MAX_SWITCH_MAPPING];
 int switch_rc_us[MAX_SWITCH_MAPPING];
 
-StereoOctomap *octomap;
-
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
     // a pronto-reset has happened!  Charge forward with the new trajectory
@@ -331,6 +329,24 @@ void SendStateEstimatorDefaultResetRequest() {
 }
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+
+    StereoHandlerData *data = (StereoHandlerData*)user;
+
+    StereoOctomap *octomap = data->octomap;
+    StereoFilter *filter = data->filter;
+
+    lcmt_stereo *filtered_msg;
+
+    // filter the stereo message
+    if (data->disable_filtering == false) {
+        filtered_msg = filter->ProcessMessage(msg);
+    } else {
+        filtered_msg = lcmt_stereo_copy(msg);
+    }
+
+    //cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
+
+    octomap->ProcessStereoMessage(filtered_msg);
 
 }
 

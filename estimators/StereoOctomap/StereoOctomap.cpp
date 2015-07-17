@@ -117,6 +117,38 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
     }
 }
 
+/**
+ * Find the distance to the nearest neighbor of a point
+ *
+ * @param point the xyz point to search
+ *
+ * @retval distance to the nearest neighbor or -1 if no points found.
+ */
+double StereoOctomap::NearestNeighbor(double point[3]) const {
+
+    pcl::PointXYZ search_point;
+    search_point.x = point[0];
+    search_point.y = point[1];
+    search_point.z = point[2];
+
+    // init output parameters
+    std::vector<int> point_out_indices;
+    std::vector<float> k_sqr_distances;
+
+    int num_points_found = current_octree_->nearestKSearch(search_point, 1, point_out_indices, k_sqr_distances);
+
+    if (num_points_found < 1) {
+        // no points found
+        return -1;
+    } else {
+
+        return sqrt(k_sqr_distances.at(0));
+    }
+
+}
+
+
+
 /*
  * Publishes the octomap to LCM in a format
  * that is readable by fixie_viewer.

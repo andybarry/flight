@@ -7,9 +7,7 @@
 #include <mutex>
 
 #include "../../LCM/lcmt_stereo.h"
-
-using namespace std;
-
+#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
 
 class StereoFilter {
@@ -36,6 +34,12 @@ class StereoFilter {
         mutex process_mutex_;
 
 
+};
+
+struct StereoHandlerData {
+    StereoOctomap *octomap;
+    StereoFilter *filter;
+    bool disable_filtering = false;
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include "../../LCM/lcmt_deltawing_u.h"
 #include "../../LCM/lcmt_stereo.h"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
+#include "../../estimators/StereoFilter/StereoFilter.hpp"
 
 #include "../TrajectoryLibrary/TrajectoryLibrary.hpp"
 

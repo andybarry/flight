@@ -53,6 +53,8 @@ class Trajectory
         Eigen::VectorXd GetState(double t);
         Eigen::VectorXd GetUCommand(double t);
 
+        Eigen::MatrixXd GetXpoints() { return xpoints_; }
+
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
         //double DistanceToPoint(double x, double y, double z);

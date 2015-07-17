@@ -40,12 +40,8 @@ using namespace std;
 
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
 
-#include "StereoFilter.hpp"
+#include "../../estimators/StereoFilter/StereoFilter.hpp"
 
-struct StereoHandlerData {
-    StereoOctomap *octomap;
-    StereoFilter *filter;
-};
 
 void sighandler(int dum);
 

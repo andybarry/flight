@@ -42,8 +42,6 @@ extern double sigma0_delta_z;
 extern double sigma0_chi_xy;
 extern double sigma0_chi_z;
 
-extern StereoOctomap *octomap;
-
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
@@ -120,11 +118,17 @@ int main(int argc,char** argv) {
 
 
     BotFrames *bot_frames = bot_frames_new(lcm, param);
-    octomap = new StereoOctomap(bot_frames);
 
+    // init octomap
+    StereoOctomap octomap(bot_frames);
+
+    StereoFilter filter(0.1);
+
+    StereoHandlerData user_data;
+    user_data.octomap = &octomap;
+    user_data.filter = &filter;
 
     control = new TvlqrControl(converter, trajlib.GetTrajectoryByNumber(stable_controller));
-
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
 
@@ -132,7 +136,7 @@ int main(int argc,char** argv) {
 
     pronto_state_handler_sub = mav_filter_state_t_subscribe(lcm, pronto_state_channel.c_str(), &mav_filter_state_t_handler, NULL);
 
-    stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel.c_str(), &stereo_handler, NULL);
+    stereo_sub = lcmt_stereo_subscribe(lcm, stereo_channel.c_str(), &stereo_handler, &user_data);
 
     tvlqr_controller_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel.c_str(), &lcmt_tvlqr_controller_action_handler, NULL);
 

@@ -55,6 +55,9 @@ class StereoOctomap {
         //static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
 
 
+        double NearestNeighbor(double point[3]) const;
+
+
     private:
 
         void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);

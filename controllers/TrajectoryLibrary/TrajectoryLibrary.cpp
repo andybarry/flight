@@ -71,43 +71,37 @@ Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
     return NULL;
 }
 
-Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const OcTree *octree, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
+Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
 
-    /*
-    double minProbability = -1;
-    Trajectory *farthestTraj = NULL;
+    Trajectory *farthest_traj = NULL;
+
+    double traj_closest_dist = -1;
 
     if (lcmgl != NULL) {
         bot_lcmgl_push_matrix(lcmgl);
-
     }
 
     // for each point in each trajectory, find the point that is closest in the octree
     for (int i=0; i<int(traj_vector_.size()); i++) {
 
 
-        double thisTrajProbability = 0;
+        double closest_obstacle_distance = -1;
+
         // for each trajectory, look at each point
-        for (int j=0; j<int(traj_vector_[i].xpoints_.size()); j++) {
+        for (int j=0; j<int(traj_vector_[i].GetXpoints().size()); j++) {
             // now we are looking at a single point in a trajectorybot_lcmgl_t *lcmgl
 
             double transformedPoint[3];
 
             traj_vector_[i].GetTransformedPoint(j, bodyToLocal, transformedPoint);
 
-            point3d query (transformedPoint[0], transformedPoint[1], transformedPoint[2]);
+            double distance_to_point = octomap->NearestNeighbor(transformedPoint);
 
-            OcTreeNode* result = octree->search(query);
-
-
-            if (result != NULL) {
-                //cout << "occupancy probability at " << query << ":\t " << result->getOccupancy() << endl;
-                thisTrajProbability += result->getOccupancy();
-            } else {
-                //cout << "occupancy probability at " << query << ":\t is unknown" << endl;
-                //break;
+            if (distance_to_point > 0) {
+                if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
+                    closest_obstacle_distance = distance_to_point;
+                }
             }
-
 
         }
 
@@ -115,25 +109,23 @@ Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const OcTree *octree, cons
             //traj_vector_[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }
 
-        if (minProbability == -1 || thisTrajProbability < minProbability) {
-            minProbability = thisTrajProbability;
-            farthestTraj = &traj_vector_[i];
+        if (traj_closest_dist == -1 || closest_obstacle_distance > traj_closest_dist) {
+            traj_closest_dist = closest_obstacle_distance;
+            farthest_traj = &traj_vector_[i];
         }
     }
 
     if (lcmgl != NULL) {
         // plot the best trajectory
-        if (farthestTraj != NULL) {
+        if (farthest_traj != NULL) {
             bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-            farthestTraj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
+            farthest_traj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }
 
         bot_lcmgl_pop_matrix(lcmgl);
         bot_lcmgl_switch_buffer(lcmgl);
     }
 
-    return farthestTraj;
-    */
-    return NULL;
+    return farthest_traj;
 }
 
