@@ -31,7 +31,6 @@ void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
     bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &to_open_cv);
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
 
-
     // insert the points into the octree
     InsertPointsIntoOctree(msg, &to_open_cv, &body_to_local);
 
@@ -64,7 +63,6 @@ void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_
 
         // add the position vector
         bot_trans_apply_vec(to_open_cv, this_point_d, trans_point);
-std::cout << trans_point[0] << " "<< trans_point[1] << " "<< trans_point[2] << std::endl;
 
         // add point to cloud
         pcl::PointXYZ this_point(trans_point[0], trans_point[1], trans_point[2]);
