@@ -16,6 +16,7 @@ LCM/mavlink_message_t.h.rej
 *.dep
 utils/utils/utils-test_d
 estimators/StereoOctomap/test
+controllers/TrajectoryLibrary/test
 LCM/lcm-tester/lcm-tester
 ui/mono-playback/mono-playback
 sensors/airspeed-check/airspeed-check

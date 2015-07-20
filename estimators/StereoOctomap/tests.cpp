@@ -8,10 +8,6 @@
 
 #define TOLERANCE 0.0001
 
-// for some reason gtest segfaults on the odroids
-// when you call EXPECT_EQ
-#define EXPECT_EQ_ARM(val1, val2) EXPECT_TRUE(val1 == val2)
-
 
 class StereoOctomapTest : public testing::Test {
 

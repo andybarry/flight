@@ -23,6 +23,12 @@
 
 #include "gtest/gtest.h"
 
+// for some reason gtest segfaults on the odroids
+// when you call EXPECT_EQ
+#define EXPECT_EQ_ARM(val1, val2) EXPECT_TRUE(val1 == val2) << "\tval1: " << val1 << std::endl << "\tval2: " << val2 << std::endl;
+
+#define EXPECT_APPROX_MAT(expected_val, got_val, tolerance) EXPECT_TRUE( expected_val.isApprox(got_val, tolerance) ) << std::endl << "Expected:" << std::endl << expected_val << std::endl << "Got:" << std::endl << got_val << std::endl;
+
 /**
  * Converts mav_pose_t message into a 12-state vector in the State Estimator frame.
  * @param msg message to convert

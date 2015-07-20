@@ -258,15 +258,17 @@ void Trajectory::GetTransformedPoint(int index, const BotTrans *transform, doubl
 {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
-/*
+
+    Eigen::VectorXd state = xpoints_.row(index);
+
     double originalPoint[3];
-    originalPoint[0] = xpoints_[index][1];
-    originalPoint[1] = xpoints_[index][2];
-    originalPoint[2] = xpoints_[index][3];
+    originalPoint[0] = state(1); // these indexes are offset by 1 because time is the first column
+    originalPoint[1] = state(2);
+    originalPoint[2] = state(3);
 
 
     bot_trans_apply_vec(transform, originalPoint, xyz);
-    */
+
 }
 
 void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform)
