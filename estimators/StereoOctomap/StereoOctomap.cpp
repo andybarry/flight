@@ -130,8 +130,8 @@ double StereoOctomap::NearestNeighbor(double point[3]) const {
     search_point.z = point[2];
 
     // init output parameters
-    std::vector<int> point_out_indices;
-    std::vector<float> k_sqr_distances;
+    std::vector<int> point_out_indices(1);
+    std::vector<float> k_sqr_distances(1);
 
     // ensure there is at least one point in the tree
     if (current_octree_->getLeafCount() < 1) {
