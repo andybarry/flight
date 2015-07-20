@@ -8,36 +8,12 @@
 
 #define TOLERANCE 0.0001
 
+// for some reason gtest segfaults on the odroids
+// when you call EXPECT_EQ
+#define EXPECT_EQ_ARM(val1, val2) EXPECT_TRUE(val1 == val2)
+
+
 class StereoOctomapTest : public testing::Test {
-
-    public:
-        void SendAtOriginMessage() {
-            mav_pose_t msg;
-            msg.utime = GetTimestampNow();
-
-            msg.pos[0] = 0;
-            msg.pos[1] = 0;
-            msg.pos[2] = 0;
-
-            msg.vel[0] = 0;
-            msg.vel[1] = 0;
-            msg.vel[2] = 0;
-
-            msg.orientation[0] = 1;
-            msg.orientation[1] = 0;
-            msg.orientation[2] = 0;
-            msg.orientation[3] = 0;
-
-            msg.rotation_rate[0] = 0;
-            msg.rotation_rate[1] = 0;
-            msg.rotation_rate[2] = 0;
-
-            msg.accel[0] = 0;
-            msg.accel[1] = 0;
-            msg.accel[2] = 0;
-
-            mav_pose_t_publish(lcm_, "STATE_ESTIMATOR_POSE", &msg);
-        }
 
     protected:
 
@@ -59,6 +35,7 @@ class StereoOctomapTest : public testing::Test {
             lcm_destroy(lcm_);
             // todo: delete param_;
         }
+
 
         lcm_t *lcm_;
         BotParam *param_;
@@ -165,9 +142,9 @@ TEST_F(StereoOctomapTest, SimpleNearestNeighbor) {
     stereo_octomap->ProcessStereoMessage(&msg);
 
 
-    EXPECT_EQ(stereo_octomap->NearestNeighbor(origin), 1);
+    EXPECT_EQ_ARM(stereo_octomap->NearestNeighbor(origin), 1);
 
-    EXPECT_EQ(stereo_octomap->NearestNeighbor(point), 0);
+    EXPECT_EQ_ARM(stereo_octomap->NearestNeighbor(point), 0);
 
     double point2[3] = {0, 0, 1};
 

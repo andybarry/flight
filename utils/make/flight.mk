@@ -33,7 +33,7 @@ LCMLIB=../../LCM/lib/libtypes.a
 
 LCM_PRONTO_LIB=../../../pronto-distro/build/lib/liblcmtypes_pronto-lcmtypes.a
 
-OCTOMAP_LIB_DIR=/home/$(USER)/pronto-distro/build/lib/
+OCTOMAP_LIB_DIR=/usr/local/lib
 OCTOMAP_LIB=-Wl,-rpath $(OCTOMAP_LIB_DIR)
 
 GTEST_LIB=../../externals/gtest/libgtest.a ../../externals/gtest/libgtest_main.a
