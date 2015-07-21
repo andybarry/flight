@@ -299,10 +299,6 @@ TEST_F(StereoOctomapTest, CheckAgainstLinearSearch) {
 
 }
 
-TEST_F(StereoOctomapTest, SimpleTrajectory) {
-
-}
-
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

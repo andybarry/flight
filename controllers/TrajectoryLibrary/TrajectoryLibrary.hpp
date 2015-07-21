@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include <dirent.h>
+#include <tuple>
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
@@ -25,8 +26,6 @@
 #include "Trajectory.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
-using namespace std;
-
 
 class TrajectoryLibrary
 {
@@ -36,9 +35,9 @@ class TrajectoryLibrary
 
         Trajectory* GetTrajectoryByNumber(int number);
 
-        bool LoadLibrary(string dirname);  // loads a trajectory from a directory of .csv files
+        bool LoadLibrary(std::string dirname);  // loads a trajectory from a directory of .csv files
 
-        Trajectory* FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl = nullptr);
+        std::tuple<double, Trajectory*> FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl = nullptr);
 
         void Print();
 

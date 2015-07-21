@@ -12,7 +12,7 @@ TrajectoryLibrary::TrajectoryLibrary()
 {
 }
 
-bool TrajectoryLibrary::LoadLibrary(string dirname)
+bool TrajectoryLibrary::LoadLibrary(std::string dirname)
 {
     // if dirname does not end in "/", add a "/"
     if (dirname.back() != '/')
@@ -28,7 +28,7 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
     int count = 0;
 
     while ((dp = readdir(dirp)) != NULL) {
-        string this_file = dp->d_name;
+        std::string this_file = dp->d_name;
 
         if (this_file.length() > 4 && this_file.compare(this_file.length()-6, 6, "-x.csv") == 0)
         {
@@ -46,7 +46,7 @@ bool TrajectoryLibrary::LoadLibrary(string dirname)
 
     //(void)closedir(dirp);
 
-    cout << "Loaded " << count << " trajectories." << endl;
+    std::cout << "Loaded " << count << " trajectorie(s)." << std::endl;
 
     if (count > 0) {
         return true;
@@ -71,7 +71,19 @@ Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
     return NULL;
 }
 
-Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, bot_lcmgl_t *lcmgl) {
+/**
+ * Finds the first Trajectory that is at least "threshold" distance away from any obstacle.
+ * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles.
+ *
+ * @param octomap obstacle map
+ * @param bodyToLocal tranform for the aircraft that describes where we are in the map
+ * @param threshold minimum safe distance for the aircraft
+ * @param trajectory_out pointer that will be set to the best trajectory
+ * @param (optional) lcmgl if not NULL, will draw debug data
+ *
+ * @retval the distance to the closest obstacle or -1 if there are no obstacles
+ */
+std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl) {
 
     Trajectory *farthest_traj = NULL;
 
@@ -112,6 +124,18 @@ Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octom
         if (traj_closest_dist == -1 || closest_obstacle_distance > traj_closest_dist) {
             traj_closest_dist = closest_obstacle_distance;
             farthest_traj = &traj_vector_[i];
+
+            if (traj_closest_dist > threshold) {
+                // we are satisfied with this one, run it!
+                if (lcmgl != NULL) {
+                    bot_lcmgl_color3f(lcmgl, 1, 0, 0);
+                    farthest_traj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
+                    bot_lcmgl_pop_matrix(lcmgl);
+                    bot_lcmgl_switch_buffer(lcmgl);
+                }
+
+                return tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
+            }
         }
     }
 
@@ -126,6 +150,6 @@ Trajectory* TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octom
         bot_lcmgl_switch_buffer(lcmgl);
     }
 
-    return farthest_traj;
+    return tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
 }
 

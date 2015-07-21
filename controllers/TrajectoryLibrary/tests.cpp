@@ -45,6 +45,27 @@ class TrajectoryLibraryTest : public testing::Test {
 
         }
 
+        void AddPointToOctree(StereoOctomap *octomap, double point[]) {
+            lcmt_stereo msg;
+
+            msg.timestamp = GetTimestampNow();
+
+            float x[1], y[1], z[1];
+            x[0] = point[0];
+            y[0] = point[1];
+            z[0] = point[2];
+
+            msg.x = x;
+            msg.y = y;
+            msg.z = z;
+
+            msg.number_of_points = 1;
+            msg.video_number = 0;
+            msg.frame_number = 0;
+
+            octomap->ProcessStereoMessage(&msg);
+        }
+
 
 
 };
@@ -54,7 +75,7 @@ class TrajectoryLibraryTest : public testing::Test {
  */
 TEST_F(TrajectoryLibraryTest, LoadTrajectory) {
     // load a test trajectory
-    Trajectory traj("trajtest/two-point-00000");
+    Trajectory traj("trajtest/two-point-00000", true);
 
     // ensure that we can access the right bits
 
@@ -94,7 +115,7 @@ TEST_F(TrajectoryLibraryTest, LoadTrajectory) {
  * Tests point transformation with a simple two-point trajectory
  */
 TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
-    Trajectory traj("trajtest/two-point-00000");
+    Trajectory traj("trajtest/two-point-00000", true);
 
     BotTrans trans;
 
@@ -135,6 +156,40 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
     for (int i = 0; i < 3; i++) {
         EXPECT_NEAR(point[i], output[i], TOLERANCE);
     }
+
+}
+
+/**
+ * Test FindFurthestTrajectory on:
+ *      - no obstacles
+ *      - one obstacle
+ *      - two obstacles
+ */
+TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
+
+    StereoOctomap octomap(bot_frames_);
+
+    TrajectoryLibrary lib;
+
+    lib.LoadLibrary("trajtest");
+
+    BotTrans trans;
+
+    // check that things work with no obstacles (should return first trajectory)
+
+    double dist;
+    Trajectory *best_traj;
+cout << "test";
+    tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+
+    ASSERT_TRUE(best_traj != nullptr);
+
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
+    EXPECT_TRUE(dist == -1);
+
+
+
 
 }
 

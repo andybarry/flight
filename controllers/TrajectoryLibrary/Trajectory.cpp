@@ -18,27 +18,27 @@ Trajectory::Trajectory() {
     dt_ = 0;
 }
 
-Trajectory::Trajectory(string filename_prefix, bool quiet) : Trajectory() {
+Trajectory::Trajectory(std::string filename_prefix, bool quiet) : Trajectory() {
     LoadTrajectory(filename_prefix, quiet);
 }
 
-void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
+void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet)
 {
     // open the file
-    vector<vector<string>> strs;
+    std::vector<std::vector<std::string>> strs;
 
     if (!quiet)
     {
-        cout << "Loading trajectory: " << endl << "\t" << filename_prefix << endl;
+        std::cout << "Loading trajectory: " << std::endl << "\t" << filename_prefix << std::endl;
     }
 
-    string traj_number_str = filename_prefix.substr(filename_prefix.length() - 5, 5);
-    trajectory_number_ = stoi(traj_number_str);
+    std::string traj_number_str = filename_prefix.substr(filename_prefix.length() - 5, 5);
+    trajectory_number_ = std::stoi(traj_number_str);
 
-    LoadMatrixFromCSV(filename_prefix + "-x.csv", xpoints_);
-    LoadMatrixFromCSV(filename_prefix + "-u.csv", upoints_);
-    LoadMatrixFromCSV(filename_prefix + "-controller.csv", kpoints_);
-    LoadMatrixFromCSV(filename_prefix + "-affine.csv", affine_points_);
+    LoadMatrixFromCSV(filename_prefix + "-x.csv", xpoints_, quiet);
+    LoadMatrixFromCSV(filename_prefix + "-u.csv", upoints_, quiet);
+    LoadMatrixFromCSV(filename_prefix + "-controller.csv", kpoints_, quiet);
+    LoadMatrixFromCSV(filename_prefix + "-affine.csv", affine_points_, quiet);
 
     filename_prefix_ = filename_prefix;
 
@@ -46,33 +46,35 @@ void Trajectory::LoadTrajectory(string filename_prefix, bool quiet)
     udimension_ = upoints_.cols() - 1;
 
     if (kpoints_.cols() - 1 != dimension_ * udimension_) {
-        cerr << "Error: expected to have " << dimension_ << "*" << udimension_ << "+1 = " << dimension_ * udimension_ + 1 << " columns in " << filename_prefix << "-controller.csv but found " << kpoints_.cols() << endl;
+        std::cerr << "Error: expected to have " << dimension_ << "*" << udimension_ << "+1 = " << dimension_ * udimension_ + 1 << " columns in " << filename_prefix << "-controller.csv but found " << kpoints_.cols() << std::endl;
         exit(1);
     }
 
     if (affine_points_.cols() - 1 != udimension_) {
-        cerr << "Error: expected to have " << udimension_ << "+1 = " << udimension_ + 1 << " columns in " << filename_prefix << "-affine.csv but found " << affine_points_.cols() << endl;
+        std::cerr << "Error: expected to have " << udimension_ << "+1 = " << udimension_ + 1 << " columns in " << filename_prefix << "-affine.csv but found " << affine_points_.cols() << std::endl;
         exit(1);
     }
 
     if (xpoints_.rows() != upoints_.rows() || xpoints_.rows() != kpoints_.rows() || xpoints_.rows() != affine_points_.rows()) {
-        cerr << "Error: inconsistent number of rows in CSV files: " << endl
-            << "\t" << filename_prefix << "-x: " << xpoints_.rows() << endl
-            << "\t" << filename_prefix << "-u: " << upoints_.rows() << endl
-            << "\t" << filename_prefix << "-controller: " << kpoints_.rows() << endl
-            << "\t" << filename_prefix << "-affine: " << affine_points_.rows() << endl;
+        std::cerr << "Error: inconsistent number of rows in CSV files: " << std::endl
+            << "\t" << filename_prefix << "-x: " << xpoints_.rows() << std::endl
+            << "\t" << filename_prefix << "-u: " << upoints_.rows() << std::endl
+            << "\t" << filename_prefix << "-controller: " << kpoints_.rows() << std::endl
+            << "\t" << filename_prefix << "-affine: " << affine_points_.rows() << std::endl;
 
             exit(1);
     }
 
-    //cout << "x at t = 0.45:" << endl << GetState(0.323) << endl << " u = " << endl << GetUCommand(4.01) << endl;
+    //std::cout << "x at t = 0.45:" << std::endl << GetState(0.323) << std::endl << " u = " << std::endl << GetUCommand(4.01) << std::endl;
 
 }
 
 
-void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd &matrix) {
+void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd &matrix, bool quiet) {
 
-    cout << "Loading " << filename << endl;
+    if (!quiet) {
+        std::cout << "Loading " << filename << std::endl;
+    }
 
     int number_of_lines = GetNumberOfLines(filename);
     int row_num = 0;
@@ -111,9 +113,9 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
             dt_ = matrix(1, 0) - matrix(0, 0);
         } else if (row_num > 1) {
             if (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_ > 5*std::numeric_limits<double>::epsilon()) {
-                cerr << "Error: non-constant dt. Expected dt = " << dt_ << " but got matrix[" << row_num << "][0] - matrix[" << row_num - 1 << "][0] = " << matrix(row_num, 0) - matrix(row_num - 1, 0) << " (residual = " << (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_) << endl;
+                std::cerr << "Error: non-constant dt. Expected dt = " << dt_ << " but got matrix[" << row_num << "][0] - matrix[" << row_num - 1 << "][0] = " << matrix(row_num, 0) - matrix(row_num - 1, 0) << " (residual = " << (matrix(row_num, 0) - matrix(row_num - 1, 0) - dt_) << std::endl;
 
-                cout << matrix << endl;
+                std::cout << matrix << std::endl;
                 exit(1);
             }
         }
@@ -125,10 +127,10 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
 
 }
 
-int Trajectory::GetNumberOfLines(string filename) {
+int Trajectory::GetNumberOfLines(std::string filename) {
     int number_of_lines = 0;
-    string line;
-    ifstream myfile(filename);
+    std::string line;
+    std::ifstream myfile(filename);
 
     while (getline(myfile, line)) {
         ++number_of_lines;
@@ -229,29 +231,29 @@ Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
 
 
 void Trajectory::Print() {
-    cout << "------------ Trajectory print -------------" << endl;
-    cout << "Filename: " << filename_prefix_ << endl;
-    cout << "Trajectory number: " << trajectory_number_ << endl;
-    cout << "Dimension: " << dimension_ << endl;
-    cout << "u-dimension: " << udimension_ << endl;
+    std::cout << "------------ Trajectory print -------------" << std::endl;
+    std::cout << "Filename: " << filename_prefix_ << std::endl;
+    std::cout << "Trajectory number: " << trajectory_number_ << std::endl;
+    std::cout << "Dimension: " << dimension_ << std::endl;
+    std::cout << "u-dimension: " << udimension_ << std::endl;
 
-    cout << " t\t x\t y\t z\t roll\t pitch\t yaw \t xdot\t ydot\t zdot\t rolld\t pitchd\t yawd" << endl;
+    std::cout << " t\t x\t y\t z\t roll\t pitch\t yaw \t xdot\t ydot\t zdot\t rolld\t pitchd\t yawd" << std::endl;
 
-    cout << xpoints_ << endl;
+    std::cout << xpoints_ << std::endl;
 
-    cout << "------------- u points ----------------" << endl;
+    std::cout << "------------- u points ----------------" << std::endl;
 
-    cout << " t\t u1\t u2\t u3" << endl;
+    std::cout << " t\t u1\t u2\t u3" << std::endl;
 
-    cout << upoints_ << endl;
+    std::cout << upoints_ << std::endl;
 
-    cout << "------------- k points ----------------" << endl;
+    std::cout << "------------- k points ----------------" << std::endl;
 
-    cout << kpoints_ << endl;
+    std::cout << kpoints_ << std::endl;
 
-    cout << "------------- affine points ----------------" << endl;
+    std::cout << "------------- affine points ----------------" << std::endl;
 
-    cout << affine_points_ << endl;
+    std::cout << affine_points_ << std::endl;
 }
 
 void Trajectory::GetTransformedPoint(int index, const BotTrans *transform, double *xyz)

@@ -24,16 +24,14 @@
 
 #include <Eigen/Core>
 
-using namespace std;
-
 class Trajectory
 {
 
     public:
         Trajectory();
-        Trajectory(string filename_prefix, bool quiet = false); // loads a trajectory from a .csv file
+        Trajectory(std::string filename_prefix, bool quiet = false); // loads a trajectory from a .csv file
 
-        void LoadTrajectory(string filename_prefix, bool quiet = false);
+        void LoadTrajectory(std::string filename_prefix, bool quiet = false);
 
         Eigen::MatrixXd GetGainMatrix(double t);
 
@@ -77,11 +75,11 @@ class Trajectory
         int udimension_; // control input dimension
 
         int trajectory_number_;
-        string filename_prefix_;
+        std::string filename_prefix_;
 
-        void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix);
+        void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix, bool quiet = false);
 
-        int GetNumberOfLines(string filename);
+        int GetNumberOfLines(std::string filename);
 
         int GetIndexFromTime(double t);
 
