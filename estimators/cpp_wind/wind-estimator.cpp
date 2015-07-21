@@ -60,7 +60,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
 
     printf("done.\n");
-    
+
     exit(0);
 }
 
@@ -76,7 +76,7 @@ void gps_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_
     gps_mutex.lock();
     lastGpsMsg = mav_gps_data_t_copy(msg);
     gps_mutex.unlock();
-    
+
     gpsFlag = true;
 }
 
@@ -84,25 +84,25 @@ void baro_airspeed_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
 {
     // get the gps mutex lock
     gps_mutex.lock();
-    
+
     // TODO TODO TODO
-    
+
     // for now, just return the airspeed as the ground speed
-    
+
     // STUB STUB STUB STUB STUB
-    
+
     lcmt_wind_groundspeed windMsg;
     windMsg.utime = getTimestampNow();
-    
+
     windMsg.airspeed = msg->airspeed;
     windMsg.estimatedGroundSpeed = msg->airspeed; // TODO TODO
-    
+
     windMsg.wind_x = 0;
     windMsg.wind_y = 0;
     windMsg.wind_z = 0;
-    
+
     lcmt_wind_groundspeed_publish (lcm, channelWind, &windMsg);
-    
+
     // unlock
     gps_mutex.unlock();
 }

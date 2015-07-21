@@ -14,8 +14,6 @@
 
 #include "../../externals/ConciseArgs.hpp"
 
-using namespace std;
-
 lcm_t * lcm;
 lcmt_deltawing_u_subscription_t * mav_pose_sub;
 
@@ -62,8 +60,8 @@ void pose_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_de
 int main(int argc,char** argv)
 {
 
-    string pose_channel_str = "STATE_ESTIMATOR_POSE";
-    string wingeron_u_channel_str = "wingeron_u";
+    std::string pose_channel_str = "STATE_ESTIMATOR_POSE";
+    std::string wingeron_u_channel_str = "wingeron_u";
 
     ConciseArgs parser(argc, argv);
     parser.add(pose_channel_str, "p", "pose-channel",

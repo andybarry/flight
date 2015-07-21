@@ -42,7 +42,6 @@ extern "C"
 }
 
 
-using namespace std;
 using namespace cv;
 
 struct OpenCvStereoConfig

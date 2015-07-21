@@ -8,7 +8,6 @@
 #include <bot_core/bot_core.h>
 
 using namespace cv;
-using namespace std;
 
 #define PI 3.14159265
 

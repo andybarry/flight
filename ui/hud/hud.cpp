@@ -323,7 +323,7 @@ void Hud::DrawLadder(Mat hud_img, float value, bool for_airspeed, int major_incr
         // draw a label if this is a major
         if (!is_minor && this_value > -9000) {
 
-            string this_label = to_string(this_value);
+            std::string this_label = std::to_string(this_value);
 
             int baseline = 0;
             Size text_size = getTextSize(this_label, text_font_, hud_font_scale_, text_thickness_, &baseline);

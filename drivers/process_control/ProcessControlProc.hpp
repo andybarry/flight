@@ -8,8 +8,6 @@
 #include <iostream>
 #include <signal.h>
 
-using namespace std;
-
 class ProcessControlProc
 {
     public:
@@ -18,7 +16,7 @@ class ProcessControlProc
         void StopProcess();
         void PrintIO();
         bool IsAlive();
-        
+
     private:
         char **arguments;
         pid_t pid;

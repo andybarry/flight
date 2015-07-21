@@ -8,9 +8,6 @@
 #include <iostream>
 
 
-using namespace std;
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -32,7 +29,7 @@ char *channelProcessReport = NULL;
 
 lcmt_process_control_subscription_t *process_control_sub;
 
-std::map<string, ProcessControlProc> processMap;
+std::map<std::string, ProcessControlProc> processMap;
 
 static void usage(void)
 {
@@ -55,7 +52,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
 
     printf("done.\n");
-    
+
     exit(0);
 }
 
@@ -69,9 +66,9 @@ int64_t getTimestampNow()
 void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_process_control *msg, void *user)
 {
     // got a process control message
-    
+
     // start or stop processes based on it
-    
+
     // the message sends the full requested state at once
     //processMap.at("paramServer").PrintIO();
     if (msg->paramServer == 1)
@@ -80,21 +77,21 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     } else if (msg->paramServer == 2) {
         processMap.at("paramServer").StopProcess();
     }
-    
+
     if (msg->mavlinkLcmBridge == 1)
     {
         processMap.at("mavlinkLcmBridge").StartProcess();
     } else if (msg->mavlinkLcmBridge == 2) {
         processMap.at("mavlinkLcmBridge").StopProcess();
     }
-    
+
     if (msg->mavlinkSerial == 1)
     {
         processMap.at("mavlinkSerial").StartProcess();
     } else if (msg->mavlinkSerial == 2) {
         processMap.at("mavlinkSerial").StopProcess();
     }
-    
+
     if (msg->stateEstimator == 1)
     {
         processMap.at("stateEstimator").StartProcess();
@@ -108,21 +105,21 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     } else if (msg->windEstimator == 2) {
         processMap.at("windEstimator").StopProcess();
     }
-    
+
     if (msg->controller == 1)
     {
         processMap.at("controller").StartProcess();
     } else if (msg->controller == 2) {
         processMap.at("controller").StopProcess();
     }
-    
+
     if (msg->logger == 1)
     {
         processMap.at("logger").StartProcess();
     } else if (msg->logger == 2) {
         processMap.at("logger").StopProcess();
     }
-    
+
     if (msg->stereo == 1)
     {
         processMap.at("stereo").StartProcess();
@@ -131,7 +128,7 @@ void procces_control_handler(const lcm_recv_buf_t *rbuf, const char* channel, co
     }
 }
 
-void CheckForProc(string procString)
+void CheckForProc(std::string procString)
 {
     if (processMap.find(procString) == processMap.end())
     {
@@ -143,19 +140,19 @@ void CheckForProc(string procString)
 // thread that sends a status message every n seconds
 // threaded lcm reading
 void* ProcessStatusThreadFunc(void *nothing)
-{  
+{
     while (true)
     {
         // sleep for 1 second
         sleep(1);
         // send process status messages
-        
-        
+
+
         // get a new lcm message
         lcmt_process_control statMsg;
-        
+
         statMsg.timestamp = getTimestampNow();
-        
+
         statMsg.paramServer = processMap.at("paramServer").IsAlive();
         statMsg.mavlinkLcmBridge = processMap.at("mavlinkLcmBridge").IsAlive();
         statMsg.mavlinkSerial = processMap.at("mavlinkSerial").IsAlive();
@@ -164,19 +161,19 @@ void* ProcessStatusThreadFunc(void *nothing)
         statMsg.controller = processMap.at("controller").IsAlive();
         statMsg.logger = processMap.at("logger").IsAlive();
         statMsg.stereo = processMap.at("stereo").IsAlive();
-        
-        
+
+
         // send the message
         lcmt_process_control_publish (lcm, channelProcessReport, &statMsg);
-        
-        
+
+
     }
     return NULL;
 }
 
 int main(int argc,char** argv)
 {
-    
+
     char *channelProcessControl = NULL;
     char *configurationFile = NULL;
 
@@ -184,7 +181,7 @@ int main(int argc,char** argv)
         usage();
         exit(0);
     }
-    
+
     channelProcessControl = argv[1];
     channelStereoControl = argv[2];
     channelProcessReport = argv[3];
@@ -206,27 +203,27 @@ int main(int argc,char** argv)
         fprintf(stderr, "Configuration file \"%s\" not found.\n", configurationFile);
         return -1;
     }
-    
+
     // build the process table based on the configuration file
-    
+
     // first get the names of all of the processes
     char **processGroups = g_key_file_get_groups(keyfile, &length);
-    
+
     for (int i=0; i<(int)length; i++)
     {
         // for each process...
-        
+
         // get the arguments
         char **thisArgs = g_key_file_get_string_list(keyfile, processGroups[i], "arguments", &length2, &error);
-        
+
         if (thisArgs == NULL)
         {
-            cout << "Error: no arguments list for process " << processGroups[i] << endl;
+            std::cout << "Error: no arguments list for process " << processGroups[i] << std::endl;
         } else {
-            processMap.insert(std::pair<string, ProcessControlProc>(processGroups[i], ProcessControlProc(thisArgs, (int)length)));
+            processMap.insert(std::pair<std::string, ProcessControlProc>(processGroups[i], ProcessControlProc(thisArgs, (int)length)));
         }
     }
-    
+
     // now throw an error if the configuration file doesn't have all the right parts
     CheckForProc("paramServer");
     CheckForProc("mavlinkLcmBridge");
@@ -236,7 +233,7 @@ int main(int argc,char** argv)
     CheckForProc("controller");
     CheckForProc("logger");
     CheckForProc("stereo");
-    
+
 
     lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
     if (!lcm)
@@ -248,11 +245,11 @@ int main(int argc,char** argv)
     process_control_sub = lcmt_process_control_subscribe(lcm, channelProcessControl, &procces_control_handler, NULL);
 
     signal(SIGINT,sighandler);
-    
+
     pthread_t processStatusThread;
-    
+
     pthread_create( &processStatusThread, NULL, ProcessStatusThreadFunc, NULL);
-    
+
     printf("Receiving:\n\tProcess Control LCM: %s\nPublishing LCM:\n\tStereo: %s\n\tStatus: %s\n", channelProcessControl, channelStereoControl, channelProcessReport);
 
     while (true)

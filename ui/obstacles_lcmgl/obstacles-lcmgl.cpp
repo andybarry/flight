@@ -8,9 +8,6 @@
 #include <iostream>
 
 
-using namespace std;
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -36,7 +33,7 @@ void sighandler(int dum)
     lcm_destroy (lcm);
 
     printf("done.\n");
-    
+
     exit(0);
 }
 
@@ -55,7 +52,7 @@ int main(int argc,char** argv)
 {
     int numObstacles;
     char *channelLcmGl = NULL;
-    
+
     if (argc != 2) {
         usage();
         exit(0);
@@ -68,12 +65,12 @@ int main(int argc,char** argv)
     {
         fprintf(stderr, "lcm_create failed.  Quitting.\n");
         return 1;
-    }    
+    }
 
     signal(SIGINT,sighandler);
-    
+
     lcmgl = bot_lcmgl_init(lcm, channelLcmGl);
-    
+
     // init obstacle position
     BotParam *param = bot_param_new_from_server(lcm, 0);
     if (param == NULL) {
@@ -89,7 +86,7 @@ int main(int argc,char** argv)
     //Assume obstacles are listed as obstacles.obstacle1, obstacles.obstacle2, etc..
     bot_lcmgl_push_matrix(lcmgl);
     bot_lcmgl_color3f(lcmgl, 255, 0, 0);
-    
+
     std::string obstaclePrefix = "obstacles.obstacle";
     std::string obstacle;
     for (int i=1; i <= numObstacles; i++) {
@@ -101,7 +98,7 @@ int main(int argc,char** argv)
         configBotParam = obstacle + ".bottom";
         configHeightParam = obstacle + ".height";
         configRParam = obstacle + ".radius";
-        
+
         bot_param_get_double(param, configXParam.c_str(), &xPos);
         bot_param_get_double(param, configYParam.c_str(), &yPos);
         bot_param_get_double(param, configBotParam.c_str(), &bottom);
@@ -110,12 +107,12 @@ int main(int argc,char** argv)
         double xyz[] = {xPos,yPos, bottom + height/2};
         float dims[] = {radius*2, radius*2, height};
         bot_lcmgl_begin(lcmgl, GL_QUADS);
-        bot_lcmgl_box(lcmgl, xyz, dims); 
-        bot_lcmgl_end(lcmgl); 
+        bot_lcmgl_box(lcmgl, xyz, dims);
+        bot_lcmgl_end(lcmgl);
     }
-    
+
     bot_lcmgl_pop_matrix(lcmgl);
     bot_lcmgl_switch_buffer(lcmgl);
-    
+
     return 0;
 }

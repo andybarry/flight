@@ -23,8 +23,6 @@
 
 #include <bot_param/param_client.h>
 
-using namespace std;
-
 struct ServoConfig {
     double elevL_slope;
     double elevL_y_intercept;

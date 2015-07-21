@@ -26,8 +26,6 @@
 
 #include "../../utils/ServoConverter/ServoConverter.hpp"
 
-using namespace std;
-
 
 class TvlqrControl
 {

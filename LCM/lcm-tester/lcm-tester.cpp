@@ -1,9 +1,6 @@
-
-
 #include <iostream>
 
 
-using namespace std;
 
 #include <lcm/lcm-cpp.hpp>
 #include "../trajectory_t.hpp"

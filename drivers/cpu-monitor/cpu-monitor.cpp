@@ -8,9 +8,6 @@
 #include <iostream>
 
 
-using namespace std;
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -33,25 +30,25 @@ using namespace std;
 #include "../../utils/utils/RealtimeUtils.hpp"
 
 
-string cpu_freq_file =  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
+std::string cpu_freq_file =  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
 
-string cpu_temp_file = "/sys/class/thermal/thermal_zone0/temp";
+std::string cpu_temp_file = "/sys/class/thermal/thermal_zone0/temp";
 
-string fan_auto_manual_file = "/sys/devices/platform/odroidu2-fan/fan_mode";
+std::string fan_auto_manual_file = "/sys/devices/platform/odroidu2-fan/fan_mode";
 
-string fan_pwm_file = "/sys/devices/platform/odroidu2-fan/pwm_duty";
+std::string fan_pwm_file = "/sys/devices/platform/odroidu2-fan/pwm_duty";
 
 
 lcm_t * lcm;
 
 bool disable_fan_control = false;
 
-string cpu_info_channel_str = "cpu-info-hostname";
+std::string cpu_info_channel_str = "cpu-info-hostname";
 
 
 void sighandler(int dum) {
     printf("\nRestoring automatic fan control...");
-    ofstream auto_man_file;
+    std::ofstream auto_man_file;
     auto_man_file.open(fan_auto_manual_file);
     auto_man_file << "auto";
     auto_man_file.close();
@@ -106,7 +103,7 @@ void SetFanSpeed(float cpu_temp, int fan_pwm) {
     if (new_pwm != fan_pwm) {
         // set the new fan speed
 
-        ofstream pwm_file;
+        std::ofstream pwm_file;
         pwm_file.open(fan_pwm_file);
         pwm_file << std::to_string(new_pwm);
         pwm_file.close();
@@ -118,14 +115,14 @@ void PublishCpuInfo() {
 
     // get cpu freq
 
-    ifstream cpu_freq_file_stream(cpu_freq_file);
-    string cpu_freq_string;
+    std::ifstream cpu_freq_file_stream(cpu_freq_file);
+    std::string cpu_freq_string;
     getline(cpu_freq_file_stream, cpu_freq_string);
 
 
 
-    ifstream cpu_temp_file_stream(cpu_temp_file);
-    string cpu_temp_string;
+    std::ifstream cpu_temp_file_stream(cpu_temp_file);
+    std::string cpu_temp_string;
     getline(cpu_temp_file_stream, cpu_temp_string);
 
 
@@ -142,12 +139,12 @@ void PublishCpuInfo() {
 
     // get fan speed
     if (!disable_fan_control) {
-        ifstream fan_file_stream(fan_pwm_file);
-        string fan_string;
+        std::ifstream fan_file_stream(fan_pwm_file);
+        std::string fan_string;
         getline(fan_file_stream, fan_string);
         fan_file_stream.close();
 
-        fan_string = fan_string.substr(22, string::npos);
+        fan_string = fan_string.substr(22, std::string::npos);
         std::size_t first_space = fan_string.find_first_of(" ");
 
         fan_string = fan_string.substr(0, first_space);
@@ -174,7 +171,7 @@ int main(int argc,char** argv) {
     size_t hostname_len = 100;
 
     gethostname(hostname, hostname_len);
-    cpu_info_channel_str = "cpu-info-" + string(hostname);
+    cpu_info_channel_str = "cpu-info-" + std::string(hostname);
 
     ConciseArgs parser(argc, argv);
     parser.add(cpu_info_channel_str, "c", "cpu-info-channel",
@@ -197,7 +194,7 @@ int main(int argc,char** argv) {
     if (!disable_fan_control) {
         printf("Taking fan control...\n");
 
-        ofstream auto_man_file;
+        std::ofstream auto_man_file;
         auto_man_file.open(fan_auto_manual_file);
         auto_man_file << "manual";
         auto_man_file.close();

@@ -31,8 +31,6 @@
 #include <mutex>
 #include <fstream>
 
-using namespace std;
-
 void sighandler(int dum);
 
 // stereo handlers

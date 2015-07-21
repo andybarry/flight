@@ -16,9 +16,9 @@ pid_t ProcessControlProc::StartProcess() // the first argument in processArgs mu
         // this process is already running, don't do anything
         return pid;
     }
-    
+
     int stdin_fd;
-    
+
     // this next line forks the program, so that means that
     // it's ok for this function to block, since it will be
     // in another program with another PID
@@ -35,7 +35,7 @@ pid_t ProcessControlProc::StartProcess() // the first argument in processArgs mu
             count ++;
         }
         printf("\n");
-        
+
         execvp (arguments[0], arguments);
 
         fprintf (stderr, "ERROR!!!! couldn't start [%s]!\n", arguments[0]);
@@ -78,13 +78,13 @@ bool ProcessControlProc::IsAlive()
     {
         return false;
     }
-    
+
     if (kill(pid, 0) == 0)
     {
         // process exists
         return true;
     } else {
-    
+
         return false;
     }
 }
@@ -92,26 +92,26 @@ bool ProcessControlProc::IsAlive()
 void ProcessControlProc::PrintIO()
 {
     printf("printing io...\n");
-    // do non-blocking IO for this 
-    
+    // do non-blocking IO for this
+
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(my_fd, &fds);
-    
+
     // wait a limited amount of time for an incoming message
     struct timeval timeout = {
         0,  // seconds
         1   // microseconds
     };
 
-    
+
     int status = select(my_fd + 1, &fds, 0, 0, &timeout);
 
     if(0 == status) {
         // no messages
         //do nothing
         printf("no data\n");
-        
+
     } else if(FD_ISSET(my_fd, &fds)) {
         // data is on the IO port
         printf("got data...\n");
@@ -122,7 +122,7 @@ void ProcessControlProc::PrintIO()
             printf("------ %s -----\n %s\n--------------------\n", arguments[0], buf);
         }
     }
-    
+
 }
 
 

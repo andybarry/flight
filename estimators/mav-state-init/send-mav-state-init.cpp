@@ -18,8 +18,6 @@
 
 #include <sys/time.h>
 
-using namespace std;
-
 mav::ins_t *ins_msg = NULL;
 
 int64_t getTimestampNow()
@@ -44,9 +42,9 @@ class InsHandler
 
 
 void ComputeQuatFromAttitude(double *accel, double *quat) {
-    cout << accel[0] << endl;
-    cout << accel[1] << endl;
-    cout << accel[2] << endl;
+    std::cout << accel[0] << std::endl;
+    std::cout << accel[1] << std::endl;
+    std::cout << accel[2] << std::endl;
 
     double my_accel[3];
     my_accel[0] = 0;//accel[0] / 9.81;
@@ -82,7 +80,7 @@ int main(int argc,char** argv) {
     lcm::LCM lcm;
 
     if (!lcm.good()) {
-        cerr << "LCM init failed. " << endl;
+        std::cerr << "LCM init failed. " << std::endl;
         return 1;
     }
 
@@ -94,12 +92,12 @@ int main(int argc,char** argv) {
         InsHandler handler;
         lcm.subscribe("attitude", &InsHandler::handleMessage, &handler);
 
-        cout << "Waiting for attitude message..." << endl;
+        std::cout << "Waiting for attitude message..." << std::endl;
         while (ins_msg == NULL) {
             lcm.handle();
         }
 
-        cout << "Got attitude message." << endl;
+        std::cout << "Got attitude message." << std::endl;
 
         // compute quat from acceleration vector assuming we are not moving but may
         // be on a slope
@@ -146,7 +144,7 @@ int main(int argc,char** argv) {
 
     lcm.publish("MAV_STATE_EST_INITIALIZER", &msg);
 
-    cout << "Init message sent." << endl;
+    std::cout << "Init message sent." << std::endl;
 
     return 0;
 }

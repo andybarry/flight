@@ -13,8 +13,6 @@
 #define THROTTLE_MIN_US 1212
 #define THROTTLE_MAX_US 1744
 
-using namespace std;
-
 lcm_t * lcm;
 
 // globals for subscription functions, so we can unsubscribe in the control-c handler

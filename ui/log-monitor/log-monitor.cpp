@@ -8,9 +8,6 @@
 #include <iostream>
 
 
-using namespace std;
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -29,8 +26,8 @@ using namespace std;
 
 lcm_t * lcm;
 
-string log_dir = "/home/odroid";
-string log_info_channel_str = "log-info-hostname";
+std::string log_dir = "/home/odroid";
+std::string log_info_channel_str = "log-info-hostname";
 
 
 void sighandler(int dum) {
@@ -57,7 +54,7 @@ int main(int argc,char** argv) {
     size_t hostname_len = 100;
 
     gethostname(hostname, hostname_len);
-    log_info_channel_str = "log-info-" + string(hostname);
+    log_info_channel_str = "log-info-" + std::string(hostname);
 
     ConciseArgs parser(argc, argv);
     parser.add(log_info_channel_str, "c", "log-info-channel",
@@ -103,11 +100,11 @@ int main(int argc,char** argv) {
 
         strftime (date_string, 80, "%Y-%m-%d", timeinfo);
 
-        string lcm_prefix = "lcmlog-" + string(date_string) + ".";
+        std::string lcm_prefix = "lcmlog-" + std::string(date_string) + ".";
 
         int largest_log = -1;
         long log_size = -1;
-        string the_log;
+        std::string the_log;
 
         DIR *dir;
         struct dirent *ent;
@@ -117,11 +114,11 @@ int main(int argc,char** argv) {
                 //printf ("%s\n", ent->d_name);
                 // see if this name starts with lcmlog-
 
-                string this_name = ent->d_name;
+                std::string this_name = ent->d_name;
 
                 if (!this_name.compare(0, lcm_prefix.size(), lcm_prefix)) {
                     // get the number of this log
-                    string num_string = this_name.substr(lcm_prefix.size());
+                    std::string num_string = this_name.substr(lcm_prefix.size());
                     int log_num = atoi(num_string.c_str());
 
                     if (log_num > largest_log) {
@@ -150,7 +147,7 @@ int main(int argc,char** argv) {
 
             //cout << "Filesize of log " << theLog << " is " << GetFileSize(string(logDir) + theLog) << endl;
 
-            log_size = GetFileSize(string(log_dir) + the_log);
+            log_size = GetFileSize(std::string(log_dir) + the_log);
 
         }
 

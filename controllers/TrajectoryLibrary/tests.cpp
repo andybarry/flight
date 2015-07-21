@@ -179,8 +179,8 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
     double dist;
     Trajectory *best_traj;
-cout << "test";
-    tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
 
     ASSERT_TRUE(best_traj != nullptr);
 
@@ -198,3 +198,4 @@ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+

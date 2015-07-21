@@ -25,7 +25,7 @@ Mat GetFrameFormat7(dc1394camera_t *camera)
     DC1394_WRN(err,"Could not capture a frame");
 
     if (err != 0) {
-        cout << "Warning: failed to capture a frame, returning black frame." << endl;
+        std::cout << "Warning: failed to capture a frame, returning black frame." << std::endl;
 
         // attempt release the buffer
         if (frame) {
@@ -129,7 +129,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     // convert it to a uint64
 
-    stringstream ss;
+    std::stringstream ss;
     ss << std::hex << guidChar;
     ss >> configStruct->guidLeft;
 
@@ -142,7 +142,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     // convert it to a uint64
 
-    stringstream ss2;
+    std::stringstream ss2;
     ss2 << std::hex << guidChar2;
     ss2 >> configStruct->guidRight;
 
@@ -437,7 +437,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (Q == NULL)
     {
-        cerr << "Error: failed to read " + calibrationDir + "/Q.xml." << endl;
+        std::cerr << "Error: failed to read " + calibrationDir + "/Q.xml." << std::endl;
         return false;
     }
 
@@ -445,7 +445,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (mx1 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/mx1.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/mx1.xml." << std::endl;
         return false;
     }
 
@@ -453,7 +453,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (my1 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/my1.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/my1.xml." << std::endl;
         return false;
     }
 
@@ -461,7 +461,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (mx2 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/mx2.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/mx2.xml." << std::endl;
         return false;
     }
 
@@ -469,7 +469,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (my2 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/my2.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/my2.xml." << std::endl;
         return false;
     }
 
@@ -477,7 +477,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (m1 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/M1.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/M1.xml." << std::endl;
         return false;
     }
 
@@ -485,7 +485,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (d1 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/D1.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/D1.xml." << std::endl;
         return false;
     }
 
@@ -493,7 +493,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (r1 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/R1.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/R1.xml." << std::endl;
         return false;
     }
 
@@ -501,7 +501,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (m2 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/M2.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/M2.xml." << std::endl;
         return false;
     }
 
@@ -509,7 +509,7 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
 
     if (d2 == NULL)
     {
-        cerr << "Error: failed to read " << calibrationDir << "/D2.xml." << endl;
+        std::cerr << "Error: failed to read " << calibrationDir << "/D2.xml." << std::endl;
         return false;
     }
 
@@ -649,7 +649,7 @@ void InitBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, bo
 void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_quality) {
 
     if (!image.isContinuous()) {
-        //cout << "Image not continuous. LCM transport not implemented." << endl;
+        //std::cout << "Image not continuous. LCM transport not implemented." << std::endl;
         //return;
 
         image = image.clone();
@@ -711,7 +711,7 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
 
 
         } else {
-            cout << "Image type not supported. LCM transport not implemented." << endl;
+            std::cout << "Image type not supported. LCM transport not implemented." << std::endl;
             return;
         }
 
@@ -744,7 +744,7 @@ void SendImageOverLcm(lcm_t* lcm, string channel, Mat image, int compression_qua
             bot_core_image_t_publish(lcm, channel.c_str(), &msg);
 
         } else {
-            cout << "Image type not supported. LCM transport not implemented." << endl;
+            std::cout << "Image type not supported. LCM transport not implemented." << std::endl;
             return;
         }
 
@@ -789,7 +789,7 @@ float min_z, float max_z) {
 
     if (points_list.size() <= 0)
     {
-        //cout << "Draw3DPointsOnimage: zero sized points list" << endl;
+        //std::cout << "Draw3DPointsOnimage: zero sized points list" << std::endl;
         return;
     }
 
@@ -943,7 +943,7 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, b
 
         dc1394_feature_get_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightness_value);
 
-        //cout << "exposure: " << exposure_value << " brightness: " << brightness_value << endl;
+        //std::cout << "exposure: " << exposure_value << " brightness: " << brightness_value << std::endl;
 
         // set exposure
         dc1394_feature_set_value(camera2, DC1394_FEATURE_EXPOSURE, exposure_value);
@@ -982,30 +982,30 @@ void MatchBrightnessSettings(dc1394camera_t *camera1, dc1394camera_t *camera2, b
 
 
 
-    cout << endl << dc1394_feature_get_string(features.feature[0].id) << ": " << features.feature[0].value << "/" << features2.feature[0].value << endl;
+    std::cout << std::endl << dc1394_feature_get_string(features.feature[0].id) << ": " << features.feature[0].value << "/" << features2.feature[0].value << std::endl;
 
 
     // set exposure
-    cout << endl << dc1394_feature_get_string(features.feature[1].id) << ": " << features.feature[1].value << "/" << features2.feature[1].value << endl;
+    std::cout << std::endl << dc1394_feature_get_string(features.feature[1].id) << ": " << features.feature[1].value << "/" << features2.feature[1].value << std::endl;
 
 
     // set gamma
-    cout << endl << dc1394_feature_get_string(features.feature[6].id) << ": " << features.feature[6].value << "/" << features2.feature[6].value << endl;
+    std::cout << std::endl << dc1394_feature_get_string(features.feature[6].id) << ": " << features.feature[6].value << "/" << features2.feature[6].value << std::endl;
 
 
     // set shutter
-    cout << endl << dc1394_feature_get_string(features.feature[7].id) << ": " << features.feature[7].value << "/" << features2.feature[7].value << endl;
+    std::cout << std::endl << dc1394_feature_get_string(features.feature[7].id) << ": " << features.feature[7].value << "/" << features2.feature[7].value << std::endl;
 
     // set gain
-   cout << endl << dc1394_feature_get_string(features.feature[8].id) << ": " << features.feature[8].value << "/" << features2.feature[8].value << endl;
+   std::cout << std::endl << dc1394_feature_get_string(features.feature[8].id) << ": " << features.feature[8].value << "/" << features2.feature[8].value << std::endl;
 
-    //cout << "---------------------------------------" << endl;
+    //std::cout << "---------------------------------------" << std::endl;
     //dc1394_feature_print_all(&features, stdout);
-    //cout << "222222222222222222222222222222222222222222222" << endl;
+    //std::cout << "222222222222222222222222222222222222222222222" << std::endl;
     //dc1394_feature_print_all(&features2, stdout);
     //dc1394_feature_get_absolute_value(camera1, DC1394_FEATURE_BRIGHTNESS, &brightnessVal);
 
-    //cout << endl << "brightness: " << brightnessVal << endl;
+    //std::cout << std::endl << "brightness: " << brightnessVal << std::endl;
     #endif
 }
 

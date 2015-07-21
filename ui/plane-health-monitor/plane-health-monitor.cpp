@@ -7,10 +7,6 @@
 
 #include <iostream>
 
-
-using namespace std;
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -35,7 +31,7 @@ using namespace std;
 
 lcm_t * lcm;
 
-mutex mux;
+std::mutex mux;
 
 
 lcmt_process_control_subscription_t *process_sub;
@@ -44,9 +40,9 @@ lcmt_stereo_monitor_subscription_t *stereo_monitor_sub;
 
 
 struct StringsOutStruct {
-    string time;
-    string logfilesize;
-    string frame_number;
+    std::string time;
+    std::string logfilesize;
+    std::string frame_number;
 };
 
 StringsOutStruct stringsOut;
@@ -158,9 +154,9 @@ int main(int argc,char** argv)
 {
     stringsOut.time = "-------------------";
     stringsOut.logfilesize = "---";
-    string channel_process_str = "process_status";
-    string channel_log_size_str = "log_size";
-    string channel_stereo_monitor_str = "stereo_monitor";
+    std::string channel_process_str = "process_status";
+    std::string channel_log_size_str = "log_size";
+    std::string channel_stereo_monitor_str = "stereo_monitor";
 
     ConciseArgs parser(argc, argv);
     parser.add(channel_process_str, "p", "process-control-channel",

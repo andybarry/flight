@@ -134,14 +134,14 @@ int main(int argc, char *argv[])
     // make opencv windows
     if (left_camera_mode || stereo_mode)
     {
-    	namedWindow("Input Left", CV_WINDOW_AUTOSIZE);
-    	moveWindow("Input Left", 100, 100);
+        namedWindow("Input Left", CV_WINDOW_AUTOSIZE);
+        moveWindow("Input Left", 100, 100);
     }
 
     if (right_camera_mode || stereo_mode)
     {
-    	namedWindow("Input Right", CV_WINDOW_AUTOSIZE);
-    	moveWindow("Input Right", 478, 100);
+        namedWindow("Input Right", CV_WINDOW_AUTOSIZE);
+        moveWindow("Input Right", 478, 100);
     }
 
 
@@ -208,20 +208,20 @@ int main(int argc, char *argv[])
         }
 
 
-		// key codes:
-		// page up: 654365
-		// page down: 65366
-		// b: 98
-		char key = waitKey();
-		//printf("%d\n", (int)key);
-		if (key == 98)
-		{
-		    break;
-		} else if (key == 86){
-		    if (foundPattern)
-		    {
-		        // this was a good one -- save it
-		        frame_array_left[numFrames] = chessL;
+        // key codes:
+        // page up: 654365
+        // page down: 65366
+        // b: 98
+        char key = waitKey();
+        //printf("%d\n", (int)key);
+        if (key == 98)
+        {
+            break;
+        } else if (key == 86){
+            if (foundPattern)
+            {
+                // this was a good one -- save it
+                frame_array_left[numFrames] = chessL;
                 frame_array_right[numFrames] = chessR;
 
                 // give the user some guidence on the number
@@ -237,20 +237,20 @@ int main(int argc, char *argv[])
             } else {
                 printf("Not saving frame since did not find a checkboard.\n");
             }
-		} else if (key == 'W') {
+        } else if (key == 'W') {
             force_brightness +=20;
-            cout << "Brightness: " << force_brightness << "\n";
+            std::cout << "Brightness: " << force_brightness << "\n";
         } else if (key == 'w') {
             force_brightness -=20;
-            cout << "Brightness: " << force_brightness << "\n";
+            std::cout << "Brightness: " << force_brightness << "\n";
         } else if (key == 'E') {
             force_exposure +=20;
-            cout << "Exposure: " << force_exposure << "\n";
+            std::cout << "Exposure: " << force_exposure << "\n";
         } else if (key == 'e') {
             force_exposure -=20;
-            cout << "Exposure: " << force_exposure << "\n";
+            std::cout << "Exposure: " << force_exposure << "\n";
         }
-	}
+    }
 
     printf("\n\n");
 
