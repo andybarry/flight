@@ -35,6 +35,8 @@ class TrajectoryLibrary
 
         Trajectory* GetTrajectoryByNumber(int number);
 
+        int GetNumberOfTrajectories() { return int(traj_vector_.size()); }
+
         bool LoadLibrary(std::string dirname);  // loads a trajectory from a directory of .csv files
 
         std::tuple<double, Trajectory*> FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl = nullptr);

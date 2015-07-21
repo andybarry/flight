@@ -191,6 +191,10 @@ int Trajectory::GetIndexFromTime(double t) {
 
 }
 
+double Trajectory::GetTimeAtIndex(int index) {
+    return xpoints_(index, 0);
+}
+
 double Trajectory::GetMaxTime() {
     double tf = xpoints_(xpoints_.rows() - 1, 0);
 
@@ -256,17 +260,17 @@ void Trajectory::Print() {
     std::cout << affine_points_ << std::endl;
 }
 
-void Trajectory::GetTransformedPoint(int index, const BotTrans *transform, double *xyz)
+void Trajectory::GetTransformedPoint(double t, const BotTrans *transform, double *xyz)
 {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
 
-    Eigen::VectorXd state = xpoints_.row(index);
+    Eigen::VectorXd state = GetState(t);
 
     double originalPoint[3];
-    originalPoint[0] = state(1); // these indexes are offset by 1 because time is the first column
-    originalPoint[1] = state(2);
-    originalPoint[2] = state(3);
+    originalPoint[0] = state(0);
+    originalPoint[1] = state(1);
+    originalPoint[2] = state(2);
 
 
     bot_trans_apply_vec(transform, originalPoint, xyz);

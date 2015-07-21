@@ -27,6 +27,8 @@ StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
 void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
 
     // get transform from global to body frame
+    // note that these transforms update live so don't try
+    // to cache them
     BotTrans to_open_cv, body_to_local;
     bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &to_open_cv);
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
@@ -98,7 +100,7 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
         building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
         building_octree_->setInputCloud((pcl::PointCloud<pcl::PointXYZ>::Ptr)building_cloud_);
 
-        cout << endl << "swapping octrees because jump back in time" << endl;
+        std::cout << std::endl << "swapping octrees because jump back in time" << std::endl;
 
 
     } else if (current_octree_timestamp_ + OCTREE_LIFE < last_msg_time) {
@@ -111,7 +113,7 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
         current_octree_ = building_octree_;
         building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
 
-        cout << endl << "swapping octrees" << endl;
+        std::cout << std::endl << "swapping octrees" << std::endl;
     }
 }
 
@@ -152,7 +154,13 @@ double StereoOctomap::NearestNeighbor(double point[3]) const {
 }
 
 
+void StereoOctomap::PrintAllPoints() const {
 
+    for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
+        std::cout << "(" << it->x << ", " << it->y << ", " << it->z << ")" << std::endl;
+    }
+
+}
 
 
 /*
@@ -202,7 +210,7 @@ void StereoOctomap::PublishOctomap(lcm_t *lcm) {
 void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_number) {
 
     if (stereo_calibration_set_ != true) {
-        cerr << "Can't call PublishToStereo without setting stereo calibration first." << endl;
+        cerr << "Can't call PublishToStereo without setting stereo calibration first." << std::endl;
         return;
     }
 

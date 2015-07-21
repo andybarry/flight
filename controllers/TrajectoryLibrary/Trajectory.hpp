@@ -41,12 +41,15 @@ class Trajectory
 
         void Print();
 
-        void GetTransformedPoint(int index, const BotTrans *transform, double *xyz);
+        void GetTransformedPoint(double t, const BotTrans *transform, double *xyz);
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform);
 
+        double GetTimeAtIndex(int index);
         double GetMaxTime();
 
         bool IsTimeInvariant() { return GetMaxTime() == 0; }
+
+        int GetNumberOfPoints() { return int(xpoints_.rows()); }
 
         Eigen::VectorXd GetState(double t);
         Eigen::VectorXd GetUCommand(double t);

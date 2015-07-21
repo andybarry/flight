@@ -94,19 +94,21 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
     }
 
     // for each point in each trajectory, find the point that is closest in the octree
-    for (int i=0; i<int(traj_vector_.size()); i++) {
+    for (int i=0; i<GetNumberOfTrajectories(); i++) {
 
 
         double closest_obstacle_distance = -1;
 
         // for each trajectory, look at each point
-        for (int j=0; j<int(traj_vector_[i].GetXpoints().size()); j++) {
+        for (int j=0; j<traj_vector_[i].GetNumberOfPoints(); j++) {
             // now we are looking at a single point in a trajectorybot_lcmgl_t *lcmgl
 
             double transformedPoint[3];
 
-            traj_vector_[i].GetTransformedPoint(j, bodyToLocal, transformedPoint);
+            double this_t = traj_vector_[i].GetTimeAtIndex(j);
 
+            traj_vector_[i].GetTransformedPoint(this_t, bodyToLocal, transformedPoint);
+std::cout << "searching at " << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << std::endl;
             double distance_to_point = octomap->NearestNeighbor(transformedPoint);
 
             if (distance_to_point > 0) {
@@ -134,7 +136,7 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
 
-                return tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
+                return std::tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
             }
         }
     }
@@ -150,6 +152,6 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
         bot_lcmgl_switch_buffer(lcmgl);
     }
 
-    return tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
+    return std::tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
 }
 
