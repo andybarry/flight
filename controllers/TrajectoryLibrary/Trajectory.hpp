@@ -53,6 +53,7 @@ class Trajectory
 
         Eigen::VectorXd GetState(double t);
         Eigen::VectorXd GetUCommand(double t);
+        Eigen::VectorXd GetRolloutState(double t);
 
         Eigen::MatrixXd GetXpoints() { return xpoints_; }
 
@@ -67,6 +68,11 @@ class Trajectory
 
         Eigen::MatrixXd xpoints_;
         Eigen::MatrixXd upoints_;
+
+        // in the case of a TI trajectory, we might want to
+        // cache a simulation of the trajectory for some time
+        // (loaded from CSV)
+        Eigen::MatrixXd xpoints_rollout_;
 
         Eigen::MatrixXd kpoints_;
         Eigen::MatrixXd affine_points_;
@@ -84,7 +90,7 @@ class Trajectory
 
         int GetNumberOfLines(std::string filename);
 
-        int GetIndexFromTime(double t);
+        int GetIndexFromTime(double t, bool use_rollout = false);
 
 };
 

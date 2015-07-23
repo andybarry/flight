@@ -65,7 +65,10 @@ void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet)
             exit(1);
     }
 
-    //std::cout << "x at t = 0.45:" << std::endl << GetState(0.323) << std::endl << " u = " << std::endl << GetUCommand(4.01) << std::endl;
+    if (IsTimeInvariant() == true) {
+        // also load a precomputed rollout
+        LoadMatrixFromCSV(filename_prefix + "-rollout.csv", xpoints_rollout_, quiet);
+    }
 
 }
 
@@ -91,6 +94,8 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
         return;
     }
 
+    // note: do not remove the getFields(header) call as it has
+    // side effects we need even if we don't use the headers
     char **headerFields = CsvParser_getFields(header);
     for (i = 0 ; i < CsvParser_getNumFields(header) ; i++) {
         //printf("TITLE: %s\n", headerFields[i]);
@@ -155,26 +160,46 @@ Eigen::VectorXd Trajectory::GetUCommand(double t) {
     return row_vec.tail(upoints_.cols() - 1); // remove time
 }
 
+Eigen::VectorXd Trajectory::GetRolloutState(double t) {
+    int index = GetIndexFromTime(t, true);
+
+    Eigen::VectorXd row_vec = xpoints_rollout_.row(index);
+
+    return row_vec.tail(xpoints_rollout_.cols() - 1); // remove time
+}
+
 
 /**
  * Assuming a constant dt, we can compute the index of a point
  * based on its time.
  *
  * @param t time to find index of
+ * @param (optional) use_rollout set to true to use time bounds from rollout instead of xpoints
  * @retval index of nearest point
  */
-int Trajectory::GetIndexFromTime(double t) {
+int Trajectory::GetIndexFromTime(double t, bool use_rollout) {
 
     // round t to the nearest dt_
 
-   double t0 = xpoints_(0,0);
+   double t0, tf;
 
-   double tf = xpoints_(xpoints_.rows() - 1, 0);
+   if (!use_rollout) {
+        t0 = xpoints_(0,0);
+        tf = xpoints_(xpoints_.rows() - 1, 0);
+    } else {
+        t0 = xpoints_rollout_(0,0);
+        tf = xpoints_rollout_(xpoints_rollout_.rows() - 1, 0);
+    }
 
    if (t < t0) {
        return 0;
    } else if (t > tf) {
-       return xpoints_.rows() - 1;
+
+        if (!use_rollout) {
+            return xpoints_.rows() - 1;
+        } else {
+            return xpoints_rollout_.rows() - 1;
+        }
    }
 
    // otherwise, we are somewhere in the bounds of the trajectory

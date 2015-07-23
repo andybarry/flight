@@ -188,6 +188,28 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
 
 }
 
+TEST_F(TrajectoryLibraryTest, TestTiRollout) {
+
+    Trajectory traj("trajtest/TI-unit-test-TI-straight-pd-no-yaw-10000", true);
+
+    Eigen::VectorXd expected(12);
+    expected << 0,0,0,0,-0.19141,0,12.046,0,-2.3342,0,0,0;
+
+    Eigen::VectorXd output = traj.GetState(0);
+
+    EXPECT_APPROX_MAT( expected, output, TOLERANCE);
+
+    Eigen::VectorXd expected2(12);
+    expected2 << 26.135,0,9.2492e-09,0,-0.19141,0,12.046,0,-2.3342,0,7.8801e-13,0;
+
+    output = traj.GetRolloutState(2.13);
+
+    EXPECT_APPROX_MAT( expected2, output, TOLERANCE);
+
+
+
+}
+
 TEST_F(TrajectoryLibraryTest, LoadLibrary) {
     TrajectoryLibrary lib;
 
