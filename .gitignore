@@ -14,6 +14,7 @@ LCM/mavlink_message_t.h.rej
 *.o
 *~
 *.dep
+controllers/TrajectoryLibrary/test_d
 utils/utils/utils-test_d
 estimators/StereoOctomap/test
 controllers/TrajectoryLibrary/test

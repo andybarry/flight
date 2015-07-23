@@ -26,6 +26,7 @@
 #include "Trajectory.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
+#define STABILIZATION_TRAJ 10000
 
 class TrajectoryLibrary
 {
@@ -35,9 +36,10 @@ class TrajectoryLibrary
 
         Trajectory* GetTrajectoryByNumber(int number);
 
-        int GetNumberOfTrajectories() { return int(traj_vector_.size()); }
+        int GetNumberTVTrajectories() { return int(traj_vec_.size()); }
+        int GetNumberStableTrajectories() { return int(stable_vec_.size()); }
 
-        bool LoadLibrary(std::string dirname);  // loads a trajectory from a directory of .csv files
+        bool LoadLibrary(std::string dirname, bool quiet = false);  // loads a trajectory from a directory of .csv files
 
         std::tuple<double, Trajectory*> FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl = nullptr);
 
@@ -46,7 +48,8 @@ class TrajectoryLibrary
 
 
     private:
-        vector<Trajectory> traj_vector_;
+        std::vector<Trajectory> traj_vec_;
+        std::vector<Trajectory> stable_vec_;
 
 };
 

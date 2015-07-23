@@ -68,7 +68,7 @@ class TrajectoryLibraryTest : public testing::Test {
             double point_transformed[3];
             GlobalToCameraFrame(point, point_transformed);
 
-            std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
+            //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
 
             float x[1], y[1], z[1];
             x[0] = point_transformed[0];
@@ -188,6 +188,18 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
 
 }
 
+TEST_F(TrajectoryLibraryTest, LoadLibrary) {
+    TrajectoryLibrary lib;
+
+    ASSERT_TRUE(lib.LoadLibrary("trajtest", true));
+
+    EXPECT_EQ_ARM(lib.GetNumberTVTrajectories(), 2);
+
+    EXPECT_EQ_ARM(lib.GetNumberStableTrajectories(), 1);
+
+    EXPECT_EQ_ARM(lib.GetTrajectoryByNumber(10000)->GetTrajectoryNumber(), 10000);
+}
+
 /**
  * Test FindFurthestTrajectory on:
  *      - no obstacles
@@ -200,7 +212,9 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
     TrajectoryLibrary lib;
 
-    lib.LoadLibrary("trajtest");
+    lib.LoadLibrary("trajtest", true);
+
+    EXPECT_EQ_ARM(lib.GetNumberTVTrajectories(), 2);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -221,12 +235,8 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
     // add an obstacle close to the first trajectory
 
 
-    double point[3] = { 0.95, 0, 0 };
+    double point[3] = { 1.05, 0, 0 };
     AddPointToOctree(&octomap, point);
-
-    std::cout << "test-------------" << std::endl;
-
-    octomap.PrintAllPoints();
 
     // now we expect to get the second trajectory
 
@@ -236,10 +246,34 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
 
-    EXPECT_EQ_ARM(dist, 2.0 - 0.95);
+    EXPECT_NEAR(dist, 2.0 - 1.05, TOLERANCE);
 
+    // add another point close to the second trajectory
+
+    point[0] = 2.01;
+    point[1] = 0.01;
+    point[2] = -0.015;
+
+    AddPointToOctree(&octomap, point);
+
+
+    // now we expect to get the first trajectory
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+
+    ASSERT_TRUE(best_traj != nullptr);
+
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
+    EXPECT_NEAR(dist, 0.05, TOLERANCE);
 
 }
+
+//TEST_F(TrajectoryLibraryTest, RandomPointsAgainstTrajectories) {
+
+
+
+//}
 
 
 int main(int argc, char **argv) {
