@@ -291,11 +291,45 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
 }
 
-//TEST_F(TrajectoryLibraryTest, RandomPointsAgainstTrajectories) {
+TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
+    StereoOctomap octomap(bot_frames_);
 
+    TrajectoryLibrary lib;
 
-//}
+    lib.LoadLibrary("trajtest", true);
+
+    double point[3] = { 1.05, 0, 0 };
+    AddPointToOctree(&octomap, point);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    double dist;
+    Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
+
+    trans.rot_quat[0] = 0.8349;
+    trans.rot_quat[1] = 0.3300;
+    trans.rot_quat[2] = 0.4236;
+    trans.rot_quat[3] = -0.1206;
+
+    // rotation shouldn't matter
+    // TODO: this will fail when I introduce aircraft rotation into the check
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
+
+    // with a translation, we expect a different result
+
+    trans.trans_vec[0] = 1;
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
+}
 
 
 int main(int argc, char **argv) {
