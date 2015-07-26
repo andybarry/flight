@@ -68,7 +68,7 @@ int main(int argc,char** argv) {
     if (trajectory_dir != "") {
         // load a trajectory library
         if (!trajlib.LoadLibrary(trajectory_dir)) {
-            cerr << "Error: failed to load trajectory library.  Quitting." << endl;
+            std::cerr << "Error: failed to load trajectory library.  Quitting." << std::endl;
             return 1;
         }
 

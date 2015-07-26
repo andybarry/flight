@@ -53,7 +53,7 @@ void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* chann
     // a pronto-reset has happened!  Charge forward with the new trajectory
     state_estimator_init = true;
 
-    cout << "Got state estimator reset" << endl;
+    std::cout << "Got state estimator reset" << std::endl;
 
 
 }
@@ -76,7 +76,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     }
 
     if (!state_estimator_init) {
-        cout << "Waiting for state estimator init..." << endl;
+        std::cout << "Waiting for state estimator init..." << std::endl;
         return;
     }
 
@@ -136,7 +136,7 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
     Trajectory *traj = trajlib.GetTrajectoryByNumber(lib_num);
 
     if (traj == NULL) {
-        cerr << "Warning: trajectory number " << lib_num << " was NULL!  Aborting trajectory run." << endl;
+        std::cerr << "Warning: trajectory number " << lib_num << " was NULL!  Aborting trajectory run." << std::endl;
         return;
     }
 
@@ -148,7 +148,7 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
     control->SetTrajectory(traj);
 
 
-    cout << "Starting trajectory " << lib_num << endl;
+    std::cout << "Starting trajectory " << lib_num << std::endl;
 
     state_estimator_init = false;
 
@@ -220,7 +220,7 @@ void SendStateEstimatorResetRequest() {
 
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), reset_request);
 
-    cout << "State estimator reset message sent." << endl;
+    std::cout << "State estimator reset message sent." << std::endl;
 
     mav_filter_state_t_destroy(reset_request);
 }
@@ -325,7 +325,7 @@ void SendStateEstimatorDefaultResetRequest() {
 
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), &msg);
 
-    cout << "State estimator DEFAULT reset message sent." << endl;
+    std::cout << "State estimator DEFAULT reset message sent." << std::endl;
 }
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
@@ -344,7 +344,7 @@ void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_
         filtered_msg = lcmt_stereo_copy(msg);
     }
 
-    //cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << endl;
+    //std::cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << std::endl;
 
     octomap->ProcessStereoMessage(filtered_msg);
 

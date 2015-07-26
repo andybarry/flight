@@ -66,15 +66,15 @@ Eigen::Vector3i ServoConverter::MinMaxCommands(Eigen::Vector3i commands) const {
 
     Eigen::Vector3i output;
 
-    output(0) = max(commands(0), elevL_min_);
-    output(0) = min(output(0), elevL_max_);
+    output(0) = std::max(commands(0), elevL_min_);
+    output(0) = std::min(output(0), elevL_max_);
 
 
-    output(1) = max(commands(1), elevR_min_);
-    output(1) = min(output(1), elevR_max_);
+    output(1) = std::max(commands(1), elevR_min_);
+    output(1) = std::min(output(1), elevR_max_);
 
-    output(2) = max(commands(2), throttle_min_);
-    output(2) = min(output(2), throttle_max_);
+    output(2) = std::max(commands(2), throttle_min_);
+    output(2) = std::min(output(2), throttle_max_);
 
     return output;
 

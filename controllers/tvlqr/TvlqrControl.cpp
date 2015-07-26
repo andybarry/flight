@@ -20,7 +20,7 @@ TvlqrControl::TvlqrControl(const ServoConverter *converter, Trajectory *stable_c
 void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 
     if (trajectory == NULL) {
-        cerr << "Warning: NULL trajectory in SetTrajectory." << endl;
+        std::cerr << "Warning: NULL trajectory in SetTrajectory." << std::endl;
     }
 
     current_trajectory_ = trajectory;
@@ -32,7 +32,7 @@ void TvlqrControl::SetTrajectory(Trajectory *trajectory) {
 Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
     if (current_trajectory_ == NULL) {
-        cerr << "Warning: NULL trajectory in GetControl." << endl;
+        std::cerr << "Warning: NULL trajectory in GetControl." << std::endl;
         return converter_->GetTrimCommands();
     }
 
@@ -74,18 +74,18 @@ Eigen::VectorXi TvlqrControl::GetControl(const mav_pose_t *msg) {
 
         Eigen::VectorXd state_error = state_minus_init - x0;
 
-        //cout << "state error = " << endl << state_error << endl;
+        //std:: << "state error = " << std::endl << state_error << std::endl;
 
         Eigen::VectorXd additional_control_action = gain_matrix * state_error;
 
-        //cout << "additional control action = " << endl << additional_control_action << endl;
+        //std:: << "additional control action = " << std::endl << additional_control_action << std::endl;
 
-//cout << "t = " << t_along_trajectory << endl;
-//cout << "gain" << endl << gain_matrix << endl << "state_error" << endl << state_error << endl << "additional" << endl << additional_control_action << endl;
+//std:: << "t = " << t_along_trajectory << std::endl;
+//std:: << "gain" << std::endl << gain_matrix << std::endl << "state_error" << std::endl << state_error << std::endl << "additional" << std::endl << additional_control_action << std::endl;
 
         Eigen::VectorXd command_in_rad = current_trajectory_->GetUCommand(t_along_trajectory) + additional_control_action;
 
-//cout << "command_in_rad" << endl << command_in_rad << endl;
+//std:: << "command_in_rad" << std::endl << command_in_rad << std::endl;
 
         return converter_->RadiansToServoCommands(command_in_rad);
     } else {

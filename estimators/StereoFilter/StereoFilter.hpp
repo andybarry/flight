@@ -31,7 +31,7 @@ class StereoFilter {
 
         float distance_threshold_;
 
-        mutex process_mutex_;
+        std::mutex process_mutex_;
 
 
 };
