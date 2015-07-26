@@ -61,25 +61,47 @@ class TrajectoryLibraryTest : public testing::Test {
         }
 
         void AddPointToOctree(StereoOctomap *octomap, double point[]) {
+
+            float x[1], y[1], z[1];
+            x[0] = point[0];
+            y[0] = point[1];
+            z[0] = point[2];
+
+            AddManyPointsToOctree(octomap, x, y, z, 1);
+        }
+
+        void AddManyPointsToOctree(StereoOctomap *octomap, float x_in[], float y_in[], float z_in[], int number_of_points) {
             lcmt_stereo msg;
 
             msg.timestamp = GetTimestampNow();
 
-            double point_transformed[3];
-            GlobalToCameraFrame(point, point_transformed);
+            float x[number_of_points];
+            float y[number_of_points];
+            float z[number_of_points];
 
-            //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
+            for (int i = 0; i < number_of_points; i++) {
 
-            float x[1], y[1], z[1];
-            x[0] = point_transformed[0];
-            y[0] = point_transformed[1];
-            z[0] = point_transformed[2];
+                double this_point[3];
+
+                this_point[0] = x_in[i];
+                this_point[1] = y_in[i];
+                this_point[2] = z_in[i];
+
+                double point_transformed[3];
+                GlobalToCameraFrame(this_point, point_transformed);
+
+                //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
+
+                x[i] = point_transformed[0];
+                y[i] = point_transformed[1];
+                z[i] = point_transformed[2];
+            }
 
             msg.x = x;
             msg.y = y;
             msg.z = z;
 
-            msg.number_of_points = 1;
+            msg.number_of_points = number_of_points;
             msg.video_number = 0;
             msg.frame_number = 0;
 
@@ -328,6 +350,38 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
+}
+
+TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
+    StereoOctomap octomap(bot_frames_);
+
+    // load points
+    float x[30] = {33.0133, 33.1674, 12.7516,  9.2368, 31.1216, 31.5677, 22.6803,  9.3638, 27.9330, 22.5491, 19.5464, 28.3855, 26.1363, 21.7770,  9.8569, 33.0413,  7.6133, 24.7314, 30.7067,  6.4695, 30.3611,  5.8197,  8.8082, 24.8187, 28.2212, 22.4748, 33.8975, 15.0081, 26.5006, 33.3404};
+
+    float y[30] = {-4.3060  -12.6404,  7.4022,  3.2288,  2.7811, 12.3517, -9.3564, 11.3456, -3.2770,  5.4460, -6.2952, -7.9400,  3.2447,  9.3939,  4.3661,  6.5960,  9.4896, 12.6779, 13.1474, 10.8482, -6.2529, 13.9699  -11.3263, 13.5106, -4.9328,  1.3398, -8.2275  -11.6206, 10.8917, -5.6873};
+
+    float z[30] = {-12.8659, -8.4912, -5.9690, 14.3408,  9.0568  -12.2932  -10.0042, 14.0655  -11.7556  -11.8548, -6.6639, 13.6086  -10.2392, -2.0340,  0.9862, -9.2408  -14.7256,  0.5239, -9.8153, 12.3557, -1.6913,  5.4015, -5.0048, -6.4645,  2.6373, -8.3569, -6.8867  -10.5124, -1.7809, -3.2115};
+
+    AddManyPointsToOctree(&octomap, x, y, z, 30);
+
+    TrajectoryLibrary lib;
+
+    lib.LoadLibrary("trajtest-many", false);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    double dist;
+    Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 50.0);
+
+    ASSERT_TRUE(best_traj != nullptr);
+
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 1);
+
+    EXPECT_NEAR(dist, 6.0059, 0.001);
+
 
 }
 
