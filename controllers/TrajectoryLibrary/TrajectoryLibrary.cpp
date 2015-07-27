@@ -168,9 +168,11 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
             traj_vec_.at(i).GetTransformedPoint(this_t, bodyToLocal, transformedPoint);
 
-            //std::cout << "searching at " << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << std::endl;
+            //std::cout << "searching at (" << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << ")...";
 
             double distance_to_point = octomap->NearestNeighbor(transformedPoint);
+
+            //std::cout << "distance is: " << distance_to_point << std::endl;
 
             if (distance_to_point > 0) {
                 if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
