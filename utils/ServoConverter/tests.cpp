@@ -12,7 +12,7 @@ class ServoConverterTest : public testing::Test {
 
             lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
 
-            param_ = bot_param_new_from_server(lcm_, 0);
+            param_ = bot_param_new_from_file("../../config/plane-odroid-gps1.cfg");
 
             converter_ = new ServoConverter(param_);
 
@@ -43,7 +43,7 @@ TEST_F(ServoConverterTest, RadiansToServo) {
 
     Eigen::Vector3i output = converter_->RadiansToServoCommands(tester);
 
-    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << std::endl << matlab_output << std::endl << "Actual:" << std::endl << output;
 
 }
 
@@ -59,7 +59,7 @@ TEST_F(ServoConverterTest, RadiansToServo2) {
 
     Eigen::Vector3i output = converter_->RadiansToServoCommands(tester);
 
-    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << std::endl << matlab_output << std::endl << "Actual:" << std::endl << output;
 
 }
 
@@ -75,7 +75,7 @@ TEST_F(ServoConverterTest, MinMaxCommands) {
 
     Eigen::Vector3i output = converter_->MinMaxCommands(tester);
 
-    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << std::endl << matlab_output << std::endl << "Actual:" << std::endl << output;
 
 }
 
@@ -91,7 +91,7 @@ TEST_F(ServoConverterTest, MinMaxCommands2) {
 
     Eigen::Vector3i output = converter_->MinMaxCommands(tester);
 
-    EXPECT_TRUE(matlab_output == output) << "Expected:" << endl << matlab_output << endl << "Actual:" << endl << output;
+    EXPECT_TRUE(matlab_output == output) << "Expected:" << std::endl << matlab_output << std::endl << "Actual:" << std::endl << output;
 
 }
 
