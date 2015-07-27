@@ -75,18 +75,16 @@ class StereoOctomapTest : public testing::Test {
             bot_trans_apply_vec(&camera_to_global_trans_, point_in, point_out);
         }
 
-        std::stack<clock_t> tictoc_stack;
+        std::stack<double> tictoc_wall_stack;
 
         void tic() {
-            tictoc_stack.push(clock());
+            tictoc_wall_stack.push(GetTimestampNow() / 1000000.0);
         }
 
         double toc() {
-            double outval = ((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
-            tictoc_stack.pop();
-
+            double outval = GetTimestampNow() / 1000000.0 - tictoc_wall_stack.top();
+            tictoc_wall_stack.pop();
             return outval;
-
         }
 
 
