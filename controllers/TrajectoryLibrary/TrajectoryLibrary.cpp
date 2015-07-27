@@ -158,8 +158,14 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
         double closest_obstacle_distance = -1;
 
+        int number_of_points = traj_vec_.at(i).GetNumberOfPoints();
+        vector<double> point_distances(number_of_points);
+
         // for each trajectory, look at each point
-        for (int j = 0; j < traj_vec_.at(i).GetNumberOfPoints(); j++) {
+
+        // use all availble processors
+        #pragma omp parallel for
+        for (int j = 0; j < number_of_points; j++) {
             // now we are looking at a single point in a trajectorybot_lcmgl_t *lcmgl
 
             double transformedPoint[3];
@@ -170,10 +176,14 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
             //std::cout << "searching at (" << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << ")...";
 
-            double distance_to_point = octomap->NearestNeighbor(transformedPoint);
+            point_distances.at(j) = octomap->NearestNeighbor(transformedPoint);
 
             //std::cout << "distance is: " << distance_to_point << std::endl;
 
+        }
+
+        for (int j = 0; j < number_of_points; j++) {
+            double distance_to_point = point_distances.at(j);
             if (distance_to_point > 0) {
                 if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
                     closest_obstacle_distance = distance_to_point;

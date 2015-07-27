@@ -35,18 +35,16 @@ class TrajectoryLibraryTest : public testing::Test {
         BotFrames *bot_frames_;
         BotTrans global_to_camera_trans_, camera_to_global_trans_;
 
-        std::stack<clock_t> tictoc_stack;
+        std::stack<double> tictoc_wall_stack;
 
         void tic() {
-            tictoc_stack.push(clock());
+            tictoc_wall_stack.push(GetTimestampNow() / 1000000.0);
         }
 
         double toc() {
-            double outval = ((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
-            tictoc_stack.pop();
-
+            double outval = GetTimestampNow() / 1000000.0 - tictoc_wall_stack.top();
+            tictoc_wall_stack.pop();
             return outval;
-
         }
 
         void GlobalToCameraFrame(double point_in[], double point_out[]) {
@@ -381,6 +379,56 @@ TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
     EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 1);
 
     EXPECT_NEAR(dist, 4.2911, 0.001);
+
+
+}
+
+TEST_F(TrajectoryLibraryTest, TimingTest) {
+    StereoOctomap octomap(bot_frames_);
+
+    // create a random point cloud
+
+    int num_points = 10000;
+    int num_lookups = 1000;
+
+    std::uniform_real_distribution<double> uniform_dist(-1000, 1000);
+    std::random_device rd;
+    std::default_random_engine rand_engine(rd());
+
+    float x[num_points], y[num_points], z[num_points];
+
+    for (int i = 0; i < num_points; i++) {
+
+
+        // generate a random point
+        x[i] = uniform_dist(rand_engine);
+        y[i] = uniform_dist(rand_engine);
+        z[i] = uniform_dist(rand_engine);
+
+        //std::cout << "Point: (" << this_point[0] << ", " << this_point[1] << ", " << this_point[2] << ")" << std::endl;
+
+    }
+
+    AddManyPointsToOctree(&octomap, x, y, z, num_points);
+
+    TrajectoryLibrary lib;
+
+    lib.LoadLibrary("trajtest-many", true);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    tic();
+
+    for (int i = 0; i < num_lookups; i++) {
+        double dist;
+        Trajectory *best_traj;
+        std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 50.0);
+    }
+
+    double num_sec = toc();
+
+    std::cout << num_lookups <<  " lookups with " << lib.GetNumberTVTrajectories() << " TV trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup " << std::endl;
 
 
 }
