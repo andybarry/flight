@@ -264,9 +264,9 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
     // check that things work with no obstacles (should return first trajectory)
 
     double dist;
-    Trajectory *best_traj;
+    const Trajectory *best_traj;
 
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
 
     ASSERT_TRUE(best_traj != nullptr);
 
@@ -282,7 +282,7 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
     // now we expect to get the second trajectory
 
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
 
     ASSERT_TRUE(best_traj != nullptr);
 
@@ -301,7 +301,7 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
 
     // now we expect to get the first trajectory
 
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
 
     ASSERT_TRUE(best_traj != nullptr);
 
@@ -326,8 +326,8 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
     bot_trans_set_identity(&trans);
 
     double dist;
-    Trajectory *best_traj;
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    const Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
 
@@ -339,14 +339,14 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
     // rotation shouldn't matter
     // TODO: this will fail when I introduce aircraft rotation into the check
 
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
 
     // with a translation, we expect a different result
 
     trans.trans_vec[0] = 1;
 
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 2.0);
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
 
 }
@@ -371,8 +371,8 @@ TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
     bot_trans_set_identity(&trans);
 
     double dist;
-    Trajectory *best_traj;
-    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 50.0);
+    const Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
 
     ASSERT_TRUE(best_traj != nullptr);
 
@@ -422,16 +422,58 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     for (int i = 0; i < num_lookups; i++) {
         double dist;
-        Trajectory *best_traj;
-        std::tie(dist, best_traj) = lib.FindFarthestTrajectory(&octomap, &trans, 50.0);
+        const Trajectory *best_traj;
+        std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
     }
 
     double num_sec = toc();
 
     std::cout << num_lookups <<  " lookups with " << lib.GetNumberTVTrajectories() << " TV trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup " << std::endl;
+}
+
+TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
+    StereoOctomap octomap(bot_frames_);
+
+    // get a trajectory
+
+    TrajectoryLibrary lib;
+    lib.LoadLibrary("trajtest", false);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    const Trajectory *traj = lib.GetTrajectoryByNumber(0);
+
+    double dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+
+    // with no obstacles, we expect -1
+    EXPECT_EQ_ARM(dist, -1);
+
+    // add an obstacle
+    double point[3] = { 0, 0, 0};
+    AddPointToOctree(&octomap, point);
+
+    // now we expect zero distance since the obstacle and the trajectory start at the origin
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    EXPECT_EQ_ARM(dist, 0);
+
+    // at t = 0.01, we expect a distance of 1 since the point is already behind us
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.01);
+    EXPECT_EQ_ARM(dist, 1);
+
+    // add a transform
+    trans.trans_vec[2] = 42;
+
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    EXPECT_EQ_ARM(dist, 42);
+
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.01);
+    EXPECT_NEAR(dist, sqrt( 42*42 + 1*1  ), TOLERANCE);
+
 
 
 }
+
 
 
 int main(int argc, char **argv) {

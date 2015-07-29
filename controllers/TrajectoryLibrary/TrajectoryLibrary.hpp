@@ -34,16 +34,18 @@ class TrajectoryLibrary
     public:
         TrajectoryLibrary();
 
-        Trajectory* GetTrajectoryByNumber(int number);
+        const Trajectory* GetTrajectoryByNumber(int number) const;
 
-        int GetNumberTVTrajectories() { return int(traj_vec_.size()); }
-        int GetNumberStableTrajectories() { return int(stable_vec_.size()); }
+        int GetNumberTVTrajectories() const { return int(traj_vec_.size()); }
+        int GetNumberStableTrajectories() const { return int(stable_vec_.size()); }
 
         bool LoadLibrary(std::string dirname, bool quiet = false);  // loads a trajectory from a directory of .csv files
 
-        std::tuple<double, Trajectory*> FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl = nullptr);
+        std::tuple<double, const Trajectory*> FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl = nullptr) const;
 
-        void Print();
+        static double ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, const Trajectory &trajectory, double current_t);
+
+        void Print() const;
 
 
 

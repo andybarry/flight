@@ -91,7 +91,7 @@ bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
     return false;
 }
 
-void TrajectoryLibrary::Print() {
+void TrajectoryLibrary::Print() const {
     std::cout << "Stable trajectories" << std::endl << "------------------------" << std::endl;
 
     for (int i = 0; i < GetNumberStableTrajectories(); i++) {
@@ -106,7 +106,7 @@ void TrajectoryLibrary::Print() {
     }
 }
 
-Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
+const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
 
     if (number >= STABILIZATION_TRAJ) {
         number -= STABILIZATION_TRAJ;
@@ -138,9 +138,9 @@ Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) {
  *
  * @retval the distance to the closest obstacle or -1 if there are no obstacles
  */
-std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap *octomap, const BotTrans *bodyToLocal, double threshold, bot_lcmgl_t *lcmgl) {
+std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl) const {
 
-    Trajectory *farthest_traj = NULL;
+    const Trajectory *farthest_traj = nullptr;
 
     double traj_closest_dist = -1;
 
@@ -172,11 +172,11 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
             double this_t = traj_vec_.at(i).GetTimeAtIndex(j);
 
-            traj_vec_.at(i).GetTransformedPoint(this_t, bodyToLocal, transformedPoint);
+            traj_vec_.at(i).GetTransformedPoint(this_t, &bodyToLocal, transformedPoint);
 
             //std::cout << "searching at (" << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << ")...";
 
-            point_distances.at(j) = octomap->NearestNeighbor(transformedPoint);
+            point_distances.at(j) = octomap.NearestNeighbor(transformedPoint);
 
             //std::cout << "distance is: " << distance_to_point << std::endl;
 
@@ -184,7 +184,7 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
         for (int j = 0; j < number_of_points; j++) {
             double distance_to_point = point_distances.at(j);
-            if (distance_to_point > 0) {
+            if (distance_to_point >= 0) {
                 if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
                     closest_obstacle_distance = distance_to_point;
                 }
@@ -192,7 +192,7 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
 
         }
 
-        if (lcmgl != NULL) {
+        if (lcmgl != nullptr) {
             //traj_vector_[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
         }
 
@@ -204,26 +204,76 @@ std::tuple<double, Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const 
                 // we are satisfied with this one, run it!
                 if (lcmgl != NULL) {
                     bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-                    farthest_traj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
+                    farthest_traj->PlotTransformedTrajectory(lcmgl, &bodyToLocal);
                     bot_lcmgl_pop_matrix(lcmgl);
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
 
-                return std::tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
+                return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
             }
         }
     }
 
-    if (lcmgl != NULL) {
+    if (lcmgl != nullptr) {
         // plot the best trajectory
         if (farthest_traj != NULL) {
             bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-            farthest_traj->PlotTransformedTrajectory(lcmgl, bodyToLocal);
+            farthest_traj->PlotTransformedTrajectory(lcmgl, &bodyToLocal);
         }
 
         bot_lcmgl_pop_matrix(lcmgl);
         bot_lcmgl_switch_buffer(lcmgl);
     }
-    return std::tuple<double, Trajectory*>(traj_closest_dist, farthest_traj);
+    return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
+}
+
+/**
+ * Searches along the remainder of the trajectory, assuming it executes exactly from the
+ * current position.
+ *
+ * Returns the distance to the closest obstacle over that search.  Used for determining if
+ * replanning is required
+ *
+ * @param octomap Obstacle map
+ * @param bodyToLocal Current position of the aircraft
+ * @param trajectory Trajectory to search over
+ * @param current_t Time along the trajectory
+ *
+ * @retval Distance to the closest obstacle along the remainder of the trajectory
+ */
+double TrajectoryLibrary::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, const Trajectory &trajectory, double current_t) {
+
+    // for each point remaining in the trajectory
+
+    int number_of_points = trajectory.GetNumberOfPoints();
+    int starting_index = trajectory.GetIndexAtTime(current_t);
+    vector<double> point_distances(number_of_points); // TODO: potentially inefficient
+    double closest_obstacle_distance = -1;
+
+    for (int i = starting_index; i < number_of_points; i++) {
+        // for each point in the trajectory
+
+        // subtract the current position (ie move the trajectory to where we are)
+        double transformed_point[3];
+
+        double this_t = trajectory.GetTimeAtIndex(i);
+
+        trajectory.GetTransformedPoint(this_t, &body_to_local, transformed_point);
+
+        // check if there is an obstacle nearby
+        point_distances.at(i) = octomap.NearestNeighbor(transformed_point);
+
+    }
+
+    for (int i = starting_index; i < number_of_points; i++) {
+        double distance_to_point = point_distances.at(i);
+        if (distance_to_point >= 0) {
+            if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
+                closest_obstacle_distance = distance_to_point;
+            }
+        }
+    }
+
+    return closest_obstacle_distance;
 }
 

@@ -33,29 +33,31 @@ class Trajectory
 
         void LoadTrajectory(std::string filename_prefix, bool quiet = false);
 
-        Eigen::MatrixXd GetGainMatrix(double t);
+        Eigen::MatrixXd GetGainMatrix(double t) const;
 
-        int GetDimension() { return dimension_; }
-        int GetUDimension() { return udimension_; }
-        int GetTrajectoryNumber() { return trajectory_number_; }
+        int GetDimension() const { return dimension_; }
+        int GetUDimension() const { return udimension_; }
+        int GetTrajectoryNumber() const { return trajectory_number_; }
 
-        void Print();
+        void Print() const;
 
-        void GetTransformedPoint(double t, const BotTrans *transform, double *xyz);
-        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform);
+        void GetTransformedPoint(double t, const BotTrans *transform, double *xyz) const;
+        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const;
 
-        double GetTimeAtIndex(int index);
-        double GetMaxTime();
+        int GetIndexAtTime(double t, bool use_rollout = false) const;
+        double GetTimeAtIndex(int index) const { return xpoints_(index, 0); }
 
-        bool IsTimeInvariant() { return GetMaxTime() == 0; }
+        double GetMaxTime() const;
 
-        int GetNumberOfPoints() { return int(xpoints_.rows()); }
+        bool IsTimeInvariant() const { return GetMaxTime() == 0; }
 
-        Eigen::VectorXd GetState(double t);
-        Eigen::VectorXd GetUCommand(double t);
-        Eigen::VectorXd GetRolloutState(double t);
+        int GetNumberOfPoints() const { return int(xpoints_.rows()); }
 
-        Eigen::MatrixXd GetXpoints() { return xpoints_; }
+        Eigen::VectorXd GetState(double t) const;
+        Eigen::VectorXd GetUCommand(double t) const;
+        Eigen::VectorXd GetRolloutState(double t) const;
+
+        Eigen::MatrixXd GetXpoints() const { return xpoints_; }
 
         // returns the distance to the closest point on the trajectory
         // could optimize this with cover trees?
@@ -88,9 +90,7 @@ class Trajectory
 
         void LoadMatrixFromCSV(const std::string& filename, Eigen::MatrixXd &matrix, bool quiet = false);
 
-        int GetNumberOfLines(std::string filename);
-
-        int GetIndexFromTime(double t, bool use_rollout = false);
+        int GetNumberOfLines(std::string filename) const;
 
 };
 

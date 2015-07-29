@@ -22,8 +22,7 @@ Trajectory::Trajectory(std::string filename_prefix, bool quiet) : Trajectory() {
     LoadTrajectory(filename_prefix, quiet);
 }
 
-void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet)
-{
+void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet) {
     // open the file
     std::vector<std::vector<std::string>> strs;
 
@@ -132,7 +131,7 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
 
 }
 
-int Trajectory::GetNumberOfLines(std::string filename) {
+int Trajectory::GetNumberOfLines(std::string filename) const {
     int number_of_lines = 0;
     std::string line;
     std::ifstream myfile(filename);
@@ -144,24 +143,24 @@ int Trajectory::GetNumberOfLines(std::string filename) {
     return number_of_lines;
 }
 
-Eigen::VectorXd Trajectory::GetState(double t) {
-    int index = GetIndexFromTime(t);
+Eigen::VectorXd Trajectory::GetState(double t) const {
+    int index = GetIndexAtTime(t);
 
     Eigen::VectorXd row_vec = xpoints_.row(index);
 
     return row_vec.tail(xpoints_.cols() - 1); // remove time
 }
 
-Eigen::VectorXd Trajectory::GetUCommand(double t) {
-    int index = GetIndexFromTime(t);
+Eigen::VectorXd Trajectory::GetUCommand(double t) const {
+    int index = GetIndexAtTime(t);
 
     Eigen::VectorXd row_vec = upoints_.row(index);
 
     return row_vec.tail(upoints_.cols() - 1); // remove time
 }
 
-Eigen::VectorXd Trajectory::GetRolloutState(double t) {
-    int index = GetIndexFromTime(t, true);
+Eigen::VectorXd Trajectory::GetRolloutState(double t) const {
+    int index = GetIndexAtTime(t, true);
 
     Eigen::VectorXd row_vec = xpoints_rollout_.row(index);
 
@@ -177,7 +176,7 @@ Eigen::VectorXd Trajectory::GetRolloutState(double t) {
  * @param (optional) use_rollout set to true to use time bounds from rollout instead of xpoints
  * @retval index of nearest point
  */
-int Trajectory::GetIndexFromTime(double t, bool use_rollout) {
+int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
 
     // round t to the nearest dt_
 
@@ -216,11 +215,7 @@ int Trajectory::GetIndexFromTime(double t, bool use_rollout) {
 
 }
 
-double Trajectory::GetTimeAtIndex(int index) {
-    return xpoints_(index, 0);
-}
-
-double Trajectory::GetMaxTime() {
+double Trajectory::GetMaxTime() const {
     double tf = xpoints_(xpoints_.rows() - 1, 0);
 
     return tf;
@@ -235,8 +230,8 @@ double Trajectory::GetMaxTime() {
  *
  * @retval gain matrix at that time with dimension: state_dimension x u_dimension
  */
-Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
-    int index = GetIndexFromTime(t);
+Eigen::MatrixXd Trajectory::GetGainMatrix(double t) const {
+    int index = GetIndexAtTime(t);
 
     Eigen::VectorXd k_row = kpoints_.row(index);
 
@@ -259,7 +254,7 @@ Eigen::MatrixXd Trajectory::GetGainMatrix(double t) {
 
 
 
-void Trajectory::Print() {
+void Trajectory::Print() const {
     std::cout << "------------ Trajectory print -------------" << std::endl;
     std::cout << "Filename: " << filename_prefix_ << std::endl;
     std::cout << "Trajectory number: " << trajectory_number_ << std::endl;
@@ -285,8 +280,7 @@ void Trajectory::Print() {
     std::cout << affine_points_ << std::endl;
 }
 
-void Trajectory::GetTransformedPoint(double t, const BotTrans *transform, double *xyz)
-{
+void Trajectory::GetTransformedPoint(double t, const BotTrans *transform, double *xyz) const {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
 
@@ -302,8 +296,7 @@ void Trajectory::GetTransformedPoint(double t, const BotTrans *transform, double
 
 }
 
-void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform)
-{
+void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
     bot_lcmgl_line_width(lcmgl, 2.0f);
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
     for (int i=0; i<int(xpoints_.size()); i++)
