@@ -6,6 +6,7 @@
 #include <stack>
 
 #define TOLERANCE 0.0001
+#define TOLERANCE2 0.001
 
 class TrajectoryLibraryTest : public testing::Test {
 
@@ -208,6 +209,25 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
 
 }
 
+TEST_F(TrajectoryLibraryTest, CheckBounds) {
+    Trajectory traj("trajtest/two-point-00000", true);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    double output[3];
+
+    traj.GetTransformedPoint(0, &trans, output);
+    EXPECT_EQ_ARM(output[0], 0);
+
+    traj.GetTransformedPoint(0.01, &trans, output);
+    EXPECT_EQ_ARM(output[0], 1);
+
+    traj.GetTransformedPoint(10, &trans, output);
+    EXPECT_EQ_ARM(output[0], 1);
+
+}
+
 TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
     Trajectory traj("trajtest/TI-unit-test-TI-straight-pd-no-yaw-10000", true);
@@ -217,7 +237,7 @@ TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
     Eigen::VectorXd output = traj.GetState(0);
 
-    EXPECT_APPROX_MAT( expected, output, TOLERANCE);
+    EXPECT_APPROX_MAT(expected, output, TOLERANCE);
 
     Eigen::VectorXd expected2(12);
     expected2 << 26.135,0,9.2492e-09,0,-0.19141,0,12.046,0,-2.3342,0,7.8801e-13,0;
@@ -229,6 +249,7 @@ TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
 
 }
+
 
 TEST_F(TrajectoryLibraryTest, LoadLibrary) {
     TrajectoryLibrary lib;
@@ -478,7 +499,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
 
     // Load a complicated trajectory
     TrajectoryLibrary lib;
-    lib.LoadLibrary("trajtest-many");
+    lib.LoadLibrary("trajtest-many", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -486,23 +507,21 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
     const Trajectory *traj = lib.GetTrajectoryByNumber(1);
 
     // with no obstacles, we expect -1
-    double dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
-    EXPECT_EQ_ARM(dist, -1);
+//    double dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+//    EXPECT_EQ_ARM(dist, -1);
 
-
-    double point[3] = { 1.5, -0.5, 0 };
+double dist;
+    double point[3] = { 6.65, -7.23, 9.10 };
     AddPointToOctree(&octomap, point);
     dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
-    EXPECT_NEAR(dist, 3.241903005654446, TOLERANCE); // from matlab, closest at t = 0.09
+    EXPECT_NEAR(dist, 11.748141101535500, TOLERANCE2); // from matlab
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.085);
-    EXPECT_NEAR(dist, 3.241903005654446, TOLERANCE);
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.95);
+    EXPECT_NEAR(dist, 11.8831, TOLERANCE2);
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.15);
-    EXPECT_NEAR(dist, 3.3185, TOLERANCE); // from matlab
+    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 1.5); // t after trajectory
+    EXPECT_NEAR(dist, 12.3832, TOLERANCE2); // from matlab
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 1.24);
-    EXPECT_NEAR(dist, 13.294, TOLERANCE); // from matlab
 }
 
 

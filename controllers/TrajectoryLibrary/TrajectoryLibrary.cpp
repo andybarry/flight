@@ -244,10 +244,8 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
 double TrajectoryLibrary::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, const Trajectory &trajectory, double current_t) {
 
     // for each point remaining in the trajectory
-
     int number_of_points = trajectory.GetNumberOfPoints();
     int starting_index = trajectory.GetIndexAtTime(current_t);
-std::cout << starting_index << std::endl;
     vector<double> point_distances(number_of_points); // TODO: potentially inefficient
     double closest_obstacle_distance = -1;
 
@@ -268,7 +266,6 @@ std::cout << starting_index << std::endl;
 
     for (int i = starting_index; i < number_of_points; i++) {
         double distance_to_point = point_distances.at(i);
-//std::cout << distance_to_point << std::endl;
         if (distance_to_point >= 0) {
             if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
                 closest_obstacle_distance = distance_to_point;

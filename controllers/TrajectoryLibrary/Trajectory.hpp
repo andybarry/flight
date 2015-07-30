@@ -19,6 +19,8 @@
 #include <bot_frames/bot_frames.h>
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
+#include "gtest/gtest.h"
+#include "../../utils/utils/RealtimeUtils.hpp"
 
 #include "../../externals/csvparser/csvparser.h"
 
@@ -38,6 +40,7 @@ class Trajectory
         int GetDimension() const { return dimension_; }
         int GetUDimension() const { return udimension_; }
         int GetTrajectoryNumber() const { return trajectory_number_; }
+        double GetDT() const { return dt_; }
 
         void Print() const;
 
@@ -47,11 +50,14 @@ class Trajectory
         int GetIndexAtTime(double t, bool use_rollout = false) const;
         double GetTimeAtIndex(int index) const { return xpoints_(index, 0); }
 
-        double GetMaxTime() const;
+        double GetMaxTime() const { return xpoints_(xpoints_.rows() - 1, 0); }
+        double GetMaxRolloutTime() const { return xpoints_rollout_(xpoints_rollout_.rows() - 1, 0); }
 
         bool IsTimeInvariant() const { return GetMaxTime() == 0; }
 
         int GetNumberOfPoints() const { return int(xpoints_.rows()); }
+
+        int GetNumberOfRolloutPoints() const { return int(xpoints_rollout_.rows()); }
 
         Eigen::VectorXd GetState(double t) const;
         Eigen::VectorXd GetUCommand(double t) const;

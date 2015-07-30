@@ -145,7 +145,6 @@ int Trajectory::GetNumberOfLines(std::string filename) const {
 
 Eigen::VectorXd Trajectory::GetState(double t) const {
     int index = GetIndexAtTime(t);
-
     Eigen::VectorXd row_vec = xpoints_.row(index);
 
     return row_vec.tail(xpoints_.cols() - 1); // remove time
@@ -190,9 +189,9 @@ int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
         tf = xpoints_rollout_(xpoints_rollout_.rows() - 1, 0);
     }
 
-   if (t < t0) {
+   if (t <= t0) {
        return 0;
-   } else if (t > tf) {
+   } else if (t >= tf) {
 
         if (!use_rollout) {
             return xpoints_.rows() - 1;
@@ -200,11 +199,11 @@ int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
             return xpoints_rollout_.rows() - 1;
         }
    }
-
+//std::cout << "after" << std::endl;
    // otherwise, we are somewhere in the bounds of the trajectory
-    int num_dts = t/dt_;
-    float remainder = fmod(t, dt_);
-
+    int num_dts = std::round(t/dt_);
+    float remainder = std::remainder(t, dt_);
+//std::cout << "t = " << t << " remainder = " << remainder << " num_dts = " << num_dts << std::endl;
     if (remainder > 0.5f*dt_) {
         num_dts++;
     }
@@ -215,10 +214,30 @@ int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
 
 }
 
-double Trajectory::GetMaxTime() const {
-    double tf = xpoints_(xpoints_.rows() - 1, 0);
+TEST(Trajectory, GetIndexAtTimeTest) {
+    Trajectory traj("trajtest/TI-unit-test-TI-straight-pd-no-yaw-10000", true);
 
-    return tf;
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0, true), 0);
+
+    EXPECT_EQ_ARM(traj.GetMaxTime(), 0);
+    EXPECT_EQ_ARM(traj.GetMaxRolloutTime(), 3);
+    EXPECT_EQ_ARM(traj.GetNumberOfRolloutPoints(), 301);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(1000, true), 300);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.0001, true), 0);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.01, true), 1);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.02, true), 2);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.019, true), 2);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.021, true), 2);
+
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.90, true), 90);
+
+
+
 }
 
 /**
