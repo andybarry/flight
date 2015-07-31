@@ -24,6 +24,11 @@ bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
     DIR *dirp = opendir(dirname.c_str());
     struct dirent *dp;
 
+    if (dirp == nullptr) {
+        std::cerr << "ERROR: no such directory: " << dirname << std::endl;
+        return false;
+    }
+
     vector<Trajectory> temp_traj_tv, temp_traj_stable;
 
     int count = 0;
@@ -225,54 +230,5 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         bot_lcmgl_switch_buffer(lcmgl);
     }
     return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
-}
-
-/**
- * Searches along the remainder of the trajectory, assuming it executes exactly from the
- * current position.
- *
- * Returns the distance to the closest obstacle over that search.  Used for determining if
- * replanning is required
- *
- * @param octomap Obstacle map
- * @param bodyToLocal Current position of the aircraft
- * @param trajectory Trajectory to search over
- * @param current_t Time along the trajectory
- *
- * @retval Distance to the closest obstacle along the remainder of the trajectory
- */
-double TrajectoryLibrary::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, const Trajectory &trajectory, double current_t) {
-
-    // for each point remaining in the trajectory
-    int number_of_points = trajectory.GetNumberOfPoints();
-    int starting_index = trajectory.GetIndexAtTime(current_t);
-    vector<double> point_distances(number_of_points); // TODO: potentially inefficient
-    double closest_obstacle_distance = -1;
-
-    for (int i = starting_index; i < number_of_points; i++) {
-        // for each point in the trajectory
-
-        // subtract the current position (ie move the trajectory to where we are)
-        double transformed_point[3];
-
-        double this_t = trajectory.GetTimeAtIndex(i);
-
-        trajectory.GetTransformedPoint(this_t, &body_to_local, transformed_point);
-
-        // check if there is an obstacle nearby
-        point_distances.at(i) = octomap.NearestNeighbor(transformed_point);
-
-    }
-
-    for (int i = starting_index; i < number_of_points; i++) {
-        double distance_to_point = point_distances.at(i);
-        if (distance_to_point >= 0) {
-            if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
-                closest_obstacle_distance = distance_to_point;
-            }
-        }
-    }
-
-    return closest_obstacle_distance;
 }
 

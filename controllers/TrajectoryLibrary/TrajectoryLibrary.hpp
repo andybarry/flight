@@ -43,8 +43,6 @@ class TrajectoryLibrary
 
         std::tuple<double, const Trajectory*> FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl = nullptr) const;
 
-        static double ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, const Trajectory &trajectory, double current_t);
-
         void Print() const;
 
 

@@ -54,7 +54,7 @@ void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet) {
         exit(1);
     }
 
-    if (xpoints_.rows() != upoints_.rows() || xpoints_.rows() != kpoints_.rows() || xpoints_.rows() != affine_points_.rows()) {
+    if (upoints_.rows() != kpoints_.rows() || upoints_.rows() != affine_points_.rows()) {
         std::cerr << "Error: inconsistent number of rows in CSV files: " << std::endl
             << "\t" << filename_prefix << "-x: " << xpoints_.rows() << std::endl
             << "\t" << filename_prefix << "-u: " << upoints_.rows() << std::endl
@@ -63,12 +63,6 @@ void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet) {
 
             exit(1);
     }
-
-    if (IsTimeInvariant() == true) {
-        // also load a precomputed rollout
-        LoadMatrixFromCSV(filename_prefix + "-rollout.csv", xpoints_rollout_, quiet);
-    }
-
 }
 
 
@@ -158,15 +152,6 @@ Eigen::VectorXd Trajectory::GetUCommand(double t) const {
     return row_vec.tail(upoints_.cols() - 1); // remove time
 }
 
-Eigen::VectorXd Trajectory::GetRolloutState(double t) const {
-    int index = GetIndexAtTime(t, true);
-
-    Eigen::VectorXd row_vec = xpoints_rollout_.row(index);
-
-    return row_vec.tail(xpoints_rollout_.cols() - 1); // remove time
-}
-
-
 /**
  * Assuming a constant dt, we can compute the index of a point
  * based on its time.
@@ -175,29 +160,20 @@ Eigen::VectorXd Trajectory::GetRolloutState(double t) const {
  * @param (optional) use_rollout set to true to use time bounds from rollout instead of xpoints
  * @retval index of nearest point
  */
-int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
+int Trajectory::GetIndexAtTime(double t) const {
 
     // round t to the nearest dt_
 
    double t0, tf;
 
-   if (!use_rollout) {
-        t0 = xpoints_(0,0);
-        tf = xpoints_(xpoints_.rows() - 1, 0);
-    } else {
-        t0 = xpoints_rollout_(0,0);
-        tf = xpoints_rollout_(xpoints_rollout_.rows() - 1, 0);
-    }
+    t0 = xpoints_(0,0);
+    tf = xpoints_(xpoints_.rows() - 1, 0);
 
    if (t <= t0) {
        return 0;
    } else if (t >= tf) {
 
-        if (!use_rollout) {
-            return xpoints_.rows() - 1;
-        } else {
-            return xpoints_rollout_.rows() - 1;
-        }
+        return xpoints_.rows() - 1;
    }
 //std::cout << "after" << std::endl;
    // otherwise, we are somewhere in the bounds of the trajectory
@@ -215,26 +191,25 @@ int Trajectory::GetIndexAtTime(double t, bool use_rollout) const {
 }
 
 TEST(Trajectory, GetIndexAtTimeTest) {
-    Trajectory traj("trajtest/TI-unit-test-TI-straight-pd-no-yaw-10000", true);
+    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", false);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0, true), 0);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0), 0);
 
-    EXPECT_EQ_ARM(traj.GetMaxTime(), 0);
-    EXPECT_EQ_ARM(traj.GetMaxRolloutTime(), 3);
-    EXPECT_EQ_ARM(traj.GetNumberOfRolloutPoints(), 301);
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(1000, true), 300);
+    EXPECT_EQ_ARM(traj.GetMaxTime(), 3);
+    EXPECT_EQ_ARM(traj.GetNumberOfPoints(), 301);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(1000), 300);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.0001, true), 0);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.0001), 0);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.01, true), 1);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.01), 1);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.02, true), 2);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.02), 2);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.019, true), 2);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.019), 2);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.021, true), 2);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.021), 2);
 
-    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.90, true), 90);
+    EXPECT_EQ_ARM(traj.GetIndexAtTime(0.90), 90);
 
 
 
@@ -328,22 +303,51 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *t
     bot_lcmgl_end(lcmgl);
 }
 
-#if 0
-double Trajectory::DistanceToPoint(double x, double y, double z)
-{
-    double minDist = -1;
+/**
+ * Searches along the remainder of the trajectory, assuming it executes exactly from the
+ * current position.
+ *
+ * Returns the distance to the closest obstacle over that search.  Used for determining if
+ * replanning is required
+ *
+ * @param octomap Obstacle map
+ * @param bodyToLocal Current position of the aircraft
+ * @param current_t Time along the trajectory
+ *
+ * @retval Distance to the closest obstacle along the remainder of the trajectory
+ */
+double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double current_t) const {
 
-    for (int i=0; i<int(xpoints.size()); i++)
-    {
-        // find the distance to this point
-        double thisDist = sqrt( pow(x-xpoints[i][0],2) + pow(y-xpoints[i][1],2) + pow(z-xpoints[i][2],2) );
+    // for each point remaining in the trajectory
+    int number_of_points = GetNumberOfPoints();
 
-        if (minDist < 0 || thisDist < minDist)
-        {
-            minDist = thisDist;
+    int starting_index = GetIndexAtTime(current_t);
+    std::vector<double> point_distances(number_of_points); // TODO: potentially inefficient
+    double closest_obstacle_distance = -1;
+
+    for (int i = starting_index; i < number_of_points; i++) {
+        // for each point in the trajectory
+
+        // subtract the current position (ie move the trajectory to where we are)
+        double transformed_point[3];
+
+        double this_t = GetTimeAtIndex(i);
+
+        GetTransformedPoint(this_t, &body_to_local, transformed_point);
+
+        // check if there is an obstacle nearby
+        point_distances.at(i) = octomap.NearestNeighbor(transformed_point);
+
+    }
+
+    for (int i = starting_index; i < number_of_points; i++) {
+        double distance_to_point = point_distances.at(i);
+        if (distance_to_point >= 0) {
+            if (distance_to_point < closest_obstacle_distance || closest_obstacle_distance < 0) {
+                closest_obstacle_distance = distance_to_point;
+            }
         }
     }
 
-    return minDist;
+    return closest_obstacle_distance;
 }
-#endif

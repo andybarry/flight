@@ -230,7 +230,7 @@ TEST_F(TrajectoryLibraryTest, CheckBounds) {
 
 TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
-    Trajectory traj("trajtest/TI-unit-test-TI-straight-pd-no-yaw-10000", true);
+    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", true);
 
     Eigen::VectorXd expected(12);
     expected << 0,0,0,0,-0.19141,0,12.046,0,-2.3342,0,0,0;
@@ -242,7 +242,7 @@ TEST_F(TrajectoryLibraryTest, TestTiRollout) {
     Eigen::VectorXd expected2(12);
     expected2 << 26.135,0,9.2492e-09,0,-0.19141,0,12.046,0,-2.3342,0,7.8801e-13,0;
 
-    output = traj.GetRolloutState(2.13);
+    output = traj.GetState(2.13);
 
     EXPECT_APPROX_MAT( expected2, output, TOLERANCE);
 
@@ -465,7 +465,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(0);
 
-    double dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
 
     // with no obstacles, we expect -1
     EXPECT_EQ_ARM(dist, -1);
@@ -475,27 +475,25 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
     AddPointToOctree(&octomap, point);
 
     // now we expect zero distance since the obstacle and the trajectory start at the origin
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_EQ_ARM(dist, 0);
 
     // at t = 0.01, we expect a distance of 1 since the point is already behind us
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.01);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
     EXPECT_EQ_ARM(dist, 1);
 
     // add a transform
     trans.trans_vec[2] = 42;
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_EQ_ARM(dist, 42);
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.01);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
     EXPECT_NEAR(dist, sqrt( 42*42 + 1*1  ), TOLERANCE);
 }
 
 TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
     StereoOctomap octomap(bot_frames_);
-
-
 
     // Load a complicated trajectory
     TrajectoryLibrary lib;
@@ -507,20 +505,60 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
     const Trajectory *traj = lib.GetTrajectoryByNumber(1);
 
     // with no obstacles, we expect -1
-//    double dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
-//    EXPECT_EQ_ARM(dist, -1);
+    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    EXPECT_EQ_ARM(dist, -1);
 
-double dist;
     double point[3] = { 6.65, -7.23, 9.10 };
     AddPointToOctree(&octomap, point);
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_NEAR(dist, 11.748141101535500, TOLERANCE2); // from matlab
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 0.95);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.95);
     EXPECT_NEAR(dist, 11.8831, TOLERANCE2);
 
-    dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, *traj, 1.5); // t after trajectory
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.5); // t after trajectory
     EXPECT_NEAR(dist, 12.3832, TOLERANCE2); // from matlab
+}
+
+TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
+    StereoOctomap octomap(bot_frames_);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", true);
+
+    // with no obstacles, we expect -1
+    double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    EXPECT_EQ_ARM(dist, -1);
+
+    double point[3] = { 1.5, -0.5, 3 };
+    AddPointToOctree(&octomap, point);
+    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    EXPECT_NEAR(dist, 3.041506, TOLERANCE2); // from matlab
+
+    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.21);
+    EXPECT_NEAR(dist, 13.6886, TOLERANCE2);
+
+    //dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, traj, 1.5); // t after trajectory
+    //EXPECT_NEAR(dist, 12.3832, TOLERANCE2); // from matlab
+}
+
+TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
+    StereoOctomap octomap(bot_frames_);
+
+    TrajectoryLibrary lib;
+    lib.LoadLibrary("trajtest", true);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+
+    double dist;
+    const Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
+
+    ASSERT_TRUE(best_traj != nullptr);
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 10000);
 
 }
 
