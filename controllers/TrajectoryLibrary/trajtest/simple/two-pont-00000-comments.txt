@@ -1,0 +1,1 @@
+Simple two-point trajectory for testing

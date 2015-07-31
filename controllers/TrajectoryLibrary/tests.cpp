@@ -38,6 +38,16 @@ class TrajectoryLibraryTest : public testing::Test {
 
         std::stack<double> tictoc_wall_stack;
 
+
+        // these are some random points to use for some of the tests
+        float x_points_[30] = {10.6599, 22.2863, 17.7719, 25.3705, 11.2680, 8.5819, 18.7618, 15.5065, 30.2579, 23.4038, 31.0982, 8.5764, 19.3839, 24.4193, 20.6749, 8.1739, 17.1374, 27.9051, 32.9856, 9.1662, 20.7621, 19.5456, 27.2377, 9.4999, 6.3336, 18.2721, 27.0902, 26.1214, 14.9257, 10.9116};
+
+        float y_points_[30] = {-6.3751, 5.5009, 4.3333, 4.0736, 6.2785, 3.2191, 4.8583, 4.8603, 9.9875, 2.4675, -7.0566, 13.1949, 4.1795, 1.3166, 14.8111, -11.7091, -1.5488, 3.8369, 14.1822, 5.8880, 0.9103, -3.1963, 0.6016, 2.5828, 7.6480, 5.6339, -3.1588, -1.7308, -2.2707, 9.6516};
+
+        float z_points_[30] = {-12.2666, 1.3978, 4.4285, 13.3552, -7.9131, -1.4959, 8.1086, -2.5152, -7.3068, 1.2222, -5.4578, 4.3666, 1.3415, 6.6314, -8.4397, -13.0923, -4.0255, 8.1594, -9.2391, -12.1854, 10.8342, 5.1429, -4.5686, -7.1356, -7.7164, -4.2232, 5.5025, -14.4127, -6.8919, -2.1024};
+
+        int number_of_reference_points_ = 30;
+
         void tic() {
             tictoc_wall_stack.push(GetTimestampNow() / 1000000.0);
         }
@@ -116,7 +126,7 @@ class TrajectoryLibraryTest : public testing::Test {
  */
 TEST_F(TrajectoryLibraryTest, LoadTrajectory) {
     // load a test trajectory
-    Trajectory traj("trajtest/two-point-00000", true);
+    Trajectory traj("trajtest/simple/two-point-00000", true);
 
     // ensure that we can access the right bits
 
@@ -161,7 +171,7 @@ TEST_F(TrajectoryLibraryTest, LoadTrajectory) {
  * Tests point transformation with a simple two-point trajectory
  */
 TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
-    Trajectory traj("trajtest/two-point-00000", true);
+    Trajectory traj("trajtest/simple/two-point-00000", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -210,7 +220,7 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
 }
 
 TEST_F(TrajectoryLibraryTest, CheckBounds) {
-    Trajectory traj("trajtest/two-point-00000", true);
+    Trajectory traj("trajtest/simple/two-point-00000", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -230,7 +240,7 @@ TEST_F(TrajectoryLibraryTest, CheckBounds) {
 
 TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
-    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", true);
+    Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
     Eigen::VectorXd expected(12);
     expected << 0,0,0,0,-0.19141,0,12.046,0,-2.3342,0,0,0;
@@ -254,30 +264,28 @@ TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 TEST_F(TrajectoryLibraryTest, LoadLibrary) {
     TrajectoryLibrary lib;
 
-    ASSERT_TRUE(lib.LoadLibrary("trajtest", true));
+    ASSERT_TRUE(lib.LoadLibrary("trajtest/simple", true));
 
-    EXPECT_EQ_ARM(lib.GetNumberTVTrajectories(), 2);
+    EXPECT_EQ_ARM(lib.GetNumberTrajectories(), 2);
 
-    EXPECT_EQ_ARM(lib.GetNumberStableTrajectories(), 1);
-
-    EXPECT_EQ_ARM(lib.GetTrajectoryByNumber(10000)->GetTrajectoryNumber(), 10000);
+    EXPECT_EQ_ARM(lib.GetTrajectoryByNumber(0)->GetTrajectoryNumber(), 0);
 }
 
 /**
- * Test FindFurthestTrajectory on:
+ * Test FindFarthestTrajectory on:
  *      - no obstacles
  *      - one obstacle
  *      - two obstacles
  */
-TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
+TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     StereoOctomap octomap(bot_frames_);
 
     TrajectoryLibrary lib;
 
-    lib.LoadLibrary("trajtest", true);
+    lib.LoadLibrary("trajtest/simple", true);
 
-    EXPECT_EQ_ARM(lib.GetNumberTVTrajectories(), 2);
+    EXPECT_EQ_ARM(lib.GetNumberTrajectories(), 2);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -296,8 +304,6 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
     EXPECT_TRUE(dist == -1);
 
     // add an obstacle close to the first trajectory
-
-
     double point[3] = { 1.05, 0, 0 };
     AddPointToOctree(&octomap, point);
 
@@ -320,6 +326,7 @@ TEST_F(TrajectoryLibraryTest, FindFurthestTrajectory) {
     AddPointToOctree(&octomap, point);
 
 
+
     // now we expect to get the first trajectory
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
@@ -338,7 +345,7 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
     TrajectoryLibrary lib;
 
-    lib.LoadLibrary("trajtest", true);
+    lib.LoadLibrary("trajtest/simple", true);
 
     double point[3] = { 1.05, 0, 0 };
     AddPointToOctree(&octomap, point);
@@ -376,17 +383,11 @@ TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
     StereoOctomap octomap(bot_frames_);
 
     // load points
-    float x[30] = {10.6599, 22.2863, 17.7719, 25.3705, 11.2680, 8.5819, 18.7618, 15.5065, 30.2579, 23.4038, 31.0982, 8.5764, 19.3839, 24.4193, 20.6749, 8.1739, 17.1374, 27.9051, 32.9856, 9.1662, 20.7621, 19.5456, 27.2377, 9.4999, 6.3336, 18.2721, 27.0902, 26.1214, 14.9257, 10.9116};
-
-    float y[30] = {-6.3751, 5.5009, 4.3333, 4.0736, 6.2785, 3.2191, 4.8583, 4.8603, 9.9875, 2.4675, -7.0566, 13.1949, 4.1795, 1.3166, 14.8111, -11.7091, -1.5488, 3.8369, 14.1822, 5.8880, 0.9103, -3.1963, 0.6016, 2.5828, 7.6480, 5.6339, -3.1588, -1.7308, -2.2707, 9.6516};
-
-    float z[30] = {-12.2666, 1.3978, 4.4285, 13.3552, -7.9131, -1.4959, 8.1086, -2.5152, -7.3068, 1.2222, -5.4578, 4.3666, 1.3415, 6.6314, -8.4397, -13.0923, -4.0255, 8.1594, -9.2391, -12.1854, 10.8342, 5.1429, -4.5686, -7.1356, -7.7164, -4.2232, 5.5025, -14.4127, -6.8919, -2.1024};
-
-    AddManyPointsToOctree(&octomap, x, y, z, 30);
+    AddManyPointsToOctree(&octomap, x_points_, y_points_, z_points_, number_of_reference_points_);
 
     TrajectoryLibrary lib;
 
-    lib.LoadLibrary("trajtest-many", true);
+    lib.LoadLibrary("trajtest/many", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -434,7 +435,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     TrajectoryLibrary lib;
 
-    lib.LoadLibrary("trajtest-many", true);
+    lib.LoadLibrary("trajtest/many", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -449,7 +450,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     double num_sec = toc();
 
-    std::cout << num_lookups <<  " lookups with " << lib.GetNumberTVTrajectories() << " TV trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup " << std::endl;
+    std::cout << num_lookups <<  " lookups with " << lib.GetNumberTrajectories() << " trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup " << std::endl;
 }
 
 TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
@@ -458,7 +459,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
     // get a trajectory
 
     TrajectoryLibrary lib;
-    lib.LoadLibrary("trajtest", true);
+    lib.LoadLibrary("trajtest/simple", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -497,7 +498,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
 
     // Load a complicated trajectory
     TrajectoryLibrary lib;
-    lib.LoadLibrary("trajtest-many", true);
+    lib.LoadLibrary("trajtest/many", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -526,7 +527,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
     BotTrans trans;
     bot_trans_set_identity(&trans);
 
-    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", true);
+    Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
     // with no obstacles, we expect -1
     double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
@@ -540,15 +541,13 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
     dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.21);
     EXPECT_NEAR(dist, 13.6886, TOLERANCE2);
 
-    //dist = lib.ClosestObstacleInRemainderOfTrajectory(octomap, trans, traj, 1.5); // t after trajectory
-    //EXPECT_NEAR(dist, 12.3832, TOLERANCE2); // from matlab
 }
 
 TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
     StereoOctomap octomap(bot_frames_);
 
     TrajectoryLibrary lib;
-    lib.LoadLibrary("trajtest", true);
+    lib.LoadLibrary("trajtest/full", true);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
@@ -558,10 +557,30 @@ TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
 
     ASSERT_TRUE(best_traj != nullptr);
-    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 10000);
+    // with no obstacles, we should always get the first trajectory
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 0);
+
+    // put an obstacle along the path of the TI trajectory
+    double point[3] = { 1.10, -0.1, 0 };
+    AddPointToOctree(&octomap, point);
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
+
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 4); // from matlab
+    EXPECT_NEAR(dist, 0.2032, TOLERANCE2); // from matlab
+
+    // create a new octre
+    StereoOctomap octomap2(bot_frames_);
+
+    AddManyPointsToOctree(&octomap2, x_points_, y_points_, z_points_, number_of_reference_points_);
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap2, trans, 50.0);
+
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 3);
+    EXPECT_NEAR(dist, 5.0060, TOLERANCE);
+
 
 }
-
 
 
 int main(int argc, char **argv) {

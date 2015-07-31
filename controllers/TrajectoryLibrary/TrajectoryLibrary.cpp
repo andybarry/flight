@@ -29,7 +29,7 @@ bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
         return false;
     }
 
-    vector<Trajectory> temp_traj_tv, temp_traj_stable;
+    vector<Trajectory> temp_traj;
 
     int count = 0;
 
@@ -42,21 +42,17 @@ bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
 
             Trajectory this_traj(dirname + this_file.substr(0, this_file.length()-6), quiet);
 
-            if (this_traj.GetTrajectoryNumber() < STABILIZATION_TRAJ) {
-                temp_traj_tv.push_back(this_traj);
-            } else {
-                temp_traj_stable.push_back(this_traj);
-            }
+            temp_traj.push_back(this_traj);
 
             count ++;
         }
     }
 
     // now we have loaded everything into memory, so sort
-    for (int i = 0; i < (int)temp_traj_tv.size(); i++) {
+    for (int i = 0; i < (int)temp_traj.size(); i++) {
 
         bool flag = false;
-        for (auto traj : temp_traj_tv) {
+        for (auto traj : temp_traj) {
             if (traj.GetTrajectoryNumber() == i) {
                 traj_vec_.push_back(traj);
                 flag = true;
@@ -69,59 +65,30 @@ bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
             return false;
         }
     }
-    for (int i = 0; i < (int)temp_traj_stable.size(); i++) {
-        bool flag = false;
-        for (auto traj : temp_traj_stable) {
-            if (traj.GetTrajectoryNumber() == i + STABILIZATION_TRAJ) {
-                stable_vec_.push_back(traj);
-                flag = true;
-                break;
-            }
-        }
-        if (flag == false) {
-            std::cerr << "ERROR: missing trajectory #" << i << std::endl;
-            return false;
-        }
-    }
 
     //(void)closedir(dirp);
 
     if (!quiet) {
-        std::cout << "Loaded " << traj_vec_.size() << " (TV) + " << stable_vec_.size() << " (TI) = " << traj_vec_.size() + stable_vec_.size() << " trajectorie(s)" << std::endl;
+        std::cout << "Loaded " << traj_vec_.size() << " trajectorie(s)" << std::endl;
     }
 
-    if (traj_vec_.size() + stable_vec_.size() > 0) {
+    if (traj_vec_.size() > 0) {
         return true;
     }
     return false;
 }
 
 void TrajectoryLibrary::Print() const {
-    std::cout << "Stable trajectories" << std::endl << "------------------------" << std::endl;
-
-    for (int i = 0; i < GetNumberStableTrajectories(); i++) {
-        stable_vec_.at(i).Print();
-    }
 
     std::cout << "Time-varying trajectories" << std::endl << "------------------------" << std::endl;
 
-    for (int i = 0; i < GetNumberTVTrajectories(); i++) {
+    for (int i = 0; i < GetNumberTrajectories(); i++) {
         traj_vec_.at(i).Print();
 
     }
 }
 
 const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
-
-    if (number >= STABILIZATION_TRAJ) {
-        number -= STABILIZATION_TRAJ;
-
-        if (number >= (int)stable_vec_.size()) {
-            return NULL;
-        } else {
-            return &stable_vec_.at(number);
-        }
-    }
 
     if (number >= (int)traj_vec_.size()) {
         return NULL;
@@ -153,11 +120,8 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         bot_lcmgl_push_matrix(lcmgl);
     }
 
-    // TODO: handle stable trajectories
-
-
     // for each point in each trajectory, find the point that is closest in the octree
-    for (int i = 0; i < GetNumberTVTrajectories(); i++) {
+    for (int i = 0; i < GetNumberTrajectories(); i++) {
 
         //std::cout << "Searching trajectory: " << i << std::endl;
 

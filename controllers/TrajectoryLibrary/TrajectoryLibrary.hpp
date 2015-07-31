@@ -26,8 +26,6 @@
 #include "Trajectory.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
-#define STABILIZATION_TRAJ 10000
-
 class TrajectoryLibrary
 {
 
@@ -36,8 +34,7 @@ class TrajectoryLibrary
 
         const Trajectory* GetTrajectoryByNumber(int number) const;
 
-        int GetNumberTVTrajectories() const { return int(traj_vec_.size()); }
-        int GetNumberStableTrajectories() const { return int(stable_vec_.size()); }
+        int GetNumberTrajectories() const { return int(traj_vec_.size()); }
 
         bool LoadLibrary(std::string dirname, bool quiet = false);  // loads a trajectory from a directory of .csv files
 
@@ -49,7 +46,6 @@ class TrajectoryLibrary
 
     private:
         std::vector<Trajectory> traj_vec_;
-        std::vector<Trajectory> stable_vec_;
 
 };
 

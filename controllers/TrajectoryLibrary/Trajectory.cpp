@@ -89,7 +89,8 @@ void Trajectory::LoadMatrixFromCSV( const std::string& filename, Eigen::MatrixXd
 
     // note: do not remove the getFields(header) call as it has
     // side effects we need even if we don't use the headers
-    char **headerFields = CsvParser_getFields(header);
+    //char **headerFields = CsvParser_getFields(header);
+    CsvParser_getFields(header);
     for (i = 0 ; i < CsvParser_getNumFields(header) ; i++) {
         //printf("TITLE: %s\n", headerFields[i]);
     }
@@ -191,7 +192,7 @@ int Trajectory::GetIndexAtTime(double t) const {
 }
 
 TEST(Trajectory, GetIndexAtTimeTest) {
-    Trajectory traj("trajtest/TI-test-TI-straight-pd-no-yaw-10000", false);
+    Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
     EXPECT_EQ_ARM(traj.GetIndexAtTime(0), 0);
 
