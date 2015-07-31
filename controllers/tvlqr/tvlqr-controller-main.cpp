@@ -128,7 +128,11 @@ int main(int argc,char** argv) {
     user_data.octomap = &octomap;
     user_data.filter = &filter;
 
-    control = new TvlqrControl(converter, trajlib.GetTrajectoryByNumber(stable_controller));
+    const Trajectory *stable_controller_traj = trajlib.GetTrajectoryByNumber(stable_controller);
+
+    control = new TvlqrControl(converter, *stable_controller_traj);
+
+
 
     mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel.c_str(), &mav_pose_t_handler, NULL);
 
@@ -143,7 +147,7 @@ int main(int argc,char** argv) {
     // control-c handler
     signal(SIGINT,sighandler);
 
-    control->SetTrajectory(trajlib.GetTrajectoryByNumber(stable_controller));
+    control->SetTrajectory(*stable_controller_traj);
 
     printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\nSending LCM:\n\t%s\n", pose_channel.c_str(), tvlqr_action_channel.c_str(), deltawing_u_channel.c_str());
 

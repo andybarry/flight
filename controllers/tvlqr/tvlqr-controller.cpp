@@ -133,7 +133,7 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
 
     // getting an action means we should start a new TVLQR controller!
 
-    Trajectory *traj = trajlib.GetTrajectoryByNumber(lib_num);
+    const Trajectory *traj = trajlib.GetTrajectoryByNumber(lib_num);
 
     if (traj == NULL) {
         std::cerr << "Warning: trajectory number " << lib_num << " was NULL!  Aborting trajectory run." << std::endl;
@@ -145,7 +145,7 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
     msg_out.trajectory_number = lib_num;
     lcmt_tvlqr_controller_action_publish(lcm, tvlqr_action_out_channel.c_str(), &msg_out);
 
-    control->SetTrajectory(traj);
+    control->SetTrajectory(*traj);
 
 
     std::cout << "Starting trajectory " << lib_num << std::endl;

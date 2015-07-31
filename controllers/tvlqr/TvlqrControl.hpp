@@ -31,26 +31,26 @@ class TvlqrControl
 {
 
     public:
-        TvlqrControl(const ServoConverter *converter, Trajectory *stable_controller);
+        TvlqrControl(const ServoConverter *converter, const Trajectory &stable_controller);
 
-        void SetTrajectory(Trajectory *trajectory);
+        void SetTrajectory(const Trajectory &trajectory);
 
-        bool HasTrajectory() { return current_trajectory_ != NULL; }
+        bool HasTrajectory() const { return current_trajectory_ != nullptr; }
 
         Eigen::VectorXi GetControl(const mav_pose_t *msg);
 
         void SetStateEstimatorInitialized();
 
-        bool IsTimeInvariant() { return HasTrajectory() && current_trajectory_->IsTimeInvariant(); }
+        bool IsTimeInvariant() const { return HasTrajectory() && current_trajectory_->IsTimeInvariant(); }
 
     private:
 
         void InitializeState(const mav_pose_t *msg);
-        double GetTNow();
+        double GetTNow() const;
         Eigen::VectorXd GetStateMinusInit(const mav_pose_t *msg);
 
-        Trajectory *current_trajectory_;
-        Trajectory *stable_controller_;
+        const Trajectory *current_trajectory_;
+        const Trajectory *stable_controller_;
 
         Eigen::VectorXd initial_state_;
         Eigen::VectorXd last_state_; // keep so we can do angle unwrapping
