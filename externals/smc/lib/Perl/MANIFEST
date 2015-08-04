@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+lib/DFA/Statemap.pm
+test.pl

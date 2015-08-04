@@ -1,0 +1,19 @@
+statemap
+========
+
+INSTALLATION
+
+To install this module, type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+
+DOCUMENTATION
+
+To generate the file statemap.html, type the following:
+
+   pod2html --infile statemap.pm --outfile statemap.html
+

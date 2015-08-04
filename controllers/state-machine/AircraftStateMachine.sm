@@ -1,0 +1,65 @@
+%class StateMachineControl
+%header StateMachineControl.hpp
+
+%start AirplaneFsm::WaitForTakeoff
+
+%map AirplaneFsm
+%%
+
+// Syntax:
+//
+// State {
+//  TransitionEvent
+//      [guard]
+//      NextState
+//      {Action}
+// }
+
+WaitForTakeoff {
+
+    ImuUpdate(msg: const mav::pose_t)
+        [ctxt.EvalTakeoff(msg) == true]
+        TakeoffNoThrottle
+        {}
+
+    ImuUpdate(msg: const mav::pose_t)
+        // []
+        WaitForTakeoff
+        { DoControl(msg); }
+}
+
+TakeoffNoThrottle {
+
+    ImuUpdate(msg: const mav::pose_t)
+        [ctxt.ReadyForThrottle(msg) == true]
+        Climb
+        {}
+
+    ImuUpdate(msg: const mav::pose_t)
+        // []
+        TakeoffNoThrottle
+        { DoControl(msg); }
+
+}
+
+Climb {
+
+    ImuUpdate(msg: const mav::pose_t)
+        [ctxt.AtCrusingAltitude(msg) == true]
+        Cruise
+        {}
+
+    ImuUpdate(msg: const mav::pose_t)
+        // []
+        Climb
+        { DoControl(msg); }
+}
+
+Cruise {
+    ImuUpdate(msg: const mav::pose_t)
+        // []
+        Cruise
+        { DoControl(msg); }
+}
+
+%%

@@ -6,12 +6,22 @@ LCMDIR=../../LCM/
 
 REQUIRES='lcm mav-state-est lcmtypes_mav-lcmtypes opencv pcl_octree-1.7'
 
+depend: .depend
+
+.depend: $(SOURCES)
+	rm -f ./.depend
+	$(CC) $(CFLAGS) -MM $^ > ./.depend;
+
+include .depend
+
 
 # -------- includes ----------
 
 PKG_CONFIG_PATH_PRONTO=../../../pronto-distro/build/lib/pkgconfig/
 
 GTEST_INCLUDE=../../externals/gtest/include/
+
+SMC_INCLUDE=../../externals/smc/lib/C++/
 
 #    -- mavlink --
 MAVCONN_INCLUDE=../../../mav/mavconn/src/
@@ -40,7 +50,7 @@ GTEST_LIB=../../externals/gtest/libgtest.a ../../externals/gtest/libgtest_main.a
 
 CXXFLAGS=-std=c++0x
 
-CPPFLAGS=-c -Wall -O3 -fopenmp -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES) $(REQUIRES_EXTRA)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394) -I$(GTEST_INCLUDE)
+CPPFLAGS=-c -Wall -O3 -fopenmp -I/usr/local/include/opencv2 `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --cflags $(REQUIRES) $(REQUIRES_EXTRA)` -I$(MAVCONN_INCLUDE) -I$(LOCAL_MAVLINK) -I$(MAVLINK_INCLUDE) -I$(FIREFLY_MV_UTILS) -I$(DC1394) -I$(GTEST_INCLUDE) -I$(SMC_INCLUDE)
 
 LDPOSTFLAGS = -fopenmp `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH_PRONTO) pkg-config --libs $(REQUIRES) $(REQUIRES_EXTRA)` -lgthread-2.0 -lboost_system -lboost_filesystem $(LCMLIB) $(MAVCONN) $(FIREFLY_MV_UTILS_LIB) $(GTEST_LIB) $(OCTOMAP_LIB) $(LCM_PRONTO_LIB) -L $(DC1394_LIB) -ldc1394
 

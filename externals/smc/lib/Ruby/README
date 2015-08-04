@@ -1,0 +1,15 @@
+Statemap
+========
+
+INSTALLATION
+
+NOTE: There is nothing to build - only a Ruby file to install:
+
+$ make install
+
+DOCUMENTATION
+
+To generate the HTML files, type the following:
+
+   rdoc statemap.rb
+

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.6.2" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0     http://pear.php.net/dtd/tasks-1.0.xsd     http://pear.php.net/dtd/package-2.0     http://pear.php.net/dtd/package-2.0.xsd">
+ <name>statemap</name>
+ <uri>.</uri>
+ <summary>Statemap for the State Machine Compiler (SMC)</summary>
+ <description>Statemap for the State Machine Compiler (SMC)
+http://smc.sourceforge.net/</description>
+ <lead>
+  <name>Charles W. Rapp</name>
+  <user>_</user>
+  <email>rapp@acm.org</email>
+  <active>yes</active>
+ </lead>
+ <date>2009-04-22</date>
+ <time>13:24:49</time>
+ <version>
+  <release>6.0.0</release>
+  <api>6.0.0</api>
+ </version>
+ <stability>
+  <release>beta</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.mozilla.org/MPL/">MPL 1.1</license>
+ <notes>initial release</notes>
+ <contents>
+  <dir baseinstalldir="StateMachine" name="/">
+   <file baseinstalldir="StateMachine" md5sum="59485da7c5f6ef8f1f9f0937946b438a" name="statemap.php" role="php" />
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.0</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <phprelease />
+ <changelog>
+  <release>
+   <version>
+    <release>6.0.0</release>
+    <api>6.0.0</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>stable</api>
+   </stability>
+   <date>2009-04-22</date>
+   <license uri="http://www.mozilla.org/MPL/">MPL 1.1</license>
+   <notes>initial release</notes>
+  </release>
+ </changelog>
+</package>

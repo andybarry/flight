@@ -1,0 +1,7 @@
+Revision history for Perl extension DFA::Statemap.
+
+1.00
+	- first release
+
+1.01		for SMC 6.0.0
+	- Pass initial state to FSMContext constructor
