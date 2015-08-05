@@ -24,7 +24,7 @@ StereoOctomap::StereoOctomap(BotFrames *bot_frames) {
 
 }
 
-void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
+void StereoOctomap::ProcessStereoMessage(const lcmt::stereo *msg) {
 
     // get transform from global to body frame
     // note that these transforms update live so don't try
@@ -41,7 +41,7 @@ void StereoOctomap::ProcessStereoMessage(const lcmt_stereo *msg) {
 
 }
 
-void StereoOctomap::InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local) {
+void StereoOctomap::InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local) {
 
     // get the new origin
     //double origin[3];

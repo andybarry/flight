@@ -26,7 +26,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/octree/octree.h>
 #include "../../LCM/lcmt_stereo_with_xy.h"
-#include "../../LCM/lcmt_stereo.h"
+#include "../../LCM/lcmt/stereo.hpp"
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
 
 #define OCTREE_LIFE 2000000 // in usec
@@ -41,7 +41,7 @@ class StereoOctomap {
 
         StereoOctomap(BotFrames *bot_frames);
 
-        void ProcessStereoMessage(const lcmt_stereo *msg);
+        void ProcessStereoMessage(const lcmt::stereo *msg);
 
         void PublishOctomap(lcm_t *lcm);
         //void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
@@ -62,7 +62,7 @@ class StereoOctomap {
 
     private:
 
-        void InsertPointsIntoOctree(const lcmt_stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
+        void InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
         void RemoveOldPoints(int64_t last_msg_time);
 
         OpenCvStereoCalibration stereo_calibration_;

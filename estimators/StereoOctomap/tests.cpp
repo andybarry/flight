@@ -38,9 +38,11 @@ class StereoOctomapTest : public testing::Test {
         BotFrames *bot_frames_;
         BotTrans global_to_camera_trans_, camera_to_global_trans_;
 
-        double NearestNeighborLinear(float x[], float y[], float z[], int num_points, double query_point[]) {
+        double NearestNeighborLinear(vector<float> x, vector<float> y, vector<float> z, double query_point[]) {
 
             double best_dist = -1;
+            int num_points = x.size();
+
 
             for (int i = 0; i < num_points; i++) {
                 double this_point_camera_frame[3];
@@ -113,17 +115,15 @@ TEST_F(StereoOctomapTest, SimpleNearestNeighbor) {
 
     GlobalToCameraFrame(point, trans_point);
 
-    lcmt_stereo msg;
+    lcmt::stereo msg;
 
     msg.timestamp = GetTimestampNow();
 
-    float x[1];
-    float y[1];
-    float z[1];
+    vector<float> x, y, z;
 
-    x[0] = trans_point[0];
-    y[0] = trans_point[1];
-    z[0] = trans_point[2];
+    x.push_back(trans_point[0]);
+    y.push_back(trans_point[1]);
+    z.push_back(trans_point[2]);
 
     msg.x = x;
     msg.y = y;
@@ -145,12 +145,10 @@ TEST_F(StereoOctomapTest, SimpleNearestNeighbor) {
     EXPECT_NEAR(stereo_octomap->NearestNeighbor(point2), sqrt(2), TOLERANCE);
 
 
-    lcmt_stereo msg2;
+    lcmt::stereo msg2;
     msg2.timestamp = GetTimestampNow();
 
-    float x_2[1];
-    float y_2[1];
-    float z_2[1];
+    vector<float> x_2, y_2, z_2;
 
     double trans_point2[3];
 
@@ -159,9 +157,9 @@ TEST_F(StereoOctomapTest, SimpleNearestNeighbor) {
     point[2] = 0;
     GlobalToCameraFrame(point, trans_point2);
 
-    x_2[0] = trans_point2[0];
-    y_2[0] = trans_point2[1];
-    z_2[0] = trans_point2[2];
+    x_2.push_back(trans_point2[0]);
+    y_2.push_back(trans_point2[1]);
+    z_2.push_back(trans_point2[2]);
 
     msg2.x = x_2;
     msg2.y = y_2;
@@ -215,7 +213,9 @@ TEST_F(StereoOctomapTest, CheckAgainstLinearSearch) {
 
     int num_points = 10000;
 
-    float x[num_points], y[num_points], z[num_points];
+    vector<float> x;
+    vector<float> y;
+    vector<float> z;
 
     StereoOctomap *stereo_octomap = new StereoOctomap(bot_frames_);
 
@@ -240,12 +240,12 @@ TEST_F(StereoOctomapTest, CheckAgainstLinearSearch) {
 
         GlobalToCameraFrame(this_point, translated_point);
 
-        x[i] = translated_point[0];
-        y[i] = translated_point[1];
-        z[i] = translated_point[2];
+        x.push_back(translated_point[0]);
+        y.push_back(translated_point[1]);
+        z.push_back(translated_point[2]);
     }
 
-    lcmt_stereo msg;
+    lcmt::stereo msg;
 
     msg.timestamp = GetTimestampNow();
 
@@ -279,7 +279,7 @@ TEST_F(StereoOctomapTest, CheckAgainstLinearSearch) {
 
 
         tic();
-        double linear_search_dist = NearestNeighborLinear(x, y, z, num_points, search_point);
+        double linear_search_dist = NearestNeighborLinear(x, y, z, search_point);
         time_linear += toc();
 
         tic();

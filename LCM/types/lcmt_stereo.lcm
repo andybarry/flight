@@ -1,15 +1,17 @@
-struct lcmt_stereo
+package lcmt;
+
+struct stereo
 {
     int64_t  timestamp;
-    
+
     int32_t number_of_points;
-    
+
     int32_t frame_number;
     int32_t video_number;
-    
+
     float x[number_of_points];
     float y[number_of_points];
     float z[number_of_points];
-    
+
     byte grey[number_of_points];
 }
