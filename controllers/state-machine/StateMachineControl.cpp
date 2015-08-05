@@ -1,7 +1,6 @@
 #include "StateMachineControl.hpp"
-#include "../../externals/ConciseArgs.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int start_traj_num, std::string tvlqr_action_out_channel) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int stable_traj_num, std::string tvlqr_action_out_channel) : fsm_(*this) {
     lcm_ = lcm;
     bot_frames_ = bot_frames;
 
@@ -9,12 +8,13 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, Bo
 
     trajlib_ = new TrajectoryLibrary();
 
-    if (trajlib_->LoadLibrary(traj_dir) == false) {
+    if (trajlib_->LoadLibrary(traj_dir, true) == false) {
         std::cerr << "ERROR: Failed to load trajectory library." << std::endl;
         exit(1);
     }
 
-    current_traj_ = trajlib_->GetTrajectoryByNumber(start_traj_num);
+    current_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);
+    stable_traj_ = current_traj_;
 
     safe_distance_ = dist_threshold;
 
@@ -70,7 +70,26 @@ bool StateMachineControl::CheckForObstacles() {
     if (new_dist > dist) {
         // this trajectory is better than the old one!
 
-        RequestTrajectory(*traj);
+        // transition the state machine into a new trajectory
+        fsm_.NewTrajectory(*traj);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Checks if the current trajectory has run it's full length
+ * and we should switch to something else.
+ */
+bool StateMachineControl::CheckTrajectoryExpired() {
+
+    if (current_traj_->IsTimeInvariant()) {
+        return false; // TODO
+    }
+
+    if (GetTimestampNow() > traj_start_t_ + current_traj_->GetMaxTime() * 1000000.0) {
         return true;
     } else {
         return false;
@@ -81,75 +100,18 @@ bool StateMachineControl::CheckForObstacles() {
 /**
  * Sends an LCM message requesting the controller to switch to a new
  * trajectory.  Also updates internal state about which trajectory we
- * are running.  Transitions the state machine to the ExecutingTrajectory
- * state
+ * are running.
  */
 void StateMachineControl::RequestTrajectory(const Trajectory &traj) {
 
     lcmt::tvlqr_controller_action msg;
 
     msg.timestamp = GetTimestampNow();
-    msg.trajectory_number = traj.GetTrajectoryNumber();
+    msg.trajectory_number = current_traj_->GetTrajectoryNumber();
 
 
-    current_traj_ = &traj;
     traj_start_t_ = msg.timestamp;
 
     lcm_->publish(tvlqr_action_out_channel_, &msg);
-
 }
 
-
-int main(int argc,char** argv) {
-
-    bool ttl_one = false;
-
-    std::string trajectory_dir = "";
-    std::string pose_channel = "STATE_ESTIMATOR_POSE";
-    std::string stereo_channel = "stereo";
-
-    std::string tvlqr_action_out_channel = "tvlqr-action-out";
-
-
-    ConciseArgs parser(argc, argv);
-    parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
-    parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
-    parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
-    parser.add(stereo_channel, "e", "stereo-channel", "LCM channel to listen to stereo messages on.");
-    parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
-
-    parser.parse();
-
-
-    std::string lcm_url;
-    // create an lcm instance
-    if (ttl_one) {
-        lcm_url = "udpm://239.255.76.67:7667?ttl=1";
-    } else {
-        lcm_url = "udpm://239.255.76.67:7667?ttl=0";
-    }
-    lcm::LCM lcm(lcm_url);
-
-    if (!lcm.good()) {
-        std::cerr << "LCM creation failed." << std::endl;
-        return 1;
-    }
-
-    // get parameter server
-    BotParam *param = bot_param_new_from_server(lcm.getUnderlyingLCM(), 0);
-    BotFrames *bot_frames = bot_frames_get_global(lcm.getUnderlyingLCM(), param);
-
-    double dist_threshold = bot_param_get_double_or_fail(param, "obstacle_avoidance.safe_distance_threshold");
-    int start_traj_num = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
-
-    StateMachineControl fsm_control(&lcm, trajectory_dir, bot_frames, dist_threshold, start_traj_num, tvlqr_action_out_channel);
-
-    // subscribe to LCM channels
-    lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
-    lcm.subscribe(stereo_channel, &StateMachineControl::ProcessStereoMsg, &fsm_control);
-
-
-    while (0 == lcm.handle());
-
-    return 0;
-}

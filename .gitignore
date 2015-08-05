@@ -18,6 +18,7 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+controllers/state-machine/test
 controllers/state-machine/state-machine-controller
 controllers/TrajectoryLibrary/test_d
 utils/utils/utils-test_d

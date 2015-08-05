@@ -22,20 +22,25 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int start_traj_num, std::string tvlqr_action_out_channel);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int stable_traj_num, std::string tvlqr_action_out_channel);
         ~StateMachineControl();
 
         bool CheckForObstacles();
+
+        void SetCurrentTrajectory(const Trajectory &traj) { current_traj_ = &traj; }
+        const Trajectory GetCurrentTrajectory() { return *current_traj_; }
+        const Trajectory GetStableTrajectory() { return *stable_traj_; }
 
         void RequestTrajectory(const Trajectory &traj);
 
         void ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg);
         void ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg);
 
-        void SetLatestPose(const mav::pose_t &msg) { } // TODO
+        bool CheckTrajectoryExpired();
 
+        AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
 
-        mav::pose_t lastest_pose_;
+        std::string GetCurrentStateName() { return std::string(fsm_.getState().getName()); }
 
     private:
 
@@ -54,6 +59,8 @@ class StateMachineControl {
 
         const Trajectory *current_traj_;
         int64_t traj_start_t_ = -1;
+
+        const Trajectory *stable_traj_;
 
         std::string tvlqr_action_out_channel_;
 

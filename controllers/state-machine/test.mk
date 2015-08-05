@@ -1,10 +1,8 @@
-TARGET = state-machine-controller
+TARGET = test
 
 SM_SOURCES = AircraftStateMachine.sm
 
-SOURCES = $(SM_SOURCES:.sm=_sm.cpp) StateMachineControl.cpp ../tvlqr/TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp ../../utils/ServoConverter/ServoConverter.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StateMachineControlMain.cpp
-
-SUBPROJS = test
+SOURCES = $(SM_SOURCES:.sm=_sm.cpp) StateMachineControl.cpp ../tvlqr/TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp ../../utils/ServoConverter/ServoConverter.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StateMachineTests.cpp
 
 SMC = java -jar ../../externals/smc/bin/Smc.jar
 
@@ -15,7 +13,7 @@ SMC = java -jar ../../externals/smc/bin/Smc.jar
 # FSM_DEBUG=      -DFSM_DEBUG
 
 # Uncomment to turn on debug message generation.
-TRACE=          -g $(NO_STREAMS)
+#TRACE=          -g $(NO_STREAMS)
 
 # Uncomment to turn off try/catch/rethrow generation.
 # NO_CATCH=       -nocatch
@@ -27,7 +25,7 @@ TRACE=          -g $(NO_STREAMS)
 # CRTP=           -crtp
 # CRTP_FLAG=      -DCRTP
 
-SMC_FLAGS = -c++ $(TRACE) $(NO_CATCH) $(NO_EXCEPT) $(CRTP) $(TRACE)
+SMC_FLAGS = -c++ $(TRACE) $(NO_CATCH) $(NO_EXCEPT) $(CRTP)
 
 %_sm.h %_sm.cpp : %.sm
 		$(SMC) $(SMC_FLAGS) $<

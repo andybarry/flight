@@ -59,7 +59,9 @@
         //{ DoControl(msg); }
 //}
 
-Cruise {
+Cruise
+    Entry { RequestTrajectory(ctxt.GetStableTrajectory()); }
+{
     ImuUpdate(msg: const mav::pose_t&)
         // []
         nil
@@ -68,11 +70,19 @@ Cruise {
     NewTrajectory(traj: const Trajectory&)
         // []
         ExecuteTrajectory
-        {}
+        { SetCurrentTrajectory(traj); }
 
 }
 
-ExecuteTrajectory {
+ExecuteTrajectory
+    Entry { RequestTrajectory(ctxt.GetCurrentTrajectory()); }
+{
+
+    ImuUpdate(msg: const mav::pose_t&)
+        [ ctxt.CheckTrajectoryExpired() == true ]
+        Cruise
+        {}
+
     ImuUpdate(msg: const mav::pose_t&)
         // []
         nil
@@ -81,7 +91,9 @@ ExecuteTrajectory {
     NewTrajectory(traj: const Trajectory&)
         // []
         ExecuteTrajectory
-        {}
+        { SetCurrentTrajectory(traj); }
+
+
 }
 
 
