@@ -10,7 +10,7 @@ depend: .depend
 
 .depend: $(SOURCES)
 	rm -f ./.depend
-	$(CC) $(CFLAGS) -MM $^ > ./.depend;
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MM $^ > ./.depend;
 
 include .depend
 

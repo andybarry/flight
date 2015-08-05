@@ -1,4 +1,6 @@
-struct lcmt_tvlqr_controller_action
+package lcmt;
+
+struct tvlqr_controller_action
 {
   int64_t timestamp;
 

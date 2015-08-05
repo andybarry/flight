@@ -35,8 +35,8 @@ extern "C"
 
     #include <dc1394/dc1394.h>
 
-    #include "camera.h"
-    #include "utils.h"
+    #include <camera.h>
+    #include <utils.h>
 
     #include "../../externals/jpeg-utils/jpeg-utils.h"
 }
