@@ -80,13 +80,11 @@ class TrajectoryLibraryTest : public testing::Test {
         }
 
         void AddManyPointsToOctree(StereoOctomap *octomap, float x_in[], float y_in[], float z_in[], int number_of_points) {
-            lcmt_stereo msg;
+            lcmt::stereo msg;
 
             msg.timestamp = GetTimestampNow();
 
-            float x[number_of_points];
-            float y[number_of_points];
-            float z[number_of_points];
+            vector<float> x, y, z;
 
             for (int i = 0; i < number_of_points; i++) {
 
@@ -101,9 +99,9 @@ class TrajectoryLibraryTest : public testing::Test {
 
                 //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
 
-                x[i] = point_transformed[0];
-                y[i] = point_transformed[1];
-                z[i] = point_transformed[2];
+                x.push_back(point_transformed[0]);
+                y.push_back(point_transformed[1]);
+                z.push_back(point_transformed[2]);
             }
 
             msg.x = x;

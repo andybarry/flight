@@ -13,7 +13,6 @@ mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_controller_action_sub;
 pronto_utime_t_subscription_t *pronto_reset_handler_sub;
 mav_filter_state_t_subscription_t *pronto_state_handler_sub;
-lcmt_stereo_subscription_t *stereo_sub;
 
 // global trajectory library
 TrajectoryLibrary trajlib;
@@ -326,28 +325,6 @@ void SendStateEstimatorDefaultResetRequest() {
     mav_filter_state_t_publish(lcm, pronto_init_channel.c_str(), &msg);
 
     std::cout << "State estimator DEFAULT reset message sent." << std::endl;
-}
-
-void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-
-    StereoHandlerData *data = (StereoHandlerData*)user;
-
-    StereoOctomap *octomap = data->octomap;
-    StereoFilter *filter = data->filter;
-
-    lcmt_stereo *filtered_msg;
-
-    // filter the stereo message
-    if (data->disable_filtering == false) {
-        filtered_msg = filter->ProcessMessage(msg);
-    } else {
-        filtered_msg = lcmt_stereo_copy(msg);
-    }
-
-    //std::cout << "Number of points: " << msg->number_of_points << " --> " << filtered_msg->number_of_points << std::endl;
-
-    octomap->ProcessStereoMessage(filtered_msg);
-
 }
 
 void sighandler(int dum)
