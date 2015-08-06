@@ -132,6 +132,35 @@ class StateMachineControlTest : public testing::Test {
             while (NonBlockingLcm(lcm_->getUnderlyingLCM())) {}
         }
 
+        mav::pose_t GetDefaultPoseMsg() {
+            mav::pose_t msg;
+
+            msg.utime = GetTimestampNow();
+
+            msg.pos[0] = 0;
+            msg.pos[1] = 0;
+            msg.pos[2] = 0;
+
+            msg.vel[0] = 0;
+            msg.vel[1] = 0;
+            msg.vel[2] = 0;
+
+            msg.orientation[0] = 1;
+            msg.orientation[1] = 0;
+            msg.orientation[2] = 0;
+            msg.orientation[3] = 0;
+
+            msg.rotation_rate[0] = 0;
+            msg.rotation_rate[1] = 0;
+            msg.rotation_rate[2] = 0;
+
+            msg.accel[0] = 0;
+            msg.accel[1] = 0;
+            msg.accel[2] = 0;
+
+            return msg;
+        }
+
 
 
 };
@@ -154,8 +183,8 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
 
     // subscribe to LCM channels
-    lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
-    lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
+    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
 
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
@@ -163,30 +192,7 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
 
     // send some pose messages
-    mav::pose_t msg;
-
-    msg.utime = GetTimestampNow();
-
-    msg.pos[0] = 0;
-    msg.pos[1] = 0;
-    msg.pos[2] = 0;
-
-    msg.vel[0] = 0;
-    msg.vel[1] = 0;
-    msg.vel[2] = 0;
-
-    msg.orientation[0] = 1;
-    msg.orientation[1] = 0;
-    msg.orientation[2] = 0;
-    msg.orientation[3] = 0;
-
-    msg.rotation_rate[0] = 0;
-    msg.rotation_rate[1] = 0;
-    msg.rotation_rate[2] = 0;
-
-    msg.accel[0] = 0;
-    msg.accel[1] = 0;
-    msg.accel[2] = 0;
+    mav::pose_t msg = GetDefaultPoseMsg();
 
     // check for unexpected transitions out of Cruise state
 
@@ -233,6 +239,59 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
 
     delete fsm_control;
+
+    lcm_->unsubscribe(pose_sub);
+    lcm_->unsubscribe(stereo_sub);
+}
+
+/**
+ * Tests that the state machine requests the cruise trajectory after a timeout
+ */
+TEST_F(StateMachineControlTest, TrajectoryTimeout) {
+    int stable_traj_num = 0;
+
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+
+    // subscribe to LCM channels
+    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
+    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+
+    // send an obstacle to get it to transition to a new time
+
+    float point[3] = { 4, 0, -1 };
+    SendStereoPoint(point);
+
+    mav::pose_t msg = GetDefaultPoseMsg();
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+    // ensure that we have changed trajectories
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 1); // from matlab
+
+    // wait for that trajectory to time out
+    int64_t t_start = GetTimestampNow();
+    double t = 0;
+    while (t < 3.1) {
+        usleep(7142); // 1/140 of a second
+
+        msg.utime = GetTimestampNow();
+
+        t = (msg.utime - t_start) / 1000000.0;
+
+        msg.pos[0] = t * 10;
+
+        lcm_->publish(pose_channel_, &msg);
+        ProcessAllLcmMessages();
+    }
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+
+    delete fsm_control;
+
+    lcm_->unsubscribe(pose_sub);
+    lcm_->unsubscribe(stereo_sub);
 }
 
 

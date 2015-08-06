@@ -47,7 +47,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
 
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
-
+std::cout << body_to_local.trans_vec[0] << std::endl;
     double t;
 
     if (current_traj_->IsTimeInvariant()) {
@@ -70,7 +70,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
 
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
-
+std::cout << "NEW TRAJ: " << traj->GetTrajectoryNumber() << " dist = " << new_dist << std::endl;
     if (new_dist > dist) {
         // this trajectory is better than the old one!
         SetNextTrajectory(*traj);
@@ -103,13 +103,19 @@ void StateMachineControl::RequestNewTrajectory() {
  */
 bool StateMachineControl::CheckTrajectoryExpired() {
 
-    if (current_traj_->IsTimeInvariant()) {
-        return false; // TODO
+    std::cout << "expired?" << std::endl;
+
+    if (current_traj_->GetTrajectoryNumber() == stable_traj_->GetTrajectoryNumber()) {
+        // stable trajectory never times out
+        std::cout << "stable -- no" << std::endl;
+        return false;
     }
 
     if (GetTimestampNow() > traj_start_t_ + current_traj_->GetMaxTime() * 1000000.0) {
+        std::cout << "YES" << std::endl;
         return true;
     } else {
+        std::cout << "not yet" << std::endl;
         return false;
     }
 }
