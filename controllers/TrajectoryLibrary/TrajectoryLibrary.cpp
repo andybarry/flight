@@ -91,6 +91,7 @@ void TrajectoryLibrary::Print() const {
 const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
 
     if (number >= (int)traj_vec_.size()) {
+        std::cerr << "WARNING: Requested trajectory # " << number << " which is not in library." << std::endl;
         return NULL;
     } else {
         return &traj_vec_.at(number);

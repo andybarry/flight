@@ -21,7 +21,7 @@ class StateMachineControlTest : public testing::Test {
 
             // get parameter server
             BotParam *param = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
-            bot_frames_ = bot_frames_get_global(lcm_->getUnderlyingLCM(), param);
+            bot_frames_ = bot_frames_new(lcm_->getUnderlyingLCM(), param);
 
             bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans_);
             bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &camera_to_global_trans_);
@@ -38,7 +38,6 @@ class StateMachineControlTest : public testing::Test {
 
 
         lcm::LCM *lcm_;
-        BotParam *param_;
         BotFrames *bot_frames_;
         BotTrans global_to_camera_trans_, camera_to_global_trans_;
 
@@ -166,9 +165,9 @@ class StateMachineControlTest : public testing::Test {
 };
 
 TEST_F(StateMachineControlTest, BasicStateMachineTest) {
-    int stable_traj_num = 0;
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+    int stable_traj_num = 0;
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), stable_traj_num);
 
@@ -178,9 +177,7 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
 }
 
 TEST_F(StateMachineControlTest, OneObstacle) {
-    int stable_traj_num = 0;
-
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -248,9 +245,8 @@ TEST_F(StateMachineControlTest, OneObstacle) {
  * Tests that the state machine requests the cruise trajectory after a timeout
  */
 TEST_F(StateMachineControlTest, TrajectoryTimeout) {
-    int stable_traj_num = 0;
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -286,6 +282,86 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
     }
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+
+    delete fsm_control;
+
+    lcm_->unsubscribe(pose_sub);
+    lcm_->unsubscribe(stereo_sub);
+}
+
+
+/**
+ * Tests an obstacle appearing during a trajectory execution
+ */
+TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
+
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+
+    // subscribe to LCM channels
+    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
+    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+
+    // send an obstacle to get it to transition to a new time
+
+    float point[3] = { 4, -1, 0 };
+    SendStereoPoint(point);
+
+    mav::pose_t msg = GetDefaultPoseMsg();
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+    // ensure that we have changed trajectories
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
+
+    // wait for that trajectory to time out
+    int64_t t_start = GetTimestampNow();
+    double t = 0;
+    while (t < 2.0) {
+        usleep(7142); // 1/140 of a second
+
+        msg.utime = GetTimestampNow();
+
+        t = (msg.utime - t_start) / 1000000.0;
+
+        Eigen::VectorXd state_t = fsm_control->GetCurrentTrajectory().GetState(t);
+
+        msg.pos[0] = state_t(0);
+        msg.pos[1] = state_t(1);
+        msg.pos[2] = state_t(2);
+
+        msg.vel[0] = state_t(6);
+        msg.vel[1] = state_t(7);
+        msg.vel[2] = state_t(8);
+
+        double rpy[3];
+        rpy[0] = state_t(3);
+        rpy[1] = state_t(4);
+        rpy[2] = state_t(5);
+
+        double quat[4];
+        bot_roll_pitch_yaw_to_quat(rpy, quat);
+
+        msg.orientation[0] = quat[0];
+        msg.orientation[1] = quat[1];
+        msg.orientation[2] = quat[2];
+        msg.orientation[3] = quat[3];
+
+        msg.rotation_rate[0] = state_t(9);
+        msg.rotation_rate[1] = state_t(10);
+        msg.rotation_rate[2] = state_t(11);
+
+
+        lcm_->publish(pose_channel_, &msg);
+        ProcessAllLcmMessages();
+    }
+
+    // now add a new obstacle right in front!
+    float point2[3] = { 18, 12, 0 };
+    SendStereoPoint(point2);
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 4); // from matlab
 
 
     delete fsm_control;

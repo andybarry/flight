@@ -66,7 +66,7 @@ ExecuteTrajectory
     ImuUpdate(msg: const mav::pose_t&)
         [ ctxt.CheckTrajectoryExpired() == true ]
         ExecuteTrajectory
-        {}
+        { SetBestTrajectory(); }
 
     ImuUpdate(msg: const mav::pose_t&)
         [ ctxt.BetterTrajectoryAvailable() == true ]

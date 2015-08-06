@@ -19,7 +19,7 @@ class StereoOctomapTest : public testing::Test {
             lcm_ = lcm_create ("udpm://239.255.76.67:7667?ttl=0");
 
             param_ = bot_param_new_from_server(lcm_, 0);
-            bot_frames_ = bot_frames_get_global(lcm_, param_);
+            bot_frames_ = bot_frames_new(lcm_, param_);
 
 
             bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans_);

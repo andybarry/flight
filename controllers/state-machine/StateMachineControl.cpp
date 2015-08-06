@@ -1,8 +1,15 @@
 #include "StateMachineControl.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int stable_traj_num, std::string tvlqr_action_out_channel) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel) : fsm_(*this) {
     lcm_ = lcm;
-    bot_frames_ = bot_frames;
+
+    param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
+    bot_frames_ = bot_frames_new(lcm_->getUnderlyingLCM(), param_);
+
+    safe_distance_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.safe_distance_threshold");
+    min_improvement_to_switch_trajs_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.min_improvement_to_switch_trajs");
+
+    int stable_traj_num = bot_param_get_int_or_fail(param_, "tvlqr_controller.stable_controller");
 
     octomap_ = new StereoOctomap(bot_frames_);
 
@@ -14,6 +21,12 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, Bo
     }
 
     current_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);
+
+    if (current_traj_ == nullptr) {
+        std::cerr << "ERROR: Stable trajectory (# " << stable_traj_num << ") does not exist." << std::endl;
+        exit(1);
+    }
+
     stable_traj_ = current_traj_;
     next_traj_ = current_traj_;
 
@@ -22,9 +35,8 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, Bo
         exit(1);
     }
 
-    safe_distance_ = dist_threshold;
-
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
+
 }
 
 StateMachineControl::~StateMachineControl() {
@@ -41,13 +53,23 @@ void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const
 }
 
 
+void StateMachineControl::SetBestTrajectory() {
+    BotTrans body_to_local;
+    bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
+
+    double dist;
+    const Trajectory *traj;
+
+    std::tie(dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
+
+    SetNextTrajectory(*traj);
+}
 
 bool StateMachineControl::BetterTrajectoryAvailable() {
     // search for an obstacle in the path
 
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
-std::cout << body_to_local.trans_vec[0] << std::endl;
     double t;
 
     if (current_traj_->IsTimeInvariant()) {
@@ -70,7 +92,6 @@ std::cout << body_to_local.trans_vec[0] << std::endl;
 
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
-std::cout << "NEW TRAJ: " << traj->GetTrajectoryNumber() << " dist = " << new_dist << std::endl;
     if (new_dist > dist) {
         // this trajectory is better than the old one!
         SetNextTrajectory(*traj);
@@ -94,6 +115,8 @@ void StateMachineControl::RequestNewTrajectory() {
     current_traj_ = next_traj_;
     traj_start_t_ = msg.timestamp;
 
+    std::cout << "Requesting trajectory: " << msg.trajectory_number << std::endl;
+
     lcm_->publish(tvlqr_action_out_channel_, &msg);
 }
 
@@ -103,19 +126,15 @@ void StateMachineControl::RequestNewTrajectory() {
  */
 bool StateMachineControl::CheckTrajectoryExpired() {
 
-    std::cout << "expired?" << std::endl;
-
     if (current_traj_->GetTrajectoryNumber() == stable_traj_->GetTrajectoryNumber()) {
         // stable trajectory never times out
-        std::cout << "stable -- no" << std::endl;
         return false;
     }
 
     if (GetTimestampNow() > traj_start_t_ + current_traj_->GetMaxTime() * 1000000.0) {
-        std::cout << "YES" << std::endl;
+        std::cout << "Trajectory # " << current_traj_->GetTrajectoryNumber() << " completed." << std::endl;
         return true;
     } else {
-        std::cout << "not yet" << std::endl;
         return false;
     }
 }

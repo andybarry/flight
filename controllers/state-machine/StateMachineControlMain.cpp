@@ -37,14 +37,7 @@ int main(int argc,char** argv) {
         return 1;
     }
 
-    // get parameter server
-    BotParam *param = bot_param_new_from_server(lcm.getUnderlyingLCM(), 0);
-    BotFrames *bot_frames = bot_frames_get_global(lcm.getUnderlyingLCM(), param);
-
-    double dist_threshold = bot_param_get_double_or_fail(param, "obstacle_avoidance.safe_distance_threshold");
-    int start_traj_num = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
-
-    StateMachineControl fsm_control(&lcm, trajectory_dir, bot_frames, dist_threshold, start_traj_num, tvlqr_action_out_channel);
+    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel);
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);

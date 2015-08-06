@@ -22,7 +22,7 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, BotFrames *bot_frames, double dist_threshold, int stable_traj_num, std::string tvlqr_action_out_channel);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel);
         ~StateMachineControl();
 
         bool IsObstacleInPath();
@@ -32,6 +32,7 @@ class StateMachineControl {
 
         bool BetterTrajectoryAvailable();
         void RequestNewTrajectory();
+        void SetBestTrajectory();
 
         void SetNextTrajectory(const Trajectory &traj) { next_traj_ = &traj; }
 
@@ -54,10 +55,11 @@ class StateMachineControl {
 
         lcm::LCM *lcm_;
 
-
+        BotParam *param_;
         BotFrames *bot_frames_;
 
         double safe_distance_;
+        double min_improvement_to_switch_trajs_;
 
         const Trajectory *current_traj_;
 
