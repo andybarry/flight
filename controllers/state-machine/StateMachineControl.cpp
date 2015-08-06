@@ -15,6 +15,12 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, Bo
 
     current_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);
     stable_traj_ = current_traj_;
+    next_traj_ = current_traj_;
+
+    if (stable_traj_->IsTimeInvariant() == false) {
+        std::cerr << "ERROR: stable trajectory is not time invariant." << std::endl;
+        exit(1);
+    }
 
     safe_distance_ = dist_threshold;
 
@@ -35,7 +41,8 @@ void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const
 }
 
 
-bool StateMachineControl::CheckForObstacles() {
+
+bool StateMachineControl::BetterTrajectoryAvailable() {
     // search for an obstacle in the path
 
     BotTrans body_to_local;
@@ -48,35 +55,46 @@ bool StateMachineControl::CheckForObstacles() {
     } else if (traj_start_t_ > 0) {
         t = (GetTimestampNow() - traj_start_t_) / 1000000.0;
     } else {
-        std::cerr << "WARNING: no TI trajectory with UNSET start t.  Good luck." << std::endl;
+        std::cerr << "WARNING: TV trajectory with UNSET start t.  Good luck." << std::endl;
         t = 0;
     }
 
     double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t);
-
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
         return false;
     }
-
-    // we might hit something!
-    // get a better trajectory if possible!
 
     double new_dist;
     const Trajectory *traj;
 
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
+
     if (new_dist > dist) {
         // this trajectory is better than the old one!
-
-        // transition the state machine into a new trajectory
-        fsm_.NewTrajectory(*traj);
-
+        SetNextTrajectory(*traj);
         return true;
     } else {
         return false;
     }
+}
+
+/**
+ * Sends an LCM message requesting the controller to switch to a new
+ * trajectory.  Also updates internal state about which trajectory we
+ * are running.
+ */
+void StateMachineControl::RequestNewTrajectory() {
+    lcmt::tvlqr_controller_action msg;
+
+    msg.timestamp = GetTimestampNow();
+    msg.trajectory_number = next_traj_->GetTrajectoryNumber();
+
+    current_traj_ = next_traj_;
+    traj_start_t_ = msg.timestamp;
+
+    lcm_->publish(tvlqr_action_out_channel_, &msg);
 }
 
 /**
@@ -97,21 +115,5 @@ bool StateMachineControl::CheckTrajectoryExpired() {
 }
 
 
-/**
- * Sends an LCM message requesting the controller to switch to a new
- * trajectory.  Also updates internal state about which trajectory we
- * are running.
- */
-void StateMachineControl::RequestTrajectory(const Trajectory &traj) {
 
-    lcmt::tvlqr_controller_action msg;
-
-    msg.timestamp = GetTimestampNow();
-    msg.trajectory_number = current_traj_->GetTrajectoryNumber();
-
-
-    traj_start_t_ = msg.timestamp;
-
-    lcm_->publish(tvlqr_action_out_channel_, &msg);
-}
 

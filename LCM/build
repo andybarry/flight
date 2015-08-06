@@ -30,20 +30,30 @@ for FILE in `ls types/*.lcm`
 do
     lcm-gen -j $FILE
     lcm-gen -p $FILE
- 
+
     # replace "types" in path with "lcmtypes" and ".lcm" with ".java"
     FILE2=${FILE/types/lcmtypes}
-    
+
     # % says "search from back"
-    echo "javac ${FILE2/%lcm/java}"
-    javac ${FILE2/%lcm/java}
+    FILE_JAVA=${FILE2/%lcm/java}
+
+    if [ -e $FILE_JAVA ]
+    then
+        echo "javac $FILE_JAVA"
+        javac $FILE_JAVA
+    fi
 
     #lcm-gen -j types/lcmt_glider_vicon.lcm
     #lcm-gen -p types/lcmt_glider_vicon.lcm
 
     #javac lcmtypes/lcmt_glider_vicon.java
-    
 done
 
-jar cf LCMtypes.jar lcmtypes/*.class
+for FILE in `ls lcmt/*.java`
+do
+    echo "javac $FILE"
+    javac $FILE
+done
+
+jar cf LCMtypes.jar lcmtypes/*.class lcmt/*.class
 

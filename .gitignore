@@ -18,6 +18,10 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+controllers/state-machine/AircraftStateMachine_sm.dot
+controllers/state-machine/AircraftStateMachine_sm.pdf
+controllers/state-machine/state-machine-controller_d
+controllers/state-machine/test_d
 controllers/state-machine/test
 controllers/state-machine/state-machine-controller
 controllers/TrajectoryLibrary/test_d

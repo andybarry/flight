@@ -13,7 +13,7 @@ SMC = java -jar ../../externals/smc/bin/Smc.jar
 # FSM_DEBUG=      -DFSM_DEBUG
 
 # Uncomment to turn on debug message generation.
-#TRACE=          -g $(NO_STREAMS)
+TRACE=          -g $(NO_STREAMS)
 
 # Uncomment to turn off try/catch/rethrow generation.
 # NO_CATCH=       -nocatch
@@ -25,7 +25,7 @@ SMC = java -jar ../../externals/smc/bin/Smc.jar
 # CRTP=           -crtp
 # CRTP_FLAG=      -DCRTP
 
-SMC_FLAGS = -c++ $(TRACE) $(NO_CATCH) $(NO_EXCEPT) $(CRTP)
+SMC_FLAGS = -c++ $(TRACE) $(NO_CATCH) $(NO_EXCEPT) $(CRTP) $(TRACE)
 
 %_sm.h %_sm.cpp : %.sm
 		$(SMC) $(SMC_FLAGS) $<

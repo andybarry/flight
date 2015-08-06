@@ -33,6 +33,9 @@ class StateMachineControlTest : public testing::Test {
             // todo: delete param_;
         }
 
+        std::string pose_channel_ = "STATE_ESTIMATOR_POSE";
+        std::string stereo_channel_ = "stereo";
+
 
         lcm::LCM *lcm_;
         BotParam *param_;
@@ -72,27 +75,26 @@ class StateMachineControlTest : public testing::Test {
             bot_trans_apply_vec(&camera_to_global_trans_, point_in, point_out);
         }
 
-        void AddPointToOctree(StereoOctomap *octomap, double point[]) {
+        void SendStereoPoint(float point[]) {
 
-           // float x[1], y[1], z[1];
-            //x[0] = point[0];
-            //y[0] = point[1];
-            //z[0] = point[2];
+            vector<float> x, y, z;
+            x.push_back(point[0]);
+            y.push_back(point[1]);
+            z.push_back(point[2]);
 
-            //AddManyPointsToOctree(octomap, x, y, z, 1);
+            SendStereoManyPoints(x, y, z);
         }
 
-        void AddManyPointsToOctree(StereoOctomap *octomap, float x_in[], float y_in[], float z_in[], int number_of_points) {
-            /*
-             * lcmt_stereo msg;
+        void SendStereoManyPoints(vector<float> x_in, vector<float> y_in, vector<float> z_in) {
+
+            lcmt::stereo msg;
 
             msg.timestamp = GetTimestampNow();
 
-            float x[number_of_points];
-            float y[number_of_points];
-            float z[number_of_points];
+            vector<float> x, y, z;
+            vector<unsigned char> grey;
 
-            for (int i = 0; i < number_of_points; i++) {
+            for (int i = 0; i < (int)x_in.size(); i++) {
 
                 double this_point[3];
 
@@ -103,23 +105,31 @@ class StateMachineControlTest : public testing::Test {
                 double point_transformed[3];
                 GlobalToCameraFrame(this_point, point_transformed);
 
-                //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
+                ////std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
 
-                x[i] = point_transformed[0];
-                y[i] = point_transformed[1];
-                z[i] = point_transformed[2];
+                x.push_back(point_transformed[0]);
+                y.push_back(point_transformed[1]);
+                z.push_back(point_transformed[2]);
+
+                grey.push_back(0);
             }
 
             msg.x = x;
             msg.y = y;
             msg.z = z;
 
-            msg.number_of_points = number_of_points;
+            msg.grey = grey;
+
+            msg.number_of_points = x.size();
             msg.video_number = 0;
             msg.frame_number = 0;
 
-            //octomap->ProcessStereoMessage(&msg);
-            */
+            lcm_->publish("stereo", &msg);
+
+        }
+
+        void ProcessAllLcmMessages() {
+            while (NonBlockingLcm(lcm_->getUnderlyingLCM())) {}
         }
 
 
@@ -129,7 +139,7 @@ class StateMachineControlTest : public testing::Test {
 TEST_F(StateMachineControlTest, BasicStateMachineTest) {
     int stable_traj_num = 0;
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/simple", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), stable_traj_num);
 
@@ -138,13 +148,93 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
     delete fsm_control;
 }
 
-TEST_F(StateMachineControlTest, NoObstaclesStaysInCruise) {
+TEST_F(StateMachineControlTest, OneObstacle) {
     int stable_traj_num = 0;
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/simple", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", bot_frames_, 5.0, stable_traj_num, "tvlqr-action-out");
+
+    // subscribe to LCM channels
+    lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
+    lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+
+    //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     // ensure that we are in the start state
-    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::Cruise") == 0);
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
+
+    // send some pose messages
+    mav::pose_t msg;
+
+    msg.utime = GetTimestampNow();
+
+    msg.pos[0] = 0;
+    msg.pos[1] = 0;
+    msg.pos[2] = 0;
+
+    msg.vel[0] = 0;
+    msg.vel[1] = 0;
+    msg.vel[2] = 0;
+
+    msg.orientation[0] = 1;
+    msg.orientation[1] = 0;
+    msg.orientation[2] = 0;
+    msg.orientation[3] = 0;
+
+    msg.rotation_rate[0] = 0;
+    msg.rotation_rate[1] = 0;
+    msg.rotation_rate[2] = 0;
+
+    msg.accel[0] = 0;
+    msg.accel[1] = 0;
+    msg.accel[2] = 0;
+
+    // check for unexpected transitions out of Cruise state
+
+    lcm_->publish(pose_channel_, &msg);
+
+    ProcessAllLcmMessages();
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    // now add an obstacle in front of it and make sure it transitions!
+    float point[3] = { 4, 0, -1 };
+    SendStereoPoint(point);
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 1); // from matlab
+
+    point[0] = 2;
+    point[1] = -1;
+    point[2] = 0.2;
+    SendStereoPoint(point);
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
+
+    vector<float> x(std::begin(x_points_), std::end(x_points_));
+    vector<float> y(std::begin(x_points_), std::end(x_points_));
+    vector<float> z(std::begin(x_points_), std::end(x_points_));
+
+    SendStereoManyPoints(x, y, z);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
 
     delete fsm_control;
 }

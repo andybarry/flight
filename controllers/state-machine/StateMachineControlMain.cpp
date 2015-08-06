@@ -51,6 +51,8 @@ int main(int argc,char** argv) {
     lcm.subscribe(stereo_channel, &StateMachineControl::ProcessStereoMsg, &fsm_control);
 
 
+    //StereoFilter filter(0.1); // TODO
+
     while (0 == lcm.handle()); // TODO: drop events if we're slow
 
     return 0;

@@ -4,7 +4,7 @@
 %include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
 %declare class Trajectory;
 
-%start AirplaneFsm::Cruise
+%start AirplaneFsm::ExecuteTrajectory
 
 
 %map AirplaneFsm
@@ -59,40 +59,24 @@
         //{ DoControl(msg); }
 //}
 
-Cruise
-    Entry { RequestTrajectory(ctxt.GetStableTrajectory()); }
-{
-    ImuUpdate(msg: const mav::pose_t&)
-        // []
-        nil
-        { CheckForObstacles(); }
-
-    NewTrajectory(traj: const Trajectory&)
-        // []
-        ExecuteTrajectory
-        { SetCurrentTrajectory(traj); }
-
-}
-
 ExecuteTrajectory
-    Entry { RequestTrajectory(ctxt.GetCurrentTrajectory()); }
+    Entry { RequestNewTrajectory(); }
 {
 
     ImuUpdate(msg: const mav::pose_t&)
         [ ctxt.CheckTrajectoryExpired() == true ]
-        Cruise
+        ExecuteTrajectory
+        {}
+
+    ImuUpdate(msg: const mav::pose_t&)
+        [ ctxt.BetterTrajectoryAvailable() == true ]
+        ExecuteTrajectory
         {}
 
     ImuUpdate(msg: const mav::pose_t&)
         // []
         nil
-        { CheckForObstacles(); }
-
-    NewTrajectory(traj: const Trajectory&)
-        // []
-        ExecuteTrajectory
-        { SetCurrentTrajectory(traj); }
-
+        {}
 
 }
 
