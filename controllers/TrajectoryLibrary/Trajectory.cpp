@@ -307,7 +307,13 @@ void Trajectory::GetXyzYawTransformedPoint(double t, const BotTrans &transform, 
 
 }
 
-void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
+void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
+    if (transform == nullptr) {
+        BotTrans temp_trans;
+        bot_trans_set_identity(&temp_trans);
+        transform = &temp_trans;
+    }
+
     // draw the trajectory's origin
     double xyz[3];
     float origin_size[3] = { 1, 1, 1 };
@@ -327,7 +333,6 @@ void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *t
 
         bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
         t += GetDT();
-        std::cout << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << std::endl;
     }
     bot_lcmgl_end(lcmgl);
 

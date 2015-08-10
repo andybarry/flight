@@ -698,4 +698,7 @@ void DrawOriginLcmGl(lcm_t *lcm) {
     bot_lcmgl_end(lcmgl);
 
     bot_lcmgl_switch_buffer(lcmgl);
+
+    bot_lcmgl_destroy(lcmgl);
 }
+

@@ -42,7 +42,7 @@ class Trajectory
         double GetDT() const { return dt_; }
 
         void GetXyzYawTransformedPoint(double t, const BotTrans &transform, double *xyz) const;
-        void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const;
+        void Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform = nullptr) const;
 
         int GetIndexAtTime(double t) const;
         double GetTimeAtIndex(int index) const { return xpoints_(index, 0); }

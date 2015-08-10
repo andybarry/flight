@@ -174,7 +174,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
                 // we are satisfied with this one, run it!
                 if (lcmgl != NULL) {
                     bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-                    farthest_traj->PlotTransformedTrajectory(lcmgl, &body_to_local);
+                    farthest_traj->Draw(lcmgl, &body_to_local);
                     bot_lcmgl_pop_matrix(lcmgl);
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
@@ -188,7 +188,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         // plot the best trajectory
         if (farthest_traj != NULL) {
             bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-            farthest_traj->PlotTransformedTrajectory(lcmgl, &body_to_local);
+            farthest_traj->Draw(lcmgl, &body_to_local);
         }
 
         bot_lcmgl_pop_matrix(lcmgl);
@@ -197,3 +197,20 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
     return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
 }
 
+
+void TrajectoryLibrary::Draw(lcm_t *lcm, const BotTrans *transform) const {
+    if (transform == nullptr) {
+        BotTrans temp_trans;
+        bot_trans_set_identity(&temp_trans);
+        transform = &temp_trans;
+    }
+
+    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm, "TrajectoryLibrary");
+
+    for (int i = 0; i < GetNumberTrajectories(); i++) {
+        GetTrajectoryByNumber(i)->Draw(lcmgl, transform);
+    }
+    bot_lcmgl_switch_buffer(lcmgl);
+
+    bot_lcmgl_destroy(lcmgl);
+}

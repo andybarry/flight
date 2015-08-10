@@ -406,7 +406,7 @@ TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
     DrawOriginLcmGl(lcm_);
 
     bot_lcmgl_color3f(lcmgl_, 0, 0, 1);
-    best_traj->PlotTransformedTrajectory(lcmgl_, &trans);
+    best_traj->Draw(lcmgl_, &trans);
 
 
     EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 3);
@@ -419,18 +419,25 @@ TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
     trans.rot_quat[3] = 0.766044443118978;
 
     bot_lcmgl_color3f(lcmgl_, 1, 0, 0);
-    best_traj->PlotTransformedTrajectory(lcmgl_, &trans);
+    best_traj->Draw(lcmgl_, &trans);
     bot_lcmgl_switch_buffer(lcmgl_);
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 5.0);
-
-
+    //lib.Draw(lcm_, &trans);
 
     EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 2);
-    EXPECT_NEAR(dist, 1.160593, TOLERANCE);
+    EXPECT_NEAR(dist, 1.174604, TOLERANCE);
 
+    // now have a transform with roll, pitch, and yaw
+    trans.rot_quat[0] = 0.863589399067779;
+    trans.rot_quat[1] = -0.004581450790098;
+    trans.rot_quat[2] = 0.298930259006064;
+    trans.rot_quat[3] = 0.405996379758463;
 
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 5.0);
 
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 4);
+    EXPECT_NEAR(dist, 0.327772, TOLERANCE);
 }
 
 TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
