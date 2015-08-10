@@ -9,6 +9,11 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     safe_distance_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.safe_distance_threshold");
     min_improvement_to_switch_trajs_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.min_improvement_to_switch_trajs");
 
+    if (min_improvement_to_switch_trajs_ <= 0) {
+        std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
+        exit(1);
+    }
+
     int stable_traj_num = bot_param_get_int_or_fail(param_, "tvlqr_controller.stable_controller");
 
     octomap_ = new StereoOctomap(bot_frames_);
@@ -54,6 +59,7 @@ void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const
 
 
 void StateMachineControl::SetBestTrajectory() {
+    std::cout << "set BEST traj" << std::endl;
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
 
@@ -92,8 +98,11 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
 
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
-    if (new_dist > dist) {
+    double dist_diff = new_dist - dist;
+
+    if (dist_diff > min_improvement_to_switch_trajs_) {
         // this trajectory is better than the old one!
+        std::cout << "INTERRUPT: " << current_traj_->GetTrajectoryNumber() << " -> " << traj->GetTrajectoryNumber() << " dist = " << new_dist << std::endl;
         SetNextTrajectory(*traj);
         return true;
     } else {

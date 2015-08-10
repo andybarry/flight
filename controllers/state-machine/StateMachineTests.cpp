@@ -210,30 +210,24 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
 
     // now add an obstacle in front of it and make sure it transitions!
-    float point[3] = { 4, 0, -1 };
+    float point[3] = { 24, 0, 0 };
     SendStereoPoint(point);
 
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages();
 
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 1); // from matlab
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab, with 5.0 = safe
 
-    point[0] = 2;
-    point[1] = -1;
-    point[2] = 0.2;
-    SendStereoPoint(point);
-
-    lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
-
-
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
+    // NOTE: modification of x_points_ if you're checking in MATLAB (!)
+    for (int i = 0; i < int(x_points_.size()); i++) {
+        x_points_[i] += 5;
+    }
 
     SendStereoManyPoints(x_points_, y_points_, z_points_);
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages();
 
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
 
     delete fsm_control;
 
@@ -254,8 +248,11 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 
     // send an obstacle to get it to transition to a new time
 
-    float point[3] = { 4, 0, -1 };
+    float point[3] = { 17, 11, 3 };
     SendStereoPoint(point);
+
+    float point2[3] = { 24, 0, 0 };
+    SendStereoPoint(point2);
 
     mav::pose_t msg = GetDefaultPoseMsg();
 
@@ -263,7 +260,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
     ProcessAllLcmMessages();
 
     // ensure that we have changed trajectories
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 1); // from matlab
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
 
     // wait for that trajectory to time out
     int64_t t_start = GetTimestampNow();
@@ -297,6 +294,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+    fsm_control->GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -304,7 +302,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
     // send an obstacle to get it to transition to a new time
 
-    float point[3] = { 4, -1, 0 };
+    float point[3] = { 24, 0, 0 };
     SendStereoPoint(point);
 
     mav::pose_t msg = GetDefaultPoseMsg();
@@ -358,8 +356,11 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     }
 
     // now add a new obstacle right in front!
+    std::cout << "NEW POINT" << std::endl;
     float point2[3] = { 18, 12, 0 };
     SendStereoPoint(point2);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages();
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 4); // from matlab
 
@@ -369,9 +370,6 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     lcm_->unsubscribe(pose_sub);
     lcm_->unsubscribe(stereo_sub);
 }
-
-
-
 
 
 int main(int argc, char **argv) {

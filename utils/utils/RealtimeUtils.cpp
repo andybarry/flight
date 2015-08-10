@@ -673,3 +673,29 @@ TEST(Utils, rotz) {
     EXPECT_TRUE(matlab_output2.isApprox(output2, 0.0001));
 
 }
+
+void DrawOriginLcmGl(lcm_t *lcm) {
+
+    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm, "Origin");
+    bot_lcmgl_line_width(lcmgl, 2.0f);
+
+    bot_lcmgl_color3f(lcmgl, 1, 0, 0);
+    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+    bot_lcmgl_vertex3d(lcmgl, 0, 0, 0);
+    bot_lcmgl_vertex3d(lcmgl, 1, 0, 0);
+    bot_lcmgl_end(lcmgl);
+
+    bot_lcmgl_color3f(lcmgl, 0, 1, 0);
+    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+    bot_lcmgl_vertex3d(lcmgl, 0, 0, 0);
+    bot_lcmgl_vertex3d(lcmgl, 0, 1, 0);
+    bot_lcmgl_end(lcmgl);
+
+    bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+    bot_lcmgl_vertex3d(lcmgl, 0, 0, 0);
+    bot_lcmgl_vertex3d(lcmgl, 0, 0, 1);
+    bot_lcmgl_end(lcmgl);
+
+    bot_lcmgl_switch_buffer(lcmgl);
+}

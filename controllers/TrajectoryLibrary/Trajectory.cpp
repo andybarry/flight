@@ -275,33 +275,71 @@ void Trajectory::Print() const {
     std::cout << affine_points_ << std::endl;
 }
 
-void Trajectory::GetTransformedPoint(double t, const BotTrans *transform, double *xyz) const {
+/**
+ * Returns a point along the trajectory transformed with xyz and yaw.  Ignores pitch and roll.
+ */
+void Trajectory::GetXyzYawTransformedPoint(double t, const BotTrans &transform, double *xyz) const {
     // apply the transformation from the global frame: orgin = (0,0,0)
     // to the local frame point
 
     Eigen::VectorXd state = GetState(t);
 
-    double originalPoint[3];
-    originalPoint[0] = state(0);
-    originalPoint[1] = state(1);
-    originalPoint[2] = state(2);
+    double original_point[3];
+    original_point[0] = state(0);
+    original_point[1] = state(1);
+    original_point[2] = state(2);
+
+    // remove roll and pitch from the transform
+    BotTrans trans_xyz_yaw;
+
+    bot_trans_copy(&trans_xyz_yaw, &transform);
+
+    double rpy[3];
+    bot_quat_to_roll_pitch_yaw(trans_xyz_yaw.rot_quat, rpy);
+
+    rpy[0] = 0;
+    rpy[1] = 0;
+
+    bot_roll_pitch_yaw_to_quat(rpy, trans_xyz_yaw.rot_quat);
 
 
-    bot_trans_apply_vec(transform, originalPoint, xyz);
+    bot_trans_apply_vec(&trans_xyz_yaw, original_point, xyz);
 
 }
 
 void Trajectory::PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
-    bot_lcmgl_line_width(lcmgl, 2.0f);
+    // draw the trajectory's origin
+    double xyz[3];
+    float origin_size[3] = { 1, 1, 1 };
+
+    GetXyzYawTransformedPoint(0, *transform, xyz);
+
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
-    for (int i=0; i<int(xpoints_.size()); i++)
-    {
-        double xyz[3];
-        GetTransformedPoint(i, transform, xyz);
+    bot_lcmgl_box(lcmgl, xyz, origin_size);
+    bot_lcmgl_end(lcmgl);
+
+    bot_lcmgl_line_width(lcmgl, 2.0f);
+
+    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+    double t = 0;
+    while (t < GetMaxTime()) {
+        GetXyzYawTransformedPoint(t, *transform, xyz);
 
         bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
+        t += GetDT();
+        std::cout << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << std::endl;
     }
     bot_lcmgl_end(lcmgl);
+
+    t = 0;
+    while (t < GetMaxTime()) {
+        GetXyzYawTransformedPoint(t, *transform, xyz);
+
+        bot_lcmgl_sphere(lcmgl, xyz, 0.05, 20, 20);
+
+        t += GetDT();
+    }
+
 }
 
 /**
@@ -334,7 +372,7 @@ double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &o
 
         double this_t = GetTimeAtIndex(i);
 
-        GetTransformedPoint(this_t, &body_to_local, transformed_point);
+        GetXyzYawTransformedPoint(this_t, body_to_local, transformed_point);
 
         // check if there is an obstacle nearby
         point_distances.at(i) = octomap.NearestNeighbor(transformed_point);

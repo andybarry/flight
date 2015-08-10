@@ -41,7 +41,7 @@ class Trajectory
         int GetTrajectoryNumber() const { return trajectory_number_; }
         double GetDT() const { return dt_; }
 
-        void GetTransformedPoint(double t, const BotTrans *transform, double *xyz) const;
+        void GetXyzYawTransformedPoint(double t, const BotTrans &transform, double *xyz) const;
         void PlotTransformedTrajectory(bot_lcmgl_t *lcmgl, const BotTrans *transform) const;
 
         int GetIndexAtTime(double t) const;

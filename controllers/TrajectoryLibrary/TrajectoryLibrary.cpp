@@ -104,14 +104,14 @@ const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
  * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles.
  *
  * @param octomap obstacle map
- * @param bodyToLocal tranform for the aircraft that describes where we are in the map
+ * @param body_to_local tranform for the aircraft that describes where we are in the map
  * @param threshold minimum safe distance for the aircraft
  * @param trajectory_out pointer that will be set to the best trajectory
  * @param (optional) lcmgl if not NULL, will draw debug data
  *
  * @retval the distance to the closest obstacle or -1 if there are no obstacles
  */
-std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl) const {
+std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double threshold, bot_lcmgl_t* lcmgl) const {
 
     const Trajectory *farthest_traj = nullptr;
 
@@ -142,7 +142,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
 
             double this_t = traj_vec_.at(i).GetTimeAtIndex(j);
 
-            traj_vec_.at(i).GetTransformedPoint(this_t, &bodyToLocal, transformedPoint);
+            traj_vec_.at(i).GetXyzYawTransformedPoint(this_t, body_to_local, transformedPoint);
 
             //std::cout << "searching at (" << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << ")...";
 
@@ -163,7 +163,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         }
 
         if (lcmgl != nullptr) {
-            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, bodyToLocal);
+            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
         }
 
         if (traj_closest_dist == -1 || closest_obstacle_distance > traj_closest_dist) {
@@ -174,7 +174,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
                 // we are satisfied with this one, run it!
                 if (lcmgl != NULL) {
                     bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-                    farthest_traj->PlotTransformedTrajectory(lcmgl, &bodyToLocal);
+                    farthest_traj->PlotTransformedTrajectory(lcmgl, &body_to_local);
                     bot_lcmgl_pop_matrix(lcmgl);
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
@@ -188,7 +188,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         // plot the best trajectory
         if (farthest_traj != NULL) {
             bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-            farthest_traj->PlotTransformedTrajectory(lcmgl, &bodyToLocal);
+            farthest_traj->PlotTransformedTrajectory(lcmgl, &body_to_local);
         }
 
         bot_lcmgl_pop_matrix(lcmgl);

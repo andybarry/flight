@@ -23,9 +23,12 @@ class TrajectoryLibraryTest : public testing::Test {
             bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans_);
             bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &camera_to_global_trans_);
 
+            lcmgl_ = bot_lcmgl_init(lcm_, "TrajectoryLibraryTest");
+
         }
 
         virtual void TearDown() {
+            bot_lcmgl_destroy(lcmgl_);
             lcm_destroy(lcm_);
             // todo: delete param_;
         }
@@ -35,6 +38,7 @@ class TrajectoryLibraryTest : public testing::Test {
         BotParam *param_;
         BotFrames *bot_frames_;
         BotTrans global_to_camera_trans_, camera_to_global_trans_;
+        bot_lcmgl_t *lcmgl_;
 
         std::stack<double> tictoc_wall_stack;
 
@@ -180,7 +184,7 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
 
     double output[3];
 
-    traj.GetTransformedPoint(0, &trans, output);
+    traj.GetXyzYawTransformedPoint(0, trans, output);
 
     //std::cout << "point = (" << point[0] << ", " << point[1] << ", " << point[2] << ")" << std::endl;
     //std::cout << "output = (" << output[0] << ", " << output[1] << ", " << output[2] << ")" << std::endl;
@@ -190,7 +194,7 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
     }
 
     trans.trans_vec[0] = 0;
-    traj.GetTransformedPoint(1, &trans, output);
+    traj.GetXyzYawTransformedPoint(1, trans, output);
 
     for (int i = 0; i < 3; i++) {
         EXPECT_NEAR(point[i], output[i], TOLERANCE);
@@ -202,7 +206,7 @@ TEST_F(TrajectoryLibraryTest, GetTransformedPoint) {
     trans.rot_quat[2] = 0;
     trans.rot_quat[3] = 0.707106781186547;
 
-    traj.GetTransformedPoint(1, &trans, output);
+    traj.GetXyzYawTransformedPoint(1, trans, output);
 
     point[0] = 0;
     point[1] = 1;
@@ -225,13 +229,13 @@ TEST_F(TrajectoryLibraryTest, CheckBounds) {
 
     double output[3];
 
-    traj.GetTransformedPoint(0, &trans, output);
+    traj.GetXyzYawTransformedPoint(0, trans, output);
     EXPECT_EQ_ARM(output[0], 0);
 
-    traj.GetTransformedPoint(0.01, &trans, output);
+    traj.GetXyzYawTransformedPoint(0.01, trans, output);
     EXPECT_EQ_ARM(output[0], 1);
 
-    traj.GetTransformedPoint(10, &trans, output);
+    traj.GetXyzYawTransformedPoint(10, trans, output);
     EXPECT_EQ_ARM(output[0], 1);
 
 }
@@ -374,6 +378,58 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
+}
+
+TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
+    StereoOctomap octomap(bot_frames_);
+
+    TrajectoryLibrary lib;
+    lib.LoadLibrary("trajtest/full", true);
+
+    double point[3] = {18, 12, 0};
+    AddPointToOctree(&octomap, point);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+    trans.trans_vec[0] = 17;
+    trans.trans_vec[1] = 11;
+    trans.trans_vec[2] = 0;
+
+    // send th
+
+    double dist;
+    const Trajectory *best_traj;
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 5.0);
+
+    DrawOriginLcmGl(lcm_);
+
+    bot_lcmgl_color3f(lcmgl_, 0, 0, 1);
+    best_traj->PlotTransformedTrajectory(lcmgl_, &trans);
+
+
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 3);
+    EXPECT_NEAR(dist, 1.025243, TOLERANCE);
+
+    // now add a yaw
+    trans.rot_quat[0] = 0.642787609686539;
+    trans.rot_quat[1] = 0;
+    trans.rot_quat[2] = 0;
+    trans.rot_quat[3] = 0.766044443118978;
+
+    bot_lcmgl_color3f(lcmgl_, 1, 0, 0);
+    best_traj->PlotTransformedTrajectory(lcmgl_, &trans);
+    bot_lcmgl_switch_buffer(lcmgl_);
+
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 5.0);
+
+
+
+    EXPECT_EQ_ARM(best_traj->GetTrajectoryNumber(), 2);
+    EXPECT_NEAR(dist, 1.160593, TOLERANCE);
+
+
 
 }
 

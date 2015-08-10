@@ -17,6 +17,9 @@
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
 
+#include <GL/gl.h>
+#include <bot_lcmgl_client/lcmgl.h>
+
 #include "../../LCM/mav_pose_t.h"
 
 #include <Eigen/Core>
@@ -67,6 +70,8 @@ double deg2rad(double input_in_deg);
 int64_t GetTimestampNow();
 
 bool NonBlockingLcm(lcm_t *lcm);
+
+void DrawOriginLcmGl(lcm_t *lcm);
 
 
 #endif
