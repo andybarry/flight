@@ -18,6 +18,7 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+drivers/RcSwitchDispatch/rc-switch-dispatch
 controllers/state-machine/AircraftStateMachine_sm.dot
 controllers/state-machine/AircraftStateMachine_sm.pdf
 controllers/state-machine/state-machine-controller_d
