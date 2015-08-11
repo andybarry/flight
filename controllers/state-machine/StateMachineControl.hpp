@@ -42,6 +42,8 @@ class StateMachineControl {
         bool CheckTrajectoryExpired();
 
         AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
+        const StereoOctomap* GetOctomap() const { return octomap_; }
+        const TrajectoryLibrary* GetTrajectoryLibrary() const { return trajlib_; }
 
         std::string GetCurrentStateName() { return std::string(fsm_.getState().getName()); }
 

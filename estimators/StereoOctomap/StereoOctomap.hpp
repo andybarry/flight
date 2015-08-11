@@ -55,6 +55,7 @@ class StereoOctomap {
         //static void GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform = NULL, bool discard_behind = false);
 
         void PrintAllPoints() const;
+        void Draw(lcm_t *lcm) const;
 
 
         double NearestNeighbor(double point[3]) const;

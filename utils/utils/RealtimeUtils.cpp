@@ -677,7 +677,7 @@ TEST(Utils, rotz) {
 void DrawOriginLcmGl(lcm_t *lcm) {
 
     bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm, "Origin");
-    bot_lcmgl_line_width(lcmgl, 2.0f);
+    bot_lcmgl_line_width(lcmgl, 4.0f);
 
     bot_lcmgl_color3f(lcmgl, 1, 0, 0);
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);

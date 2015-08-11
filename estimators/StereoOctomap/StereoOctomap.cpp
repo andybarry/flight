@@ -155,13 +155,29 @@ double StereoOctomap::NearestNeighbor(double point[3]) const {
 
 
 void StereoOctomap::PrintAllPoints() const {
-
     for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
         std::cout << "(" << it->x << ", " << it->y << ", " << it->z << ")" << std::endl;
     }
 
 }
 
+void StereoOctomap::Draw(lcm_t *lcm) const {
+    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm, "PointCloud");
+    bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+
+    for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
+        double xyz[3];
+        xyz[0] = it->x;
+        xyz[1] = it->y;
+        xyz[2] = it->z;
+
+        bot_lcmgl_sphere(lcmgl, xyz, 0.5, 20, 20);
+    }
+    bot_lcmgl_switch_buffer(lcmgl);
+
+    bot_lcmgl_color3f(lcmgl, 1, 0, 0);
+    bot_lcmgl_destroy(lcmgl);
+}
 
 /*
  * Publishes the octomap to LCM in a format

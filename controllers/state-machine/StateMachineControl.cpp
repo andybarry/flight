@@ -95,7 +95,6 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
 
     double new_dist;
     const Trajectory *traj;
-
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
     double dist_diff = new_dist - dist;

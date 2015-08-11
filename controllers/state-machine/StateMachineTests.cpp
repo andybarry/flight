@@ -23,9 +23,6 @@ class StateMachineControlTest : public testing::Test {
             BotParam *param = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
             bot_frames_ = bot_frames_new(lcm_->getUnderlyingLCM(), param);
 
-            bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans_);
-            bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &camera_to_global_trans_);
-
         }
 
         virtual void TearDown() {
@@ -39,7 +36,6 @@ class StateMachineControlTest : public testing::Test {
 
         lcm::LCM *lcm_;
         BotFrames *bot_frames_;
-        BotTrans global_to_camera_trans_, camera_to_global_trans_;
 
         std::stack<double> tictoc_wall_stack;
 
@@ -67,11 +63,20 @@ class StateMachineControlTest : public testing::Test {
             // figure out what this point (which is currently expressed in global coordinates
             // will be in local opencv coordinates
 
-            bot_trans_apply_vec(&global_to_camera_trans_, point_in, point_out);
+            BotTrans global_to_camera_trans;
+
+            // we must update this every time because the transforms could change as the aircraft
+            // moves
+            bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans);
+
+            bot_trans_apply_vec(&global_to_camera_trans, point_in, point_out);
         }
 
         void CameraToGlobalFrame(double point_in[], double point_out[]) {
-            bot_trans_apply_vec(&camera_to_global_trans_, point_in, point_out);
+            BotTrans camera_to_global_trans;
+
+            bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &camera_to_global_trans);
+            bot_trans_apply_vec(&camera_to_global_trans, point_in, point_out);
         }
 
         void SendStereoPoint(float point[]) {
@@ -85,7 +90,6 @@ class StateMachineControlTest : public testing::Test {
         }
 
         void SendStereoManyPoints(vector<float> x_in, vector<float> y_in, vector<float> z_in) {
-
             lcmt::stereo msg;
 
             msg.timestamp = GetTimestampNow();
@@ -294,7 +298,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
-    fsm_control->GetFsmContext()->setDebugFlag(true);
+    //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -316,7 +320,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     // wait for that trajectory to time out
     int64_t t_start = GetTimestampNow();
     double t = 0;
-    while (t < 2.0) {
+    while (t < 1.0) {
         usleep(7142); // 1/140 of a second
 
         msg.utime = GetTimestampNow();
@@ -362,8 +366,21 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages();
 
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 4); // from matlab
+    fsm_control->GetOctomap()->Draw(lcm_->getUnderlyingLCM());
+    BotTrans body_to_local;
+    bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
+    fsm_control->GetTrajectoryLibrary()->Draw(lcm_->getUnderlyingLCM(), &body_to_local);
 
+    fsm_control->GetTrajectoryLibrary()->Draw(lcm_->getUnderlyingLCM(), &body_to_local);
+
+    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "Trjaectory");
+    bot_lcmgl_color3f(lcmgl, 0, 1, 0);
+    fsm_control->GetCurrentTrajectory().Draw(lcmgl ,&body_to_local);
+    bot_lcmgl_switch_buffer(lcmgl);
+    bot_lcmgl_destroy(lcmgl);
+
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
 
     delete fsm_control;
 
