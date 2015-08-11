@@ -49,12 +49,26 @@ StateMachineControl::~StateMachineControl() {
     delete trajlib_;
 }
 
+void StateMachineControl::SetNextTrajectoryByNumber(int traj_num) {
+    const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_num);
+
+    if (traj != nullptr) {
+        next_traj_ = traj;
+    } else {
+        std::cerr << "WARNING: trajectory # " << traj_num << " is NULL!" << std::endl;
+    }
+}
+
 void StateMachineControl::ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg) {
     fsm_.ImuUpdate(*msg);
 }
 
 void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg) {
     octomap_->ProcessStereoMessage(msg);
+}
+
+void StateMachineControl::ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg) {
+    fsm_.SingleTrajectoryRequest(msg->trajectory_number);
 }
 
 

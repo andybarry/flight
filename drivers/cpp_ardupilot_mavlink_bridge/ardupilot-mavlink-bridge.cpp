@@ -30,7 +30,7 @@ std::string deltawing_u_channel = "deltawing_u";
 std::string servo_out_channel = "servo_out";
 std::string stereo_control_channel = "stereo-control";
 std::string beep_channel = "beep";
-std::string tvlqr_control_channel = "tvlqr-action";
+std::string rc_action_channel = "rc-switch-action";
 
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
@@ -40,6 +40,9 @@ lcmt_beep_subscription_t *beep_sub;
 int last_stereo_control = 0;
 int last_is_autonomous = 0;
 int last_stabilization_mode = 0;
+int last_servo6_raw = 0;
+
+int rc_switch_delta;
 
 double altimeter_r, airspeed_r, sideslip_r;
 
@@ -425,25 +428,28 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
 
             if (last_is_autonomous != servoOutMsg.is_autonomous ||
-                last_stabilization_mode != stabilization_mode) {
-                // send trajectory messages with autonomous flight messages
-                if (servoOutMsg.is_autonomous > 0) {
+                last_stabilization_mode != stabilization_mode ||
+                abs(servomsg.servo6_raw - last_servo6_raw) > rc_switch_delta) {
 
-                    lcmt_tvlqr_controller_action traj_msg;
-                    traj_msg.timestamp = getTimestampNow();
+                // something has changed in the switch configuration, send a new message
 
-                    if (stabilization_mode > 0) {
-                        traj_msg.trajectory_number = -1;
-                    } else {
-                        traj_msg.trajectory_number = servomsg.servo6_raw;
-                    }
+                lcmt_rc_switch_action rc_msg;
+                rc_msg.timestamp = getTimestampNow();
 
-
-                    lcmt_tvlqr_controller_action_publish(lcm_, tvlqr_control_channel.c_str(), &traj_msg);
+                if (stabilization_mode > 0) {
+                    rc_msg.action = -1;
+                } else {
+                    rc_msg.action = servomsg.servo6_raw;
                 }
+
+
+                lcmt_rc_switch_action_publish(lcm_, rc_action_channel.c_str(), &rc_msg);
+
                 last_is_autonomous = servoOutMsg.is_autonomous;
                 last_stabilization_mode = stabilization_mode;
             }
+
+            last_servo6_raw = servomsg.servo6_raw;
 
 
             if (last_stereo_control != servoOutMsg.video_record)
@@ -498,7 +504,7 @@ int main(int argc,char** argv)
     parser.add(servo_out_channel, "v", "servo-out-channel", "LCM channel for servo commands sent by the aircraft.");
     parser.add(stereo_control_channel, "c", "stereo-control-channel", "LCM channel for stereo control.");
     parser.add(beep_channel, "p", "beep-channel", "LCM channel for beep messages.");
-    parser.add(tvlqr_control_channel, "t", "tvlqr-control-channel", "LCM channel for TVLQR control messages.");
+    parser.add(rc_action_channel, "r", "rc-action-channel", "LCM channel for RC switch action messages.");
     parser.parse();
 
 
@@ -537,6 +543,8 @@ int main(int argc,char** argv)
         airspeed_r = bot_param_get_double_or_fail(param, "state_estimator.airspeed.r");
         sideslip_r = bot_param_get_double_or_fail(param, "state_estimator.sideslip.r");
 
+        rc_switch_delta = bot_param_get_int_or_fail(param, "rc_switch_action.rc_switch_delta_trigger");
+
     } else {
         fprintf(stderr, "Error: no param server, no gps_origin.latlon\n");
         fprintf(stderr, "Error: no param server, can't find R values for state estimator.\n");
@@ -544,7 +552,7 @@ int main(int argc,char** argv)
         exit(1);
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tTVLQR Control: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), tvlqr_control_channel.c_str());
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tRC Action: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), rc_action_channel.c_str());
 
     while (true)
     {

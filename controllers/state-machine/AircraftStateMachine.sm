@@ -78,6 +78,30 @@ ExecuteTrajectory
         nil
         {}
 
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+
+}
+
+RunSingleTrajectory
+    Entry { RequestNewTrajectory(); }
+{
+    ImuUpdate(msg: const mav::pose_t&)
+        // []
+        nil
+        {}
+
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+
+    AutonomousMode()
+        // []
+        ExecuteTrajectory
+        { SetBestTrajectory(); }
 }
 
 

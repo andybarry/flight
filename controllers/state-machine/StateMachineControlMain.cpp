@@ -9,8 +9,9 @@ int main(int argc,char** argv) {
     std::string trajectory_dir = "";
     std::string pose_channel = "STATE_ESTIMATOR_POSE";
     std::string stereo_channel = "stereo";
+    std::string rc_trajectory_commands_channel = "rc-trajectory-commands";
 
-    std::string tvlqr_action_out_channel = "tvlqr-action-out";
+    std::string tvlqr_action_out_channel = "tvlqr-action";
 
 
     ConciseArgs parser(argc, argv);
@@ -19,6 +20,7 @@ int main(int argc,char** argv) {
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.add(stereo_channel, "e", "stereo-channel", "LCM channel to listen to stereo messages on.");
     parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
+    parser.add(rc_trajectory_commands_channel, "r", "rc-trajectory-commands-channel", "LCM channel to listen for RC trajectory commands on.");
 
     parser.parse();
 
@@ -42,6 +44,7 @@ int main(int argc,char** argv) {
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
     lcm.subscribe(stereo_channel, &StateMachineControl::ProcessStereoMsg, &fsm_control);
+    lcm.subscribe(rc_trajectory_commands_channel, &StateMachineControl::ProcessRcTrajectoryMsg, &fsm_control);
 
 
     //StereoFilter filter(0.1); // TODO

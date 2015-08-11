@@ -35,9 +35,11 @@ class StateMachineControl {
         void SetBestTrajectory();
 
         void SetNextTrajectory(const Trajectory &traj) { next_traj_ = &traj; }
+        void SetNextTrajectoryByNumber(int traj_num);
 
         void ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg);
         void ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg);
+        void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
 
         bool CheckTrajectoryExpired();
 

@@ -1,0 +1,9 @@
+package lcmt;
+
+struct rc_switch_action
+{
+  int64_t timestamp;
+
+  int32_t action;
+
+}

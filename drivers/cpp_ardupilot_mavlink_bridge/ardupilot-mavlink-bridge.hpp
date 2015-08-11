@@ -25,7 +25,7 @@
 #include "../../LCM/lcmt_deltawing_u.h"
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_beep.h"
-#include "../../LCM/lcmt_tvlqr_controller_action.h"
+#include "../../LCM/lcmt_rc_switch_action.h"
 
 
 #include <bot_core/bot_core.h>
