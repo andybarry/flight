@@ -15,7 +15,7 @@ lcmtypes = $(patsubst types/%,%,$(lcmtypes_temp))
 # derive the file names of the .c, .h, and .o files corresponding
 # to the LCM types here
 lcm_c_h_files=$(lcmtypes:%=%.c) $(lcmtypes:%=%.h)
-lcm_cpp_hpp_files=$(lcmtypes:%=%.cpp) $(lcmtypes:%=%.hpp)
+lcm_cpp_hpp_files=$(lcmtypes:%=%.cpp) $(lcmtypes:%=lcmt/%.hpp)
 lcm_obj_files=$(lcmtypes:%=%.o)
 
 # compile the LCM types to a static library
@@ -44,3 +44,6 @@ clean:
 	cd lib; rm -f libtypes.a
 	rm -f $(lcm_c_h_files)
 	rm -f $(lcm_cpp_hpp_files)
+
+test:
+	$(lcm_cpp_hpp_files)

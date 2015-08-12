@@ -28,11 +28,6 @@ extern string pronto_init_channel;
 extern string pronto_reset_complete_channel;
 extern string tvlqr_action_out_channel;
 
-extern int number_of_switch_positions;
-extern int switch_mapping[MAX_SWITCH_MAPPING];
-extern int switch_rc_us[MAX_SWITCH_MAPPING];
-extern int stable_controller;
-
 extern double sigma0_vb;
 
 extern double sigma0_delta_xy;
@@ -109,9 +104,6 @@ int main(int argc,char** argv) {
 
     number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
 
-    bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_rc_us", switch_rc_us, number_of_switch_positions);
-
-    bot_param_get_int_array_or_fail(param, "tvlqr_controller.switch_mapping", switch_mapping, number_of_switch_positions);
 
     const Trajectory *stable_controller_traj = trajlib.GetTrajectoryByNumber(stable_controller);
 

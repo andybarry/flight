@@ -32,12 +32,15 @@ class RcSwitchDispatch {
         void SendStereoMsg(int stereo_msg_num) const;
         void GlobalToCameraFrame(double point_in[], double point_out[]) const;
         void SendStereoManyPoints(std::vector<float> x_in, std::vector<float> y_in, std::vector<float> z_in) const;
+        int ServoMicroSecondsToSwitchPosition(int servo_value) const;
 
         std::string stereo_channel_, rc_trajectory_commands_channel_;
 
         int stable_traj_num_, climb_traj_num_;
         int num_trajs_, num_stereo_actions_;
+        int num_switch_positions_;
 
+        int switch_rc_us_[MAX_PARAM_SIZE];
         int trajectory_mapping_[MAX_PARAM_SIZE];
         int stereo_mapping_[MAX_PARAM_SIZE];
 

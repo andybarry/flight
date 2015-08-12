@@ -17,16 +17,17 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     stable_traj_num_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.stable_controller");
     climb_traj_num_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_trajectroy");
 
-    int num_switch_positions = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_switch_positions");
+    num_switch_positions_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_switch_positions");
     num_trajs_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_trajectories");
     num_stereo_actions_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_stereo_actions");
     int num_unused = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_unused_slots");
 
-    if (num_trajs_ + num_stereo_actions_ + num_unused != num_switch_positions) {
-        std::cerr << "ERROR: num_trajs (" << num_trajs_ << ") + num_stereo (" << num_stereo_actions_ << ") + num_unused (" << num_unused << ") != num_switch_positions (" << num_switch_positions << ")" << std::endl;
+    if (num_trajs_ + num_stereo_actions_ + num_unused != num_switch_positions_) {
+        std::cerr << "ERROR: num_trajs (" << num_trajs_ << ") + num_stereo (" << num_stereo_actions_ << ") + num_unused (" << num_unused << ") != num_switch_positions (" << num_switch_positions_ << ")" << std::endl;
         exit(1);
     }
 
+    bot_param_get_int_array_or_fail(param_, "rc_switch_action.switch_rc_us", switch_rc_us_, num_switch_positions_);
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.trajectories", trajectory_mapping_, num_trajs_);
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.stereo_actions", stereo_mapping_, num_stereo_actions_);
 
@@ -37,7 +38,9 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
 void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::rc_switch_action *msg) {
     // new message has come in from the RC controller -- figure out what to do
 
-    if (msg->action < 0) {
+    int switch_action = ServoMicroSecondsToSwitchPosition(msg->pulse_us);
+
+    if (switch_action < 0) {
         // stabilization mode
         SendTrajectoryRequest(stable_traj_num_);
 
@@ -46,12 +49,12 @@ void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::s
         //      - run a different trajectory
         //      - send stereo messages
 
-        if (msg->action < num_trajs_) {
-            SendTrajectoryRequest(trajectory_mapping_[msg->action]);
-        } else if (msg->action < num_trajs_ + num_stereo_actions_) {
-            SendStereoMsg(stereo_mapping_[msg->action - num_trajs_]);
+        if (switch_action < num_trajs_) {
+            SendTrajectoryRequest(trajectory_mapping_[switch_action]);
+        } else if (switch_action < num_trajs_ + num_stereo_actions_) {
+            SendStereoMsg(stereo_mapping_[switch_action - num_trajs_]);
         } else {
-            std::cerr << "WARNING: unused action requested: " << msg->action << std::endl;
+            std::cerr << "WARNING: unused action requested: " << switch_action << std::endl;
         }
     }
 }
@@ -137,6 +140,29 @@ void RcSwitchDispatch::SendStereoManyPoints(std::vector<float> x_in, std::vector
 
     lcm_->publish("stereo", &msg);
 
+}
+
+int RcSwitchDispatch::ServoMicroSecondsToSwitchPosition(int servo_value) const {
+
+    if (servo_value < 0) {
+        // this is the stabilization mode
+        return servo_value;
+    }
+
+    int min_delta = -1;
+    int min_index = -1;
+
+    for (int i = 0; i < num_switch_positions_; i++)
+    {
+        int delta = abs(servo_value - switch_rc_us_[i]);
+
+        if (min_index < 0 || delta < min_delta) {
+            min_delta = delta;
+            min_index = i;
+        }
+    }
+
+    return min_index;
 }
 
 

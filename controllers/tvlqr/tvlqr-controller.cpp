@@ -42,10 +42,6 @@ double sigma0_chi_z;
 
 int64_t last_ti_state_estimator_reset = 0;
 
-int stable_controller;
-int number_of_switch_positions = -1;
-int switch_mapping[MAX_SWITCH_MAPPING];
-int switch_rc_us[MAX_SWITCH_MAPPING];
 
 void pronto_reset_complete_handler(const lcm_recv_buf_t *rbuf, const char* channel, const pronto_utime_t *msg, void *user) {
 
@@ -114,24 +110,9 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
 }
 
 void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
-
-
-    int lib_num = 0;
-
-    int trajectory_number = ServoToTrajectorySwitchPosition(msg->trajectory_number);
-
-    if (trajectory_number < 0) {
-        // stabilization controller
-        lib_num = stable_controller;
-    } else if (number_of_switch_positions < 0 || trajectory_number >= number_of_switch_positions) {
-        std::cerr << "ERROR: number of switch positions is " << number_of_switch_positions << " but trajectory_number is " << trajectory_number << std::endl;
-        return;
-    } else {
-        lib_num = switch_mapping[trajectory_number];
-    }
+    int lib_num = msg->trajectory_number;
 
     // getting an action means we should start a new TVLQR controller!
-
     const Trajectory *traj = trajlib.GetTrajectoryByNumber(lib_num);
 
     if (traj == NULL) {
@@ -156,29 +137,6 @@ void lcmt_tvlqr_controller_action_handler(const lcm_recv_buf_t *rbuf, const char
     SendStateEstimatorResetRequest();
 
 
-}
-
-int ServoToTrajectorySwitchPosition(int servo_value) {
-
-    if (servo_value < 0) {
-        // this is the stabilization mode
-        return servo_value;
-    }
-
-    int min_delta = -1;
-    int min_index = -1;
-
-    for (int i = 0; i < number_of_switch_positions; i++)
-    {
-        int delta = abs(servo_value - switch_rc_us[i]);
-
-        if (min_index < 0 || delta < min_delta) {
-            min_delta = delta;
-            min_index = i;
-        }
-    }
-
-    return min_index;
 }
 
 void SendStateEstimatorResetRequest() {

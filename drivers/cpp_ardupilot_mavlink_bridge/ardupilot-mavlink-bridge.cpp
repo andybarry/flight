@@ -437,9 +437,9 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
                 rc_msg.timestamp = getTimestampNow();
 
                 if (stabilization_mode > 0) {
-                    rc_msg.action = -1;
+                    rc_msg.pulse_us = -1;
                 } else {
-                    rc_msg.action = servomsg.servo6_raw;
+                    rc_msg.pulse_us = servomsg.servo6_raw;
                 }
 
 
