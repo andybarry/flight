@@ -49,7 +49,7 @@ void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::s
         if (msg->action < num_trajs_) {
             SendTrajectoryRequest(trajectory_mapping_[msg->action]);
         } else if (msg->action < num_trajs_ + num_stereo_actions_) {
-            SendStereoMsg(stereo_mapping_[msg->action]);
+            SendStereoMsg(stereo_mapping_[msg->action - num_trajs_]);
         } else {
             std::cerr << "WARNING: unused action requested: " << msg->action << std::endl;
         }

@@ -4,13 +4,14 @@ import sys
 lc = lcm.LCM()
 
 sys.path.insert(0, '../')
+sys.path.insert(0, '../lcmt')
 
-from lcmt_tvlqr_controller_action import lcmt_tvlqr_controller_action
+from rc_switch_action import rc_switch_action
 
-msg = lcmt_tvlqr_controller_action();
+msg = rc_switch_action();
 
 msg.timestamp = 0;
 
-msg.trajectory_number = 1;
+msg.action = 1;
 
-lc.publish("tvlqr-action", msg.encode())
+lc.publish("rc-switch-action", msg.encode())
