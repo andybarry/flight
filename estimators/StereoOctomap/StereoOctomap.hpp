@@ -29,7 +29,7 @@
 #include "../../LCM/lcmt/stereo.hpp"
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
 
-#define OCTREE_LIFE 2000000 // in usec
+#define OCTREE_LIFE 4000000 // in usec
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -63,7 +63,7 @@ class StereoOctomap {
 
     private:
 
-        void InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local);
+        void InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv);
         void RemoveOldPoints(int64_t last_msg_time);
 
         OpenCvStereoCalibration stereo_calibration_;

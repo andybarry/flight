@@ -13,6 +13,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <boost/algorithm/string/replace.hpp> // for substring replacement
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
@@ -72,6 +73,8 @@ int64_t GetTimestampNow();
 bool NonBlockingLcm(lcm_t *lcm);
 
 void DrawOriginLcmGl(lcm_t *lcm);
+
+std::string ReplaceUserVarInPath(std::string path);
 
 
 #endif

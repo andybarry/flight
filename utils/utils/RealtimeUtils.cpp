@@ -702,3 +702,10 @@ void DrawOriginLcmGl(lcm_t *lcm) {
     bot_lcmgl_destroy(lcmgl);
 }
 
+std::string ReplaceUserVarInPath(std::string path) {
+    std::string username = std::string(getenv("USER"));
+
+    boost::algorithm::replace_all(path, "$USER", username);
+
+    return path;
+}

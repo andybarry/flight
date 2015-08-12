@@ -29,31 +29,18 @@ void StereoOctomap::ProcessStereoMessage(const lcmt::stereo *msg) {
     // get transform from global to body frame
     // note that these transforms update live so don't try
     // to cache them
-    BotTrans to_open_cv, body_to_local;
+    BotTrans to_open_cv;
     bot_frames_get_trans(bot_frames_, "opencvFrame", "local", &to_open_cv);
-    bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
 
     // insert the points into the octree
-    InsertPointsIntoOctree(msg, &to_open_cv, &body_to_local);
+    InsertPointsIntoOctree(msg, &to_open_cv);
 
     // zap the old points from the tree
     RemoveOldPoints(msg->timestamp);
 
 }
 
-void StereoOctomap::InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv, BotTrans *body_to_local) {
-
-    // get the new origin
-    //double origin[3];
-    //origin[0] = 0;
-    //origin[1] = 0;
-    //origin[2] = 0;
-    //
-    //double plane_origin[3];
-    //bot_trans_apply_vec(body_to_local, origin, plane_origin);
-    //octomath::Vector3 vec_plane_origin(0, 0, 0);
-
-
+void StereoOctomap::InsertPointsIntoOctree(const lcmt::stereo *msg, BotTrans *to_open_cv) {
     // apply this matrix to each point
     for (int i = 0; i<msg->number_of_points; i++) {
         double this_point_d[3];
@@ -103,17 +90,24 @@ void StereoOctomap::RemoveOldPoints(int64_t last_msg_time) {
         std::cout << std::endl << "swapping octrees because jump back in time" << std::endl;
 
 
-    } else if (current_octree_timestamp_ + OCTREE_LIFE < last_msg_time) {
+    } else if (current_octree_timestamp_ + OCTREE_LIFE < last_msg_time && last_msg_time - building_octree_timestamp_ > OCTREE_LIFE/2) {
+        std::cout << "swapping octrees (old: " << (current_octree_timestamp_ - last_msg_time) / 1000000.0f << ", new: " << (building_octree_timestamp_ - last_msg_time) / 1000000.0f << ")" << std::endl;
         // swap out trees since this one has expired
         delete current_octree_;
+        current_octree_ = building_octree_;
+
+        // we don't have to delete clouds since they are shared pointers and will auto-delete
+        current_cloud_ = building_cloud_;
 
         current_octree_timestamp_ = building_octree_timestamp_;
         building_octree_timestamp_ = last_msg_time;
 
-        current_octree_ = building_octree_;
-        building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+        building_cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
 
-        std::cout << std::endl << "swapping octrees" << std::endl;
+        building_octree_ = new pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>(OCTREE_RESOLUTION);
+        building_octree_->setInputCloud((pcl::PointCloud<pcl::PointXYZ>::Ptr)building_cloud_);
+
+        //std::cout << std::endl << "swapping octrees" << std::endl;
     }
 }
 

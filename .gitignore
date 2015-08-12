@@ -18,6 +18,7 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+estimators/StereoOctomap/test_d
 drivers/RcSwitchDispatch/rc-switch-dispatch
 controllers/state-machine/AircraftStateMachine_sm.dot
 controllers/state-machine/AircraftStateMachine_sm.pdf

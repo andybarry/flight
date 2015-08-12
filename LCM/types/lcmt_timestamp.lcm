@@ -1,0 +1,7 @@
+package lcmt;
+
+struct timestamp
+{
+  int64_t timestamp;
+
+}

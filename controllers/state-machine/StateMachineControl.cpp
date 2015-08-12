@@ -71,6 +71,10 @@ void StateMachineControl::ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus,
     fsm_.SingleTrajectoryRequest(msg->trajectory_number);
 }
 
+void StateMachineControl::ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg) {
+    fsm_.AutonomousMode();
+}
+
 
 void StateMachineControl::SetBestTrajectory() {
     std::cout << "set BEST traj" << std::endl;
@@ -87,9 +91,9 @@ void StateMachineControl::SetBestTrajectory() {
 
 bool StateMachineControl::BetterTrajectoryAvailable() {
     // search for an obstacle in the path
-
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
+
     double t;
 
     if (current_traj_->IsTimeInvariant()) {
@@ -102,6 +106,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
     }
 
     double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t);
+
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
         return false;

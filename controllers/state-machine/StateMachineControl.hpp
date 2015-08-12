@@ -13,6 +13,7 @@
 #include "../../LCM/mav/pose_t.hpp"
 #include "../../LCM/lcmt/stereo.hpp"
 #include "../../LCM/lcmt/tvlqr_controller_action.hpp"
+#include "../../LCM/lcmt/timestamp.hpp"
 #include "AircraftStateMachine_sm.h"
 #include <bot_param/param_client.h>
 #include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
@@ -40,6 +41,8 @@ class StateMachineControl {
         void ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg);
         void ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg);
         void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
+        void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
+
 
         bool CheckTrajectoryExpired();
 

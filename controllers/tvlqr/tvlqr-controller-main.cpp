@@ -17,6 +17,7 @@ extern mav_filter_state_t_subscription_t *pronto_state_handler_sub;
 
 // global trajectory library
 extern TrajectoryLibrary trajlib;
+extern int stable_controller;
 
 extern TvlqrControl *control;
 extern ServoConverter *converter;
@@ -39,7 +40,6 @@ extern double sigma0_chi_z;
 int main(int argc,char** argv) {
 
     bool ttl_one = false;
-    string trajectory_dir = "";
     string pose_channel = "STATE_ESTIMATOR_POSE";
     string tvlqr_action_channel = "tvlqr-action";
     string pronto_state_channel = "STATE_ESTIMATOR_STATE";
@@ -47,7 +47,6 @@ int main(int argc,char** argv) {
 
     ConciseArgs parser(argc, argv);
     parser.add(ttl_one, "t", "ttl-one", "Pass to set LCM TTL=1");
-    parser.add(trajectory_dir, "d", "trajectory-dir", "Directory containing CSV files with trajectories.", true);
     parser.add(pose_channel, "p", "pose-channel", "LCM channel to listen for pose messages on.");
     parser.add(tvlqr_action_channel, "a", "tvlqr-channel", "LCM channel to listen for TVLQR action messages on.");
     parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
@@ -56,17 +55,6 @@ int main(int argc,char** argv) {
     parser.add(pronto_state_channel, "s", "pronto-state-channel", "LCM channel that pronto publishes its state on.");
     parser.add(pronto_reset_complete_channel, "c", "pronto-reset-complete-channel", "LCM channel to listen for pronto's reset complete messages.");
     parser.parse();
-
-    if (trajectory_dir != "") {
-        // load a trajectory library
-        if (!trajlib.LoadLibrary(trajectory_dir)) {
-            std::cerr << "Error: failed to load trajectory library.  Quitting." << std::endl;
-            return 1;
-        }
-
-        //trajlib.Print();
-    }
-
 
     if (ttl_one) {
         lcm = lcm_create ("udpm://239.255.76.67:7667?ttl=1");
@@ -102,7 +90,18 @@ int main(int argc,char** argv) {
 
     stable_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
 
-    number_of_switch_positions = bot_param_get_int_or_fail(param, "tvlqr_controller.number_of_switch_positions");
+    std::string trajectory_dir = std::string(bot_param_get_str_or_fail(param, "tvlqr_controller.library_dir"));
+    trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
+
+    if (trajectory_dir != "") {
+        // load a trajectory library
+        if (!trajlib.LoadLibrary(trajectory_dir)) {
+            std::cerr << "Error: failed to load trajectory library.  Quitting." << std::endl;
+            return 1;
+        }
+
+        //trajlib.Print();
+    }
 
 
     const Trajectory *stable_controller_traj = trajlib.GetTrajectoryByNumber(stable_controller);

@@ -83,6 +83,11 @@ ExecuteTrajectory
         RunSingleTrajectory
         { SetNextTrajectoryByNumber(traj_num); }
 
+    AutonomousMode()
+        // []
+        nil
+        { }
+
 }
 
 RunSingleTrajectory

@@ -26,6 +26,8 @@ string pronto_init_channel = "MAV_STATE_EST_INITIALIZER";
 string pronto_reset_complete_channel = "MAV_STATE_EST_INIT_COMPLETE";
 string tvlqr_action_out_channel = "tvlqr-action-out";
 
+int stable_controller;
+
 bool state_estimator_init = true;
 
 mav_pose_t *last_pose_msg;

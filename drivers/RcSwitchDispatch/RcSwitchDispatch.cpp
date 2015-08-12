@@ -1,10 +1,11 @@
 #include "RcSwitchDispatch.hpp"
 #include "../../externals/ConciseArgs.hpp"
 
-RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel) {
+RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel, std::string state_machine_go_autonomous_channel) {
     lcm_ = lcm;
     rc_trajectory_commands_channel_ = rc_trajectory_commands_channel;
     stereo_channel_ = stereo_channel;
+    state_machine_go_autonomous_channel_ = state_machine_go_autonomous_channel;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
     bot_frames_ = bot_frames_new(lcm_->getUnderlyingLCM(), param_);
@@ -31,8 +32,7 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.trajectories", trajectory_mapping_, num_trajs_);
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.stereo_actions", stereo_mapping_, num_stereo_actions_);
 
-
-
+    stabilization_mode_ = false;
 }
 
 void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::rc_switch_action *msg) {
@@ -42,16 +42,21 @@ void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::s
 
     if (switch_action < 0) {
         // stabilization mode
-        SendTrajectoryRequest(stable_traj_num_);
-
+        if (stabilization_mode_ == false) {
+            SendTrajectoryRequest(stable_traj_num_);
+            stabilization_mode_ = true;
+        }
     } else {
         // not stabilization mode could be:
         //      - run a different trajectory
         //      - send stereo messages
 
+        stabilization_mode_ = false;
+
         if (switch_action < num_trajs_) {
             SendTrajectoryRequest(trajectory_mapping_[switch_action]);
         } else if (switch_action < num_trajs_ + num_stereo_actions_) {
+            SendGoAutonomousMsg();
             SendStereoMsg(stereo_mapping_[switch_action - num_trajs_]);
         } else {
             std::cerr << "WARNING: unused action requested: " << switch_action << std::endl;
@@ -68,7 +73,22 @@ void RcSwitchDispatch::SendTrajectoryRequest(int traj_num) const {
     lcm_->publish(rc_trajectory_commands_channel_, &trajectory_msg);
 }
 
+void RcSwitchDispatch::SendGoAutonomousMsg() const {
+    lcmt::timestamp autonomous_msg;
+
+    autonomous_msg.timestamp = GetTimestampNow();
+
+    lcm_->publish(state_machine_go_autonomous_channel_, &autonomous_msg);
+}
+
 void RcSwitchDispatch::SendStereoMsg(int stereo_msg_num) const {
+    if (stereo_msg_num < 0) {
+        // do nothing
+        return;
+    }
+
+    // send stereo messages
+
     std::vector<float> x, y, z;
 
     bool flag = true;
@@ -87,7 +107,7 @@ void RcSwitchDispatch::SendStereoMsg(int stereo_msg_num) const {
     }
 }
 
-void RcSwitchDispatch::GlobalToCameraFrame(double point_in[], double point_out[]) const {
+void RcSwitchDispatch::DrakeToCameraFrame(double point_in[], double point_out[]) const {
     // figure out what this point (which is currently expressed in global coordinates
     // will be in local opencv coordinates
 
@@ -95,7 +115,7 @@ void RcSwitchDispatch::GlobalToCameraFrame(double point_in[], double point_out[]
 
     // we must update this every time because the transforms could change as the aircraft
     // moves
-    bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_camera_trans);
+    bot_frames_get_trans(bot_frames_, "body", "opencvFrame", &global_to_camera_trans);
 
     bot_trans_apply_vec(&global_to_camera_trans, point_in, point_out);
 }
@@ -117,7 +137,7 @@ void RcSwitchDispatch::SendStereoManyPoints(std::vector<float> x_in, std::vector
         this_point[2] = z_in[i];
 
         double point_transformed[3];
-        GlobalToCameraFrame(this_point, point_transformed);
+        DrakeToCameraFrame(this_point, point_transformed);
 
         ////std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
 
@@ -174,6 +194,7 @@ int main(int argc,char** argv) {
 
     std::string rc_trajectory_commands_channel = "rc-trajectory-commands";
     std::string stereo_channel = "stereo";
+    std::string state_machine_go_autonomous_channel = "state-machine-go-autonomous";
 
 
     ConciseArgs parser(argc, argv);
@@ -181,6 +202,7 @@ int main(int argc,char** argv) {
     parser.add(stereo_channel, "s", "stereo-channel", "LCM channel to listen to stereo messages on.");
     parser.add(rc_trajectory_commands_channel, "j", "rc-trajectory-commands-channel", "LCM channel to sned RC trajectory commands on.");
     parser.add(rc_action_channel, "r", "rc-action-channel", "LCM channel to listen for RC switch actions on.");
+    parser.add(state_machine_go_autonomous_channel, "a", "state-machine-go-autonomous-channel", "LCM channel to send go-autonmous messages on.");
 
     parser.parse();
 
@@ -199,12 +221,12 @@ int main(int argc,char** argv) {
         return 1;
     }
 
-    RcSwitchDispatch rc_dispatch(&lcm, rc_trajectory_commands_channel, stereo_channel);
+    RcSwitchDispatch rc_dispatch(&lcm, rc_trajectory_commands_channel, stereo_channel, state_machine_go_autonomous_channel);
 
     // subscribe to LCM channels
     lcm.subscribe(rc_action_channel, &RcSwitchDispatch::ProcessRcMsg, &rc_dispatch);
 
-    printf("Recieving LCM:\n\tRC Switch Actions: %s\nSending LCM:\n\tRC Trajectory Requests: %s\n\tStereo Messages: %s\n", rc_action_channel.c_str(), rc_trajectory_commands_channel.c_str(), stereo_channel.c_str());
+    printf("Recieving LCM:\n\tRC Switch Actions: %s\nSending LCM:\n\tRC Trajectory Requests: %s\n\tStereo Messages: %s\n\tState Machine Go Autonomous: %s\n", rc_action_channel.c_str(), rc_trajectory_commands_channel.c_str(), stereo_channel.c_str(), state_machine_go_autonomous_channel.c_str());
 
     while (0 == lcm.handle());
 
