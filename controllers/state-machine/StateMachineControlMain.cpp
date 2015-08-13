@@ -49,16 +49,28 @@ int main(int argc,char** argv) {
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
+
     lcm.subscribe(stereo_channel, &StateMachineControl::ProcessStereoMsg, &fsm_control);
+
     lcm.subscribe(rc_trajectory_commands_channel, &StateMachineControl::ProcessRcTrajectoryMsg, &fsm_control);
+
     lcm.subscribe(state_machine_go_autonomous_channel, &StateMachineControl::ProcessGoAutonomousMsg, &fsm_control);
+
+    omp_set_num_threads(3); // set the maximum number of threads
+                            // to be 1 less than our number of
+                            // cores so we never slow down
+                            // the tvlqr process
 
 
     //StereoFilter filter(0.1); // TODO
 
     printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\nSending LCM:\n\tTVLQR Action: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), tvlqr_action_out_channel.c_str());
 
-    while (0 == lcm.handle()); // TODO: drop events if we're slow
+    while (true) {
+        while (NonBlockingLcm(lcm.getUnderlyingLCM())) {}
+
+        fsm_control.DoDelayedImuUpdate();
+    }
 
     return 0;
 }

@@ -97,6 +97,14 @@ void RcSwitchDispatch::SendStereoMsg(int stereo_msg_num) const {
         x = x_points0_;
         y = y_points0_;
         z = z_points0_;
+    } else if (stereo_msg_num == 1) {
+        x = x_points1_;
+        y = y_points1_;
+        z = z_points1_;
+    } else if (stereo_msg_num == 2) {
+        x = x_points2_;
+        y = y_points2_;
+        z = z_points2_;
     } else {
         flag = false;
         std::cerr << "WARNING: unknown stereo message request: " << stereo_msg_num << std::endl;

@@ -20,11 +20,16 @@
 #include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 
+#define IMU_DOWNSAMPLE_RATE 2 // only read every other message
+
+
 class StateMachineControl {
 
     public:
         StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel);
         ~StateMachineControl();
+
+        void DoDelayedImuUpdate();
 
         bool IsObstacleInPath();
 
@@ -43,7 +48,6 @@ class StateMachineControl {
         void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
         void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
-
         bool CheckTrajectoryExpired();
 
         AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
@@ -53,7 +57,6 @@ class StateMachineControl {
         std::string GetCurrentStateName() { return std::string(fsm_.getState().getName()); }
 
     private:
-
 
         AircraftStateMachineContext fsm_;
 
@@ -76,6 +79,10 @@ class StateMachineControl {
         const Trajectory *stable_traj_;
 
         std::string tvlqr_action_out_channel_;
+
+        bool need_imu_update_;
+
+        mav::pose_t last_imu_msg_;
 
 
 

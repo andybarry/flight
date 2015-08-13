@@ -40,6 +40,8 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
         exit(1);
     }
 
+    need_imu_update_ = false;
+
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
 
 }
@@ -60,7 +62,15 @@ void StateMachineControl::SetNextTrajectoryByNumber(int traj_num) {
 }
 
 void StateMachineControl::ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg) {
-    fsm_.ImuUpdate(*msg);
+    need_imu_update_ = true;
+    last_imu_msg_ = *msg;
+}
+
+void StateMachineControl::DoDelayedImuUpdate() {
+    if (need_imu_update_) {
+        fsm_.ImuUpdate(last_imu_msg_);
+        need_imu_update_ = false;
+    }
 }
 
 void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg) {
@@ -68,6 +78,7 @@ void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const
 }
 
 void StateMachineControl::ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg) {
+    std::cout << "got trajectory request message" << std::endl;
     fsm_.SingleTrajectoryRequest(msg->trajectory_number);
 }
 
