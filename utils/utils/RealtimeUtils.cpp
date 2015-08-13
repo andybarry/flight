@@ -139,45 +139,12 @@ TEST(Utils, PoseMsgToStateEstimatorVectorMz) {
 }
 
 double AngleUnwrap(double angle_rad_in, double last_angle_rad) {
+    int wraps = round((last_angle_rad - angle_rad_in) / (2*PI));
 
-    // compute 5 options:
-    //  1: no change
-    //  2: -360 deg
-    //  3: +360 deg
-    //  4: -360*2 deg
-    //  5: +360*2 ded
-
-    double angle_options[10];
-    angle_options[0] = angle_rad_in;
-    angle_options[1] = angle_rad_in - 2*PI;
-    angle_options[2] = angle_rad_in + 2*PI;
-    angle_options[3] = angle_rad_in - 4*PI;
-    angle_options[4] = angle_rad_in + 4*PI;
-
-    double best_angle = angle_rad_in;
-    double best_dist = -1;
-
-    // find the minimum distance
-    for (int i = 0; i < 5; i++) {
-
-        double this_dist = abs(last_angle_rad - angle_options[i]);
-
-        if (best_dist < 0 || this_dist < best_dist) {
-            best_dist = this_dist;
-
-            best_angle = angle_options[i];
-        }
-
-
-    }
-
-    return best_angle;
+    return 2*PI * wraps + angle_rad_in;
 }
 
 TEST(Utils, AngleUnwrap) {
-
-
-
     EXPECT_NEAR( 1.0, AngleUnwrap(1.0, 0.9), 0.0001);
     EXPECT_NEAR( 2*PI + .01, AngleUnwrap(0.01, 2*PI), 0.0001 );
     EXPECT_NEAR( -2*PI + .01, AngleUnwrap(0.01, -2*PI), 0.0001 );
@@ -187,6 +154,12 @@ TEST(Utils, AngleUnwrap) {
     EXPECT_NEAR( .78, AngleUnwrap(.78, .77), 0.0001);
 
     EXPECT_NEAR( 3.2732, AngleUnwrap(-3.01, 3.11), 0.0001);
+
+    EXPECT_NEAR( -25.3627412, AngleUnwrap( -0.23, -8*PI ), 0.0001);
+
+    EXPECT_NEAR( 9.12318, AngleUnwrap( 3.14-.3, 12), 0.0001);
+
+    EXPECT_NEAR( 6.58, AngleUnwrap( 6.58, 6.08 ), 0.0001);
 }
 
 
