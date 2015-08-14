@@ -160,6 +160,10 @@ TEST(Utils, AngleUnwrap) {
     EXPECT_NEAR( 9.12318, AngleUnwrap( 3.14-.3, 12), 0.0001);
 
     EXPECT_NEAR( 6.58, AngleUnwrap( 6.58, 6.08 ), 0.0001);
+
+    EXPECT_NEAR( 3.08318530717, AngleUnwrap(-3.2, 3.1), 0.00001);
+
+    EXPECT_NEAR( -3.1427213071, AngleUnwrap(3.140464, -3.138836), 0.00001);
 }
 
 
