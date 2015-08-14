@@ -14,6 +14,7 @@
 #include "../../LCM/lcmt/stereo.hpp"
 #include "../../LCM/lcmt/tvlqr_controller_action.hpp"
 #include "../../LCM/lcmt/timestamp.hpp"
+#include "../../LCM/lcmt/debug.hpp"
 #include "AircraftStateMachine_sm.h"
 #include <bot_param/param_client.h>
 #include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
@@ -26,7 +27,7 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, bool visualization);
         ~StateMachineControl();
 
         void DoDelayedImuUpdate();
@@ -58,6 +59,8 @@ class StateMachineControl {
 
     private:
 
+        void PublishDebugMsg(std::string debug_str) const;
+
         AircraftStateMachineContext fsm_;
 
         StereoOctomap *octomap_;
@@ -81,10 +84,9 @@ class StateMachineControl {
         std::string tvlqr_action_out_channel_;
 
         bool need_imu_update_;
+        bool visualization_;
 
         mav::pose_t last_imu_msg_;
-
-
 
 
 };

@@ -169,7 +169,7 @@ class StateMachineControlTest : public testing::Test {
 };
 
 TEST_F(StateMachineControlTest, BasicStateMachineTest) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
 
     int stable_traj_num = 0;
 
@@ -181,7 +181,7 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
 }
 
 TEST_F(StateMachineControlTest, OneObstacle) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -244,7 +244,7 @@ TEST_F(StateMachineControlTest, OneObstacle) {
  */
 TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
 
     // subscribe to LCM channels
     lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
@@ -297,7 +297,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
  */
 TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out");
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels

@@ -1,6 +1,6 @@
 #include "StateMachineControl.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, bool visualization) : fsm_(*this) {
     lcm_ = lcm;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -41,6 +41,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     }
 
     need_imu_update_ = false;
+    visualization_ = visualization;
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
 
@@ -70,6 +71,11 @@ void StateMachineControl::DoDelayedImuUpdate() {
     if (need_imu_update_) {
         fsm_.ImuUpdate(last_imu_msg_);
         need_imu_update_ = false;
+
+        if (visualization_) {
+            octomap_->Draw(lcm_->getUnderlyingLCM());
+            PublishDebugMsg("StateMachineControl: visualization");
+        }
     }
 }
 
@@ -86,6 +92,13 @@ void StateMachineControl::ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus,
     fsm_.AutonomousMode();
 }
 
+void StateMachineControl::PublishDebugMsg(std::string debug_str) const {
+    lcmt::debug debug_msg;
+    debug_msg.utime = GetTimestampNow();
+    debug_msg.debug = debug_str;
+
+    lcm_->publish("debug", &debug_msg);
+}
 
 void StateMachineControl::SetBestTrajectory() {
     std::cout << "set BEST traj" << std::endl;
@@ -156,6 +169,21 @@ void StateMachineControl::RequestNewTrajectory() {
     std::cout << "Requesting trajectory: " << msg.trajectory_number << std::endl;
 
     lcm_->publish(tvlqr_action_out_channel_, &msg);
+
+    if (visualization_) {
+        // draw the trajectory via lcmgl
+        BotTrans body_to_local;
+        bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
+
+        bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "StateMachineControl Trajectory");
+        bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+
+        current_traj_->Draw(lcmgl, &body_to_local);
+        bot_lcmgl_switch_buffer(lcmgl);
+        bot_lcmgl_destroy(lcmgl);
+
+        PublishDebugMsg("StateMachineControl: visualization");
+    }
 }
 
 /**

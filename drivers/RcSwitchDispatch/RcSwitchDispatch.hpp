@@ -55,19 +55,19 @@ class RcSwitchDispatch {
         bool stabilization_mode_;
 
         // pole to the left
-        std::vector<float> x_points0_ = {10, 10, 10};
-        std::vector<float> y_points0_ = {2, 2, 2};
-        std::vector<float> z_points0_ = {2, 0, -2};
+        std::vector<float> x_points0_ = {10, 10, 10, 10, 10};
+        std::vector<float> y_points0_ = {2,  2,  2,  2,   2};
+        std::vector<float> z_points0_ = {4,  2,  0, -2,  -4};
 
         // pole to the right
-        std::vector<float> x_points1_ = {10, 10, 10};
-        std::vector<float> y_points1_ = {-2, -2, -2};
-        std::vector<float> z_points1_ = {2, 0, -2};
+        std::vector<float> x_points1_ = {10, 10, 10, 10, 10};
+        std::vector<float> y_points1_ = {-2, -2, -2, -2, -2};
+        std::vector<float> z_points1_ = {4,   2,  0, -2, -4};
 
         // pole below
-        std::vector<float> x_points2_ = {10, 10, 10};
-        std::vector<float> y_points2_ = {-2, 0, 2};
-        std::vector<float> z_points2_ = {-3, -3, -3};
+        std::vector<float> x_points2_ = {10, 10, 10, 10, 10};
+        std::vector<float> y_points2_ = {-4, -2,  0,  2,  4};
+        std::vector<float> z_points2_ = {-3, -3, -3, -3, -3};
 
 
 };
