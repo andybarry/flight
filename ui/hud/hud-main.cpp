@@ -148,6 +148,8 @@ int main(int argc,char** argv) {
     replay_hud.SetClutterLevel(99);
     replay_hud.SetImageScaling(1);
 
+    hud.SetStereoCalibration(&stereo_calibration);
+
     // if a channel exists, subscribe to it
     char *pose_channel;
     if (bot_param_get_str(param, "coordinate_frames.body.pose_update_channel", &pose_channel) >= 0) {
@@ -216,6 +218,17 @@ int main(int argc,char** argv) {
     char *tvlqr_action_channel;
     if (bot_param_get_str(param, "lcm_channels.tvlqr_action", &tvlqr_action_channel) >= 0) {
         tvlqr_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel, &tvlqr_action_handler, &hud);
+    }
+
+    char *trajectory_library_dir;
+    TrajectoryLibrary trajlib;
+    std::string trajectory_dir;
+    if (bot_param_get_str(param, "tvlqr_controller.library_dir", &trajectory_library_dir) >= 0) {
+        trajectory_dir = ReplaceUserVarInPath(std::string(trajectory_library_dir));
+        // load trajectory library
+        TrajectoryLibrary *trajlib = new TrajectoryLibrary();
+        trajlib->LoadLibrary(trajectory_dir);
+        hud.SetTrajectoryLibrary(trajlib);
     }
 
     // control-c handler
@@ -729,45 +742,6 @@ void Draw2DPointsOnImage(Mat image, const vector<Point> *points) {
     for (Point point : *points) {
         rectangle(image, Point(point.x-1, point.y-1), Point(point.x+1, point.y+1), Scalar(0, 0, 0.8));
     }
-}
-
-
-/**
- * Processes LCM messages without blocking.
- *
- * @param lcm lcm object
- *
- * @retval true if processed a message
- */
-bool NonBlockingLcm(lcm_t *lcm)
-{
-    // setup an lcm function that won't block when we read it
-    int lcm_fd = lcm_get_fileno(lcm);
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(lcm_fd, &fds);
-
-    // wait a limited amount of time for an incoming message
-    struct timeval timeout = {
-        0,  // seconds
-        1   // microseconds
-    };
-
-
-    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-
-    if(0 == status) {
-        // no messages
-        //do nothing
-        return false;
-
-    } else if(FD_ISSET(lcm_fd, &fds)) {
-        // LCM has events ready to be processed.
-        lcm_handle(lcm);
-        return true;
-    }
-    return false;
-
 }
 
 
