@@ -774,6 +774,7 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  * @param points_list_in vector<Point3f> of 3D points to draw. Likely obtained from Get3DPointsFromStereoMsg
  * @param cam_mat_m camera calibration matrix (usually M1.xml)
  * @param cam_mat_d distortion calibration matrix (usually D1.xml)
+ * @param cam_mat_r rotation calibration matrix (usually R1.xml)
  * @param outline_color color to draw the box outlines (default: 128)
  * @param inside_color color to draw the inside of the boxes (default: 255). Set to -1 for no fill.
  * @param box_top if you only want to draw points inside a box, this specifies one coordinate of the box

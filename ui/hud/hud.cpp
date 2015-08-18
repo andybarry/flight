@@ -111,7 +111,6 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
 
         if (clutter_level_ > 4) {
             DrawCompass(hud_img);
-            DrawTrajectory(hud_img);
         }
     }
 
@@ -1007,46 +1006,6 @@ void Hud::DrawAutonomous(Mat hud_img) {
     PutHudText(hud_img, str, Point(left, top));
 }
 
-void Hud::DrawTrajectory(Mat hud_img) {
-    traj_number_ = 0; // TEMP HACK
-
-    if (traj_number_ < 0 || trajlib_ == nullptr || stereo_calibration_ == nullptr) {
-        return;
-    }
-
-    const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_number_);
-
-    double xyz[3], rpy[3];
-
-    xyz[0] = 0;
-    xyz[1] = 0;
-    xyz[2] = 0;
-
-    rpy[0] = 0;
-    rpy[1] = 0;
-    rpy[2] = 0;
-
-    // transform the point into the camera coordinate frame
-    // TODO
-
-    DrawBox(hud_img, xyz, rpy, 0.84, 0.5);
-
-    //for (double t = 0; t < traj->GetMaxTime(); t += 0.05) {
-        //double xyz[3], rpy[3];
-
-        //Eigen::VectorXd state = traj->GetState(t);
-
-        //xyz[0] = state(0);
-        //xyz[1] = state(1);
-        //xyz[2] = state(2);
-
-        //rpy[0] = state(3);
-        //rpy[1] = state(4);
-        //rpy[2] = state(5);
-
-        //DrawBox(hud_img, xyz, rpy, 0.84, .5);
-    //}
-}
 
 void Hud::DrawCenterMark(Mat hud_img) {
 
@@ -1101,53 +1060,4 @@ void Hud::DrawDateTime(Mat hud_img) {
     PutHudTextSmall(hud_img, datetime, Point(left - text_size.width - text_gap, top - text_size.height + baseline));
 }
 
-/**
- * Draws a 2D box transformed by trans, which allows for trajectories
- * to look 3D by shrinking, moving, and rotating them.
- */
-void Hud::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height) {
 
-    std::cout << "draw box" << std::endl;
-
-    double rotmat_array[9], quat[4];
-
-    bot_roll_pitch_yaw_to_quat(rpy, quat);
-    bot_quat_to_matrix(quat, rotmat_array);
-
-    Eigen::Matrix3d rotmat(rotmat_array);
-
-    Eigen::Vector3d point1, point2, point3, point4;
-    point1 << xyz[0] - width/2, xyz[1] - height/2, xyz[2];
-    point2 << xyz[0] + width/2, xyz[1] - height/2, xyz[2];
-    point3 << xyz[0] - width/2, xyz[1] + height/2, xyz[2];
-    point4 << xyz[0] + width/2, xyz[1] + height/2, xyz[2];
-
-    point1 = rotmat*point1;
-    point2 = rotmat*point2;
-    point3 = rotmat*point3;
-    point4 = rotmat*point4;
-
-    // start with a box
-    vector<Point3f> box_points;
-    box_points.push_back(Point3f(point1[0], point1[1], point1[2]));
-    box_points.push_back(Point3f(point2[0], point2[1], point2[2]));
-    box_points.push_back(Point3f(point3[0], point3[1], point3[2]));
-    box_points.push_back(Point3f(point4[0], point4[1], point4[2]));
-
-    vector<Point2f> projected_box;
-    vector<double> rvec = {0, 0, 0};
-    vector<double> tvec = {0, 0, 0};
-    vector<double> dist_coeffs = {0, 0, 0, 0};
-    //projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
-    projectPoints(box_points, stereo_calibration_->R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_->M1, stereo_calibration_->D1, projected_box);
-
-    std::cout << projected_box.at(0) << ", " << projected_box.at(1) << std::endl;
-    std::cout << projected_box.at(1) << ", " << projected_box.at(2) << std::endl;
-    std::cout << projected_box.at(2) << ", " << projected_box.at(3) << std::endl;
-    std::cout << projected_box.at(3) << ", " << projected_box.at(0) << std::endl;
-
-    line(hud_img, projected_box.at(0), projected_box.at(1), hud_color_);
-    line(hud_img, projected_box.at(1), projected_box.at(2), hud_color_);
-    line(hud_img, projected_box.at(2), projected_box.at(3), hud_color_);
-    line(hud_img, projected_box.at(3), projected_box.at(0), hud_color_);
-}

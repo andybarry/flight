@@ -76,5 +76,7 @@ void DrawOriginLcmGl(lcm_t *lcm);
 
 std::string ReplaceUserVarInPath(std::string path);
 
+double ConvertTimestampToSeconds(int64_t timestamp);
+
 
 #endif

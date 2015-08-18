@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 #include <bot_core/bot_core.h>
-#include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
 
 using namespace cv;
 
@@ -29,9 +28,6 @@ class Hud {
         int is_autonomous_;
         int clutter_level_;
         int traj_number_;
-        const TrajectoryLibrary *trajlib_ = nullptr;
-        const OpenCvStereoCalibration *stereo_calibration_ = nullptr;
-
 
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
         void PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin);
@@ -59,9 +55,6 @@ class Hud {
 
         void DrawAllAccelerationIndicators(Mat hud_img);
         void DrawGraphIndicator(Mat hud_img, int left, int top, string label, int min_value, int max_value, int mark_increment, string plus_format, string minus_format, float value, bool zero_in_center = false, bool reverse_graph_direction = false);
-
-        void DrawTrajectory(Mat hud_img);
-        void DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height);
 
         void GetEulerAngles(float *yaw, float *pitch, float *roll);
 
@@ -122,8 +115,6 @@ class Hud {
 
         void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
 
-        void SetTrajectoryLibrary(const TrajectoryLibrary *trajlib) { trajlib_ = trajlib; }
-        void SetStereoCalibration(const OpenCvStereoCalibration *stereo_calibration) { stereo_calibration_ = stereo_calibration; }
         void SetTrajectoryNumber(int traj_number) { traj_number_ = traj_number; }
 
         void SetImageScaling(float scale_factor) { scale_factor_ = scale_factor; }
@@ -133,10 +124,6 @@ class Hud {
         int GetFrameNumber() { return frame_number_; }
 
         void DrawHud(InputArray _input_image, OutputArray _output_image);
-
-
-
-
 
 };
 

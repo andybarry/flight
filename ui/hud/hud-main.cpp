@@ -52,6 +52,11 @@ bool new_camera_frame = false;
 Point2d box_top(-1, -1);
 Point2d box_bottom(-1, -1);
 
+struct HudObjects {
+    Hud *hud;
+    HudTrajectoryDrawer *traj_drawer;
+};
+
 int main(int argc,char** argv) {
 
     Scalar bm_color(.5, .5, .5);
@@ -148,12 +153,30 @@ int main(int argc,char** argv) {
     replay_hud.SetClutterLevel(99);
     replay_hud.SetImageScaling(1);
 
-    hud.SetStereoCalibration(&stereo_calibration);
+    BotFrames *bot_frames = bot_frames_new(lcm, param);
+
+    HudTrajectoryDrawer *traj_drawer = nullptr;
+    char *trajectory_library_dir;
+    TrajectoryLibrary trajlib;
+    std::string trajectory_dir;
+    if (bot_param_get_str(param, "tvlqr_controller.library_dir", &trajectory_library_dir) >= 0) {
+        trajectory_dir = ReplaceUserVarInPath(std::string(trajectory_library_dir));
+        // load trajectory library
+        TrajectoryLibrary *trajlib = new TrajectoryLibrary();
+
+        if (trajlib->LoadLibrary(trajectory_dir)) {
+            traj_drawer = new HudTrajectoryDrawer(trajlib, bot_frames, &stereo_calibration);
+        }
+    }
+
+    HudObjects hud_objects;
+    hud_objects.hud = &hud;
+    hud_objects.traj_drawer = traj_drawer;
 
     // if a channel exists, subscribe to it
     char *pose_channel;
     if (bot_param_get_str(param, "coordinate_frames.body.pose_update_channel", &pose_channel) >= 0) {
-        mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel, &mav_pose_t_handler, &hud);
+        mav_pose_t_sub = mav_pose_t_subscribe(lcm, pose_channel, &mav_pose_t_handler, &hud_objects);
     }
 
     if (replay_hud_bool) {
@@ -217,18 +240,7 @@ int main(int argc,char** argv) {
 
     char *tvlqr_action_channel;
     if (bot_param_get_str(param, "lcm_channels.tvlqr_action", &tvlqr_action_channel) >= 0) {
-        tvlqr_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel, &tvlqr_action_handler, &hud);
-    }
-
-    char *trajectory_library_dir;
-    TrajectoryLibrary trajlib;
-    std::string trajectory_dir;
-    if (bot_param_get_str(param, "tvlqr_controller.library_dir", &trajectory_library_dir) >= 0) {
-        trajectory_dir = ReplaceUserVarInPath(std::string(trajectory_library_dir));
-        // load trajectory library
-        TrajectoryLibrary *trajlib = new TrajectoryLibrary();
-        trajlib->LoadLibrary(trajectory_dir);
-        hud.SetTrajectoryLibrary(trajlib);
+        tvlqr_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel, &tvlqr_action_handler, &hud_objects);
     }
 
     // control-c handler
@@ -390,6 +402,9 @@ int main(int argc,char** argv) {
 
             }
             ui_box_mutex.unlock();
+
+            // -- trajectories -- //
+            traj_drawer->DrawTrajectory(color_img);
 
 
             // remap
@@ -714,7 +729,8 @@ void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 }
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
-    Hud *hud = (Hud*)user;
+    HudObjects *hud_objects = (HudObjects*)user;
+    Hud *hud = hud_objects->hud;
 
     hud->SetAltitude(msg->pos[2]);
     hud->SetOrientation(msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3]);
@@ -722,13 +738,16 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAirspeed(msg->vel[0]);
 
     hud->SetTimestamp(msg->utime);
+    hud_objects->traj_drawer->SetPose(msg);
 }
 
 
 void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_tvlqr_controller_action *msg, void *user) {
-    Hud *hud = (Hud*)user;
+    HudObjects *hud_objects = (HudObjects*)user;
 
-    hud->SetTrajectoryNumber(msg->trajectory_number);
+    hud_objects->hud->SetTrajectoryNumber(msg->trajectory_number);
+    hud_objects->traj_drawer->SetTrajectoryNumber(msg->trajectory_number);
+
 }
 
 

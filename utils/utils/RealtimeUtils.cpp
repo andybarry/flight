@@ -683,6 +683,10 @@ std::string ReplaceUserVarInPath(std::string path) {
     std::string username = std::string(getenv("USER"));
 
     boost::algorithm::replace_all(path, "$USER", username);
-std::cout << path << std::endl;
     return path;
+}
+
+
+double ConvertTimestampToSeconds(int64_t timestamp) {
+    return timestamp / 1000000.0;
 }
