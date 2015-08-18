@@ -19,6 +19,7 @@
 #include <bot_frames/bot_frames.h>
 #include <GL/gl.h>
 #include <bot_lcmgl_client/lcmgl.h>
+#include <bot_vis/gl_util.h>
 #include "gtest/gtest.h"
 #include "../../utils/utils/RealtimeUtils.hpp"
 
