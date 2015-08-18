@@ -316,13 +316,11 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
 
     // draw the trajectory's origin
     double xyz[3];
-    float origin_size[3] = { 1, 1, 1 };
+    float origin_size[3] = { .25, .25, .25 };
 
     GetXyzYawTransformedPoint(0, *transform, xyz);
 
-    bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
     bot_lcmgl_box(lcmgl, xyz, origin_size);
-    bot_lcmgl_end(lcmgl);
 
     bot_lcmgl_line_width(lcmgl, 2.0f);
 
