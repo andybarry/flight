@@ -18,5 +18,5 @@ echo "Wrote file list to stereo_camera_calibrate/pyimglist.txt"
 echo "cd stereo_camera_calibrate"
 cd stereo_camera_calibrate
 
-echo "./stereo_calibrate pyimglist.txt 9 6 6.8 R"
-./stereo_calibrate pyimglist.txt 9 6 6.8 R
+echo "./stereo_calibrate pyimglist.txt 9 6 0.068 R"
+./stereo_calibrate pyimglist.txt 9 6 0.068 R

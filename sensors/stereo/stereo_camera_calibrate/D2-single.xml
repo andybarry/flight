@@ -1,11 +1,10 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<D2 type_id="opencv-matrix">
+<D1-single type_id="opencv-matrix">
   <rows>1</rows>
   <cols>5</cols>
   <dt>d</dt>
   <data>
-    -0.301129 0.116348
-    -0.031225 0.004523
-    -0.000256</data></D2>
+    -0.414169 0.225683 0.002088
+    -0.002461 -0.073584</data></D1-single>
 </opencv_storage>
