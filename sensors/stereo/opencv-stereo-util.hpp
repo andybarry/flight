@@ -88,9 +88,12 @@ struct OpenCvStereoCalibration
     Mat M1;
     Mat D1;
     Mat R1;
+    Mat P1;
 
     Mat M2;
     Mat D2;
+    Mat R2;
+    Mat P2;
 };
 
 Mat GetFrameFormat7(dc1394camera_t *camera);

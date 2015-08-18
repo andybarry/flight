@@ -1,10 +1,11 @@
 #include "HudTrajectoryDrawer.hpp"
 
-HudTrajectoryDrawer::HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration) {
+HudTrajectoryDrawer::HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped) {
    trajlib_ = trajlib;
    bot_frames_ = bot_frames;
    stereo_calibration_ = stereo_calibration;
    traj_number_ = -1;
+   show_unremapped_ = show_unremapped;
 }
 
 void HudTrajectoryDrawer::SetTrajectoryNumber(int traj_number) {
@@ -136,14 +137,24 @@ void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], dou
         box_points.push_back(Point3f(point_camera_frame[0], point_camera_frame[1], point_camera_frame[2]));
     }
 
-    vector<Point2f> projected_box;
+    vector<Point2f> projected_box, projected_box_undistorted;
+    vector<Point2f> *points_to_draw;
     //projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
     projectPoints(box_points, stereo_calibration_->R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_->M1, stereo_calibration_->D1, projected_box);
 
-    line(hud_img, projected_box.at(0), projected_box.at(1), hud_color_);
-    line(hud_img, projected_box.at(1), projected_box.at(2), hud_color_);
-    line(hud_img, projected_box.at(2), projected_box.at(3), hud_color_);
-    line(hud_img, projected_box.at(3), projected_box.at(0), hud_color_);
+    if (show_unremapped_ == false) {
+        // undistort the points
+        undistortPoints(projected_box, projected_box_undistorted, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1, stereo_calibration_->P1);
+
+        points_to_draw = &projected_box_undistorted;
+    } else {
+        points_to_draw = &projected_box;
+    }
+
+    line(hud_img, points_to_draw->at(0), points_to_draw->at(1), hud_color_);
+    line(hud_img, points_to_draw->at(1), points_to_draw->at(2), hud_color_);
+    line(hud_img, points_to_draw->at(2), points_to_draw->at(3), hud_color_);
+    line(hud_img, points_to_draw->at(3), points_to_draw->at(0), hud_color_);
 
 }
 

@@ -20,7 +20,7 @@ using namespace cv;
 class HudTrajectoryDrawer {
 
     public:
-        HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration);
+        HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped = false);
 
         void SetAutonomous(int autonomous) { is_autonomous_ = autonomous == 1; }
         void SetTrajectoryNumber(int traj_number);
@@ -31,6 +31,7 @@ class HudTrajectoryDrawer {
     private:
         double current_t_;
         int traj_number_;
+        bool show_unremapped_;
 
         Scalar hud_color_ = Scalar(0.45, 0.95, 0.48);
         BotFrames *bot_frames_;

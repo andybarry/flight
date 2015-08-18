@@ -165,7 +165,7 @@ int main(int argc,char** argv) {
         TrajectoryLibrary *trajlib = new TrajectoryLibrary();
 
         if (trajlib->LoadLibrary(trajectory_dir)) {
-            traj_drawer = new HudTrajectoryDrawer(trajlib, bot_frames, &stereo_calibration);
+            traj_drawer = new HudTrajectoryDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
         }
     }
 
@@ -403,9 +403,6 @@ int main(int argc,char** argv) {
             }
             ui_box_mutex.unlock();
 
-            // -- trajectories -- //
-            traj_drawer->DrawTrajectory(color_img);
-
 
             // remap
             Mat remapped_image;
@@ -423,6 +420,9 @@ int main(int argc,char** argv) {
                     rectangle(remapped_image, box_top, box_bottom, 128);
                 }
             }
+
+            // -- trajectories -- //
+            traj_drawer->DrawTrajectory(remapped_image);
 
             hud.DrawHud(remapped_image, hud_image);
 

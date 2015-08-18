@@ -422,16 +422,14 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
  * Loads XML stereo calibration files and reamps them.
  *
  * @param calibrationDir directory the calibration files are in
- * @param mx1fp CV_16SC2 mx1 remap to be assigned
- * @param mx2fp CV_16SC2 mx2 remap to be assigned
- * @param qMat matrix from Q.xml to be assigned
+ * @param stereoCalibration calibration structure to fill in
  *
  * @retval true on success, false on falure.
  *
  */
 bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalibration)
 {
-    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat, r1Mat, m2Mat, d2Mat;
+    Mat qMat, mx1Mat, my1Mat, mx2Mat, my2Mat, m1Mat, d1Mat, r1Mat, p1Mat, r2Mat, p2Mat, m2Mat, d2Mat;
 
     CvMat *Q = (CvMat *)cvLoad((calibrationDir + "/Q.xml").c_str(),NULL,NULL,NULL);
 
@@ -497,6 +495,14 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
         return false;
     }
 
+    CvMat *p1 = (CvMat *)cvLoad((calibrationDir + "/P1.xml").c_str(),NULL,NULL,NULL);
+
+    if (p1 == NULL)
+    {
+        std::cerr << "Error: failed to read " << calibrationDir << "/P1.xml." << std::endl;
+        return false;
+    }
+
     CvMat *m2 = (CvMat *)cvLoad((calibrationDir + "/M2.xml").c_str(),NULL,NULL,NULL);
 
     if (m2 == NULL)
@@ -513,6 +519,22 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
         return false;
     }
 
+    CvMat *r2 = (CvMat *)cvLoad((calibrationDir + "/R2.xml").c_str(),NULL,NULL,NULL);
+
+    if (r2 == NULL)
+    {
+        std::cerr << "Error: failed to read " << calibrationDir << "/R2.xml." << std::endl;
+        return false;
+    }
+
+    CvMat *p2 = (CvMat *)cvLoad((calibrationDir + "/P2.xml").c_str(),NULL,NULL,NULL);
+
+    if (p2 == NULL)
+    {
+        std::cerr << "Error: failed to read " << calibrationDir << "/P2.xml." << std::endl;
+        return false;
+    }
+
 
 
     qMat = Mat(Q, true);
@@ -524,9 +546,12 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     m1Mat = Mat(m1,true);
     d1Mat = Mat(d1,true);
     r1Mat = Mat(r1,true);
+    p1Mat = Mat(p1,true);
 
     m2Mat = Mat(m2,true);
     d2Mat = Mat(d2,true);
+    r2Mat = Mat(r2,true);
+    p2Mat = Mat(p2,true);
 
     Mat mx1fp, empty1, mx2fp, empty2;
 
@@ -541,9 +566,12 @@ bool LoadCalibration(string calibrationDir, OpenCvStereoCalibration *stereoCalib
     stereoCalibration->M1 = m1Mat;
     stereoCalibration->D1 = d1Mat;
     stereoCalibration->R1 = r1Mat;
+    stereoCalibration->P1 = p1Mat;
 
     stereoCalibration->M2 = m2Mat;
     stereoCalibration->D2 = d2Mat;
+    stereoCalibration->R2 = r2Mat;
+    stereoCalibration->P2 = p2Mat;
 
 
     return true;
