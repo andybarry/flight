@@ -15,11 +15,14 @@ using namespace cv;
 
 #define PI 3.14159265
 
+#define MIN_DISPLAY_THRESHOLD 0.25
+
 class HudTrajectoryDrawer {
 
     public:
         HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration);
 
+        void SetAutonomous(int autonomous) { is_autonomous_ = autonomous == 1; }
         void SetTrajectoryNumber(int traj_number);
         void SetPose(const mav_pose_t *msg);
 
@@ -42,7 +45,8 @@ class HudTrajectoryDrawer {
         mav_pose_t *current_pose_msg_ = nullptr;
 
         int64_t t0_;
-        bool state_initialized_;
+        bool state_initialized_ = false;
+        bool is_autonomous_ = false;
         Eigen::VectorXd initial_state_;
         Eigen::VectorXd last_state_; // keep so we can do angle unwrapping
         Eigen::Matrix3d Mz_; // rotation matrix that transforms global state into local state by removing yaw

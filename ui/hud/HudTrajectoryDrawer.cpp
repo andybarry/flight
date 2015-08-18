@@ -9,7 +9,7 @@ HudTrajectoryDrawer::HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFr
 
 void HudTrajectoryDrawer::SetTrajectoryNumber(int traj_number) {
     traj_number_ = traj_number;
-    std::cout << "traj set: " <<  traj_number << std::endl;
+    state_initialized_ = false;
 }
 
 void HudTrajectoryDrawer::SetPose(const mav_pose_t *msg) {
@@ -21,7 +21,7 @@ void HudTrajectoryDrawer::SetPose(const mav_pose_t *msg) {
 }
 
 void HudTrajectoryDrawer::DrawTrajectory(Mat hud_img) {
-    if (traj_number_ < 0 || current_pose_msg_ == nullptr) {
+    if (traj_number_ < 0 || current_pose_msg_ == nullptr || is_autonomous_ == false) {
         return;
     }
 
@@ -57,7 +57,7 @@ void HudTrajectoryDrawer::DrawTrajectory(Mat hud_img) {
     points.push_back(Point3f(0, 0, 0));
 
     //Draw3DPointsOnImage(hud_img, &points, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1);
-std::cout << current_t_ << std::endl;
+
     for (double t = current_t_; t < std::min(traj->GetMaxTime(), 100000.0+current_t_+1.0); t += 0.10) {
         Eigen::VectorXd traj_x = traj->GetState(t);
 
@@ -72,7 +72,6 @@ std::cout << current_t_ << std::endl;
         rpy[2] = state(5);
 
         DrawBox(hud_img, xyz, rpy, 0.84, .5);
-        std::cout << "yaw: " << rpy[2] << std::endl;
     }
 }
 
@@ -82,30 +81,13 @@ std::cout << current_t_ << std::endl;
  */
 void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height) {
 
-    BotTrans local_to_stereo, body_to_stereo;
-    bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &local_to_stereo);
+    BotTrans body_to_stereo;
     bot_frames_get_trans(bot_frames_, "body", "opencvFrame", &body_to_stereo);
 
-    local_to_stereo.trans_vec[0] = body_to_stereo.trans_vec[0];
-    local_to_stereo.trans_vec[1] = body_to_stereo.trans_vec[1];
-    local_to_stereo.trans_vec[2] = body_to_stereo.trans_vec[2];
-
-    // HACK
-    local_to_stereo.rot_quat[0] = body_to_stereo.rot_quat[0];
-    local_to_stereo.rot_quat[1] = body_to_stereo.rot_quat[1];
-    local_to_stereo.rot_quat[2] = body_to_stereo.rot_quat[2];
-    local_to_stereo.rot_quat[3] = body_to_stereo.rot_quat[3];
-
-    // subtract out initial yaw
-    //std::cout << "yaw0: " << yaw0_ << std::endl;
-    //double rpy_yaw0[3];
-    //bot_quat_to_roll_pitch_yaw(local_to_stereo.rot_quat, rpy_yaw0);
-    //rpy_yaw0[2] = 0; // HACK
-    //bot_roll_pitch_yaw_to_quat(rpy_yaw0, local_to_stereo.rot_quat);
 
     // move the point into the camera frame
     double xyz_camera_frame[3];
-    bot_trans_apply_vec(&local_to_stereo, xyz, xyz_camera_frame);
+    bot_trans_apply_vec(&body_to_stereo, xyz, xyz_camera_frame);
 
     double rotmat_array[9], quat[4];
 
@@ -139,12 +121,17 @@ void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], dou
         double point[3] = { point_eigen(0), point_eigen(1), point_eigen(2) };
         double point_camera_frame[3];
 
-        bot_trans_apply_vec(&local_to_stereo, point, point_camera_frame);
+        bot_trans_apply_vec(&body_to_stereo, point, point_camera_frame);
 
         // translate the box to it's 3D location in the camera frame
         point_camera_frame[0] += xyz_camera_frame[0];
         point_camera_frame[1] += xyz_camera_frame[1];
         point_camera_frame[2] += xyz_camera_frame[2];
+
+        if (point_camera_frame[2] < MIN_DISPLAY_THRESHOLD) {
+            // this point is behind us, so don't display the box
+            return;
+        }
 
         box_points.push_back(Point3f(point_camera_frame[0], point_camera_frame[1], point_camera_frame[2]));
     }
@@ -183,7 +170,6 @@ void HudTrajectoryDrawer::InitializeState(const mav_pose_t *msg) {
 Eigen::VectorXd HudTrajectoryDrawer::GetStateMinusInit(const mav_pose_t *msg) {
 
     // subtract out x0, y0, z0
-
     mav_pose_t *msg2 = mav_pose_t_copy(msg);
 
     msg2->pos[0] -= initial_state_(0); // x

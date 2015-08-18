@@ -200,7 +200,7 @@ int main(int argc,char** argv) {
 
     char *servo_out_channel;
     if (bot_param_get_str(param, "lcm_channels.servo_out", &servo_out_channel) >= 0) {
-        servo_out_sub = lcmt_deltawing_u_subscribe(lcm, servo_out_channel, &servo_out_handler, &hud);
+        servo_out_sub = lcmt_deltawing_u_subscribe(lcm, servo_out_channel, &servo_out_handler, &hud_objects);
     }
 
     char *battery_status_channel;
@@ -712,13 +712,15 @@ void battery_status_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 }
 
 void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user) {
-
-    Hud *hud = (Hud*)user;
+    HudObjects *hud_objects = (HudObjects*)user;
+    Hud *hud = hud_objects->hud;
 
     float throttle_percent = (msg->throttle - THROTTLE_MIN_US) * 100.0f / (THROTTLE_MAX_US - THROTTLE_MIN_US);
 
     hud->SetServoCommands(throttle_percent, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
     hud->SetAutonomous(msg->is_autonomous);
+
+    hud_objects->traj_drawer->SetAutonomous(msg->is_autonomous);
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {
