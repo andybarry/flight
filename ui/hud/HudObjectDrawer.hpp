@@ -1,5 +1,5 @@
-#ifndef HUD_TRAJECTORY_DRAWER_HPP
-#define HUD_TRAJECTORY_DRAWER_HPP
+#ifndef HUD_OBJECT_DRAWER_HPP
+#define HUD_OBJECT_DRAWER_HPP
 
 #include "opencv2/opencv.hpp"
 #include <cv.h>
@@ -17,16 +17,18 @@ using namespace cv;
 
 #define MIN_DISPLAY_THRESHOLD 0.25
 
-class HudTrajectoryDrawer {
+class HudObjectDrawer {
 
     public:
-        HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped = false);
+        HudObjectDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped = false);
 
         void SetAutonomous(int autonomous) { is_autonomous_ = autonomous == 1; }
         void SetTrajectoryNumber(int traj_number);
         void SetPose(const mav_pose_t *msg);
 
         void DrawTrajectory(Mat hud_img);
+
+        void DrawObstacles(Mat hud_img, std::vector<Point3f> obstacles);
 
     private:
         double current_t_;
@@ -38,7 +40,8 @@ class HudTrajectoryDrawer {
         const TrajectoryLibrary *trajlib_ = nullptr;
         const OpenCvStereoCalibration *stereo_calibration_ = nullptr;
 
-        void DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height);
+        std::vector<Point2f> DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color);
+        void DrawCube(Mat hud_img, double xyz[3], double rpy[3], double width, double height, double length, Scalar color);
 
         void InitializeState(const mav_pose_t *msg);
         Eigen::VectorXd GetStateMinusInit(const mav_pose_t *msg);

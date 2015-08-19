@@ -2,7 +2,7 @@
 #define UI_PLANE_VISUALIZER
 
 #include "hud.hpp"
-#include "HudTrajectoryDrawer.hpp"
+#include "HudObjectDrawer.hpp"
 #include "../../LCM/lcmt_stereo.h"
 #include "../../LCM/lcmt_stereo_with_xy.h"
 #include "../../LCM/lcmt_stereo_control.h"

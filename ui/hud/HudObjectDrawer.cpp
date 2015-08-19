@@ -1,6 +1,6 @@
-#include "HudTrajectoryDrawer.hpp"
+#include "HudObjectDrawer.hpp"
 
-HudTrajectoryDrawer::HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped) {
+HudObjectDrawer::HudObjectDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped) {
    trajlib_ = trajlib;
    bot_frames_ = bot_frames;
    stereo_calibration_ = stereo_calibration;
@@ -8,12 +8,12 @@ HudTrajectoryDrawer::HudTrajectoryDrawer(const TrajectoryLibrary *trajlib, BotFr
    show_unremapped_ = show_unremapped;
 }
 
-void HudTrajectoryDrawer::SetTrajectoryNumber(int traj_number) {
+void HudObjectDrawer::SetTrajectoryNumber(int traj_number) {
     traj_number_ = traj_number;
     state_initialized_ = false;
 }
 
-void HudTrajectoryDrawer::SetPose(const mav_pose_t *msg) {
+void HudObjectDrawer::SetPose(const mav_pose_t *msg) {
     if (current_pose_msg_ != nullptr) {
         mav_pose_t_destroy(current_pose_msg_);
     }
@@ -21,7 +21,7 @@ void HudTrajectoryDrawer::SetPose(const mav_pose_t *msg) {
     current_pose_msg_ = mav_pose_t_copy(msg);
 }
 
-void HudTrajectoryDrawer::DrawTrajectory(Mat hud_img) {
+void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
     if (traj_number_ < 0 || current_pose_msg_ == nullptr || is_autonomous_ == false) {
         return;
     }
@@ -72,15 +72,34 @@ void HudTrajectoryDrawer::DrawTrajectory(Mat hud_img) {
         rpy[1] = state(4);
         rpy[2] = state(5);
 
-        DrawBox(hud_img, xyz, rpy, 0.84, .5);
+        DrawBox(hud_img, xyz, rpy, 0.84, .5, hud_color_);
+    }
+}
+
+void HudObjectDrawer::DrawObstacles(Mat hud_img, std::vector<Point3f> obstacles) {
+    // points come in with coordinates relative to the camera at the current time
+
+    for (int i = 0; i < int(obstacles.size()); i++) {
+        double xyz[3] = { obstacles[i].x, obstacles[i].y, obstacles[i].z };
+        double rpy[3] = { 0, 0, 0 };
+
+        BotTrans trans;
+        bot_frames_get_trans(bot_frames_, "local", "body", &trans);
+
+        double xyz_transformed[3];
+
+        bot_trans_apply_vec(&trans, xyz, xyz_transformed);
+
+        DrawCube(hud_img, xyz_transformed, rpy, 0.5, 0.5, 0.25, Scalar(0, 0, 1));
     }
 }
 
 /**
- * Draws a 2D box transformed by trans, which allows for trajectories
- * to look 3D by shrinking, moving, and rotating them.
+ * Draws a 2D box around the xyz coordinates in  the body frame
+ *
+ * @retval points drawn
  */
-void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height) {
+std::vector<Point2f> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color) {
 
     BotTrans body_to_stereo;
     bot_frames_get_trans(bot_frames_, "body", "opencvFrame", &body_to_stereo);
@@ -131,7 +150,8 @@ void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], dou
 
         if (point_camera_frame[2] < MIN_DISPLAY_THRESHOLD) {
             // this point is behind us, so don't display the box
-            return;
+            vector<Point2f> nothing;
+            return nothing;
         }
 
         box_points.push_back(Point3f(point_camera_frame[0], point_camera_frame[1], point_camera_frame[2]));
@@ -151,15 +171,33 @@ void HudTrajectoryDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], dou
         points_to_draw = &projected_box;
     }
 
-    line(hud_img, points_to_draw->at(0), points_to_draw->at(1), hud_color_);
-    line(hud_img, points_to_draw->at(1), points_to_draw->at(2), hud_color_);
-    line(hud_img, points_to_draw->at(2), points_to_draw->at(3), hud_color_);
-    line(hud_img, points_to_draw->at(3), points_to_draw->at(0), hud_color_);
+    line(hud_img, points_to_draw->at(0), points_to_draw->at(1), color);
+    line(hud_img, points_to_draw->at(1), points_to_draw->at(2), color);
+    line(hud_img, points_to_draw->at(2), points_to_draw->at(3), color);
+    line(hud_img, points_to_draw->at(3), points_to_draw->at(0), color);
 
+    return *points_to_draw;
+}
+
+void HudObjectDrawer::DrawCube(Mat hud_img, double xyz[3], double rpy[3], double width, double height, double length, Scalar color) {
+    // draw forward box
+
+    double xyz_forward[3] = { xyz[0] - length, xyz[1], xyz[2] };
+    std::vector<Point2f> forward_box = DrawBox(hud_img, xyz_forward, rpy, width, height, color);
+
+    double xyz_back[3] = { xyz[0] + length, xyz[1], xyz[2] };
+    std::vector<Point2f> back_box = DrawBox(hud_img, xyz_back, rpy, width, height, color);
+
+    if (forward_box.size() > 0 && back_box.size() > 0) {
+        line(hud_img, forward_box.at(0), back_box.at(0), color);
+        line(hud_img, forward_box.at(1), back_box.at(1), color);
+        line(hud_img, forward_box.at(2), back_box.at(2), color);
+        line(hud_img, forward_box.at(3), back_box.at(3), color);
+    }
 }
 
 
-void HudTrajectoryDrawer::InitializeState(const mav_pose_t *msg) {
+void HudObjectDrawer::InitializeState(const mav_pose_t *msg) {
 
     initial_state_ = PoseMsgToStateEstimatorVector(msg);
     last_state_ = initial_state_;
@@ -178,7 +216,7 @@ void HudTrajectoryDrawer::InitializeState(const mav_pose_t *msg) {
 
 }
 
-Eigen::VectorXd HudTrajectoryDrawer::GetStateMinusInit(const mav_pose_t *msg) {
+Eigen::VectorXd HudObjectDrawer::GetStateMinusInit(const mav_pose_t *msg) {
 
     // subtract out x0, y0, z0
     mav_pose_t *msg2 = mav_pose_t_copy(msg);

@@ -37,9 +37,12 @@ Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in
 
 ofstream box_file;
 
-mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
-lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg, *last_stereo_replay_msg;
+mutex stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
+lcmt_stereo *last_stereo_bm_msg, *last_stereo_replay_msg;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
+
+std::vector<Point3f> global_obstacle_list;
+BotFrames *bot_frames;
 
 bool ui_box = false;
 bool ui_box_first_click = false;
@@ -54,7 +57,7 @@ Point2d box_bottom(-1, -1);
 
 struct HudObjects {
     Hud *hud;
-    HudTrajectoryDrawer *traj_drawer;
+    HudObjectDrawer *hud_object_drawer;
 };
 
 int main(int argc,char** argv) {
@@ -153,9 +156,9 @@ int main(int argc,char** argv) {
     replay_hud.SetClutterLevel(99);
     replay_hud.SetImageScaling(1);
 
-    BotFrames *bot_frames = bot_frames_new(lcm, param);
+    bot_frames = bot_frames_new(lcm, param);
 
-    HudTrajectoryDrawer *traj_drawer = nullptr;
+    HudObjectDrawer *hud_object_drawer = nullptr;
     char *trajectory_library_dir;
     TrajectoryLibrary trajlib;
     std::string trajectory_dir;
@@ -165,13 +168,13 @@ int main(int argc,char** argv) {
         TrajectoryLibrary *trajlib = new TrajectoryLibrary();
 
         if (trajlib->LoadLibrary(trajectory_dir)) {
-            traj_drawer = new HudTrajectoryDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
+            hud_object_drawer = new HudObjectDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
         }
     }
 
     HudObjects hud_objects;
     hud_objects.hud = &hud;
-    hud_objects.traj_drawer = traj_drawer;
+    hud_objects.hud_object_drawer = hud_object_drawer;
 
     // if a channel exists, subscribe to it
     char *pose_channel;
@@ -333,6 +336,7 @@ int main(int argc,char** argv) {
 
             // -- stereo -- //
 
+            /*
             // transform the point from 3D space back onto the image's 2D space
             vector<Point3f> lcm_points;
 
@@ -343,6 +347,7 @@ int main(int argc,char** argv) {
             stereo_mutex.unlock();
 
             Draw3DPointsOnImage(color_img, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, block_match_color, block_match_fill_color);
+            */
 
 
             // -- stereo replay -- //
@@ -422,7 +427,13 @@ int main(int argc,char** argv) {
             }
 
             // -- trajectories -- //
-            traj_drawer->DrawTrajectory(remapped_image);
+            hud_object_drawer->DrawTrajectory(remapped_image);
+
+            // -- stereo -- //
+
+            vector<Point3f> lcm_points;
+            hud_object_drawer->DrawObstacles(remapped_image, global_obstacle_list);
+
 
             hud.DrawHud(remapped_image, hud_image);
 
@@ -601,13 +612,22 @@ void sighandler(int dum)
 
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-    stereo_mutex.lock();
-    if (last_stereo_msg) {
-        delete last_stereo_msg;
-    }
+    vector<Point3f> these_points;
+    Get3DPointsFromStereoMsg(msg, &these_points);
 
-    last_stereo_msg = lcmt_stereo_copy(msg);
-    stereo_mutex.unlock();
+    // convert points to global frame
+    BotTrans stereo_to_local;
+    bot_frames_get_trans(bot_frames, "opencvFrame", "local", &stereo_to_local);
+
+    for (int i = 0; i < (int)these_points.size(); i++) {
+        double xyz[3] = { these_points[i].x, these_points[i].y, these_points[i].z };
+
+        double xyz_global_frame[3];
+
+        bot_trans_apply_vec(&stereo_to_local, xyz, xyz_global_frame);
+
+        global_obstacle_list.push_back(Point3f(xyz_global_frame[0], xyz_global_frame[1], xyz_global_frame[2]));
+    }
 }
 
 void stereo_xy_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_with_xy *msg, void *user) {
@@ -720,7 +740,7 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
     hud->SetServoCommands(throttle_percent, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
     hud->SetAutonomous(msg->is_autonomous);
 
-    hud_objects->traj_drawer->SetAutonomous(msg->is_autonomous);
+    hud_objects->hud_object_drawer->SetAutonomous(msg->is_autonomous);
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {
@@ -740,7 +760,7 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAirspeed(msg->vel[0]);
 
     hud->SetTimestamp(msg->utime);
-    hud_objects->traj_drawer->SetPose(msg);
+    hud_objects->hud_object_drawer->SetPose(msg);
 }
 
 
@@ -748,7 +768,7 @@ void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const
     HudObjects *hud_objects = (HudObjects*)user;
 
     hud_objects->hud->SetTrajectoryNumber(msg->trajectory_number);
-    hud_objects->traj_drawer->SetTrajectoryNumber(msg->trajectory_number);
+    hud_objects->hud_object_drawer->SetTrajectoryNumber(msg->trajectory_number);
 
 }
 
