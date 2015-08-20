@@ -13,6 +13,14 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     takeoff_max_y_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_y");
     takeoff_max_z_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_z");
 
+    t_clear_cable_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.t_clear_cable");
+    crusing_altitude_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.crusing_altitude");
+    min_velocity_x_for_throttle_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.min_velocity_x_for_throttle");
+
+    climb_no_throttle_trajnum_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_no_throttle_controller");
+    climb_with_throttle_trajnum_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_controller");
+
+
     if (min_improvement_to_switch_trajs_ <= 0) {
         std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
         exit(1);
@@ -202,22 +210,42 @@ bool StateMachineControl::CheckTrajectoryExpired() {
     }
 
     if (GetTimestampNow() > traj_start_t_ + current_traj_->GetMaxTime() * 1000000.0) {
-        std::cout << "Trajectory # " << current_traj_->GetTrajectoryNumber() << " completed." << std::endl;
+        std::cout << "Trajectory #" << current_traj_->GetTrajectoryNumber() << " completed." << std::endl;
         return true;
     } else {
         return false;
     }
 }
 
-bool StateMachineControl::IsTakeoffAccel(const mav::pose_t *msg) {
-    if (msg->accel[0] > takeoff_threshold_x_ && abs(msg->accel[1]) < takeoff_max_y_ && abs(msg->accel[2]) < takeoff_max_z_) {
+bool StateMachineControl::IsTakeoffAccel(const mav::pose_t &msg) const {
+    if (msg.accel[0] > takeoff_threshold_x_ && abs(msg.accel[1]) < takeoff_max_y_ && abs(msg.accel[2]) < takeoff_max_z_) {
         return true;
     } else {
         return false;
     }
 }
-bool StateMachineControl::HasClearedCable(const mav::pose_t *msg) {
+bool StateMachineControl::HasClearedCable(const mav::pose_t &msg) const {
+    double now = ConvertTimestampToSeconds(GetTimestampNow());
 
+    if (t_takeoff_ > 0 && now - t_takeoff_ > t_clear_cable_) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
+bool StateMachineControl::ReachedCrusingAltitude(const mav::pose_t &msg) const {
+    if (msg.pos[2] >= crusing_altitude_) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
+bool StateMachineControl::VelocityOkForThrottle(const mav::pose_t &msg) const {
+    if (msg.vel[0] >= min_velocity_x_for_throttle_) {
+        return true;
+    } else {
+        return false;
+    }
+}

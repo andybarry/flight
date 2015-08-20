@@ -23,11 +23,11 @@
 WaitForTakeoff
 {
     ImuUpdate(msg: const mav::pose_t&)
-        [ IsTakeoffAccel(msg) == true ]
+        [ ctxt.IsTakeoffAccel(msg) == true ]
         LargeAccel1
         {}
 
-    ImuUpdate(msg: cost mav::pose_t&)
+    ImuUpdate(msg: const mav::pose_t&)
         // []
         nil
         {}
@@ -41,7 +41,7 @@ WaitForTakeoff
 LargeAccel1
 {
     ImuUpdate(msg: const mav::pose_t&)
-        [ IsTakeoffAccel(msg) == true ]
+        [ ctxt.IsTakeoffAccel(msg) == true ]
         TakeoffNoThrottle
         {}
 
@@ -57,14 +57,23 @@ LargeAccel1
 }
 
 TakeoffNoThrottle
-    Entry { RequestTakeoffNoThrottleTrajectory(); }
+    Entry {
+        SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
+        RequestNewTrajectory();
+        SetTakeoffTime();
+    }
 {
     ImuUpdate(msg: const mav::pose_t&)
-        [ HasClearedCable() == true ]
+        [ ctxt.HasClearedCable(msg) == true && ctxt.VelocityOkForThrottle(msg) == true ]
         Climb
         {}
 
-    ImuUpdate(msg: cost mav::pose_t&)
+    ImuUpdate(msg: const mav::pose_t&)
+        [ ctxt.HasClearedCable(msg) == true && ctxt.VelocityOkForThrottle(msg) == false ]
+        WaitForTakeoff
+        {}
+
+    ImuUpdate(msg: const mav::pose_t&)
         // []
         nil
         {}
@@ -76,12 +85,15 @@ TakeoffNoThrottle
 }
 
 Climb
-    Entry { RequestClimbTrajectory(); }
+    Entry {
+        SetNextTrajectoryByNumber(ctxt.GetClimbWithThrottleTrajNum());
+        RequestNewTrajectory();
+    }
 {
     ImuUpdate(msg: const mav::pose_t&)
-        [ ReachedCrusingAltitude(msg) == true ]
+        [ ctxt.ReachedCrusingAltitude(msg) == true ]
         ExecuteTrajectory
-        {}
+        { SetBestTrajectory(); }
 
     ImuUpdate(msg: const mav::pose_t&)
         // []

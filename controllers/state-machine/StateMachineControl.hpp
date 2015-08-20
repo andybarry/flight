@@ -49,9 +49,13 @@ class StateMachineControl {
         void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
         void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
+        void SetTakeoffTime() { t_takeoff_ = ConvertTimestampToSeconds(GetTimestampNow()); }
+
         bool CheckTrajectoryExpired();
-        bool IsTakeoffAccel(const mav::pose_t *msg);
-        bool HasClearedCable(const mav::pose_t *msg);
+        bool IsTakeoffAccel(const mav::pose_t &msg) const;
+        bool HasClearedCable(const mav::pose_t &msg) const;
+        bool ReachedCrusingAltitude(const mav::pose_t &msg) const;
+        bool VelocityOkForThrottle(const mav::pose_t &msg) const;
 
 
         AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
@@ -59,6 +63,9 @@ class StateMachineControl {
         const TrajectoryLibrary* GetTrajectoryLibrary() const { return trajlib_; }
 
         std::string GetCurrentStateName() { return std::string(fsm_.getState().getName()); }
+
+        int GetClimbNoThrottleTrajNum() const { return climb_no_throttle_trajnum_; }
+        int GetClimbWithThrottleTrajNum() const { return climb_with_throttle_trajnum_; }
 
     private:
 
@@ -80,12 +87,20 @@ class StateMachineControl {
         double takeoff_max_y_;
         double takeoff_max_z_;
 
+        double t_clear_cable_;
+        double crusing_altitude_;
+        double min_velocity_x_for_throttle_;
+
+        double t_takeoff_ = -1;
+
         const Trajectory *current_traj_;
 
         const Trajectory *next_traj_;
         int64_t traj_start_t_ = -1;
 
         const Trajectory *stable_traj_;
+        int climb_no_throttle_trajnum_;
+        int climb_with_throttle_trajnum_;
 
         std::string tvlqr_action_out_channel_;
 
