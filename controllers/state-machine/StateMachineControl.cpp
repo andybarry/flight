@@ -9,6 +9,10 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     safe_distance_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.safe_distance_threshold");
     min_improvement_to_switch_trajs_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.min_improvement_to_switch_trajs");
 
+    takeoff_threshold_x_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_threshold_x");
+    takeoff_max_y_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_y");
+    takeoff_max_z_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_z");
+
     if (min_improvement_to_switch_trajs_ <= 0) {
         std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
         exit(1);
@@ -205,6 +209,15 @@ bool StateMachineControl::CheckTrajectoryExpired() {
     }
 }
 
+bool StateMachineControl::IsTakeoffAccel(const mav::pose_t *msg) {
+    if (msg->accel[0] > takeoff_threshold_x_ && abs(msg->accel[1]) < takeoff_max_y_ && abs(msg->accel[2]) < takeoff_max_z_) {
+        return true;
+    } else {
+        return false;
+    }
+}
+bool StateMachineControl::HasClearedCable(const mav::pose_t *msg) {
 
+}
 
 

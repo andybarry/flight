@@ -4,7 +4,7 @@
 %include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
 %declare class Trajectory;
 
-%start AirplaneFsm::ExecuteTrajectory
+%start AirplaneFsm::WaitForTakeoff
 
 
 %map AirplaneFsm
@@ -19,45 +19,80 @@
 //      {Action}
 // }
 
-//WaitForTakeoff {
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //[ctxt.EvalTakeoff(msg) == true]
-        //TakeoffNoThrottle
-        //{}
+WaitForTakeoff
+{
+    ImuUpdate(msg: const mav::pose_t&)
+        [ IsTakeoffAccel(msg) == true ]
+        LargeAccel1
+        {}
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //// []
-        //nil
-        //{ DoControl(msg); }
-//}
+    ImuUpdate(msg: cost mav::pose_t&)
+        // []
+        nil
+        {}
 
-//TakeoffNoThrottle {
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+}
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //[ctxt.ReadyForThrottle(msg) == true]
-        //Climb
-        //{}
+LargeAccel1
+{
+    ImuUpdate(msg: const mav::pose_t&)
+        [ IsTakeoffAccel(msg) == true ]
+        TakeoffNoThrottle
+        {}
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //// []
-        //nil
-        //{ DoControl(msg); }
+    ImuUpdate(msg: const mav::pose_t&)
+        // []
+        WaitForTakeoff
+        {}
 
-//}
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+}
 
-//Climb {
+TakeoffNoThrottle
+    Entry { RequestTakeoffNoThrottleTrajectory(); }
+{
+    ImuUpdate(msg: const mav::pose_t&)
+        [ HasClearedCable() == true ]
+        Climb
+        {}
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //[ctxt.AtCrusingAltitude(msg) == true]
-        //Cruise
-        //{}
+    ImuUpdate(msg: cost mav::pose_t&)
+        // []
+        nil
+        {}
 
-    //ImuUpdate(msg: const mav::pose_t&)
-        //// []
-        //nil
-        //{ DoControl(msg); }
-//}
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+}
+
+Climb
+    Entry { RequestClimbTrajectory(); }
+{
+    ImuUpdate(msg: const mav::pose_t&)
+        [ ReachedCrusingAltitude(msg) == true ]
+        ExecuteTrajectory
+        {}
+
+    ImuUpdate(msg: const mav::pose_t&)
+        // []
+        nil
+        {}
+
+    SingleTrajectoryRequest(traj_num: int)
+        // []
+        RunSingleTrajectory
+        { SetNextTrajectoryByNumber(traj_num); }
+}
 
 ExecuteTrajectory
     Entry { RequestNewTrajectory(); }

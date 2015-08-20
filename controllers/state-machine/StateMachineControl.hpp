@@ -50,6 +50,9 @@ class StateMachineControl {
         void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
         bool CheckTrajectoryExpired();
+        bool IsTakeoffAccel(const mav::pose_t *msg);
+        bool HasClearedCable(const mav::pose_t *msg);
+
 
         AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
         const StereoOctomap* GetOctomap() const { return octomap_; }
@@ -73,6 +76,9 @@ class StateMachineControl {
 
         double safe_distance_;
         double min_improvement_to_switch_trajs_;
+        double takeoff_threshold_x_;
+        double takeoff_max_y_;
+        double takeoff_max_z_;
 
         const Trajectory *current_traj_;
 

@@ -344,12 +344,12 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
     }
 
     // label the last point with a timestamp
-    char t_end[50];
-    sprintf(t_end, "t = %.2fs", GetMaxTime());
-    bot_lcmgl_text_ex(lcmgl, xyz, t_end, 0,
-        BOT_GL_DRAW_TEXT_JUSTIFY_CENTER |
-        BOT_GL_DRAW_TEXT_ANCHOR_HCENTER |
-        BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
+    //char t_end[50];
+    //sprintf(t_end, "t = %.2fs", GetMaxTime());
+    //bot_lcmgl_text_ex(lcmgl, xyz, t_end, 0,
+        //BOT_GL_DRAW_TEXT_JUSTIFY_CENTER |
+        //BOT_GL_DRAW_TEXT_ANCHOR_HCENTER |
+        //BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
 
 }
 
