@@ -73,17 +73,17 @@ class TrajectoryLibraryTest : public testing::Test {
             bot_trans_apply_vec(&camera_to_global_trans_, point_in, point_out);
         }
 
-        void AddPointToOctree(StereoOctomap *octomap, double point[]) {
+        void AddPointToOctree(StereoOctomap *octomap, double point[], double altitude_offset) {
 
             float x[1], y[1], z[1];
             x[0] = point[0];
             y[0] = point[1];
             z[0] = point[2];
 
-            AddManyPointsToOctree(octomap, x, y, z, 1);
+            AddManyPointsToOctree(octomap, x, y, z, 1, altitude_offset);
         }
 
-        void AddManyPointsToOctree(StereoOctomap *octomap, float x_in[], float y_in[], float z_in[], int number_of_points) {
+        void AddManyPointsToOctree(StereoOctomap *octomap, float x_in[], float y_in[], float z_in[], int number_of_points, double altitude_offset) {
             lcmt::stereo msg;
 
             msg.timestamp = GetTimestampNow();
@@ -96,7 +96,7 @@ class TrajectoryLibraryTest : public testing::Test {
 
                 this_point[0] = x_in[i];
                 this_point[1] = y_in[i];
-                this_point[2] = z_in[i];
+                this_point[2] = z_in[i] + altitude_offset;
 
                 double point_transformed[3];
                 GlobalToCameraFrame(this_point, point_transformed);
@@ -303,6 +303,8 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    double altitude = 30;
+    trans.trans_vec[2] = altitude; // flying high up
 
     // check that things work with no obstacles (should return first trajectory)
 
@@ -315,11 +317,11 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
 
-    EXPECT_TRUE(dist == -1);
+    EXPECT_TRUE(dist == altitude);
 
     // add an obstacle close to the first trajectory
     double point[3] = { 1.05, 0, 0 };
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
     // now we expect to get the second trajectory
 
@@ -337,7 +339,7 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
     point[1] = 0.01;
     point[2] = -0.015;
 
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
 
 
@@ -360,12 +362,14 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
     TrajectoryLibrary lib;
 
     lib.LoadLibrary("trajtest/simple", true);
+    double altitude = 30;
 
     double point[3] = { 1.05, 0, 0 };
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     double dist;
     const Trajectory *best_traj;
@@ -390,7 +394,29 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+}
 
+TEST_F(TrajectoryLibraryTest, Altitude) {
+    StereoOctomap octomap(bot_frames_);
+    TrajectoryLibrary lib;
+
+    lib.LoadLibrary("trajtest/simple", true);
+
+    double altitude = 0.5;
+    double point[3] = { 1.05, 0, 0 };
+    AddPointToOctree(&octomap, point, altitude);
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
+
+    double dist;
+    const Trajectory *best_traj;
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
+
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
+
+    EXPECT_NEAR(dist, altitude, TOLERANCE); // altitude should be the limiting factor here
 }
 
 TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
@@ -399,14 +425,16 @@ TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
     TrajectoryLibrary lib;
     lib.LoadLibrary("trajtest/full", true);
 
+    double altitude = 30;
+
     double point[3] = {18, 12, 0};
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
     trans.trans_vec[0] = 17;
     trans.trans_vec[1] = 11;
-    trans.trans_vec[2] = 0;
+    trans.trans_vec[2] = altitude;
 
     // send th
 
@@ -454,16 +482,19 @@ TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
 
 TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
     StereoOctomap octomap(bot_frames_);
+    double altitude = 30;
 
     // load points
-    AddManyPointsToOctree(&octomap, x_points_, y_points_, z_points_, number_of_reference_points_);
+    AddManyPointsToOctree(&octomap, x_points_, y_points_, z_points_, number_of_reference_points_, altitude);
 
     TrajectoryLibrary lib;
 
     lib.LoadLibrary("trajtest/many", true);
 
+
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     double dist;
     const Trajectory *best_traj;
@@ -480,6 +511,8 @@ TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
 
 TEST_F(TrajectoryLibraryTest, TimingTest) {
     StereoOctomap octomap(bot_frames_);
+
+    double altitude = 30;
 
     // create a random point cloud
 
@@ -504,7 +537,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     }
 
-    AddManyPointsToOctree(&octomap, x, y, z, num_points);
+    AddManyPointsToOctree(&octomap, x, y, z, num_points, altitude);
 
     TrajectoryLibrary lib;
 
@@ -512,6 +545,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     tic();
 
@@ -534,36 +568,66 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
     TrajectoryLibrary lib;
     lib.LoadLibrary("trajtest/simple", true);
 
+    double altitude = 100;
+
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(0);
 
     double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
 
-    // with no obstacles, we expect -1
-    EXPECT_EQ_ARM(dist, -1);
+    // with no obstacles, we expect the ground to be the closest obstacle
+    EXPECT_EQ_ARM(dist, altitude);
 
     // add an obstacle
     double point[3] = { 0, 0, 0};
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
     // now we expect zero distance since the obstacle and the trajectory start at the origin
     dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
-    EXPECT_EQ_ARM(dist, 0);
+    EXPECT_NEAR(dist, 0, TOLERANCE);
 
     // at t = 0.01, we expect a distance of 1 since the point is already behind us
     dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
     EXPECT_EQ_ARM(dist, 1);
 
     // add a transform
-    trans.trans_vec[2] = 42;
+    trans.trans_vec[2] += 42;
 
     dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_EQ_ARM(dist, 42);
 
     dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
     EXPECT_NEAR(dist, sqrt( 42*42 + 1*1  ), TOLERANCE);
+}
+
+TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimpleAltitude) {
+    StereoOctomap octomap(bot_frames_);
+
+    // get a trajectory
+    TrajectoryLibrary lib;
+    lib.LoadLibrary("trajtest/simple", true);
+
+    double altitude = 5;
+
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
+
+    const Trajectory *traj = lib.GetTrajectoryByNumber(0);
+    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+
+    EXPECT_EQ_ARM(dist, altitude);
+
+    // add an obstacle
+    double point[3] = { 0, 0, 6};
+    AddPointToOctree(&octomap, point, 0);
+
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+
+    EXPECT_EQ_ARM(dist, 6 - altitude);
 }
 
 TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
@@ -573,17 +637,21 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
     TrajectoryLibrary lib;
     lib.LoadLibrary("trajtest/many", true);
 
+    double altitude = 30;
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(1);
 
-    // with no obstacles, we expect -1
+    // with no obstacles, we expect the ground to be the closest obstacle
     double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
-    EXPECT_EQ_ARM(dist, -1);
+    EXPECT_EQ_ARM(traj->GetMinimumAltitude(), -1.0308);
+    EXPECT_EQ_ARM(dist, altitude - 1.0308);
+
 
     double point[3] = { 6.65, -7.23, 9.10 };
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
     dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_NEAR(dist, 11.748141101535500, TOLERANCE2); // from matlab
 
@@ -597,17 +665,19 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
 TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
     StereoOctomap octomap(bot_frames_);
 
+    double altitude = 30;
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
-    // with no obstacles, we expect -1
+    // with no obstacles, we expect the ground to be the closest obstacle
     double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
-    EXPECT_EQ_ARM(dist, -1);
+    EXPECT_EQ_ARM(dist, altitude);
 
     double point[3] = { 1.5, -0.5, 3 };
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
     dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
     EXPECT_NEAR(dist, 3.041506, TOLERANCE2); // from matlab
 
@@ -622,8 +692,10 @@ TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
     TrajectoryLibrary lib;
     lib.LoadLibrary("trajtest/full", true);
 
+    double altitude = 30;
     BotTrans trans;
     bot_trans_set_identity(&trans);
+    trans.trans_vec[2] = altitude;
 
     double dist;
     const Trajectory *best_traj;
@@ -635,7 +707,7 @@ TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
 
     // put an obstacle along the path of the TI trajectory
     double point[3] = { 1.10, -0.1, 0 };
-    AddPointToOctree(&octomap, point);
+    AddPointToOctree(&octomap, point, altitude);
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 50.0);
 
@@ -645,7 +717,7 @@ TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
     // create a new octre
     StereoOctomap octomap2(bot_frames_);
 
-    AddManyPointsToOctree(&octomap2, x_points_, y_points_, z_points_, number_of_reference_points_);
+    AddManyPointsToOctree(&octomap2, x_points_, y_points_, z_points_, number_of_reference_points_, altitude);
 
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap2, trans, 50.0);
 

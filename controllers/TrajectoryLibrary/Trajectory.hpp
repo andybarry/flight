@@ -64,7 +64,7 @@ class Trajectory
 
         void Print() const;
 
-        double GetMinimumAltitude() { return min_altitude_; }
+        double GetMinimumAltitude() const { return min_altitude_; }
 
 
 
