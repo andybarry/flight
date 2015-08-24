@@ -63,6 +63,24 @@ void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet) {
 
             exit(1);
     }
+
+    // set the minimum altitude
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+    bool first_run = true;
+
+    for (int i = 0; i < GetNumberOfPoints(); i++) {
+
+        double this_t = GetTimeAtIndex(i);
+        double xyz[3];
+
+        GetXyzYawTransformedPoint(this_t, trans, xyz);
+
+        if (xyz[2] < min_altitude_ || first_run == true) {
+            min_altitude_ = xyz[2];
+            first_run = false;
+        }
+    }
 }
 
 

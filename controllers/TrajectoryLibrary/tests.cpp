@@ -169,6 +169,18 @@ TEST_F(TrajectoryLibraryTest, LoadTrajectory) {
 
 }
 
+TEST_F(TrajectoryLibraryTest, MinimumAltitude) {
+    Trajectory traj("trajtest/simple/two-point-00000", true);
+    EXPECT_EQ_ARM(traj.GetMinimumAltitude(), 0);
+
+
+    Trajectory traj2("trajtest/full/unit-testing-super-aggressive-dive-open-loop-00009", true);
+    EXPECT_EQ_ARM(traj2.GetMinimumAltitude(), -7.9945);
+
+    Trajectory traj3("trajtest/full/unit-testing-knife-edge-open-loop-00010", true);
+    EXPECT_EQ_ARM(traj3.GetMinimumAltitude(), -1.2897);
+}
+
 /**
  * Tests point transformation with a simple two-point trajectory
  */

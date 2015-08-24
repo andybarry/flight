@@ -64,6 +64,8 @@ class Trajectory
 
         void Print() const;
 
+        double GetMinimumAltitude() { return min_altitude_; }
+
 
 
     private:
@@ -75,6 +77,7 @@ class Trajectory
         Eigen::MatrixXd affine_points_;
 
         double dt_;
+        double min_altitude_;
 
 
         int dimension_; // state space dimension

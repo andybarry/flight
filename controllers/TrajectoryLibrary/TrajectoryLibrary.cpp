@@ -100,8 +100,9 @@ const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
 }
 
 /**
- * Finds the first Trajectory that is at least "threshold" distance away from any obstacle.
- * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles.
+ * Finds the first Trajectory that is at least "threshold" distance away from any obstacle and the ground.
+ * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles and
+ * the ground.
  *
  * @param octomap obstacle map
  * @param body_to_local tranform for the aircraft that describes where we are in the map
