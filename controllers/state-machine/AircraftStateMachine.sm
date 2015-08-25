@@ -32,10 +32,19 @@ WaitForTakeoff
         nil
         {}
 
+    AutonomousMode()
+        // []
+        nil
+        {
+            SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
+            RequestNewTrajectory();
+        }
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
         { SetNextTrajectoryByNumber(traj_num); }
+
 }
 
 LargeAccel1
@@ -50,6 +59,14 @@ LargeAccel1
         WaitForTakeoff
         {}
 
+    AutonomousMode()
+        // []
+        nil
+        {
+            SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
+            RequestNewTrajectory();
+        }
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
@@ -61,6 +78,7 @@ TakeoffNoThrottle
         SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
         RequestNewTrajectory();
         SetTakeoffTime();
+        PrintString(ctxt.GetTakeoffDetectedString());
     }
 {
     ImuUpdate(msg: const mav::pose_t&)
@@ -78,10 +96,16 @@ TakeoffNoThrottle
         nil
         {}
 
+    AutonomousMode()
+        // []
+        nil
+        {}
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
         { SetNextTrajectoryByNumber(traj_num); }
+
 }
 
 Climb
@@ -96,6 +120,11 @@ Climb
         { SetBestTrajectory(); }
 
     ImuUpdate(msg: const mav::pose_t&)
+        // []
+        nil
+        {}
+
+    AutonomousMode()
         // []
         nil
         {}

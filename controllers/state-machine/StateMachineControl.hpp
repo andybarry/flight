@@ -20,6 +20,7 @@
 #include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
 #include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
+#include "../../estimators/StereoFilter/StereoFilter.hpp"
 
 #define IMU_DOWNSAMPLE_RATE 2 // only read every other message
 
@@ -67,6 +68,12 @@ class StateMachineControl {
         int GetClimbNoThrottleTrajNum() const { return climb_no_throttle_trajnum_; }
         int GetClimbWithThrottleTrajNum() const { return climb_with_throttle_trajnum_; }
 
+        void PrintString(std::string str) const { std::cout << str << std::endl; }
+        std::string GetArmedString() const { return "ARMED FOR TAKEOFF."; }
+        std::string GetTakeoffDetectedString() const { return "TAKEOFF DETECTED."; }
+
+
+
     private:
 
         void PublishDebugMsg(std::string debug_str) const;
@@ -75,6 +82,8 @@ class StateMachineControl {
 
         StereoOctomap *octomap_;
         TrajectoryLibrary *trajlib_;
+
+        StereoFilter *stereo_filter_;
 
         lcm::LCM *lcm_;
 

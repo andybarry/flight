@@ -6,8 +6,11 @@
 #include <math.h>
 #include <mutex>
 
-#include "../../LCM/lcmt_stereo.h"
-#include "../../estimators/StereoOctomap/StereoOctomap.hpp"
+#include <lcm/lcm-cpp.hpp>
+#include "gtest/gtest.h"
+
+#include "../../LCM/lcmt/stereo.hpp"
+#include "../../utils/utils/RealtimeUtils.hpp"
 
 
 class StereoFilter {
@@ -15,7 +18,7 @@ class StereoFilter {
 
     public:
         StereoFilter(float distance_threshold);
-        lcmt_stereo* ProcessMessage(const lcmt_stereo *msg);
+        const lcmt::stereo* ProcessMessage(const lcmt::stereo &msg);
 
     private:
 
@@ -23,23 +26,15 @@ class StereoFilter {
         bool FilterSinglePoint(float x, float y, float z);
         float DistanceFunction(float x1, float x2, float y1, float y2, float z1, float z2);
 
-        void PrintMsg(const lcmt_stereo *msg, string header = "begin message");
+        void PrintMsg(const lcmt::stereo &msg, std::string header = "begin message") const;
 
-
-
-        lcmt_stereo *last_stereo_msg_;
+        const lcmt::stereo *last_stereo_msg_;
 
         float distance_threshold_;
 
         std::mutex process_mutex_;
 
 
-};
-
-struct StereoHandlerData {
-    StereoOctomap *octomap;
-    StereoFilter *filter;
-    bool disable_filtering = false;
 };
 
 #endif

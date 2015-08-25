@@ -18,6 +18,7 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+estimators/StereoFilter/test
 ui/trajectory-lcmgl/trajectory-lcmgl
 estimators/StereoOctomap/test_d
 drivers/RcSwitchDispatch/rc-switch-dispatch
