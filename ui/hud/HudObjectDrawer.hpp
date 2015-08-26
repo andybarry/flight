@@ -23,6 +23,7 @@ class HudObjectDrawer {
         HudObjectDrawer(const TrajectoryLibrary *trajlib, BotFrames *bot_frames, const OpenCvStereoCalibration *stereo_calibration, bool show_unremapped = false);
 
         void SetAutonomous(int autonomous) { is_autonomous_ = autonomous == 1; }
+        void SetTrajBoxesInManualMode(bool traj_boxes_in_manual_mode) { traj_boxes_in_manual_mode_ = traj_boxes_in_manual_mode; }
         void SetTrajectoryNumber(int traj_number);
         void SetPose(const mav_pose_t *msg);
 
@@ -34,6 +35,7 @@ class HudObjectDrawer {
         double current_t_;
         int traj_number_;
         bool show_unremapped_;
+        bool traj_boxes_in_manual_mode_ = false;
 
         Scalar hud_color_ = Scalar(0.45, 0.95, 0.48);
         BotFrames *bot_frames_;

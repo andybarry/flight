@@ -22,7 +22,7 @@ void HudObjectDrawer::SetPose(const mav_pose_t *msg) {
 }
 
 void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
-    if (traj_number_ < 0 || current_pose_msg_ == nullptr || is_autonomous_ == false) {
+    if (traj_number_ < 0 || current_pose_msg_ == nullptr || (is_autonomous_ == false && traj_boxes_in_manual_mode_ == false)) {
         return;
     }
 

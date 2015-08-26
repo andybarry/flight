@@ -51,7 +51,6 @@ bool ui_box_done = false;
 bool real_frame_loaded = false;
 bool new_camera_frame = false;
 
-
 Point2d box_top(-1, -1);
 Point2d box_bottom(-1, -1);
 
@@ -74,6 +73,7 @@ int main(int argc,char** argv) {
     bool depth_crop_bm = false;
     bool draw_stereo_replay = false;
     bool rec_only_vision = true;
+    bool traj_boxes_in_manual_mode = false;
     int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
@@ -91,6 +91,7 @@ int main(int argc,char** argv) {
     parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
     parser.add(draw_stereo_replay, "s", "draw_stereo_replay", "Display stereo points from the stereo_replay channel.");
     parser.add(rec_only_vision, "o", "Record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
+    parser.add(traj_boxes_in_manual_mode, "t", "traj-boxes-in-manual-mode", "Draw trajectory boxes even in manual mode.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -169,6 +170,8 @@ int main(int argc,char** argv) {
 
         if (trajlib->LoadLibrary(trajectory_dir)) {
             hud_object_drawer = new HudObjectDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
+
+            hud_object_drawer->SetTrajBoxesInManualMode(traj_boxes_in_manual_mode);
         }
     }
 
