@@ -50,7 +50,7 @@ int main(int argc,char** argv) {
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
     StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, visualization);
-    fsm_control.GetFsmContext()->setDebugFlag(true);
+    //fsm_control.GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
