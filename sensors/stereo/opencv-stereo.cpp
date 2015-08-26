@@ -1137,8 +1137,6 @@ void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcm
     hostname.push_back(channel_name.back());
 
     rec_m->SetHostname(hostname);
-
-    std::cout << "GOT HOSTNAME: " << hostname << std::endl;
 }
 
 

@@ -464,8 +464,6 @@ bool RecordingManager::SetPlaybackVideoDirectory(string video_directory) {
     using_video_directory_ = true;
     using_video_from_disk_ = true;
 
-    std::cout << "yep" << std::endl;
-
     return true;
 }
 
