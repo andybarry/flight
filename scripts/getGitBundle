@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: getGitBundle <hostname>"
+    exit 1
+fi
+
+cd $HOME/realtime
+
+ssh odroid@$1 "cd /home/odroid/realtime; git bundle create commits.bundle HEAD~50..HEAD"
+
+rsync --progress odroid@$1:/home/odroid/realtime/commits.bundle /home/$USER/commits.bundle
+
+/home/abarry/realtime/scripts/unpackGitBundle "/home/abarry/commits.bundle"
+
+ssh odroid@$1 "rm /home/odroid/realtime/commits.bundle"
