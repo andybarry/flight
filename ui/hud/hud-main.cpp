@@ -490,18 +490,24 @@ int main(int argc,char** argv) {
                 recording_manager.RestartRecHud();
                 break;
 
-            case 'c':
+            case 'l':
                 hud.SetClutterLevel(hud.GetClutterLevel() + 1);
                 change_flag = true;
                 break;
 
-            case 'C':
+            case 'L':
                 hud.SetClutterLevel(hud.GetClutterLevel() - 1);
                 change_flag = true;
                 break;
 
             case 's':
                 draw_stereo_replay = !draw_stereo_replay;
+                change_flag = true;
+                break;
+
+            case 'c':
+            case 'C':
+                global_obstacle_list.clear();
                 change_flag = true;
                 break;
 

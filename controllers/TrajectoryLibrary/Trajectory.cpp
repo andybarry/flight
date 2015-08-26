@@ -63,6 +63,24 @@ void Trajectory::LoadTrajectory(std::string filename_prefix, bool quiet) {
 
             exit(1);
     }
+
+    // set the minimum altitude
+    BotTrans trans;
+    bot_trans_set_identity(&trans);
+    bool first_run = true;
+
+    for (int i = 0; i < GetNumberOfPoints(); i++) {
+
+        double this_t = GetTimeAtIndex(i);
+        double xyz[3];
+
+        GetXyzYawTransformedPoint(this_t, trans, xyz);
+
+        if (xyz[2] < min_altitude_ || first_run == true) {
+            min_altitude_ = xyz[2];
+            first_run = false;
+        }
+    }
 }
 
 
@@ -344,12 +362,12 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
     }
 
     // label the last point with a timestamp
-    char t_end[50];
-    sprintf(t_end, "t = %.2fs", GetMaxTime());
-    bot_lcmgl_text_ex(lcmgl, xyz, t_end, 0,
-        BOT_GL_DRAW_TEXT_JUSTIFY_CENTER |
-        BOT_GL_DRAW_TEXT_ANCHOR_HCENTER |
-        BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
+    //char t_end[50];
+    //sprintf(t_end, "t = %.2fs", GetMaxTime());
+    //bot_lcmgl_text_ex(lcmgl, xyz, t_end, 0,
+        //BOT_GL_DRAW_TEXT_JUSTIFY_CENTER |
+        //BOT_GL_DRAW_TEXT_ANCHOR_HCENTER |
+        //BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
 
 }
 
@@ -397,6 +415,15 @@ double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &o
                 closest_obstacle_distance = distance_to_point;
             }
         }
+    }
+
+     // check minumum altitude
+    double min_altitude = GetMinimumAltitude() + body_to_local.trans_vec[2];
+    if (min_altitude < 0) {
+        // this trajectory would impact the ground
+        closest_obstacle_distance = 0;
+    } else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
+        closest_obstacle_distance = min_altitude;
     }
 
     return closest_obstacle_distance;

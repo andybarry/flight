@@ -100,8 +100,9 @@ const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
 }
 
 /**
- * Finds the first Trajectory that is at least "threshold" distance away from any obstacle.
- * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles.
+ * Finds the first Trajectory that is at least "threshold" distance away from any obstacle and the ground.
+ * In the case  that there is no such trajectory, returns the trajectory that is furthest from obstacles and
+ * the ground.
  *
  * @param octomap obstacle map
  * @param body_to_local tranform for the aircraft that describes where we are in the map
@@ -162,9 +163,20 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
 
         }
 
-        if (lcmgl != nullptr) {
-            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
+        // check minumum altitude
+        double min_altitude = traj_vec_.at(i).GetMinimumAltitude() + body_to_local.trans_vec[2];
+        if (min_altitude < 0) {
+            // this trajectory would impact the ground
+            closest_obstacle_distance = 0;
+        } else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
+            closest_obstacle_distance = min_altitude;
         }
+
+
+
+        //if (lcmgl != nullptr) {
+            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
+        //}
 
         if (traj_closest_dist == -1 || closest_obstacle_distance > traj_closest_dist) {
             traj_closest_dist = closest_obstacle_distance;

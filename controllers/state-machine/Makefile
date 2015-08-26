@@ -2,7 +2,7 @@ TARGET = state-machine-controller
 
 SM_SOURCES = AircraftStateMachine.sm
 
-SOURCES = $(SM_SOURCES:.sm=_sm.cpp) StateMachineControl.cpp ../tvlqr/TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp ../../utils/ServoConverter/ServoConverter.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StateMachineControlMain.cpp
+SOURCES = $(SM_SOURCES:.sm=_sm.cpp) StateMachineControl.cpp ../tvlqr/TvlqrControl.cpp ../TrajectoryLibrary/TrajectoryLibrary.cpp ../TrajectoryLibrary/Trajectory.cpp ../../externals/csvparser/csvparser.c ../../utils/utils/RealtimeUtils.cpp ../../utils/ServoConverter/ServoConverter.cpp ../../estimators/StereoOctomap/StereoOctomap.cpp StateMachineControlMain.cpp ../../estimators/StereoFilter/StereoFilter.cpp
 
 SUBPROJS = test
 

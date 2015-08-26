@@ -9,6 +9,21 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     safe_distance_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.safe_distance_threshold");
     min_improvement_to_switch_trajs_ = bot_param_get_double_or_fail(param_, "obstacle_avoidance.min_improvement_to_switch_trajs");
 
+    takeoff_threshold_x_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_threshold_x");
+    takeoff_max_y_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_y");
+    takeoff_max_z_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.accel_max_z");
+
+    t_clear_cable_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.t_clear_cable");
+    crusing_altitude_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.crusing_altitude");
+    min_velocity_x_for_throttle_ = bot_param_get_double_or_fail(param_, "launcher_takeoff.min_velocity_x_for_throttle");
+
+    climb_no_throttle_trajnum_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_no_throttle_controller");
+    climb_with_throttle_trajnum_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_controller");
+
+    double filter_distance_threshold = bot_param_get_double_or_fail(param_, "tvlqr_controller.filter_distance_threshold");
+
+    stereo_filter_ = new StereoFilter(filter_distance_threshold);
+
     if (min_improvement_to_switch_trajs_ <= 0) {
         std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
         exit(1);
@@ -25,14 +40,14 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
         exit(1);
     }
 
-    current_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);
+    current_traj_ = trajlib_->GetTrajectoryByNumber(climb_no_throttle_trajnum_);
 
     if (current_traj_ == nullptr) {
         std::cerr << "ERROR: Stable trajectory (# " << stable_traj_num << ") does not exist." << std::endl;
         exit(1);
     }
 
-    stable_traj_ = current_traj_;
+    stable_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);;
     next_traj_ = current_traj_;
 
     if (stable_traj_->IsTimeInvariant() == false) {
@@ -44,12 +59,12 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     visualization_ = visualization;
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
-
 }
 
 StateMachineControl::~StateMachineControl() {
     delete octomap_;
     delete trajlib_;
+    delete stereo_filter_;
 }
 
 void StateMachineControl::SetNextTrajectoryByNumber(int traj_num) {
@@ -80,7 +95,9 @@ void StateMachineControl::DoDelayedImuUpdate() {
 }
 
 void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg) {
-    octomap_->ProcessStereoMessage(msg);
+    const lcmt::stereo *msg2 = stereo_filter_->ProcessMessage(*msg);
+    octomap_->ProcessStereoMessage(msg2);
+    delete msg2;
 }
 
 void StateMachineControl::ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg) {
@@ -198,13 +215,42 @@ bool StateMachineControl::CheckTrajectoryExpired() {
     }
 
     if (GetTimestampNow() > traj_start_t_ + current_traj_->GetMaxTime() * 1000000.0) {
-        std::cout << "Trajectory # " << current_traj_->GetTrajectoryNumber() << " completed." << std::endl;
+        std::cout << "Trajectory #" << current_traj_->GetTrajectoryNumber() << " completed." << std::endl;
         return true;
     } else {
         return false;
     }
 }
 
+bool StateMachineControl::IsTakeoffAccel(const mav::pose_t &msg) const {
+    if (msg.accel[0] > takeoff_threshold_x_ && abs(msg.accel[1]) < takeoff_max_y_ && abs(msg.accel[2]) < takeoff_max_z_) {
+        return true;
+    } else {
+        return false;
+    }
+}
+bool StateMachineControl::HasClearedCable(const mav::pose_t &msg) const {
+    double now = ConvertTimestampToSeconds(GetTimestampNow());
 
+    if (t_takeoff_ > 0 && now - t_takeoff_ > t_clear_cable_) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
+bool StateMachineControl::ReachedCrusingAltitude(const mav::pose_t &msg) const {
+    if (msg.pos[2] >= crusing_altitude_) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
+bool StateMachineControl::VelocityOkForThrottle(const mav::pose_t &msg) const {
+    if (msg.vel[0] >= min_velocity_x_for_throttle_) {
+        return true;
+    } else {
+        return false;
+    }
+}

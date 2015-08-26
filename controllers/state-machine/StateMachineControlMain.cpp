@@ -45,9 +45,12 @@ int main(int argc,char** argv) {
     BotParam *param = bot_param_new_from_server(lcm.getUnderlyingLCM(), 0);
 
     std::string trajectory_dir = std::string(bot_param_get_str_or_fail(param, "tvlqr_controller.library_dir"));
+
+
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
     StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, visualization);
+    fsm_control.GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
@@ -64,9 +67,9 @@ int main(int argc,char** argv) {
                             // the tvlqr process
 
 
-    //StereoFilter filter(0.1); // TODO
-
     printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\nSending LCM:\n\tTVLQR Action: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), tvlqr_action_out_channel.c_str());
+
+    std::cout << "ARMED FOR TAKEOFF." << std::endl;
 
     while (true) {
         while (NonBlockingLcm(lcm.getUnderlyingLCM())) {}

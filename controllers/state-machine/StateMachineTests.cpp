@@ -32,6 +32,13 @@ class StateMachineControlTest : public testing::Test {
 
         std::string pose_channel_ = "STATE_ESTIMATOR_POSE";
         std::string stereo_channel_ = "stereo";
+        std::string rc_trajectory_commands_channel_ = "rc-trajectory-commands";
+        std::string state_machine_go_autonomous_channel_ = "state-machine-go-autonomous";
+
+        float altitude_ = 100;
+
+
+        lcm::Subscription *pose_sub_, *stereo_sub_, *rc_traj_sub_, *go_auto_sub_;
 
 
         lcm::LCM *lcm_;
@@ -79,6 +86,37 @@ class StateMachineControlTest : public testing::Test {
             bot_trans_apply_vec(&camera_to_global_trans, point_in, point_out);
         }
 
+        void SubscribeLcmChannels(StateMachineControl *fsm_control) {
+            pose_sub_ = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
+            stereo_sub_ = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+            rc_traj_sub_ = lcm_->subscribe(rc_trajectory_commands_channel_, &StateMachineControl::ProcessRcTrajectoryMsg, fsm_control);
+            go_auto_sub_ = lcm_->subscribe(state_machine_go_autonomous_channel_, &StateMachineControl::ProcessGoAutonomousMsg, fsm_control);
+        }
+
+        void UnsubscribeLcmChannels() {
+            lcm_->unsubscribe(pose_sub_);
+            lcm_->unsubscribe(stereo_sub_);
+            lcm_->unsubscribe(rc_traj_sub_);
+            lcm_->unsubscribe(go_auto_sub_);
+        }
+
+        void ForceAutonomousMode() {
+            // step 1: ask for a single trajectory
+            lcmt::tvlqr_controller_action trajectory_msg;
+            trajectory_msg.timestamp = GetTimestampNow();
+            trajectory_msg.trajectory_number = 0;
+            lcm_->publish("rc-trajectory-commands", &trajectory_msg);
+
+            ProcessAllLcmMessagesNoDelayedUpdate();
+
+            // step 2: send an autonmous mode signal
+            lcmt::timestamp autonomous_msg;
+            autonomous_msg.timestamp = GetTimestampNow();
+            lcm_->publish("state-machine-go-autonomous", &autonomous_msg);
+
+            ProcessAllLcmMessagesNoDelayedUpdate();
+        }
+
         void SendStereoPoint(float point[]) {
 
             vector<float> x, y, z;
@@ -108,7 +146,7 @@ class StateMachineControlTest : public testing::Test {
                 double point_transformed[3];
                 GlobalToCameraFrame(this_point, point_transformed);
 
-                ////std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
+                //std::cout << "Point: (" << point_transformed[0] << ", " << point_transformed[1] << ", " << point_transformed[2] << ")" << std::endl;
 
                 x.push_back(point_transformed[0]);
                 y.push_back(point_transformed[1]);
@@ -131,8 +169,16 @@ class StateMachineControlTest : public testing::Test {
 
         }
 
-        void ProcessAllLcmMessages() {
+        void ProcessAllLcmMessagesNoDelayedUpdate() {
             while (NonBlockingLcm(lcm_->getUnderlyingLCM())) {}
+        }
+
+        void ProcessAllLcmMessages(StateMachineControl *fsm_control) {
+            ProcessAllLcmMessagesNoDelayedUpdate();
+
+            if (fsm_control != nullptr) {
+                fsm_control->DoDelayedImuUpdate();
+            }
         }
 
         mav::pose_t GetDefaultPoseMsg() {
@@ -142,7 +188,7 @@ class StateMachineControlTest : public testing::Test {
 
             msg.pos[0] = 0;
             msg.pos[1] = 0;
-            msg.pos[2] = 0;
+            msg.pos[2] = altitude_;
 
             msg.vel[0] = 0;
             msg.vel[1] = 0;
@@ -172,8 +218,9 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
 
     int stable_traj_num = 0;
+    int takeoff_traj_num = 2;
 
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), stable_traj_num);
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), takeoff_traj_num);
 
     EXPECT_EQ_ARM(fsm_control->GetStableTrajectory().GetTrajectoryNumber(), stable_traj_num);
 
@@ -182,61 +229,100 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
 
 TEST_F(StateMachineControlTest, OneObstacle) {
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
-
-    // subscribe to LCM channels
-    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
-    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
-
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
+    float altitude = 100;
+
+    SubscribeLcmChannels(fsm_control);
+
     // ensure that we are in the start state
-    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
 
     // send some pose messages
     mav::pose_t msg = GetDefaultPoseMsg();
+    msg.pos[2] = 0;
 
-    // check for unexpected transitions out of Cruise state
-
-    lcm_->publish(pose_channel_, &msg);
-
-    ProcessAllLcmMessages();
-
-    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
-    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+    // check for unexpected transitions out of wait state
 
     lcm_->publish(pose_channel_, &msg);
-    lcm_->publish(pose_channel_, &msg);
-    lcm_->publish(pose_channel_, &msg);
-    lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
 
-    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    // cause a takeoff transistion
+    msg.accel[0] = 100;
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::TakeoffNoThrottle") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+    // wait for takeoff to finish
+    for (int i = 0; i < 12; i++) {
+        msg = GetDefaultPoseMsg();
+        msg.pos[2] = 0;
+        msg.vel[0] = 20;
+        lcm_->publish(pose_channel_, &msg);
+        ProcessAllLcmMessages(fsm_control);
+        usleep(100000);
+    }
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::Climb") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    // reach altitude
+    msg = GetDefaultPoseMsg();
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
 
     // now add an obstacle in front of it and make sure it transitions!
-    float point[3] = { 24, 0, 0 };
+    ProcessAllLcmMessages(fsm_control);
+
+    ProcessAllLcmMessages(fsm_control);
+
+    float point[3] = { 24, 0, altitude };
     SendStereoPoint(point);
+    SendStereoPoint(point); // double publish for the stereo filter
 
     lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
+    ProcessAllLcmMessages(fsm_control);
+
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab, with 5.0 = safe
 
     // NOTE: modification of x_points_ if you're checking in MATLAB (!)
+    vector<float> xpts = x_points_;
+    vector<float> zpts = z_points_;
     for (int i = 0; i < int(x_points_.size()); i++) {
-        x_points_[i] += 5;
+        xpts[i] += 5;
+        zpts[i] += altitude;
     }
 
-    SendStereoManyPoints(x_points_, y_points_, z_points_);
+    SendStereoManyPoints(xpts, y_points_, zpts);
+    SendStereoManyPoints(xpts, y_points_, zpts);
     lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
+    ProcessAllLcmMessages(fsm_control);
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
 
     delete fsm_control;
 
-    lcm_->unsubscribe(pose_sub);
-    lcm_->unsubscribe(stereo_sub);
+    UnsubscribeLcmChannels();
 }
 
 /**
@@ -245,23 +331,30 @@ TEST_F(StateMachineControlTest, OneObstacle) {
 TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
+    //fsm_control->GetFsmContext()->setDebugFlag(true);
 
-    // subscribe to LCM channels
-    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
-    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+    float altitude = 100;
+
+    SubscribeLcmChannels(fsm_control);
+
+    // force the state machine into autonmous mode
+    ForceAutonomousMode();
 
     // send an obstacle to get it to transition to a new time
 
-    float point[3] = { 17, 11, 3 };
+    float point[3] = { 17, 11, 3+altitude };
+    SendStereoPoint(point);
     SendStereoPoint(point);
 
-    float point2[3] = { 24, 0, 0 };
+    float point2[3] = { 24, 0, 0+altitude };
+    SendStereoPoint(point2);
     SendStereoPoint(point2);
 
     mav::pose_t msg = GetDefaultPoseMsg();
 
     lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
+    ProcessAllLcmMessages(fsm_control);
+
 
     // ensure that we have changed trajectories
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
@@ -279,7 +372,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
         msg.pos[0] = t * 10;
 
         lcm_->publish(pose_channel_, &msg);
-        ProcessAllLcmMessages();
+        ProcessAllLcmMessages(fsm_control);
     }
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
@@ -287,8 +380,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 
     delete fsm_control;
 
-    lcm_->unsubscribe(pose_sub);
-    lcm_->unsubscribe(stereo_sub);
+    UnsubscribeLcmChannels();
 }
 
 
@@ -300,19 +392,27 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
-    // subscribe to LCM channels
-    lcm::Subscription *pose_sub = lcm_->subscribe(pose_channel_, &StateMachineControl::ProcessImuMsg, fsm_control);
-    lcm::Subscription *stereo_sub = lcm_->subscribe(stereo_channel_, &StateMachineControl::ProcessStereoMsg, fsm_control);
+    SubscribeLcmChannels(fsm_control);
+
+    ForceAutonomousMode();
+
+    float altitude = 100;
 
     // send an obstacle to get it to transition to a new time
-
-    float point[3] = { 24, 0, 0 };
-    SendStereoPoint(point);
 
     mav::pose_t msg = GetDefaultPoseMsg();
 
     lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
+    ProcessAllLcmMessages(fsm_control);
+
+    float point[3] = { 24, 0, 0+altitude };
+    SendStereoPoint(point);
+    SendStereoPoint(point); // double publish for the filter
+    ProcessAllLcmMessages(fsm_control);
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
 
     // ensure that we have changed trajectories
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
@@ -331,7 +431,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
         msg.pos[0] = state_t(0);
         msg.pos[1] = state_t(1);
-        msg.pos[2] = state_t(2);
+        msg.pos[2] = state_t(2) + altitude;
 
         msg.vel[0] = state_t(6);
         msg.vel[1] = state_t(7);
@@ -356,15 +456,21 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
 
         lcm_->publish(pose_channel_, &msg);
-        ProcessAllLcmMessages();
+        ProcessAllLcmMessages(fsm_control);
     }
 
     // now add a new obstacle right in front!
     std::cout << "NEW POINT" << std::endl;
-    float point2[3] = { 18, 12, 0 };
-    SendStereoPoint(point2);
     lcm_->publish(pose_channel_, &msg);
-    ProcessAllLcmMessages();
+    ProcessAllLcmMessages(fsm_control);
+
+    float point2[3] = { 18, 12, 0+altitude };
+    SendStereoPoint(point2);
+    SendStereoPoint(point2);
+    ProcessAllLcmMessages(fsm_control);
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
 
     fsm_control->GetOctomap()->Draw(lcm_->getUnderlyingLCM());
     BotTrans body_to_local;
@@ -384,8 +490,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
     delete fsm_control;
 
-    lcm_->unsubscribe(pose_sub);
-    lcm_->unsubscribe(stereo_sub);
+    UnsubscribeLcmChannels();
 }
 
 

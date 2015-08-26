@@ -89,6 +89,7 @@ int main(int argc,char** argv) {
     sigma0_chi_z = deg2rad(sigma0_chi_z);
 
     stable_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
+    int start_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.climb_no_throttle_controller");
 
     std::string trajectory_dir = std::string(bot_param_get_str_or_fail(param, "tvlqr_controller.library_dir"));
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
@@ -105,6 +106,7 @@ int main(int argc,char** argv) {
 
 
     const Trajectory *stable_controller_traj = trajlib.GetTrajectoryByNumber(stable_controller);
+    const Trajectory *start_controller_traj = trajlib.GetTrajectoryByNumber(start_controller);
 
     control = new TvlqrControl(converter, *stable_controller_traj);
 
@@ -121,7 +123,7 @@ int main(int argc,char** argv) {
     // control-c handler
     signal(SIGINT,sighandler);
 
-    control->SetTrajectory(*stable_controller_traj);
+    control->SetTrajectory(*start_controller_traj);
 
     printf("Receiving LCM:\n\tState estimate: %s\n\tTVLQR action: %s\nSending LCM:\n\t%s\n", pose_channel.c_str(), tvlqr_action_channel.c_str(), deltawing_u_channel.c_str());
 

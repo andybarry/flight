@@ -20,6 +20,7 @@
 #include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
 #include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
+#include "../../estimators/StereoFilter/StereoFilter.hpp"
 
 #define IMU_DOWNSAMPLE_RATE 2 // only read every other message
 
@@ -49,13 +50,29 @@ class StateMachineControl {
         void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
         void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
+        void SetTakeoffTime() { t_takeoff_ = ConvertTimestampToSeconds(GetTimestampNow()); }
+
         bool CheckTrajectoryExpired();
+        bool IsTakeoffAccel(const mav::pose_t &msg) const;
+        bool HasClearedCable(const mav::pose_t &msg) const;
+        bool ReachedCrusingAltitude(const mav::pose_t &msg) const;
+        bool VelocityOkForThrottle(const mav::pose_t &msg) const;
+
 
         AircraftStateMachineContext* GetFsmContext() { return &fsm_; }
         const StereoOctomap* GetOctomap() const { return octomap_; }
         const TrajectoryLibrary* GetTrajectoryLibrary() const { return trajlib_; }
 
         std::string GetCurrentStateName() { return std::string(fsm_.getState().getName()); }
+
+        int GetClimbNoThrottleTrajNum() const { return climb_no_throttle_trajnum_; }
+        int GetClimbWithThrottleTrajNum() const { return climb_with_throttle_trajnum_; }
+
+        void PrintString(std::string str) const { std::cout << str << std::endl; }
+        std::string GetArmedString() const { return "ARMED FOR TAKEOFF."; }
+        std::string GetTakeoffDetectedString() const { return "TAKEOFF DETECTED."; }
+
+
 
     private:
 
@@ -66,6 +83,8 @@ class StateMachineControl {
         StereoOctomap *octomap_;
         TrajectoryLibrary *trajlib_;
 
+        StereoFilter *stereo_filter_;
+
         lcm::LCM *lcm_;
 
         BotParam *param_;
@@ -73,6 +92,15 @@ class StateMachineControl {
 
         double safe_distance_;
         double min_improvement_to_switch_trajs_;
+        double takeoff_threshold_x_;
+        double takeoff_max_y_;
+        double takeoff_max_z_;
+
+        double t_clear_cable_;
+        double crusing_altitude_;
+        double min_velocity_x_for_throttle_;
+
+        double t_takeoff_ = -1;
 
         const Trajectory *current_traj_;
 
@@ -80,6 +108,8 @@ class StateMachineControl {
         int64_t traj_start_t_ = -1;
 
         const Trajectory *stable_traj_;
+        int climb_no_throttle_trajnum_;
+        int climb_with_throttle_trajnum_;
 
         std::string tvlqr_action_out_channel_;
 
