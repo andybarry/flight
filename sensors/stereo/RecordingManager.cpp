@@ -464,6 +464,8 @@ bool RecordingManager::SetPlaybackVideoDirectory(string video_directory) {
     using_video_directory_ = true;
     using_video_from_disk_ = true;
 
+    std::cout << "yep" << std::endl;
+
     return true;
 }
 
@@ -604,19 +606,20 @@ void RecordingManager::RecFrameHud(Mat hud_frame, bool is_color, std::string pre
  *
  */
 int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number) {
+    // first, load the log directory
+    std::string cpu_dir, datetime;
 
-    char tmbuf[64], buf[64];
+    if (hostname_.length() == 0) {
+        std::cout << "Waiting for hostname..." << std::endl;
+        return -1;
+    }
 
-    // convert the timestamp to a date
-    struct tm *nowtm;
-    time_t tv_sec = timestamp / 1000000.0;
-    nowtm = localtime(&tv_sec);
-    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d", nowtm);
-    sprintf(buf, "%s", tmbuf);
+    std::tie(cpu_dir, datetime) = GetVideoDirectory(timestamp, video_directory_);
 
-    string datetime = buf;
+    std::cout << cpu_dir << std::endl;
 
-    int skip_amount = MatchVideoFile(video_directory_, datetime, stereo_config_.usePGM, video_number);
+    int skip_amount = MatchVideoFile(video_directory_ + "/" + cpu_dir + "/onboard-vids/"
+        + hostname_, datetime, stereo_config_.usePGM, video_number);
 
 
     // format the video number as a two-decimal value
@@ -625,11 +628,13 @@ int RecordingManager::LoadVideoFileFromDir(long long timestamp, int video_number
     string video_number_str = filenumber;
 
     // now we have the full filename
-    string left_video = video_directory_ + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
+    string left_video = video_directory_ + "/" + cpu_dir + "/onboard-vids/"
+        + hostname_ + "/videoL-skip-" + to_string(skip_amount) + "-" + datetime
         + "." + video_number_str;
 
 
-    string right_video = video_directory_ + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
+    string right_video = video_directory_ + "/" + cpu_dir + "/onboard-vids/"
+        + hostname_ + "/videoR-skip-" + to_string(skip_amount) + "-" + datetime
         + "." + video_number_str;
 
     if (stereo_config_.usePGM == false) {

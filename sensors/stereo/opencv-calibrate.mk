@@ -1,5 +1,5 @@
 TARGET = opencv-calibrate
-SOURCES = opencv-calibrate.cpp opencv-stereo-util.cpp ../../externals/jpeg-utils/jpeg-utils.c
+SOURCES = opencv-calibrate.cpp opencv-stereo-util.cpp ../../externals/jpeg-utils/jpeg-utils.c ../../utils/utils/RealtimeUtils.cpp
 
 LCMDIR=../../LCM/
 

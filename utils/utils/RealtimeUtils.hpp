@@ -14,6 +14,8 @@
 #include <vector>
 #include <sstream>
 #include <boost/algorithm/string/replace.hpp> // for substring replacement
+#include <boost/format.hpp>
+#include <boost/filesystem.hpp>
 
 #include <bot_core/rotations.h>
 #include <bot_frames/bot_frames.h>
@@ -77,6 +79,8 @@ void DrawOriginLcmGl(lcm_t *lcm);
 std::string ReplaceUserVarInPath(std::string path);
 
 double ConvertTimestampToSeconds(int64_t timestamp);
+
+std::tuple<std::string, std::string> GetVideoDirectory(int64_t timestamp, std::string log_directory);
 
 
 #endif

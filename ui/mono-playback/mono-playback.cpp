@@ -70,7 +70,6 @@ void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcm
     std::string channel_name(channel);
 
     computer_number_char = channel_name.back();
-
 }
 
 
@@ -82,23 +81,13 @@ std::string GetMonoFilename(long timestamp, int video_number) {
         return "";
     }
 
-    char tmbuf[64], buf[64];
-
-    // figure out what time the plane thinks it is
-    struct tm *nowtm;
-    time_t tv_sec = timestamp / 1000000.0;
-    nowtm = localtime(&tv_sec);
-    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d", nowtm);
-    sprintf(buf, "%s", tmbuf);
-
-    std::string date_str = std::string(buf);
-
-    std::string dir;
+    std::string dir, date_str, video_dir;
 
     if (video_directory != "") {
         dir = video_directory;
     } else {
-        dir = log_directory + GetVideoDirectory(date_str);
+        std::tie(video_dir, date_str) = GetVideoDirectory(timestamp, log_directory);
+        dir = log_directory + video_dir;
     }
 
     if (dir == "") {
@@ -117,32 +106,7 @@ std::string GetMonoFilename(long timestamp, int video_number) {
     return path;
 }
 
-/**
- * Converts a timestamp into a date, searches for that date in the directory
- * given by the user, and returns the directory name if it is unique.  Returns the
- * first if there is more than one directory.
- */
-std::string GetVideoDirectory(std::string date_str) {
 
-    boost::filesystem::directory_iterator end_itr; // default construction
-                                                   // yields past-the-end
-    for (boost::filesystem::directory_iterator itr(log_directory);
-        itr != end_itr; ++itr ) {
-
-        // iterate through the directories availible
-
-
-        string this_file = itr->path().leaf().string();
-
-        if (this_file.find(date_str) != string::npos) {
-            return this_file;
-        }
-
-    }
-
-    return "";
-
-}
 
 int main(int argc,char** argv) {
 
