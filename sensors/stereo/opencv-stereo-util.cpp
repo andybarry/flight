@@ -274,7 +274,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         return false;
     }
 
-    configStruct->calibrationDir = calibDir;
+    configStruct->calibrationDir = ReplaceUserVarInPath(calibDir);
 
     configStruct->lastValidPixelRow = g_key_file_get_integer(keyfile,
         "cameras", "lastValidPixelRow", &gerror);

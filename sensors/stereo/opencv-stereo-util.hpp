@@ -23,6 +23,7 @@
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
 
 #include "../../LCM/lcmt_stereo.h"
+#include "../../utils/utils/RealtimeUtils.hpp"
 
 
 
