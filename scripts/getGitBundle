@@ -7,10 +7,13 @@ fi
 
 cd $HOME/realtime
 
+echo "Packing bundle on remote..."
 ssh odroid@$1 "cd /home/odroid/realtime; git bundle create commits.bundle HEAD~50..HEAD"
 
+echo "Downloading bundle..."
 rsync --progress odroid@$1:/home/odroid/realtime/commits.bundle /home/$USER/commits.bundle
 
-/home/abarry/realtime/scripts/unpackGitBundle "/home/abarry/commits.bundle"
+$HOME/realtime/scripts/unpackGitBundle "$HOME/commits.bundle"
 
+echo "Removing bundle from remote..."
 ssh odroid@$1 "rm /home/odroid/realtime/commits.bundle"
