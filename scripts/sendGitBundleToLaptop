@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: sendGitBundleToLaptop <hostname>"
+    exit 1
+fi
+
+cd $HOME/realtime
+
+git bundle create commits.bundle HEAD~50..HEAD
+
+rsync --progress commits.bundle abarry@$1:/home/abarry/
+
+ssh abarry@$1 "/home/abarry/realtime/scripts/unpackGitBundle /home/abarry/commits.bundle"
+
+rm commits.bundle
