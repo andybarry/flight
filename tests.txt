@@ -1,7 +1,7 @@
 controllers/tvlqr/test
 controllers/TrajectoryLibrary/test
+controllers/state-machine/test
 utils/ServoConverter/test
 estimators/StereoOctomap/test
 estimators/StereoFilter/test
 utils/utils/utils-test
-

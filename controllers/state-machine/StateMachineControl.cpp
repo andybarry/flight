@@ -24,7 +24,6 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     stereo_filter_ = new StereoFilter(filter_distance_threshold);
 
-
     if (min_improvement_to_switch_trajs_ <= 0) {
         std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
         exit(1);
@@ -41,14 +40,14 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
         exit(1);
     }
 
-    current_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);
+    current_traj_ = trajlib_->GetTrajectoryByNumber(climb_no_throttle_trajnum_);
 
     if (current_traj_ == nullptr) {
         std::cerr << "ERROR: Stable trajectory (# " << stable_traj_num << ") does not exist." << std::endl;
         exit(1);
     }
 
-    stable_traj_ = current_traj_;
+    stable_traj_ = trajlib_->GetTrajectoryByNumber(stable_traj_num);;
     next_traj_ = current_traj_;
 
     if (stable_traj_->IsTimeInvariant() == false) {
@@ -60,7 +59,6 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     visualization_ = visualization;
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
-
 }
 
 StateMachineControl::~StateMachineControl() {
@@ -97,11 +95,8 @@ void StateMachineControl::DoDelayedImuUpdate() {
 }
 
 void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg) {
-
     const lcmt::stereo *msg2 = stereo_filter_->ProcessMessage(*msg);
-
     octomap_->ProcessStereoMessage(msg2);
-
     delete msg2;
 }
 
