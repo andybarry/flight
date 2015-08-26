@@ -234,7 +234,27 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->gps_channel = gps_channel;
 
+    const char *cpu_info_channel1 = g_key_file_get_string(keyfile, "lcm", "cpu_info_channel1", NULL);
 
+    if (cpu_info_channel1 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify cpu_info_channel1 (or I failed to read it). Parameter: lcm.cpu_info_channel1\n");
+
+        // this is not a fatal error, don't bail out
+        cpu_info_channel1 = "";
+    }
+    configStruct->cpu_info_channel1 = cpu_info_channel1;
+
+    const char *cpu_info_channel2 = g_key_file_get_string(keyfile, "lcm", "cpu_info_channel2", NULL);
+
+    if (cpu_info_channel2 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify cpu_info_channel2 (or I failed to read it). Parameter: lcm.cpu_info_channel2\n");
+
+        // this is not a fatal error, don't bail out
+        cpu_info_channel2 = "";
+    }
+    configStruct->cpu_info_channel2 = cpu_info_channel2;
 
     char *lcmUrl = g_key_file_get_string(keyfile, "lcm", "url", NULL);
     if (lcmUrl == NULL)
@@ -254,7 +274,7 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
         return false;
     }
 
-    configStruct->calibrationDir = calibDir;
+    configStruct->calibrationDir = ReplaceUserVarInPath(calibDir);
 
     configStruct->lastValidPixelRow = g_key_file_get_integer(keyfile,
         "cameras", "lastValidPixelRow", &gerror);

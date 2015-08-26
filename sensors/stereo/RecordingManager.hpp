@@ -5,6 +5,7 @@
 #include "../../ui/hud/hud.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include "../../utils/utils/RealtimeUtils.hpp"
 
 #define RINGBUFFER_SIZE (120*50) // number of seconds to allocate for recording * framerate
 
@@ -51,6 +52,8 @@ class RecordingManager {
 
         void SetQuietMode(bool x) { quiet_mode_ = x; }
 
+        void SetHostname(std::string hostname) { hostname_ = hostname; }
+
     private:
 
         string SetupVideoWriterPGM(string dirnamePrefix, bool increment_number);
@@ -82,6 +85,8 @@ class RecordingManager {
 
         string pgm_left_dir_; // directory for the "loaded" pgm files
         string pgm_right_dir_;
+
+        std::string hostname_ = "";
 
         VideoWriter record_hud_writer_;
 

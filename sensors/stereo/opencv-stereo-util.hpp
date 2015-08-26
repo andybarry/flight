@@ -23,6 +23,7 @@
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
 
 #include "../../LCM/lcmt_stereo.h"
+#include "../../utils/utils/RealtimeUtils.hpp"
 
 
 
@@ -66,6 +67,8 @@ struct OpenCvStereoConfig
     string battery_status_channel;
     string servo_out_channel;
     string optotrak_channel;
+    string cpu_info_channel1;
+    string cpu_info_channel2;
 
     int disparity;
     int infiniteDisparity;

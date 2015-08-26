@@ -690,3 +690,40 @@ std::string ReplaceUserVarInPath(std::string path) {
 double ConvertTimestampToSeconds(int64_t timestamp) {
     return timestamp / 1000000.0;
 }
+
+/**
+ * Converts a timestamp into a date, searches for that date in the directory
+ * given by the user, and returns the directory name if it is unique.  Returns the
+ * first if there is more than one directory.
+ */
+std::tuple<std::string, std::string> GetVideoDirectory(int64_t timestamp, std::string log_directory) {
+    char tmbuf[64], buf[64];
+
+    // figure out what time the plane thinks it is
+    struct tm *nowtm;
+    time_t tv_sec = timestamp / 1000000.0;
+    nowtm = localtime(&tv_sec);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d", nowtm);
+    sprintf(buf, "%s", tmbuf);
+
+    std::string date_str = std::string(buf);
+
+    boost::filesystem::directory_iterator end_itr; // default construction
+                                                   // yields past-the-end
+    for (boost::filesystem::directory_iterator itr(log_directory);
+        itr != end_itr; ++itr ) {
+
+        // iterate through the directories availible
+
+
+        std::string this_file = itr->path().leaf().string();
+
+        if (this_file.find(date_str) != std::string::npos) {
+            return std::tuple<std::string, std::string>(this_file, date_str);
+        }
+
+    }
+
+    return std::tuple<std::string, std::string>("", date_str);
+
+}
