@@ -16,6 +16,4 @@ void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcm
 
 std::string GetMonoFilename(long timestamp, int video_number);
 
-std::string GetVideoDirectory(std::string date_str);
-
 #endif

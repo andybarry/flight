@@ -39,7 +39,7 @@ class RcSwitchDispatch {
 
         std::string stereo_channel_, rc_trajectory_commands_channel_, state_machine_go_autonomous_channel_;
 
-        int stable_traj_num_, climb_traj_num_;
+        int stable_traj_num_;
         int num_trajs_, num_stereo_actions_;
         int num_switch_positions_;
 

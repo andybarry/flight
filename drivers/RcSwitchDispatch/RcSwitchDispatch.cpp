@@ -16,7 +16,6 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     }
 
     stable_traj_num_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.stable_controller");
-    climb_traj_num_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_trajectroy");
 
     num_switch_positions_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_switch_positions");
     num_trajs_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_trajectories");

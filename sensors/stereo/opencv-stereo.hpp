@@ -30,6 +30,7 @@
 #include "../../LCM/lcmt_deltawing_u.h"
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
+#include "../../LCM/lcmt_cpu_info.h"
 
 
 #include "../../LCM/lcmt_stereo_control.h"
@@ -89,8 +90,6 @@ struct RemapState
     int flags;
 };
 
-bool NonBlockingLcm(lcm_t *lcm);
-
 bool ResetPointGreyCameras();
 
 void StartRecording();
@@ -116,5 +115,7 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user);
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
+
+void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_cpu_info *msg, void *user);
 
 #endif
