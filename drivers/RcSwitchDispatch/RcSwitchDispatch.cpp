@@ -1,12 +1,13 @@
 #include "RcSwitchDispatch.hpp"
 #include "../../externals/ConciseArgs.hpp"
 
-RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel, std::string state_machine_go_autonomous_channel, std::string stereo_control_channel) {
+RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel, std::string state_machine_go_autonomous_channel, std::string stereo_control_channel, std::string arm_for_takeoff_channel) {
     lcm_ = lcm;
     rc_trajectory_commands_channel_ = rc_trajectory_commands_channel;
     stereo_channel_ = stereo_channel;
     state_machine_go_autonomous_channel_ = state_machine_go_autonomous_channel;
     stereo_control_channel_ = stereo_control_channel;
+    arm_for_takeoff_channel_ = arm_for_takeoff_channel;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
     bot_frames_ = bot_frames_new(lcm_->getUnderlyingLCM(), param_);
@@ -23,8 +24,8 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     num_stereo_actions_ = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_stereo_actions");
     int num_unused = bot_param_get_int_or_fail(param_, "rc_switch_action.number_of_unused_slots");
 
-    if (num_trajs_ + num_stereo_actions_ + num_unused  + 1 != num_switch_positions_) { // + 1 for stop stereo
-        std::cerr << "ERROR: num_trajs (" << num_trajs_ << ") + num_stereo (" << num_stereo_actions_ << ") + recording actions (1) + num_unused (" << num_unused << ") != num_switch_positions (" << num_switch_positions_ << ")" << std::endl;
+    if (num_trajs_ + num_stereo_actions_ + num_unused  + 2 != num_switch_positions_) { // + 1 for stop stereo
+        std::cerr << "ERROR: num_trajs (" << num_trajs_ << ") + num_stereo (" << num_stereo_actions_ << ") + other actions (2) + num_unused (" << num_unused << ") != num_switch_positions (" << num_switch_positions_ << ")" << std::endl;
         exit(1);
     }
 
@@ -32,6 +33,7 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.trajectories", trajectory_mapping_, num_trajs_);
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.stereo_actions", stereo_mapping_, num_stereo_actions_);
     stop_stereo_pos_ = bot_param_get_int_or_fail(param_, "rc_switch_action.stop_stereo_recording_switch_position");
+    arm_for_takeoff_pos_ = bot_param_get_int_or_fail(param_, "arm_for_takeoff_switch_position");
 
     stabilization_mode_ = false;
 }
@@ -59,6 +61,8 @@ void RcSwitchDispatch::ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::s
         } else if (switch_action < num_trajs_ + num_stereo_actions_) {
             SendGoAutonomousMsg();
             SendStereoMsg(stereo_mapping_[switch_action - num_trajs_]);
+        } else if (switch_action == arm_for_takeoff_pos_) {
+            SendArmForTakeoffMsg();
         } else if (switch_action == stop_stereo_pos_) {
             SendStereoWriteToDiskMsg();
         } else {
@@ -125,7 +129,12 @@ void RcSwitchDispatch::SendStereoWriteToDiskMsg() const {
     msg.stereo_control = 0; // this is the stop, write to disk, then restart code
 
     lcm_->publish(stereo_control_channel_, &msg);
+}
 
+void RcSwitchDispatch::SendArmForTakeoffMsg() const {
+    lcmt::timestamp arm_msg;
+    arm_msg.timestamp = GetTimestampNow();
+    lcm_->publish(state_machine_go_autonomous_channel_, &arm_msg);
 }
 
 void RcSwitchDispatch::DrakeToCameraFrame(double point_in[], double point_out[]) const {
@@ -217,6 +226,7 @@ int main(int argc,char** argv) {
     std::string stereo_channel = "stereo";
     std::string state_machine_go_autonomous_channel = "state-machine-go-autonomous";
     std::string stereo_control_channel = "stereo-control";
+    std::string arm_for_takeoff_channel = "arm-for-takeoff";
 
 
     ConciseArgs parser(argc, argv);
@@ -226,7 +236,7 @@ int main(int argc,char** argv) {
     parser.add(rc_action_channel, "r", "rc-action-channel", "LCM channel to listen for RC switch actions on.");
     parser.add(state_machine_go_autonomous_channel, "a", "state-machine-go-autonomous-channel", "LCM channel to send go-autonmous messages on.");
     parser.add(stereo_control_channel, "c", "stereo-control-channel", "LCM channel to send stereo control messages on.");
-
+    parser.add(arm_for_takeoff_channel, "A", "arm-for-takeoff-channel", "LCM channel to send arm for takeoff messages on.");
     parser.parse();
 
 
@@ -244,12 +254,12 @@ int main(int argc,char** argv) {
         return 1;
     }
 
-    RcSwitchDispatch rc_dispatch(&lcm, rc_trajectory_commands_channel, stereo_channel, state_machine_go_autonomous_channel, stereo_control_channel);
+    RcSwitchDispatch rc_dispatch(&lcm, rc_trajectory_commands_channel, stereo_channel, state_machine_go_autonomous_channel, stereo_control_channel, arm_for_takeoff_channel);
 
     // subscribe to LCM channels
     lcm.subscribe(rc_action_channel, &RcSwitchDispatch::ProcessRcMsg, &rc_dispatch);
 
-    printf("Recieving LCM:\n\tRC Switch Actions: %s\nSending LCM:\n\tRC Trajectory Requests: %s\n\tStereo Messages: %s\n\tState Machine Go Autonomous: %s\n\tStereo Control: %s\n", rc_action_channel.c_str(), rc_trajectory_commands_channel.c_str(), stereo_channel.c_str(), state_machine_go_autonomous_channel.c_str(), stereo_control_channel.c_str());
+    printf("Recieving LCM:\n\tRC Switch Actions: %s\nSending LCM:\n\tRC Trajectory Requests: %s\n\tStereo Messages: %s\n\tState Machine Go Autonomous: %s\n\tStereo Control: %s\n\tArm for Takeoff: %s\n", rc_action_channel.c_str(), rc_trajectory_commands_channel.c_str(), stereo_channel.c_str(), state_machine_go_autonomous_channel.c_str(), stereo_control_channel.c_str(), arm_for_takeoff_channel.c_str());
 
     while (0 == lcm.handle());
 

@@ -13,6 +13,8 @@ int main(int argc,char** argv) {
     std::string state_machine_go_autonomous_channel = "state-machine-go-autonomous";
 
     std::string tvlqr_action_out_channel = "tvlqr-action";
+    std::string arm_for_takeoff_channel = "arm-for-takeoff";
+    std::string state_message_channel = "state-machine-state";
 
 
     ConciseArgs parser(argc, argv);
@@ -23,7 +25,8 @@ int main(int argc,char** argv) {
     parser.add(rc_trajectory_commands_channel, "r", "rc-trajectory-commands-channel", "LCM channel to listen for RC trajectory commands on.");
     parser.add(state_machine_go_autonomous_channel, "a", "state-machine-go-autonomous-channel", "LCM channel to send go-autonmous messages on.");
     parser.add(visualization, "v", "visualization", "Enables visualization for HUD / LCMGL.");
-
+    parser.add(arm_for_takeoff_channel, "A", "arm-for-takeoff-channel", "LCM channel to receive arm for takeoff messages on.");
+    parser.add(state_message_channel, "s" "state-machine-state-channel", "LCM channel to send state machine state messages on.");
 
     parser.parse();
 
@@ -49,17 +52,15 @@ int main(int argc,char** argv) {
 
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
-    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, visualization);
+    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, state_message_channel, visualization);
     //fsm_control.GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
     lcm.subscribe(pose_channel, &StateMachineControl::ProcessImuMsg, &fsm_control);
-
     lcm.subscribe(stereo_channel, &StateMachineControl::ProcessStereoMsg, &fsm_control);
-
     lcm.subscribe(rc_trajectory_commands_channel, &StateMachineControl::ProcessRcTrajectoryMsg, &fsm_control);
-
     lcm.subscribe(state_machine_go_autonomous_channel, &StateMachineControl::ProcessGoAutonomousMsg, &fsm_control);
+    lcm.subscribe(arm_for_takeoff_channel, &StateMachineControl::ProcessArmForTakeoffMsg, &fsm_control);
 
     omp_set_num_threads(3); // set the maximum number of threads
                             // to be 1 less than our number of
@@ -67,9 +68,7 @@ int main(int argc,char** argv) {
                             // the tvlqr process
 
 
-    printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\nSending LCM:\n\tTVLQR Action: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), tvlqr_action_out_channel.c_str());
-
-    std::cout << "ARMED FOR TAKEOFF." << std::endl;
+    printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\n\tArm for Takeoff: %s\n\nSending LCM:\n\tTVLQR Action: %s\n\tState Machine State: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), arm_for_takeoff_channel.c_str(), tvlqr_action_out_channel.c_str(), state_message_channel.c_str());
 
     while (true) {
         while (NonBlockingLcm(lcm.getUnderlyingLCM())) {}

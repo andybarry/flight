@@ -28,7 +28,7 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, bool visualization);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, bool visualization);
         ~StateMachineControl();
 
         void DoDelayedImuUpdate();
@@ -49,6 +49,7 @@ class StateMachineControl {
         void ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg);
         void ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg);
         void ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
+        void ProcessArmForTakeoffMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
         void SetTakeoffTime() { t_takeoff_ = ConvertTimestampToSeconds(GetTimestampNow()); }
 
@@ -68,9 +69,13 @@ class StateMachineControl {
         int GetClimbNoThrottleTrajNum() const { return climb_no_throttle_trajnum_; }
         int GetClimbWithThrottleTrajNum() const { return climb_with_throttle_trajnum_; }
 
-        void PrintString(std::string str) const { std::cout << str << std::endl; }
-        std::string GetArmedString() const { return "ARMED FOR TAKEOFF."; }
-        std::string GetTakeoffDetectedString() const { return "TAKEOFF DETECTED."; }
+        void SendStateMsg(std::string state) const {
+            lcmt::debug msg;
+            msg.utime = GetTimestampNow();
+            msg.debug = state;
+
+            lcm_->publish(state_message_channel_, &msg);
+        }
 
 
 
@@ -111,7 +116,7 @@ class StateMachineControl {
         int climb_no_throttle_trajnum_;
         int climb_with_throttle_trajnum_;
 
-        std::string tvlqr_action_out_channel_;
+        std::string tvlqr_action_out_channel_, state_message_channel_;
 
         bool need_imu_update_;
         bool visualization_;

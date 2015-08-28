@@ -21,6 +21,11 @@
 
 
 WaitForTakeoff
+    Entry {
+        SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
+        RequestNewTrajectory();
+        SendStateMsg("WaitForTakeoff");
+    }
 {
     ImuUpdate(msg: const mav::pose_t&)
         [ ctxt.IsTakeoffAccel(msg) == true ]
@@ -40,6 +45,11 @@ WaitForTakeoff
             RequestNewTrajectory();
         }
 
+    ArmForTakeoff()
+        // []
+        nil
+        {}
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
@@ -48,6 +58,9 @@ WaitForTakeoff
 }
 
 LargeAccel1
+    Entry {
+        SendStateMsg("LargeAccel1");
+    }
 {
     ImuUpdate(msg: const mav::pose_t&)
         [ ctxt.IsTakeoffAccel(msg) == true ]
@@ -55,6 +68,11 @@ LargeAccel1
         {}
 
     ImuUpdate(msg: const mav::pose_t&)
+        // []
+        WaitForTakeoff
+        {}
+
+    ArmForTakeoff()
         // []
         WaitForTakeoff
         {}
@@ -78,7 +96,7 @@ TakeoffNoThrottle
         SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
         RequestNewTrajectory();
         SetTakeoffTime();
-        PrintString(ctxt.GetTakeoffDetectedString());
+        SendStateMsg("TakeoffNoThrottle");
     }
 {
     ImuUpdate(msg: const mav::pose_t&)
@@ -101,6 +119,11 @@ TakeoffNoThrottle
         nil
         {}
 
+    ArmForTakeoff()
+        // []
+        WaitForTakeoff
+        {}
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
@@ -112,6 +135,7 @@ Climb
     Entry {
         SetNextTrajectoryByNumber(ctxt.GetClimbWithThrottleTrajNum());
         RequestNewTrajectory();
+        SendStateMsg("Climb");
     }
 {
     ImuUpdate(msg: const mav::pose_t&)
@@ -129,6 +153,11 @@ Climb
         nil
         {}
 
+    ArmForTakeoff()
+        // []
+        WaitForTakeoff
+        {}
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
@@ -136,7 +165,10 @@ Climb
 }
 
 ExecuteTrajectory
-    Entry { RequestNewTrajectory(); }
+    Entry {
+        RequestNewTrajectory();
+        SendStateMsg("ExecuteTrajectory");
+    }
 {
 
     ImuUpdate(msg: const mav::pose_t&)
@@ -154,6 +186,11 @@ ExecuteTrajectory
         nil
         {}
 
+    ArmForTakeoff()
+        // []
+        WaitForTakeoff
+        {}
+
     SingleTrajectoryRequest(traj_num: int)
         // []
         RunSingleTrajectory
@@ -167,7 +204,10 @@ ExecuteTrajectory
 }
 
 RunSingleTrajectory
-    Entry { RequestNewTrajectory(); }
+    Entry {
+        RequestNewTrajectory();
+        SendStateMsg("RunSingleTrajectory");
+    }
 {
     ImuUpdate(msg: const mav::pose_t&)
         // []
@@ -183,6 +223,11 @@ RunSingleTrajectory
         // []
         ExecuteTrajectory
         { SetBestTrajectory(); }
+
+    ArmForTakeoff()
+        // []
+        WaitForTakeoff
+        {}
 }
 
 

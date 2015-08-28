@@ -26,7 +26,7 @@
 class RcSwitchDispatch {
 
     public:
-        RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel, std::string state_machine_go_autonomous_channel, std::string stereo_control_channel);
+        RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_commands_channel, std::string stereo_channel, std::string state_machine_go_autonomous_channel, std::string stereo_control_channel, std::string arm_for_takeoff_channel);
 
         void ProcessRcMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::rc_switch_action *msg);
 
@@ -34,17 +34,19 @@ class RcSwitchDispatch {
         void SendTrajectoryRequest(int traj_num) const;
         void SendStereoMsg(int stereo_msg_num) const;
         void SendGoAutonomousMsg() const;
+        void SendArmForTakeoffMsg() const;
         void SendStereoWriteToDiskMsg() const;
         void DrakeToCameraFrame(double point_in[], double point_out[]) const;
         void SendStereoManyPoints(std::vector<float> x_in, std::vector<float> y_in, std::vector<float> z_in) const;
         int ServoMicroSecondsToSwitchPosition(int servo_value) const;
 
-        std::string stereo_channel_, rc_trajectory_commands_channel_, state_machine_go_autonomous_channel_, stereo_control_channel_;
+        std::string stereo_channel_, rc_trajectory_commands_channel_, state_machine_go_autonomous_channel_, stereo_control_channel_, arm_for_takeoff_channel_;
 
         int stable_traj_num_;
         int num_trajs_, num_stereo_actions_;
         int num_switch_positions_;
         int stop_stereo_pos_;
+        int arm_for_takeoff_pos_;
 
         int switch_rc_us_[MAX_PARAM_SIZE];
         int trajectory_mapping_[MAX_PARAM_SIZE];

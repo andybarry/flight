@@ -1,6 +1,6 @@
 #include "StateMachineControl.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, bool visualization) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, bool visualization) : fsm_(*this) {
     lcm_ = lcm;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -59,6 +59,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     visualization_ = visualization;
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
+    state_message_channel_ = state_message_channel;
 }
 
 StateMachineControl::~StateMachineControl() {
@@ -107,6 +108,10 @@ void StateMachineControl::ProcessRcTrajectoryMsg(const lcm::ReceiveBuffer *rbus,
 
 void StateMachineControl::ProcessGoAutonomousMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg) {
     fsm_.AutonomousMode();
+}
+
+void StateMachineControl::ProcessArmForTakeoffMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg) {
+    fsm_.ArmForTakeoff();
 }
 
 void StateMachineControl::PublishDebugMsg(std::string debug_str) const {
