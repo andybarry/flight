@@ -18,6 +18,8 @@ LCM/lcmt
 *.depend
 *_sm.cpp
 *_sm.h
+lastbuild.txt
+ui/git-monitor/git-monitor
 estimators/StereoFilter/test
 ui/trajectory-lcmgl/trajectory-lcmgl
 estimators/StereoOctomap/test_d

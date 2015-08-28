@@ -82,5 +82,8 @@ double ConvertTimestampToSeconds(int64_t timestamp);
 
 std::tuple<std::string, std::string> GetVideoDirectory(int64_t timestamp, std::string log_directory);
 
+std::string ExecuteProcessGetString(std::string cmd);
+
+std::string GetRealtimeDir();
 
 #endif

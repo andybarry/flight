@@ -215,8 +215,8 @@ endif
 endif
 
 # include dependencies
+ifneq "$(MAKECMDGOALS)" "clean_local"
 ifneq "$(MAKECMDGOALS)" "clean"
-ifneq "$(MAKECMDGOALS)" "clean_all"
 -include $(DEPFILES)
 endif
 endif
@@ -227,7 +227,7 @@ endif
 #_______________________________________________________________________________
 #                                                                          RULES
 
-.PHONY:	all subdirs subprojs target clean clean_all run debug depend dep \
+.PHONY:	all subdirs subprojs target clean_local clean run debug depend dep \
 	$(SUBDIRS) $(SUBPROJS)
 
 all: subdirs subprojs target
@@ -238,16 +238,16 @@ subprojs: $(SUBPROJS)
 
 target: $(TARGET)
 
-clean:
+clean_local:
 ifneq ($(or $(SUBDIRS),$(SUBPROJS)),)
-ifneq "$(MAKECMDGOALS)" "clean_all"
-	@echo "NOT RECURSING - use 'make clean_all' to clean subdirs and " \
+ifneq "$(MAKECMDGOALS)" "clean"
+	@echo "NOT RECURSING - use 'make clean' to clean subdirs and " \
 		"subprojs as well"
 endif
 endif
 	rm -f $(OBJECTS) $(TARGET) $(DEPFILES) core *~
 
-clean_all: subdirs subprojs clean
+clean: subdirs subprojs clean_local
 
 ifndef MKSTATICLIB
 ifndef MKSHAREDLIB

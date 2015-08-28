@@ -725,5 +725,22 @@ std::tuple<std::string, std::string> GetVideoDirectory(int64_t timestamp, std::s
     }
 
     return std::tuple<std::string, std::string>("", date_str);
+}
 
+// from http://stackoverflow.com/a/478960/730138
+std::string ExecuteProcessGetString(std::string cmd) {
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) return "ERROR";
+    char buffer[128];
+    std::string result = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);
+    return result;
+}
+
+std::string GetRealtimeDir() {
+    return std::string(getenv("HOME")) + "/realtime";
 }

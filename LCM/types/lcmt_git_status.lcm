@@ -1,0 +1,11 @@
+package lcmt;
+
+struct git_status
+{
+  int64_t timestamp;
+
+  string sha; // current git SHA
+  string sha_last_build; // SHA at the last build
+  int64_t last_build_timestamp; // timestamp of the last build
+
+}

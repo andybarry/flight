@@ -46,3 +46,8 @@ while read line; do
 done < $FILE
 
 
+# write files that record date and git SHA of last successful build
+SHA=`git rev-parse HEAD`
+LAST_BUILD_DATE=`date +%s`
+
+printf "SHA at last build: $SHA\nTimestmap of last build: $LAST_BUILD_DATE\n" > lastbuild.txt
