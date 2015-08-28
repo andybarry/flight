@@ -409,16 +409,16 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             if (servomsg.servo5_raw > 1703) {
                 // fully autonomous
                 servoOutMsg.is_autonomous = 1;
-                servoOutMsg.video_record = 1;
+                servoOutMsg.video_record = -1;
             } else if (servomsg.servo5_raw > 1303) {
                 // stabilization
                 servoOutMsg.is_autonomous = 1;
-                servoOutMsg.video_record = 1;
+                servoOutMsg.video_record = -1;
                 stabilization_mode = 1;
             } else {
                 // manual
                 servoOutMsg.is_autonomous = 0;
-                servoOutMsg.video_record = 0;
+                servoOutMsg.video_record = -1;
             }
 
             // send the lcm message
@@ -450,25 +450,6 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
             }
 
             last_servo6_raw = servomsg.servo6_raw;
-
-
-            if (last_stereo_control != servoOutMsg.video_record)
-            {
-                // something has changed, send a new message
-                lcmt_stereo_control stereo_control_msg;
-                stereo_control_msg.timestamp = getTimestampNow();
-                stereo_control_msg.stereo_control =
-                     servoOutMsg.video_record;
-
-                lcmt_stereo_control_publish(lcm_, stereo_control_channel.c_str(),
-                    &stereo_control_msg);
-
-                last_stereo_control = servoOutMsg.video_record;
-
-            }
-
-
-
 
             break;
 
