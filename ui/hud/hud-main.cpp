@@ -30,6 +30,7 @@ lcmt_stereo_subscription_t *stereo_sub;
 lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_action_sub;
+lcmt_debug_subscription_t *state_machine_sub;
 
 
 mutex image_mutex;
@@ -248,6 +249,12 @@ int main(int argc,char** argv) {
     if (bot_param_get_str(param, "lcm_channels.tvlqr_action", &tvlqr_action_channel) >= 0) {
         tvlqr_action_sub = lcmt_tvlqr_controller_action_subscribe(lcm, tvlqr_action_channel, &tvlqr_action_handler, &hud_objects);
     }
+
+    char *state_machine_state_channel;
+    if (bot_param_get_str(param, "lcm_channels.state_machine_state", &state_machine_state_channel) >= 0) {
+        state_machine_sub = lcmt_debug_subscribe(lcm, state_machine_state_channel, &state_machine_handler, &hud);
+    }
+
 
     // control-c handler
     signal(SIGINT,sighandler);
@@ -778,7 +785,11 @@ void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const
 
     hud_objects->hud->SetTrajectoryNumber(msg->trajectory_number);
     hud_objects->hud_object_drawer->SetTrajectoryNumber(msg->trajectory_number);
+}
 
+void state_machine_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_debug *msg, void *user) {
+    Hud *hud = (Hud*)user;
+    hud->SetStateMachineState(msg->debug);
 }
 
 

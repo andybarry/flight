@@ -12,6 +12,7 @@
 #include "../../LCM/lcmt_tvlqr_controller_action.h"
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
+#include "../../LCM/lcmt_debug.h"
 
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
 #include "lcmtypes/mav_indexed_measurement_t.h" // from pronto
@@ -65,5 +66,8 @@ void Draw2DPointsOnImage(Mat image, const vector<Point> *points);
 void OnMouse( int event, int x, int y, int flags, void* hud_in);
 void ResetBoxDrawing();
 void AskForFrame(int video_number, int frame_number);
+
+
+void state_machine_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_debug *msg, void *user);
 
 #endif

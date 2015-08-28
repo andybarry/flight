@@ -28,6 +28,7 @@ class Hud {
         int is_autonomous_;
         int clutter_level_;
         int traj_number_;
+        std::string state_machine_state_ = "State Unknown";
 
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
         void PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin);
@@ -40,6 +41,7 @@ class Hud {
         void DrawArtificialHorizon(Mat hud_img);
         void DrawCompass(Mat hud_img);
         void DrawBatteryVoltage(Mat hud_img);
+        void DrawStateMachineState(Mat hud_img);
 
         void DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bottom_left, Point bottom_right);
 
@@ -116,6 +118,8 @@ class Hud {
         void SetTimestamp(long timestamp) { timestamp_ = timestamp; }
 
         void SetTrajectoryNumber(int traj_number) { traj_number_ = traj_number; }
+
+        void SetStateMachineState(std::string state) { state_machine_state_ = state; }
 
         void SetImageScaling(float scale_factor) { scale_factor_ = scale_factor; }
         int GetImageScaling() { return scale_factor_; }

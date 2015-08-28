@@ -93,6 +93,7 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
         if (clutter_level_ > 1) {
             DrawGpsSpeed(hud_img);
             DrawAutonomous(hud_img);
+            DrawStateMachineState(hud_img);
             DrawFrameNumber(hud_img);
             DrawBatteryVoltage(hud_img);
             DrawDateTime(hud_img);
@@ -679,7 +680,7 @@ void Hud::DrawFrameNumber(Mat hud_img) {
 
     string frame_str = frame_char;
 
-    Point text_origin(0.76 * hud_img.cols, 0.866*hud_img.rows);
+    Point text_origin(0.76 * hud_img.cols, 0.822*hud_img.rows);
 
     PutHudText(hud_img, frame_str, text_origin);
 }
@@ -726,7 +727,7 @@ void Hud::DrawBatteryVoltage(Mat hud_img) {
         battery_str = "--- V";
     }
 
-    Point text_origin(0.76 * hud_img.cols, 0.93*hud_img.rows);
+    Point text_origin(0.76 * hud_img.cols, 0.89*hud_img.rows);
 
     PutHudText(hud_img, battery_str, text_origin);
 
@@ -1006,6 +1007,22 @@ void Hud::DrawAutonomous(Mat hud_img) {
     PutHudText(hud_img, str, Point(left, top));
 }
 
+void Hud::DrawStateMachineState(Mat hud_img) {
+    int top = 0.90 * hud_img.rows;
+    int left = 0.99 * hud_img.cols;
+
+    std::string str =  state_machine_state_;
+
+    int baseline = 0;
+
+    Size text_size = getTextSize(str, text_font_, hud_font_scale_small_, text_thickness_, &baseline);
+
+    int left_text = left - text_size.width;
+
+    PutHudTextSmall(hud_img, str, Point(left_text, top + text_size.height));
+
+}
+
 
 void Hud::DrawCenterMark(Mat hud_img) {
 
@@ -1059,5 +1076,4 @@ void Hud::DrawDateTime(Mat hud_img) {
 
     PutHudTextSmall(hud_img, datetime, Point(left - text_size.width - text_gap, top - text_size.height + baseline));
 }
-
 
