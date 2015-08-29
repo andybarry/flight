@@ -49,6 +49,7 @@
 		<Unit filename="ControllerHandler.h" />
 		<Unit filename="CpuInfoHandler.h" />
 		<Unit filename="DebugHandler.h" />
+		<Unit filename="GitStatusHandler.h" />
 		<Unit filename="GoForFlightApp.cpp" />
 		<Unit filename="GoForFlightApp.h" />
 		<Unit filename="GoForFlightMain.cpp" />
@@ -59,7 +60,6 @@
 		<Unit filename="StateEstimatorHandler.h" />
 		<Unit filename="StatusHandler.h" />
 		<Unit filename="StereoHandler.h" />
-		<Unit filename="TimesyncHandler.h" />
 		<Unit filename="wxsmith/GoForFlightframe.wxs" />
 		<Extensions>
 			<code_completion />

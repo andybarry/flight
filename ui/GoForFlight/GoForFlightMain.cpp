@@ -65,6 +65,8 @@ const long GoForFlightFrame::ID_STATICTEXT36 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT6 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT4 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT34 = wxNewId();
+const long GoForFlightFrame::ID_RADIOBUTTON1 = wxNewId();
+const long GoForFlightFrame::ID_RADIOBUTTON2 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT32 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT33 = wxNewId();
 const long GoForFlightFrame::ID_CHECKBOX1 = wxNewId();
@@ -108,6 +110,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     //(*Initialize(GoForFlightFrame)
     wxMenuItem* MenuItem2;
+    wxStaticBoxSizer* StaticBoxSizer2;
     wxMenuItem* MenuItem1;
     wxFlexGridSizer* FlexGridSizer1;
     wxFlexGridSizer* FlexGridSizer2;
@@ -184,8 +187,15 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     BoxSizer3->Add(lblGps, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblStateEsimator = new wxStaticText(Panel1, ID_STATICTEXT4, _("State Estimator: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     BoxSizer3->Add(lblStateEsimator, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    lblController = new wxStaticText(Panel1, ID_STATICTEXT34, _("Controller: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT34"));
+    lblController = new wxStaticText(Panel1, ID_STATICTEXT34, _("TVLQR: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT34"));
     BoxSizer3->Add(lblController, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer2 = new wxStaticBoxSizer(wxHORIZONTAL, Panel1, _("State Machine: --"));
+    StaticBoxSizer2->Add(46,20,0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    rdoLauncher = new wxRadioButton(Panel1, ID_RADIOBUTTON1, _("Launcher"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_RADIOBUTTON1"));
+    StaticBoxSizer2->Add(rdoLauncher, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    rdoThrow = new wxRadioButton(Panel1, ID_RADIOBUTTON2, _("Throw"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_RADIOBUTTON2"));
+    StaticBoxSizer2->Add(rdoThrow, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer3->Add(StaticBoxSizer2, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblBatteryStatus = new wxStaticText(Panel1, ID_STATICTEXT32, _("Battery Voltage: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT32"));
     BoxSizer3->Add(lblBatteryStatus, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblStereo = new wxStaticText(Panel1, ID_STATICTEXT33, _("Vision: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT33"));

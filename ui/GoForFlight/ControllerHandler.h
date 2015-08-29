@@ -7,7 +7,7 @@
 class ControllerHandler : public StatusHandler
 {
     public:
-        ControllerHandler() : StatusHandler("Controller: ") {
+        ControllerHandler() : StatusHandler("TVLQR: ") {
         }
         ~ControllerHandler() {}
 

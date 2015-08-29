@@ -14,6 +14,7 @@
 #include <wx/checkbox.h>
 #include <wx/sizer.h>
 #include <wx/menu.h>
+#include <wx/radiobut.h>
 #include <wx/panel.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
@@ -71,6 +72,8 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT6;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT34;
+        static const long ID_RADIOBUTTON1;
+        static const long ID_RADIOBUTTON2;
         static const long ID_STATICTEXT32;
         static const long ID_STATICTEXT33;
         static const long ID_CHECKBOX1;
@@ -115,6 +118,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblCodeSync;
         wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
+        wxRadioButton* rdoThrow;
         wxStaticText* lblDebug;
         wxStaticText* lblCodeSyncLocal;
         wxStaticText* lblTimesyncGps;
@@ -128,6 +132,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblCodeSyncCamLabel;
         wxStaticText* lblDiskFreeCam;
         wxCheckBox* chkGoPro;
+        wxRadioButton* rdoLauncher;
         wxStaticText* lblCodeSyncGpsLabel;
         wxStaticText* lblTimesyncCam;
         wxStaticText* lblDiskFreeGps;
