@@ -20,6 +20,7 @@ void GitMonitor::PublishMessage() {
     lcmt::git_status msg;
 
     msg.timestamp = GetTimestampNow();
+    sha.erase(std::remove(sha.begin(), sha.end(), '\n'), sha.end());
     msg.sha = sha;
 
     // get stuff from the last build file

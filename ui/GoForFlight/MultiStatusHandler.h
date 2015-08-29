@@ -142,7 +142,7 @@ class MultiStatusHandler : public StatusHandler {
             StatusHandler::CheckTime();
 
             for (int i = 0; i < NUM_TYPES; i++) {
-                if (abs(last_utime_[i] - StatusHandler::GetTimestampNow()) > MAX_MESSAGE_DELAY_USEC) {
+                if (abs(last_utime_[i] - StatusHandler::GetTimestampNow()) > timeout_threshold_) {
                     SetTimeout(ComputerType(i), true);
                 } else {
                     SetTimeout(ComputerType(i), false);

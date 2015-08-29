@@ -15,7 +15,6 @@
 #include <wx/sizer.h>
 #include <wx/menu.h>
 #include <wx/panel.h>
-#include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
 #include <wx/timer.h>
@@ -32,6 +31,7 @@
 #include "ControllerHandler.h"
 #include "DebugHandler.h"
 #include "AirspeedHandler.h"
+#include "GitStatusHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -49,6 +49,7 @@ class GoForFlightFrame: public wxFrame
         void OntmrUpdateLcmTrigger(wxTimerEvent& event);
         void OnClose(wxCloseEvent& event);
         void OnchkGoProClick(wxCommandEvent& event);
+        void OnchkObstacleGoProClick(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(GoForFlightFrame)
@@ -72,6 +73,8 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT34;
         static const long ID_STATICTEXT32;
         static const long ID_STATICTEXT33;
+        static const long ID_CHECKBOX1;
+        static const long ID_CHECKBOX2;
         static const long ID_STATICTEXT1;
         static const long ID_STATICTEXT10;
         static const long ID_STATICTEXT17;
@@ -87,38 +90,50 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT27;
         static const long ID_STATICTEXT28;
         static const long ID_STATICTEXT29;
+        static const long ID_STATICTEXT38;
+        static const long ID_STATICTEXT37;
+        static const long ID_STATICTEXT39;
+        static const long ID_STATICTEXT40;
+        static const long ID_STATICTEXT41;
+        static const long ID_STATICTEXT42;
+        static const long ID_STATICTEXT43;
         static const long ID_STATICTEXT35;
-        static const long ID_CHECKBOX1;
         static const long ID_PANEL1;
         static const long idMenuQuit;
         static const long idMenuAbout;
-        static const long ID_STATUSBAR1;
         static const long ID_TIMER1;
         //*)
 
         //(*Declarations(GoForFlightFrame)
+        wxStaticText* lblCodeSyncCam;
         wxStaticText* lblStateEsimator;
         wxStaticText* lblDiskFreeLocal;
+        wxCheckBox* chkObstacleGoPro;
         wxStaticText* lblLogCam;
         wxStaticText* lblTimesync;
         wxStaticText* lblAirspeed;
+        wxStaticText* lblCodeSync;
         wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
         wxStaticText* lblDebug;
-        wxStatusBar* StatusBar1;
+        wxStaticText* lblCodeSyncLocal;
         wxStaticText* lblTimesyncGps;
         wxStaticText* lblDiskFreeLabelCam;
+        wxStaticText* lblCodeSyncGps;
         wxStaticText* lblTimesyncLabelCam;
         wxStaticText* lblCpuCam;
         wxStaticText* lblTimesyncLocal;
         wxStaticText* lblCpuGpsLabel;
         wxStaticText* lblController;
+        wxStaticText* lblCodeSyncCamLabel;
         wxStaticText* lblDiskFreeCam;
         wxCheckBox* chkGoPro;
+        wxStaticText* lblCodeSyncGpsLabel;
         wxStaticText* lblTimesyncCam;
         wxStaticText* lblDiskFreeGps;
         wxStaticText* lblLogGpsLabel;
         wxStaticText* lblCpuLocal;
+        wxStaticText* lblCodeSyncLocalLabel;
         wxStaticText* lblTimesyncLabelLocal;
         wxStaticText* lblGps;
         wxStaticText* lblTimesyncLabelGps;
@@ -154,6 +169,8 @@ class GoForFlightFrame: public wxFrame
         ControllerHandler controller_handler_;
         DebugHandler debug_handler_;
         AirspeedHandler airspeed_handler_;
+        GitStatusHandler git_status_handler_;
+
 
         DECLARE_EVENT_TABLE()
 };

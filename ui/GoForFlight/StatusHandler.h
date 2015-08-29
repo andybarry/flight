@@ -5,8 +5,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define MAX_MESSAGE_DELAY_USEC 2000000
-
 class StatusHandler
 {
     public:
@@ -67,6 +65,10 @@ class StatusHandler
             }
         }
 
+        void SetTimeoutThreshold(int64_t threshold_in_us) {
+            timeout_threshold_ = threshold_in_us;
+        }
+
         std::string GetStatusString(bool status_in) {
 
             if (status_in) {
@@ -87,7 +89,7 @@ class StatusHandler
         long GetLastUtime() { return utime_; }
 
         void CheckTime() {
-            if (abs(utime_ - StatusHandler::GetTimestampNow()) > MAX_MESSAGE_DELAY_USEC) {
+            if (abs(utime_ - StatusHandler::GetTimestampNow()) > timeout_threshold_) {
                 if (GetStatus() == true) {
                     SetTimeout(true);
                 }
@@ -117,6 +119,9 @@ class StatusHandler
             return (thisTime.tv_sec * 1000000.0) + (float)thisTime.tv_usec + 0.5;
         }
 
+    protected:
+        int64_t timeout_threshold_ = 2000000;
+
     private:
 
         bool status_;
@@ -130,6 +135,7 @@ class StatusHandler
         wxStaticText *lbl_to_update_;
 
         bool timeout_;
+
 
 };
 
