@@ -162,6 +162,13 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT45" variable="lblRcDispatch" member="yes">
+										<label>RC Dispatch: Offline</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT36" variable="lblAirspeed" member="yes">
 										<label>Airspeed: Offline (Mean: -- / Std Dev: --)</label>
 									</object>
@@ -190,29 +197,8 @@
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer2" member="no">
-										<label>State Machine: --</label>
-										<object class="spacer">
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<size>46,20</size>
-										</object>
-										<object class="sizeritem">
-											<object class="wxRadioButton" name="ID_RADIOBUTTON1" variable="rdoLauncher" member="yes">
-												<label>Launcher</label>
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
-										<object class="sizeritem">
-											<object class="wxRadioButton" name="ID_RADIOBUTTON2" variable="rdoThrow" member="yes">
-												<label>Throw</label>
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
+									<object class="wxStaticText" name="ID_STATICTEXT44" variable="lblStateMachine" member="yes">
+										<label>State Machine: Offline</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>

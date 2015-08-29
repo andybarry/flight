@@ -61,12 +61,12 @@ const long GoForFlightFrame::ID_STATICTEXT15 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT8 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT16 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT9 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT45 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT36 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT6 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT4 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT34 = wxNewId();
-const long GoForFlightFrame::ID_RADIOBUTTON1 = wxNewId();
-const long GoForFlightFrame::ID_RADIOBUTTON2 = wxNewId();
+const long GoForFlightFrame::ID_STATICTEXT44 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT32 = wxNewId();
 const long GoForFlightFrame::ID_STATICTEXT33 = wxNewId();
 const long GoForFlightFrame::ID_CHECKBOX1 = wxNewId();
@@ -110,7 +110,6 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     //(*Initialize(GoForFlightFrame)
     wxMenuItem* MenuItem2;
-    wxStaticBoxSizer* StaticBoxSizer2;
     wxMenuItem* MenuItem1;
     wxFlexGridSizer* FlexGridSizer1;
     wxFlexGridSizer* FlexGridSizer2;
@@ -181,6 +180,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3->Add(lblLogCam, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer5->Add(FlexGridSizer3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer3->Add(BoxSizer5, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    lblRcDispatch = new wxStaticText(Panel1, ID_STATICTEXT45, _("RC Dispatch: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT45"));
+    BoxSizer3->Add(lblRcDispatch, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblAirspeed = new wxStaticText(Panel1, ID_STATICTEXT36, _("Airspeed: Offline (Mean: -- / Std Dev: --)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT36"));
     BoxSizer3->Add(lblAirspeed, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblGps = new wxStaticText(Panel1, ID_STATICTEXT6, _("GPS: Offline (Sats: --)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
@@ -189,13 +190,8 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     BoxSizer3->Add(lblStateEsimator, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblController = new wxStaticText(Panel1, ID_STATICTEXT34, _("TVLQR: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT34"));
     BoxSizer3->Add(lblController, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer2 = new wxStaticBoxSizer(wxHORIZONTAL, Panel1, _("State Machine: --"));
-    StaticBoxSizer2->Add(46,20,0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    rdoLauncher = new wxRadioButton(Panel1, ID_RADIOBUTTON1, _("Launcher"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_RADIOBUTTON1"));
-    StaticBoxSizer2->Add(rdoLauncher, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    rdoThrow = new wxRadioButton(Panel1, ID_RADIOBUTTON2, _("Throw"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_RADIOBUTTON2"));
-    StaticBoxSizer2->Add(rdoThrow, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    BoxSizer3->Add(StaticBoxSizer2, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    lblStateMachine = new wxStaticText(Panel1, ID_STATICTEXT44, _("State Machine: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT44"));
+    BoxSizer3->Add(lblStateMachine, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblBatteryStatus = new wxStaticText(Panel1, ID_STATICTEXT32, _("Battery Voltage: --"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT32"));
     BoxSizer3->Add(lblBatteryStatus, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     lblStereo = new wxStaticText(Panel1, ID_STATICTEXT33, _("Vision: Offline"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT33"));
@@ -344,12 +340,11 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     git_status_handler_.AddLabel(CAM, lblCodeSyncCamLabel, lblCodeSyncCam);
 
     battery_status_handler_.SetLabel(lblBatteryStatus);
-
     stereo_handler_.SetLabel(lblStereo);
-
     debug_handler_.SetLabel(lblDebug);
-
     airspeed_handler_.SetLabel(lblAirspeed);
+    state_machine_handler_.SetLabel(lblStateMachine);
+    rc_switch_handler_.SetLabel(lblRcDispatch);
 
     UpdateLabels();
 
@@ -391,6 +386,10 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     lcm.subscribe("gps", &GpsHandler::handleMessage, &gps_handler_);
 
+    lcm.subscribe("rc-switch-action", &RcSwitchHandler::handleMessage, &rc_switch_handler_);
+
+//    lcm.subscribe("state-machine-state"), &StateMachineHandler::handleMessage, &state_machine_handler_);
+
 }
 
 GoForFlightFrame::~GoForFlightFrame()
@@ -431,6 +430,8 @@ void GoForFlightFrame::UpdateLabels() {
     debug_handler_.Update();
     airspeed_handler_.Update();
     git_status_handler_.Update();
+    state_machine_handler_.Update();
+    rc_switch_handler_.Update();
 
     chkGoPro->SetForegroundColour(StatusHandler::GetColour(chkGoPro->IsChecked()));
     chkObstacleGoPro->SetForegroundColour(StatusHandler::GetColour(chkObstacleGoPro->IsChecked()));
@@ -447,6 +448,8 @@ void GoForFlightFrame::UpdateLabels() {
         && debug_handler_.GetStatus()
         && airspeed_handler_.GetStatus()
         && git_status_handler_.GetStatus()
+        && state_machine_handler_.GetStatus()
+        && rc_switch_handler_.GetStatus()
         && chkGoPro->IsChecked()
         && chkObstacleGoPro->IsChecked()
             ) {

@@ -57,7 +57,9 @@
 		<Unit filename="GpsHandler.h" />
 		<Unit filename="LogSizeHandler.h" />
 		<Unit filename="MultiStatusHandler.h" />
+		<Unit filename="RcSwitchHandler.h" />
 		<Unit filename="StateEstimatorHandler.h" />
+		<Unit filename="StateMachineHandler.h" />
 		<Unit filename="StatusHandler.h" />
 		<Unit filename="StereoHandler.h" />
 		<Unit filename="wxsmith/GoForFlightframe.wxs" />

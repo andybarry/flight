@@ -14,7 +14,6 @@
 #include <wx/checkbox.h>
 #include <wx/sizer.h>
 #include <wx/menu.h>
-#include <wx/radiobut.h>
 #include <wx/panel.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
@@ -33,6 +32,8 @@
 #include "DebugHandler.h"
 #include "AirspeedHandler.h"
 #include "GitStatusHandler.h"
+#include "StateMachineHandler.h"
+#include "RcSwitchHandler.h"
 
 class GoForFlightFrame: public wxFrame
 {
@@ -68,12 +69,12 @@ class GoForFlightFrame: public wxFrame
         static const long ID_STATICTEXT8;
         static const long ID_STATICTEXT16;
         static const long ID_STATICTEXT9;
+        static const long ID_STATICTEXT45;
         static const long ID_STATICTEXT36;
         static const long ID_STATICTEXT6;
         static const long ID_STATICTEXT4;
         static const long ID_STATICTEXT34;
-        static const long ID_RADIOBUTTON1;
-        static const long ID_RADIOBUTTON2;
+        static const long ID_STATICTEXT44;
         static const long ID_STATICTEXT32;
         static const long ID_STATICTEXT33;
         static const long ID_CHECKBOX1;
@@ -113,12 +114,12 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblDiskFreeLocal;
         wxCheckBox* chkObstacleGoPro;
         wxStaticText* lblLogCam;
+        wxStaticText* lblRcDispatch;
         wxStaticText* lblTimesync;
         wxStaticText* lblAirspeed;
         wxStaticText* lblCodeSync;
         wxStaticText* lblCpuCamLabel;
         wxPanel* Panel1;
-        wxRadioButton* rdoThrow;
         wxStaticText* lblDebug;
         wxStaticText* lblCodeSyncLocal;
         wxStaticText* lblTimesyncGps;
@@ -132,7 +133,6 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblCodeSyncCamLabel;
         wxStaticText* lblDiskFreeCam;
         wxCheckBox* chkGoPro;
-        wxRadioButton* rdoLauncher;
         wxStaticText* lblCodeSyncGpsLabel;
         wxStaticText* lblTimesyncCam;
         wxStaticText* lblDiskFreeGps;
@@ -142,6 +142,7 @@ class GoForFlightFrame: public wxFrame
         wxStaticText* lblTimesyncLabelLocal;
         wxStaticText* lblGps;
         wxStaticText* lblTimesyncLabelGps;
+        wxStaticText* lblStateMachine;
         wxStaticText* lblDiskFreeLabelGps;
         wxStaticText* lblLogGps;
         wxStaticText* lblLogging;
@@ -175,6 +176,8 @@ class GoForFlightFrame: public wxFrame
         DebugHandler debug_handler_;
         AirspeedHandler airspeed_handler_;
         GitStatusHandler git_status_handler_;
+        StateMachineHandler state_machine_handler_;
+        RcSwitchHandler rc_switch_handler_;
 
 
         DECLARE_EVENT_TABLE()
