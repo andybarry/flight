@@ -208,8 +208,8 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
             // convert to LCM type
             mav_gps_data_t gpsMsg;
-            //gpsMsg.utime = getTimestampNow();
-            gpsMsg.utime = pos.time_usec;
+            gpsMsg.utime = getTimestampNow();
+            //gpsMsg.utime = pos.time_usec;
 
             gpsMsg.gps_lock = pos.fix_type;  //0-1: no fix, 2: 2D fix, 3: 3D fix.
 

@@ -32,7 +32,7 @@ class GitStatusHandler : public MultiStatusHandler
 
                 if (sha_last_build[index].compare(sha[LOCAL]) != 0) {
                     status = false;
-                    text = std::to_string(sha_last_build[index].compare(sha[LOCAL]));//"Compilation required";
+                    text = "Compilation required";
                 }
             }
 

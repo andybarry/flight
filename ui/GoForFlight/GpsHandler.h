@@ -7,7 +7,7 @@
 class GpsHandler : public StatusHandler
 {
     public:
-        GpsHandler() : StatusHandler("") {
+        GpsHandler() : StatusHandler("GPS: ") {
         }
         ~GpsHandler() {}
 
@@ -15,35 +15,18 @@ class GpsHandler : public StatusHandler
                            const std::string& chan,
                            const mav::gps_data_t* msg) {
 
-            if (msg->utime > last_utime2_ && msg->gps_lock >= 3) {
+            boost::format formatter = boost::format(" (Sats: %d)") % (msg->numSatellites);
+
+            if (msg->gps_lock >= 3) {
                 SetStatus(true, msg->utime);
+                SetOnlineString(formatter.str());
             } else {
                 SetStatus(false, msg->utime);
+                SetOfflineString(formatter.str());
             }
-
-            last_utime2_ = last_utime_;
-            last_utime_ = msg->utime;
-
-            last_num_sats_ = msg->numSatellites;
-
-        }
-
-        void Update() {
-            if (last_num_sats_ >= 0) {
-                SetText(std::string(wxString::Format("GPS: %s (Sats: %d)", GetStatusString(GetStatus()), last_num_sats_)));
-            } else {
-                SetText(std::string(wxString::Format("GPS: %s (Sats: --)", GetStatusString(GetStatus()))));
-            }
-
-            SetColour(GetColour(GetStatus()));
-
         }
 
     private:
-        long last_utime_ = -1;
-        long last_utime2_ = -1;
-        int last_num_sats_ = -1;
-
 
 };
 

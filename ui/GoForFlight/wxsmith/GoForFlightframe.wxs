@@ -2,6 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="GoForFlightFrame">
 		<title>Go For Flight</title>
+		<icon>/home/abarry/realtime/ui/GoForFlight/checkbox_icon.png</icon>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 			<object class="sizeritem">

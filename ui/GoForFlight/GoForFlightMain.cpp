@@ -15,6 +15,9 @@
 #include <wx/string.h>
 #include <wx/intl.h>
 #include <wx/font.h>
+#include <wx/bitmap.h>
+#include <wx/icon.h>
+#include <wx/image.h>
 //*)
 
 //helper functions
@@ -128,6 +131,11 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer1;
 
     Create(parent, wxID_ANY, _("Go For Flight"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    {
+    	wxIcon FrameIcon;
+    	FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("/home/abarry/realtime/ui/GoForFlight/checkbox_icon.png"))));
+    	SetIcon(FrameIcon);
+    }
     BoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
     Panel1 = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);

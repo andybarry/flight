@@ -29,13 +29,9 @@ class BatteryStatusHandler : public StatusHandler
                 SetStatus(false, msg->timestamp);
                 SetOfflineString(formatter.str());
             }
-
-            last_utime_ = msg->timestamp;
-
         }
 
     private:
-        long last_utime_ = -1;
 
 };
 
