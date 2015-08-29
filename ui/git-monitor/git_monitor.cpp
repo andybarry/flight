@@ -105,6 +105,11 @@ int main(int argc,char** argv) {
 
     GitMonitor monitor(&lcm, git_status_channel);
 
+    // wait for 1 second on start to let Go For Flight start up
+    // if they were both started at once to give a little better
+    // responsiveness
+    sleep(1);
+
     while (true) {
 
         monitor.PublishMessage();
