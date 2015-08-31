@@ -54,12 +54,18 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
 
     //DrawBox(hud_img, xyz, rpy, 0.84, 0.5);
 
-    vector<Point3f> points;
-    points.push_back(Point3f(0, 0, 0));
+    vector<Point3d> points;
+    points.push_back(Point3d(0, 0, 0));
 
     //Draw3DPointsOnImage(hud_img, &points, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1);
 
-    for (double t = current_t_; t < std::min(traj->GetMaxTime(), 100000.0+current_t_+1.0); t += 0.10) {
+    double current_t = ConvertTimestampToSeconds(current_pose_msg_->utime - t0_);
+    //std::cout << "CURRENT_T = " << current_t << std::endl;
+
+    double start_t = round(current_t / 0.10) * 0.10;
+    for (double t = start_t; t < traj->GetMaxTime(); t += 0.10) {
+
+    //double t = 0.5;
         Eigen::VectorXd traj_x = traj->GetState(t);
 
         Eigen::VectorXd state = traj_x - state_minus_init;
@@ -76,7 +82,7 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
     }
 }
 
-void HudObjectDrawer::DrawObstacles(Mat hud_img, std::vector<Point3f> obstacles) {
+void HudObjectDrawer::DrawObstacles(Mat hud_img, std::vector<Point3d> obstacles) {
     // points come in with coordinates relative to the camera at the current time
 
     for (int i = 0; i < int(obstacles.size()); i++) {
@@ -99,7 +105,7 @@ void HudObjectDrawer::DrawObstacles(Mat hud_img, std::vector<Point3f> obstacles)
  *
  * @retval points drawn
  */
-std::vector<Point2f> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color) {
+std::vector<Point2d> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color) {
 
     BotTrans body_to_stereo;
     bot_frames_get_trans(bot_frames_, "body", "opencvFrame", &body_to_stereo);
@@ -128,7 +134,7 @@ std::vector<Point2f> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double
     double box_z[4] = { -height/2, -height/2, height/2, height/2 };
 
 
-    vector<Point3f> box_points;
+    vector<Point3d> box_points;
 
     for (int i = 0; i < 4; i++) {
         // create the box
@@ -150,15 +156,18 @@ std::vector<Point2f> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double
 
         if (point_camera_frame[2] < MIN_DISPLAY_THRESHOLD) {
             // this point is behind us, so don't display the box
-            vector<Point2f> nothing;
+            vector<Point2d> nothing;
             return nothing;
         }
 
-        box_points.push_back(Point3f(point_camera_frame[0], point_camera_frame[1], point_camera_frame[2]));
+        //std::cout << "(" << point_camera_frame[0] << ", " << point_camera_frame[1] << ", " << point_camera_frame[2] << ")" << std::endl;
+
+        box_points.push_back(Point3d(point_camera_frame[0], point_camera_frame[1], point_camera_frame[2]));
     }
 
-    vector<Point2f> projected_box, projected_box_undistorted;
-    vector<Point2f> *points_to_draw;
+    vector<Point2d> projected_box, projected_box_undistorted;
+    vector<Point2d> *points_to_draw;
+
     //projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
     projectPoints(box_points, stereo_calibration_->R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_->M1, stereo_calibration_->D1, projected_box);
 
@@ -170,6 +179,21 @@ std::vector<Point2f> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double
     } else {
         points_to_draw = &projected_box;
     }
+
+    // if any of the points are outside our frame, don't draw
+    if (   points_to_draw->at(0).x < -10 || points_to_draw->at(0).x > hud_img.cols + 10
+        || points_to_draw->at(1).x < -10 || points_to_draw->at(1).x > hud_img.cols + 10
+        || points_to_draw->at(2).x < -10 || points_to_draw->at(2).x > hud_img.cols + 10
+        || points_to_draw->at(3).x < -10 || points_to_draw->at(3).x > hud_img.cols + 10
+        || points_to_draw->at(0).y < -10 || points_to_draw->at(0).y > hud_img.rows + 10
+        || points_to_draw->at(1).y < -10 || points_to_draw->at(1).y > hud_img.rows + 10
+        || points_to_draw->at(2).y < -10 || points_to_draw->at(2).y > hud_img.rows + 10
+        || points_to_draw->at(3).y < -10 || points_to_draw->at(3).y > hud_img.rows + 10) {
+
+        vector<Point2d> nothing;
+        return nothing;
+    }
+
 
     line(hud_img, points_to_draw->at(0), points_to_draw->at(1), color);
     line(hud_img, points_to_draw->at(1), points_to_draw->at(2), color);
@@ -183,10 +207,10 @@ void HudObjectDrawer::DrawCube(Mat hud_img, double xyz[3], double rpy[3], double
     // draw forward box
 
     double xyz_forward[3] = { xyz[0] - length, xyz[1], xyz[2] };
-    std::vector<Point2f> forward_box = DrawBox(hud_img, xyz_forward, rpy, width, height, color);
+    std::vector<Point2d> forward_box = DrawBox(hud_img, xyz_forward, rpy, width, height, color);
 
     double xyz_back[3] = { xyz[0] + length, xyz[1], xyz[2] };
-    std::vector<Point2f> back_box = DrawBox(hud_img, xyz_back, rpy, width, height, color);
+    std::vector<Point2d> back_box = DrawBox(hud_img, xyz_back, rpy, width, height, color);
 
     if (forward_box.size() > 0 && back_box.size() > 0) {
         line(hud_img, forward_box.at(0), back_box.at(0), color);
@@ -195,7 +219,6 @@ void HudObjectDrawer::DrawCube(Mat hud_img, double xyz[3], double rpy[3], double
         line(hud_img, forward_box.at(3), back_box.at(3), color);
     }
 }
-
 
 void HudObjectDrawer::InitializeState(const mav_pose_t *msg) {
 
@@ -210,7 +233,7 @@ void HudObjectDrawer::InitializeState(const mav_pose_t *msg) {
 
     Mz_ = rotz(-rpy[2]);
 
-    t0_ = GetTimestampNow();
+    t0_ = msg->utime;
 
     state_initialized_ = true;
 

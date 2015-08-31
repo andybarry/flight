@@ -42,7 +42,7 @@ mutex stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
 lcmt_stereo *last_stereo_bm_msg, *last_stereo_replay_msg;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
 
-std::vector<Point3f> global_obstacle_list;
+std::vector<Point3d> global_obstacle_list;
 BotFrames *bot_frames;
 
 bool ui_box = false;
@@ -441,7 +441,7 @@ int main(int argc,char** argv) {
 
             // -- stereo -- //
 
-            vector<Point3f> lcm_points;
+            vector<Point3d> lcm_points;
             hud_object_drawer->DrawObstacles(remapped_image, global_obstacle_list);
 
 

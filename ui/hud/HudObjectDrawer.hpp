@@ -29,10 +29,9 @@ class HudObjectDrawer {
 
         void DrawTrajectory(Mat hud_img);
 
-        void DrawObstacles(Mat hud_img, std::vector<Point3f> obstacles);
+        void DrawObstacles(Mat hud_img, std::vector<Point3d> obstacles);
 
     private:
-        double current_t_;
         int traj_number_;
         bool show_unremapped_;
         bool traj_boxes_in_manual_mode_ = false;
@@ -42,7 +41,7 @@ class HudObjectDrawer {
         const TrajectoryLibrary *trajlib_ = nullptr;
         const OpenCvStereoCalibration *stereo_calibration_ = nullptr;
 
-        std::vector<Point2f> DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color);
+        std::vector<Point2d> DrawBox(Mat hud_img, double xyz[3], double rpy[3], double width, double height, Scalar color);
         void DrawCube(Mat hud_img, double xyz[3], double rpy[3], double width, double height, double length, Scalar color);
 
         void InitializeState(const mav_pose_t *msg);
