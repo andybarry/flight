@@ -4,3 +4,5 @@ midi-airspeed
 midi-control
 stereo-monitor
 mono-playback
+git-monitor
+

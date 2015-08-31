@@ -13,6 +13,7 @@ LCM/mavlink_message_t.h.orig
 LCM/mavlink_message_t.h.rej
 LCM/lcmt
 *.o
+*.~lock*
 *~
 *.dep
 *.depend
