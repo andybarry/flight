@@ -60,7 +60,7 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
 
     //Draw3DPointsOnImage(hud_img, &points, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1);
 
-    double start_t = round(current_t_ / 0.10) * 0.10;
+    double start_t = 0;//round(current_t_ / 0.10) * 0.10;
     for (double t = start_t; t < traj->GetMaxTime(); t += 0.10) {
 
     //double t = 0.5;
