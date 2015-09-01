@@ -7,7 +7,7 @@ fi
 
 cd $HOME/realtime
 
-git bundle create commits.bundle HEAD~50..HEAD
+git bundle create commits.bundle HEAD~15..HEAD
 
 rsync --progress commits.bundle odroid@$1:/home/odroid/
 
