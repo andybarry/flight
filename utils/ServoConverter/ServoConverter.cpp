@@ -42,7 +42,13 @@ Eigen::Vector3i ServoConverter::RadiansToServoCommands(Eigen::Vector3d commands)
 
     output(0) = round(commands(0) * rad_to_servo_.elevL_slope + rad_to_servo_.elevL_y_intercept);
     output(1) = round(commands(1) * rad_to_servo_.elevR_slope + rad_to_servo_.elevR_y_intercept);
-    output(2) = round(commands(2) * rad_to_servo_.throttle_slope + rad_to_servo_.throttle_y_intercept);
+
+    if (commands(2) <= 0) {
+        // throttle = 0
+        output(2) = throttle_min_;
+    } else {
+        output(2) = round(commands(2) * rad_to_servo_.throttle_slope + rad_to_servo_.throttle_y_intercept);
+    }
 
     return MinMaxCommands(output);
 
