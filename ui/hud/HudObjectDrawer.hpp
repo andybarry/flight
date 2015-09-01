@@ -31,6 +31,8 @@ class HudObjectDrawer {
 
         void DrawObstacles(Mat hud_img, std::vector<Point3d> obstacles);
 
+        bool GetCurrentU0(Eigen::VectorXd *u0) const;
+
     private:
         int traj_number_;
         bool show_unremapped_;
@@ -48,6 +50,7 @@ class HudObjectDrawer {
         Eigen::VectorXd GetStateMinusInit(const mav_pose_t *msg);
 
         mav_pose_t *current_pose_msg_ = nullptr;
+        double current_t_ = 0;
 
         int64_t t0_;
         bool state_initialized_ = false;

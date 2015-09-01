@@ -419,9 +419,9 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
     // draw the left elevon box
     if (elevonL_ != 0 || elevonR_ != 0) {
         // draw the left side elevon
-        DrawElevon(hud_img, elevonL_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, true);
+        DrawElevon(hud_img, elevonL_, u0_left_elevon_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, true);
 
-        DrawElevon(hud_img, elevonR_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, false);
+        DrawElevon(hud_img, elevonR_, u0_right_elevon_, roll, center_delta, width, elevon_pos_max, elevon_pos_min, false);
     }
 
     // draw the right half of the line now
@@ -472,10 +472,11 @@ void Hud::DrawArtificialHorizon(Mat hud_img) {
 
 }
 
-void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left) {
+void Hud::DrawElevon(Mat hud_img, float elevon_value, float elevon_u0_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left) {
 
     int max_elevon_size = 100;
     float elevon_overflow = 0;
+    int u0_arrow_size = 10;
 
     if (elevon_value > max_elevon_size) {
         elevon_overflow = elevon_value - max_elevon_size;
@@ -488,11 +489,38 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
     }
 
     int top_line_left = 0, top_line_top = 0, top_line_right = 0, top_line_bottom = 0;
+    int top_line_left_u0 = 0, top_line_top_u0 = 0, top_line_right_u0 = 0, top_line_bottom_u0 = 0;
 
     int sign_change = 1;
     if (is_left == false) {
         sign_change = -1;
     }
+
+    Eigen::Vector2d u0_arrow1, u0_arrow2, u0_arrow3, u0_arrow4;
+
+    if (is_left) {
+        u0_arrow1 << u0_arrow_size, u0_arrow_size;
+        u0_arrow2 << u0_arrow_size, -u0_arrow_size;
+        u0_arrow3 << -u0_arrow_size, u0_arrow_size;
+        u0_arrow4 << -u0_arrow_size, -u0_arrow_size;
+    } else {
+        u0_arrow1 << -u0_arrow_size, u0_arrow_size;
+        u0_arrow2 << -u0_arrow_size, -u0_arrow_size;
+        u0_arrow3 << u0_arrow_size, u0_arrow_size;
+        u0_arrow4 << u0_arrow_size, -u0_arrow_size;
+    }
+    // rotate the u0 arrows by the roll
+    Eigen::Matrix2d rotmat;
+    double roll_rad = PI/180.0 * (-roll);
+    rotmat << cos(roll_rad), -sin(roll_rad),
+              sin(roll_rad), cos(roll_rad);
+
+    Eigen::Vector2d u0_arrow1_rot = rotmat * u0_arrow1;
+    Eigen::Vector2d u0_arrow2_rot = rotmat * u0_arrow2;
+    Eigen::Vector2d u0_arrow3_rot = rotmat * u0_arrow3;
+    Eigen::Vector2d u0_arrow4_rot = rotmat * u0_arrow4;
+
+
 
     int position;
     for (int i = 0; i < 2; i++) {
@@ -510,12 +538,23 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
         int elevon_left_side_right = elevon_left_side_left + sin(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
         int elevon_left_side_bottom = elevon_left_side_top + cos(PI/180.0*(roll+180)) * max_elevon_size * (elevon_value-50)/100.0;
 
+        // u0
+        int elevon_left_side_right_u0 = elevon_left_side_left + sin(PI/180.0*(roll+180)) * max_elevon_size * (elevon_u0_value-50)/100.0;
+        int elevon_left_side_bottom_u0 = elevon_left_side_top + cos(PI/180.0*(roll+180)) * max_elevon_size * (elevon_u0_value-50)/100.0;
+
         if (i == 0) {
             top_line_left = elevon_left_side_right;
             top_line_top = elevon_left_side_bottom;
+
+            top_line_left_u0 = elevon_left_side_right_u0;
+            top_line_top_u0 = elevon_left_side_bottom_u0;
+
         } else {
             top_line_right = elevon_left_side_right;
             top_line_bottom = elevon_left_side_bottom;
+
+            top_line_right_u0 = elevon_left_side_right_u0;
+            top_line_bottom_u0 = elevon_left_side_bottom_u0;
         }
 
         line(hud_img, Point(elevon_left_side_left, elevon_left_side_top), Point(elevon_left_side_right, elevon_left_side_bottom), hud_color_, box_line_width_);
@@ -523,6 +562,22 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
 
     // now draw the top
     line(hud_img, Point(top_line_left, top_line_top), Point(top_line_right, top_line_bottom), hud_color_, box_line_width_);
+
+    // draw the u0 line
+    if (elevon_u0_value != 0 && is_autonomous_ == 1) {
+        //line(hud_img, Point(top_line_left_u0, top_line_top_u0), Point(top_line_right_u0, top_line_bottom_u0), hud_color_, box_line_width_);
+
+        // draw arrows pointing in for u0
+        line(hud_img, Point(u0_arrow3_rot[0]+top_line_left_u0, u0_arrow3_rot[1]+top_line_top_u0), Point(top_line_left_u0, top_line_top_u0), hud_color_, box_line_width_);
+
+        line(hud_img, Point(u0_arrow4_rot[0]+top_line_left_u0, u0_arrow4_rot[1]+top_line_top_u0), Point(top_line_left_u0, top_line_top_u0), hud_color_, box_line_width_);
+
+        line(hud_img, Point(u0_arrow1_rot[0]+top_line_right_u0, u0_arrow1_rot[1]+top_line_bottom_u0), Point(top_line_right_u0, top_line_bottom_u0), hud_color_, box_line_width_);
+
+        line(hud_img, Point(u0_arrow2_rot[0]+top_line_right_u0, u0_arrow2_rot[1]+top_line_bottom_u0), Point(top_line_right_u0, top_line_bottom_u0), hud_color_, box_line_width_);
+
+
+    }
 
 
     // deal with overflow if any
@@ -565,8 +620,6 @@ void Hud::DrawElevon(Mat hud_img, float elevon_value, float roll, int center_del
         DrawHashBoxFill(hud_img, Point(overflow_top_line_left, overflow_top_line_top), Point(overflow_top_line_right, overflow_top_line_bottom), Point(top_line_left, top_line_top), Point(top_line_right, top_line_bottom));
 
     }
-
-
 }
 
 void Hud::DrawHashBoxFill(Mat hud_img, Point top_left, Point top_right, Point bottom_left, Point bottom_right) {

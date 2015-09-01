@@ -20,6 +20,7 @@
 #include "../../externals/ConciseArgs.hpp"
 #include "../../sensors/stereo/opencv-stereo-util.hpp"
 #include "../../sensors/stereo/RecordingManager.hpp"
+#include "../../utils/ServoConverter/ServoConverter.hpp"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>

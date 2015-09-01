@@ -19,6 +19,7 @@ void HudObjectDrawer::SetPose(const mav_pose_t *msg) {
     }
 
     current_pose_msg_ = mav_pose_t_copy(msg);
+    current_t_ = ConvertTimestampToSeconds(current_pose_msg_->utime - t0_);
 }
 
 void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
@@ -59,10 +60,7 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
 
     //Draw3DPointsOnImage(hud_img, &points, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1);
 
-    double current_t = ConvertTimestampToSeconds(current_pose_msg_->utime - t0_);
-    //std::cout << "CURRENT_T = " << current_t << std::endl;
-
-    double start_t = round(current_t / 0.10) * 0.10;
+    double start_t = round(current_t_ / 0.10) * 0.10;
     for (double t = start_t; t < traj->GetMaxTime(); t += 0.10) {
 
     //double t = 0.5;
@@ -253,5 +251,14 @@ Eigen::VectorXd HudObjectDrawer::GetStateMinusInit(const mav_pose_t *msg) {
     mav_pose_t_destroy(msg2);
 
     return state;
+}
 
+bool HudObjectDrawer:: GetCurrentU0(Eigen::VectorXd *u0) const {
+    if (traj_number_ < 0 || current_pose_msg_ == nullptr || (is_autonomous_ == false && traj_boxes_in_manual_mode_ == false)) {
+        return false;
+    }
+
+    const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_number_);
+    *u0 = traj->GetUCommand(current_t_);
+    return true;
 }

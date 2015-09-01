@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <bot_core/bot_core.h>
+#include <Eigen/Core>
 
 using namespace cv;
 
@@ -29,6 +30,9 @@ class Hud {
         int clutter_level_;
         int traj_number_;
         std::string state_machine_state_ = "State Unknown";
+        double u0_left_elevon_ = 0;
+        double u0_right_elevon_ = 0;
+        double u0_throttle_ = 0;
 
         void PutHudText(Mat hud_img, string str_in, Point text_orgin);
         void PutHudTextSmall(Mat hud_img, string str_in, Point text_orgin);
@@ -48,7 +52,7 @@ class Hud {
         void DrawDateTime(Mat hud_img);
 
 
-        void DrawElevon(Mat hud_img, float elevon_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left);
+        void DrawElevon(Mat hud_img, float elevon_value, float elevon_u0_value, float roll, int center_delta, int width, int position_left, int position_right, bool is_left);
 
         void DrawAutonomous(Mat hud_img);
 
@@ -120,6 +124,12 @@ class Hud {
         void SetTrajectoryNumber(int traj_number) { traj_number_ = traj_number; }
 
         void SetStateMachineState(std::string state) { state_machine_state_ = state; }
+
+        void SetUCommand(double left_elevon, double right_elevon, double throttle) {
+            u0_left_elevon_ = left_elevon;
+            u0_right_elevon_ = right_elevon;
+            u0_throttle_ = throttle;
+        }
 
         void SetImageScaling(float scale_factor) { scale_factor_ = scale_factor; }
         int GetImageScaling() { return scale_factor_; }

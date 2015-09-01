@@ -388,7 +388,7 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
 
     lcm.subscribe("rc-switch-action", &RcSwitchHandler::handleMessage, &rc_switch_handler_);
 
-//    lcm.subscribe("state-machine-state"), &StateMachineHandler::handleMessage, &state_machine_handler_);
+    lcm.subscribe("state-machine-state", &StateMachineHandler::handleMessage, &state_machine_handler_);
 
 }
 

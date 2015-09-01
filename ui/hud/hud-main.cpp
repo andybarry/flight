@@ -160,6 +160,8 @@ int main(int argc,char** argv) {
 
     bot_frames = bot_frames_new(lcm, param);
 
+    ServoConverter servo_converter(param);
+
     HudObjectDrawer *hud_object_drawer = nullptr;
     char *trajectory_library_dir;
     TrajectoryLibrary trajlib;
@@ -438,6 +440,17 @@ int main(int argc,char** argv) {
 
             // -- trajectories -- //
             hud_object_drawer->DrawTrajectory(remapped_image);
+
+            Eigen::VectorXd u0;
+            if (hud_object_drawer->GetCurrentU0(&u0)) {
+
+                Eigen::Vector3i u0_raw = servo_converter.RadiansToServoCommands(u0);
+                float throttle_percent = (u0_raw[2] - THROTTLE_MIN_US) * 100.0f / (THROTTLE_MAX_US - THROTTLE_MIN_US);
+
+                float u0_percent_left = (u0_raw[0]-1000)/10.0;
+                float u0_percent_right = (u0_raw[1]-1000)/10.0;
+                hud.SetUCommand(u0_percent_left, u0_percent_right, throttle_percent);
+            }
 
             // -- stereo -- //
 
