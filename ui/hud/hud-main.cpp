@@ -172,9 +172,11 @@ int main(int argc,char** argv) {
         TrajectoryLibrary *trajlib = new TrajectoryLibrary();
 
         if (trajlib->LoadLibrary(trajectory_dir)) {
-            hud_object_drawer = new HudObjectDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
+            if (trajlib->GetNumberTrajectories() > 0) {
+                hud_object_drawer = new HudObjectDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
 
-            hud_object_drawer->SetTrajBoxesInManualMode(traj_boxes_in_manual_mode);
+                hud_object_drawer->SetTrajBoxesInManualMode(traj_boxes_in_manual_mode);
+            }
         }
     }
 
@@ -439,7 +441,9 @@ int main(int argc,char** argv) {
             }
 
             // -- trajectories -- //
-            hud_object_drawer->DrawTrajectory(remapped_image);
+            if (hud_object_drawer != nullptr) {
+                hud_object_drawer->DrawTrajectory(remapped_image);
+            }
 
             //Eigen::VectorXd u0;
             //if (hud_object_drawer->GetCurrentU0(&u0)) {
@@ -455,8 +459,9 @@ int main(int argc,char** argv) {
             // -- stereo -- //
 
             vector<Point3d> lcm_points;
-            hud_object_drawer->DrawObstacles(remapped_image, global_obstacle_list);
-
+            if (hud_object_drawer != nullptr) {
+                hud_object_drawer->DrawObstacles(remapped_image, global_obstacle_list);
+            }
 
             hud.DrawHud(remapped_image, hud_image);
 
@@ -769,7 +774,9 @@ void servo_out_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lc
     hud->SetServoCommands(throttle_percent, (msg->elevonL-1000)/10.0, (msg->elevonR-1000)/10.0);
     hud->SetAutonomous(msg->is_autonomous);
 
-    hud_objects->hud_object_drawer->SetAutonomous(msg->is_autonomous);
+    if (hud_objects->hud_object_drawer != nullptr) {
+        hud_objects->hud_object_drawer->SetAutonomous(msg->is_autonomous);
+    }
 }
 
 void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_gps_data_t *msg, void *user) {
@@ -789,7 +796,10 @@ void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const m
     hud->SetAirspeed(msg->vel[0]);
 
     hud->SetTimestamp(msg->utime);
-    hud_objects->hud_object_drawer->SetPose(msg);
+
+    if (hud_objects->hud_object_drawer != nullptr) {
+        hud_objects->hud_object_drawer->SetPose(msg);
+    }
 }
 
 
@@ -797,7 +807,10 @@ void tvlqr_action_handler(const lcm_recv_buf_t *rbuf, const char* channel, const
     HudObjects *hud_objects = (HudObjects*)user;
 
     hud_objects->hud->SetTrajectoryNumber(msg->trajectory_number);
-    hud_objects->hud_object_drawer->SetTrajectoryNumber(msg->trajectory_number);
+
+    if (hud_objects->hud_object_drawer != nullptr) {
+        hud_objects->hud_object_drawer->SetTrajectoryNumber(msg->trajectory_number);
+    }
 }
 
 void state_machine_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_debug *msg, void *user) {
