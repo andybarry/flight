@@ -15,14 +15,14 @@ class GpsHandler : public StatusHandler
                            const std::string& chan,
                            const mav::gps_data_t* msg) {
 
-            boost::format formatter = boost::format(" (Sats: %d)") % (msg->numSatellites);
+            boost::format formatter = boost::format("(Sats: %d)") % (msg->numSatellites);
 
             if (msg->gps_lock >= 3) {
                 SetStatus(true, msg->utime);
-                SetOnlineString(formatter.str());
+                SetOnlineString("Online " + formatter.str());
             } else {
                 SetStatus(false, msg->utime);
-                SetOfflineString(formatter.str());
+                SetOfflineString("Offline " + formatter.str());
             }
         }
 

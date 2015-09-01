@@ -134,7 +134,7 @@ void RcSwitchDispatch::SendStereoWriteToDiskMsg() const {
 void RcSwitchDispatch::SendArmForTakeoffMsg() const {
     lcmt::timestamp arm_msg;
     arm_msg.timestamp = GetTimestampNow();
-    lcm_->publish(state_machine_go_autonomous_channel_, &arm_msg);
+    lcm_->publish(arm_for_takeoff_channel_, &arm_msg);
 }
 
 void RcSwitchDispatch::DrakeToCameraFrame(double point_in[], double point_out[]) const {

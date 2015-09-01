@@ -18,6 +18,10 @@ class GitStatusHandler : public MultiStatusHandler
 
             ComputerType index = GetIndexFromChannelName(chan);
 
+            if (index != LOCAL && sha[0].length() == 0) {
+                return;
+            }
+
             sha[index] = msg->sha;
             sha_last_build[index] = msg->sha_last_build;
             last_build_timestamp[index] = msg->last_build_timestamp;
