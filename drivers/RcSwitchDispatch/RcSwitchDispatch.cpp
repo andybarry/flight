@@ -33,7 +33,7 @@ RcSwitchDispatch::RcSwitchDispatch(lcm::LCM *lcm, std::string rc_trajectory_comm
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.trajectories", trajectory_mapping_, num_trajs_);
     bot_param_get_int_array_or_fail(param_, "rc_switch_action.stereo_actions", stereo_mapping_, num_stereo_actions_);
     stop_stereo_pos_ = bot_param_get_int_or_fail(param_, "rc_switch_action.stop_stereo_recording_switch_position");
-    arm_for_takeoff_pos_ = bot_param_get_int_or_fail(param_, "arm_for_takeoff_switch_position");
+    arm_for_takeoff_pos_ = bot_param_get_int_or_fail(param_, "rc_switch_action.arm_for_takeoff_switch_position");
 
     stabilization_mode_ = false;
 }
