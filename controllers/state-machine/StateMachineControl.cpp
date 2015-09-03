@@ -21,8 +21,9 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     climb_with_throttle_trajnum_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.climb_controller");
 
     double filter_distance_threshold = bot_param_get_double_or_fail(param_, "tvlqr_controller.filter_distance_threshold");
+    int filter_num_points_threshold = bot_param_get_int_or_fail(param_, "tvlqr_controller.fitler_number_of_points_threshold");
 
-    stereo_filter_ = new StereoFilter(filter_distance_threshold);
+    spacial_stereo_filter_ = new SpacialStereoFilter(filter_distance_threshold, filter_num_points_threshold);
 
     if (min_improvement_to_switch_trajs_ <= 0) {
         std::cerr << "ERROR: obstacle_avoidance.min_improvement_to_switch_trajs must be greater than 0." << std::endl;
@@ -66,7 +67,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 StateMachineControl::~StateMachineControl() {
     delete octomap_;
     delete trajlib_;
-    delete stereo_filter_;
+    delete spacial_stereo_filter_;
 }
 
 void StateMachineControl::SetNextTrajectoryByNumber(int traj_num) {
@@ -98,7 +99,7 @@ void StateMachineControl::DoDelayedImuUpdate() {
 }
 
 void StateMachineControl::ProcessStereoMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::stereo *msg) {
-    const lcmt::stereo *msg2 = stereo_filter_->ProcessMessage(*msg);
+    const lcmt::stereo *msg2 = spacial_stereo_filter_->ProcessMessage(*msg);
     octomap_->ProcessStereoMessage(msg2);
     delete msg2;
 }

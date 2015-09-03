@@ -20,7 +20,7 @@
 #include "../../controllers/TrajectoryLibrary/Trajectory.hpp"
 #include "../../controllers/TrajectoryLibrary/TrajectoryLibrary.hpp"
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
-#include "../../estimators/StereoFilter/StereoFilter.hpp"
+#include "../../estimators/SpacialStereoFilter/SpacialStereoFilter.hpp"
 
 #define IMU_DOWNSAMPLE_RATE 2 // only read every other message
 
@@ -95,7 +95,7 @@ class StateMachineControl {
         StereoOctomap *octomap_;
         TrajectoryLibrary *trajlib_;
 
-        StereoFilter *stereo_filter_;
+        SpacialStereoFilter *spacial_stereo_filter_;
 
         lcm::LCM *lcm_;
 

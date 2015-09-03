@@ -117,17 +117,17 @@ class StateMachineControlTest : public testing::Test {
             ProcessAllLcmMessagesNoDelayedUpdate();
         }
 
-        void SendStereoPoint(float point[]) {
+        void SendStereoPointTriple(float point[]) {
 
             vector<float> x, y, z;
             x.push_back(point[0]);
             y.push_back(point[1]);
             z.push_back(point[2]);
 
-            SendStereoManyPoints(x, y, z);
+            SendStereoManyPointsTriple(x, y, z);
         }
 
-        void SendStereoManyPoints(vector<float> x_in, vector<float> y_in, vector<float> z_in) {
+        void SendStereoManyPointsTriple(vector<float> x_in, vector<float> y_in, vector<float> z_in) {
             lcmt::stereo msg;
 
             msg.timestamp = GetTimestampNow();
@@ -151,14 +151,22 @@ class StateMachineControlTest : public testing::Test {
                 x.push_back(point_transformed[0]);
                 y.push_back(point_transformed[1]);
                 z.push_back(point_transformed[2]);
+                grey.push_back(0);
 
+                x.push_back(point_transformed[0]);
+                y.push_back(point_transformed[1]);
+                z.push_back(point_transformed[2]);
+                grey.push_back(0);
+
+                x.push_back(point_transformed[0]);
+                y.push_back(point_transformed[1]);
+                z.push_back(point_transformed[2]);
                 grey.push_back(0);
             }
 
             msg.x = x;
             msg.y = y;
             msg.z = z;
-
             msg.grey = grey;
 
             msg.number_of_points = x.size();
@@ -296,8 +304,7 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     ProcessAllLcmMessages(fsm_control);
 
     float point[3] = { 24, 0, altitude };
-    SendStereoPoint(point);
-    SendStereoPoint(point); // double publish for the stereo filter
+    SendStereoPointTriple(point);
 
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
@@ -313,8 +320,7 @@ TEST_F(StateMachineControlTest, OneObstacle) {
         zpts[i] += altitude;
     }
 
-    SendStereoManyPoints(xpts, y_points_, zpts);
-    SendStereoManyPoints(xpts, y_points_, zpts);
+    SendStereoManyPointsTriple(xpts, y_points_, zpts);
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
 
@@ -343,12 +349,10 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
     // send an obstacle to get it to transition to a new time
 
     float point[3] = { 17, 11, 3+altitude };
-    SendStereoPoint(point);
-    SendStereoPoint(point);
+    SendStereoPointTriple(point);
 
     float point2[3] = { 24, 0, 0+altitude };
-    SendStereoPoint(point2);
-    SendStereoPoint(point2);
+    SendStereoPointTriple(point2);
 
     mav::pose_t msg = GetDefaultPoseMsg();
 
@@ -406,8 +410,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     ProcessAllLcmMessages(fsm_control);
 
     float point[3] = { 24, 0, 0+altitude };
-    SendStereoPoint(point);
-    SendStereoPoint(point); // double publish for the filter
+    SendStereoPointTriple(point);
     ProcessAllLcmMessages(fsm_control);
 
     lcm_->publish(pose_channel_, &msg);
@@ -465,8 +468,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     ProcessAllLcmMessages(fsm_control);
 
     float point2[3] = { 18, 12, 0+altitude };
-    SendStereoPoint(point2);
-    SendStereoPoint(point2);
+    SendStereoPointTriple(point2);
     ProcessAllLcmMessages(fsm_control);
 
     lcm_->publish(pose_channel_, &msg);
