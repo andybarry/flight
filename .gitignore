@@ -20,6 +20,8 @@ LCM/lcmt
 *_sm.cpp
 *_sm.h
 lastbuild.txt
+estimators/SpacialStereoFilter/test
+estimators/SpacialStereoFilter/test_d
 ui/git-monitor/git-monitor
 estimators/StereoFilter/test
 ui/trajectory-lcmgl/trajectory-lcmgl
