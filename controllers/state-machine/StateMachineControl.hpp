@@ -28,7 +28,7 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, bool visualization);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization);
         ~StateMachineControl();
 
         void DoDelayedImuUpdate();
@@ -77,6 +77,13 @@ class StateMachineControl {
             lcm_->publish(state_message_channel_, &msg);
         }
 
+        void SendAltitudeResetMsg() const {
+            lcmt::timestamp msg;
+            msg.timestamp = GetTimestampNow();
+
+            lcm_->publish(altitude_reset_channel_, &msg);
+        }
+
 
 
     private:
@@ -116,7 +123,7 @@ class StateMachineControl {
         int climb_no_throttle_trajnum_;
         int climb_with_throttle_trajnum_;
 
-        std::string tvlqr_action_out_channel_, state_message_channel_;
+        std::string tvlqr_action_out_channel_, state_message_channel_, altitude_reset_channel_;
 
         bool need_imu_update_;
         bool visualization_;

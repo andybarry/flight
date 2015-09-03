@@ -97,6 +97,7 @@ TakeoffNoThrottle
         RequestNewTrajectory();
         SetTakeoffTime();
         SendStateMsg("TakeoffNoThrottle");
+        SendAltitudeResetMsg();
     }
 {
     ImuUpdate(msg: const mav::pose_t&)

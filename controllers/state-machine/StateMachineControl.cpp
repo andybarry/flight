@@ -1,6 +1,6 @@
 #include "StateMachineControl.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, bool visualization) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization) : fsm_(*this) {
     lcm_ = lcm;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -60,6 +60,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
     state_message_channel_ = state_message_channel;
+    altitude_reset_channel_ = altitude_reset_channel;
 }
 
 StateMachineControl::~StateMachineControl() {

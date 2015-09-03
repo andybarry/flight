@@ -15,6 +15,7 @@ int main(int argc,char** argv) {
     std::string tvlqr_action_out_channel = "tvlqr-action";
     std::string arm_for_takeoff_channel = "arm-for-takeoff";
     std::string state_message_channel = "state-machine-state";
+    std::string altitude_reset_channel = "altitude-reset";
 
 
     ConciseArgs parser(argc, argv);
@@ -52,7 +53,7 @@ int main(int argc,char** argv) {
 
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
-    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, state_message_channel, visualization);
+    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, state_message_channel, altitude_reset_channel, visualization);
     //fsm_control.GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels
@@ -68,7 +69,7 @@ int main(int argc,char** argv) {
                             // the tvlqr process
 
 
-    printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\n\tArm for Takeoff: %s\n\nSending LCM:\n\tTVLQR Action: %s\n\tState Machine State: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), arm_for_takeoff_channel.c_str(), tvlqr_action_out_channel.c_str(), state_message_channel.c_str());
+    printf("Receiving LCM:\n\tPose: %s\n\tStereo: %s\n\tRC Trajectories: %s\n\tGo Autonomous: %s\n\tArm for Takeoff: %s\n\nSending LCM:\n\tTVLQR Action: %s\n\tState Machine State: %s\n\tAltitude reset: %s\n", pose_channel.c_str(), stereo_channel.c_str(), rc_trajectory_commands_channel.c_str(), state_machine_go_autonomous_channel.c_str(), arm_for_takeoff_channel.c_str(), tvlqr_action_out_channel.c_str(), state_message_channel.c_str(), altitude_reset_channel.c_str());
 
     while (true) {
         while (NonBlockingLcm(lcm.getUnderlyingLCM())) {}
