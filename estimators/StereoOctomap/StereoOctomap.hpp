@@ -45,6 +45,7 @@ class StereoOctomap {
 
         void PublishOctomap(lcm_t *lcm);
         //void PublishToStereo(lcm_t *lcm, int frame_number, int video_number);
+        void PublishToHud(lcm_t *lcm) const;
 
         void SetStereoConfig(OpenCvStereoConfig stereo_config, OpenCvStereoCalibration stereo_calibration) {
             stereo_config_  = stereo_config;

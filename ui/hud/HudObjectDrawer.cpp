@@ -80,21 +80,16 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
     }
 }
 
-void HudObjectDrawer::DrawObstacles(Mat hud_img, std::vector<Point3d> obstacles) {
-    // points come in with coordinates relative to the camera at the current time
-
-    for (int i = 0; i < int(obstacles.size()); i++) {
-        double xyz[3] = { obstacles[i].x, obstacles[i].y, obstacles[i].z };
+void HudObjectDrawer::DrawObstacles(Mat hud_img, lcmt_stereo *msg) {
+    for (int i = 0; i < msg->number_of_points; i++) {
+        double xyz[3];
         double rpy[3] = { 0, 0, 0 };
 
-        BotTrans trans;
-        bot_frames_get_trans(bot_frames_, "local", "body", &trans);
+        xyz[0] = msg->x[i];
+        xyz[1] = msg->y[i];
+        xyz[2] = msg->z[i];
 
-        double xyz_transformed[3];
-
-        bot_trans_apply_vec(&trans, xyz, xyz_transformed);
-
-        DrawCube(hud_img, xyz_transformed, rpy, 0.5, 0.5, 0.25, Scalar(0, 0, 1));
+        DrawCube(hud_img, xyz, rpy, 0.5, 0.5, 0.25, Scalar(0, 0, 1));
     }
 }
 

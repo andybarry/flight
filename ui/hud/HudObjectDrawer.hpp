@@ -29,7 +29,7 @@ class HudObjectDrawer {
 
         void DrawTrajectory(Mat hud_img);
 
-        void DrawObstacles(Mat hud_img, std::vector<Point3d> obstacles);
+        void DrawObstacles(Mat hud_img, lcmt_stereo *msg);
 
         bool GetCurrentU0(Eigen::VectorXd *u0) const;
 

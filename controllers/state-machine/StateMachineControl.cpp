@@ -91,6 +91,7 @@ void StateMachineControl::DoDelayedImuUpdate() {
 
         if (visualization_) {
             octomap_->Draw(lcm_->getUnderlyingLCM());
+            octomap_->PublishToHud(lcm_->getUnderlyingLCM());
             PublishDebugMsg("StateMachineControl: visualization");
         }
     }
@@ -171,6 +172,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
         SetNextTrajectory(*traj);
         return true;
     } else {
+        //std::cout << "no improvement" << std::endl;
         return false;
     }
 }

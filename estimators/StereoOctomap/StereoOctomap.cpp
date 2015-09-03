@@ -173,180 +173,54 @@ void StereoOctomap::Draw(lcm_t *lcm) const {
     bot_lcmgl_destroy(lcmgl);
 }
 
-/*
- * Publishes the octomap to LCM in a format
- * that is readable by fixie_viewer.
- *
- * @param lcm initialized lcm object
- *
- */
-/*
-void StereoOctomap::PublishOctomap(lcm_t *lcm) {
-
-    // publish octomap to LCM
-
-    octomap_raw_t oc_msg;
-    oc_msg.utime = getTimestampNow();
-
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            oc_msg.transform[i][j] = 0;
-        }
-        oc_msg.transform[i][i] = 1;
-    }
-
-    std::stringstream datastream;
-    current_octree_->writeBinaryConst(datastream);
-    std::string datastring = datastream.str();
-    oc_msg.data = (uint8_t *) datastring.c_str();
-    oc_msg.length = datastring.size();
-
-    octomap_raw_t_publish(lcm, "OCTOMAP", &oc_msg);
-}
-*/
-
 /**
- * Publishes the entire octomap to a lcmt_stereo
- * lcm type.  Useful for comparisons, but likely
- * slow.  Note: transforms points into a local
- * coordinate frame.
- *
- * @param lcm initialized lcm object
- * @param frame_number frame number to publish with the data
- * @param video_number video number to publish with the data
- *
+ * Publishes the entire map to the camera frame
+ * as a stereo message for drawing in the HUD
  */
-/*
-void StereoOctomap::PublishToStereo(lcm_t *lcm, int frame_number, int video_number) {
+void StereoOctomap::PublishToHud(lcm_t *lcm) const {
+    BotTrans trans;
+    bot_frames_get_trans(bot_frames_, "local", "body", &trans);
 
-    if (stereo_calibration_set_ != true) {
-        cerr << "Can't call PublishToStereo without setting stereo calibration first." << std::endl;
-        return;
+    lcmt_stereo msg;
+    msg.timestamp = GetTimestampNow();
+    msg.frame_number = -1;
+    msg.video_number = -1;
+
+    int counter = 0;
+
+    // point cloud size
+    // TODO: this must be a function call
+    for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
+        counter ++;
     }
 
-    lcmt_stereo_with_xy msg;
-    msg.timestamp = getTimestampNow();
-    msg.frame_number = frame_number;
-    msg.video_number = video_number;
+    float x[counter], y[counter], z[counter];
+    unsigned char grey[counter];
 
+    int i = 0;
+    for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
+        double xyz[3], xyz_camera_frame[3];
+        xyz[0] = it->x;
+        xyz[1] = it->y;
+        xyz[2] = it->z;
 
-    // get a transform from global to local coordinates
-    BotTrans global_to_body;
-    bot_frames_get_trans(bot_frames_, "local", "opencvFrame", &global_to_body);
+        // transform this point into the camera frame
+        bot_trans_apply_vec(&trans, xyz, xyz_camera_frame);
 
+        x[i] = xyz_camera_frame[0];
+        y[i] = xyz_camera_frame[1];
+        z[i] = xyz_camera_frame[2];
 
-    vector<cv::Point3f> octomap_points;
+        grey[i] = 0;
 
-
-
-    GetOctomapPoints(current_octree_, &octomap_points, &global_to_body, true);
-
-    // project them into 2D to put in the message
-    vector<Point2f> img_points_list;
-    vector<cv::Point3f> octomap_points_transformed;
-
-    if (octomap_points.size() > 0) {
-
-        for (cv::Point3f point : octomap_points) {
-            Point3f new_point;
-            new_point.x = point.x * stereo_config_.calibrationUnitConversion;
-            new_point.y = point.y * stereo_config_.calibrationUnitConversion;
-            new_point.z = point.z * stereo_config_.calibrationUnitConversion;
-
-            octomap_points_transformed.push_back(new_point);
-        }
-
-        projectPoints(octomap_points_transformed, stereo_calibration_.R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_.M1, stereo_calibration_.D1, img_points_list);
+        i++;
     }
 
-    vector<float> x_vec(octomap_points.size()), y_vec(octomap_points.size()), z_vec(octomap_points.size());
-    vector<int> frame_x_vec(octomap_points.size()), frame_y_vec(octomap_points.size());
-
-    for (unsigned int i = 0; i < octomap_points.size(); i++) {
-        Point3f point = octomap_points[i];
-
-        x_vec[i] = point.x;
-        y_vec[i] = point.y;
-        z_vec[i] = point.z;
-
-        Point2f point2d = img_points_list[i];
-
-        frame_x_vec[i] = round(point2d.x);
-        frame_y_vec[i] = round(point2d.y);
-
-    }
-
-
-    msg.number_of_points = x_vec.size();
-
-
-    uint8_t grey[msg.number_of_points];
-
-    msg.x = &x_vec[0];
-    msg.y = &y_vec[0];
-    msg.z = &z_vec[0];
+    msg.number_of_points = counter;
+    msg.x = x;
+    msg.y = y;
+    msg.z = z;
     msg.grey = grey;
 
-
-    msg.frame_x = &frame_x_vec[0];
-    msg.frame_y = &frame_y_vec[0];
-
-    lcmt_stereo_with_xy_publish(lcm, "stereo-octomap", &msg);
-
-
+    lcmt_stereo_publish(lcm, "octomap-hud", &msg);
 }
-*/
-
-/**
- * Returns the full list of points in an octree, optionally projected with a transform
- *
- * @param octomap Octree to process
- * @param octomap_points vector<Point3f> that will contain the points
- * @param transform a transform for the points.  For example, to transform all the points to the body
- *  frame, pass: <pre> bot_frames_get_trans(bot_frames, "local", "opencvFrame", &global_to_body); </pre>
- *
- * @param discard_behind if set to true, discards points that have a negative z value
- *  Default: false
- *
- */
-/*
-void StereoOctomap::GetOctomapPoints(OcTree *octomap, vector<cv::Point3f> *octomap_points, BotTrans *transform, bool discard_behind) {
-
-
-    // loop through the most likely points on the octomap and plot them on the image
-    for(OcTree::leaf_iterator it = octomap->begin_leafs(), end=octomap->end_leafs(); it!= end; ++it) {
-        //manipulate node, e.g.:
-
-        // check to see if this is occupied
-        if (it->getOccupancy() > octomap->getOccupancyThres()) {
-
-            octomap::point3d this_point = it.getCoordinate();
-
-            // convert this global coordinate into the local coordinate frame
-            double this_point_d[3];
-            this_point_d[0] = this_point.x();
-            this_point_d[1] = this_point.y();
-            this_point_d[2] = this_point.z();
-
-            double point_in_transformed_coords[3];
-
-
-            if (transform != NULL) {
-                bot_trans_apply_vec(transform, this_point_d, point_in_transformed_coords);
-
-
-
-                if (discard_behind == false || point_in_transformed_coords[2] >= 0) {
-                    octomap_points->push_back(cv::Point3f(point_in_transformed_coords[0], point_in_transformed_coords[1], point_in_transformed_coords[2]));
-                }
-
-            } else {
-
-                if (discard_behind == false || this_point.z() >= 0) {
-                    octomap_points->push_back(cv::Point3f(this_point.x(), this_point.y(), this_point.z()));
-                }
-            }
-        }
-    }
-}
-*/

@@ -25,6 +25,7 @@ lcmt_deltawing_u_subscription_t *servo_out_sub;
 mav_gps_data_t_subscription_t *mav_gps_data_t_sub;
 bot_core_image_t_subscription_t *stereo_image_left_sub;
 lcmt_stereo_subscription_t *stereo_replay_sub;
+lcmt_stereo_subscription_t *octomap_hud_sub;
 lcmt_stereo_subscription_t *mono_sub;
 lcmt_stereo_subscription_t *stereo_sub;
 lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
@@ -38,11 +39,10 @@ Mat left_image = Mat::zeros(240, 376, CV_8UC1); // global so we can update it in
 
 ofstream box_file;
 
-mutex stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
-lcmt_stereo *last_stereo_bm_msg, *last_stereo_replay_msg;
+mutex stereo_mutex, stereo_bm_mutex, stereo_xy_mutex, ui_box_mutex, stereo_replay_mutex;
+lcmt_stereo *last_stereo_msg, *last_stereo_bm_msg, *last_stereo_replay_msg, *last_octomap_hud_msg = nullptr;
 lcmt_stereo_with_xy *last_stereo_xy_msg;
 
-std::vector<Point3d> global_obstacle_list;
 BotFrames *bot_frames;
 
 bool ui_box = false;
@@ -72,7 +72,7 @@ int main(int argc,char** argv) {
     bool record_hud = false;
     bool show_unremapped = false;
     bool depth_crop_bm = false;
-    bool draw_stereo_replay = false;
+    bool draw_stereo_replay = true;
     bool rec_only_vision = true;
     bool traj_boxes_in_manual_mode = false;
     int clutter_level = 5;
@@ -90,8 +90,8 @@ int main(int argc,char** argv) {
     parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
     parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
-    parser.add(draw_stereo_replay, "s", "draw_stereo_replay", "Display stereo points from the stereo_replay channel.");
-    parser.add(rec_only_vision, "o", "Record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
+    parser.add(draw_stereo_replay, "s", "draw-stereo-replay", "Display stereo points from the stereo_replay channel.");
+    parser.add(rec_only_vision, "o", "record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
     parser.add(traj_boxes_in_manual_mode, "t", "traj-boxes-in-manual-mode", "Draw trajectory boxes even in manual mode.");
     parser.parse();
 
@@ -176,6 +176,8 @@ int main(int argc,char** argv) {
                 hud_object_drawer = new HudObjectDrawer(trajlib, bot_frames, &stereo_calibration, show_unremapped);
 
                 hud_object_drawer->SetTrajBoxesInManualMode(traj_boxes_in_manual_mode);
+            } else {
+                std::cerr << "WARNING: failed to init HudObjectDrawer because of issues with trajectory library" << std::endl;
             }
         }
     }
@@ -258,6 +260,12 @@ int main(int argc,char** argv) {
     if (bot_param_get_str(param, "lcm_channels.state_machine_state", &state_machine_state_channel) >= 0) {
         state_machine_sub = lcmt_debug_subscribe(lcm, state_machine_state_channel, &state_machine_handler, &hud);
     }
+
+    char *octomap_hud_channel;
+    if (bot_param_get_str(param, "lcm_channels.octomap_hud", &octomap_hud_channel) >= 0) {
+        octomap_hud_sub = lcmt_stereo_subscribe(lcm, octomap_hud_channel, &octomap_hud_handler, &hud);
+    }
+
 
 
     // control-c handler
@@ -349,8 +357,6 @@ int main(int argc,char** argv) {
             //octomap_mutex.unlock();
 
             // -- stereo -- //
-
-            /*
             // transform the point from 3D space back onto the image's 2D space
             vector<Point3f> lcm_points;
 
@@ -361,7 +367,7 @@ int main(int argc,char** argv) {
             stereo_mutex.unlock();
 
             Draw3DPointsOnImage(color_img, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, block_match_color, block_match_fill_color);
-            */
+
 
 
             // -- stereo replay -- //
@@ -376,7 +382,8 @@ int main(int argc,char** argv) {
                 }
                 stereo_replay_mutex.unlock();
 
-                Draw3DPointsOnImage(color_img, &lcm_replay_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, Scalar(1, 1, 1), 0);
+                // smaller box
+                Draw3DPointsOnImage(color_img, &lcm_replay_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, Scalar(1, 1, 1), 0, Point2d(-1, -1), Point2d(-1, -1), NULL, 0, 0, 2);
             }
 
             // -- octomap XY -- //
@@ -456,11 +463,10 @@ int main(int argc,char** argv) {
                 //hud.SetUCommand(u0_percent_left, u0_percent_right, throttle_percent);
             //}
 
-            // -- stereo -- //
+            // -- octomap-hud -- //
 
-            vector<Point3d> lcm_points;
-            if (hud_object_drawer != nullptr) {
-                hud_object_drawer->DrawObstacles(remapped_image, global_obstacle_list);
+            if (hud_object_drawer != nullptr && last_octomap_hud_msg != nullptr) {
+                hud_object_drawer->DrawObstacles(remapped_image, last_octomap_hud_msg);
             }
 
             hud.DrawHud(remapped_image, hud_image);
@@ -530,12 +536,6 @@ int main(int argc,char** argv) {
 
             case 's':
                 draw_stereo_replay = !draw_stereo_replay;
-                change_flag = true;
-                break;
-
-            case 'c':
-            case 'C':
-                global_obstacle_list.clear();
                 change_flag = true;
                 break;
 
@@ -646,22 +646,9 @@ void sighandler(int dum)
 
 
 void stereo_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
-    vector<Point3f> these_points;
-    Get3DPointsFromStereoMsg(msg, &these_points);
-
-    // convert points to global frame
-    BotTrans stereo_to_local;
-    bot_frames_get_trans(bot_frames, "opencvFrame", "local", &stereo_to_local);
-
-    for (int i = 0; i < (int)these_points.size(); i++) {
-        double xyz[3] = { these_points[i].x, these_points[i].y, these_points[i].z };
-
-        double xyz_global_frame[3];
-
-        bot_trans_apply_vec(&stereo_to_local, xyz, xyz_global_frame);
-
-        global_obstacle_list.push_back(Point3f(xyz_global_frame[0], xyz_global_frame[1], xyz_global_frame[2]));
-    }
+    stereo_mutex.lock();
+    last_stereo_msg = lcmt_stereo_copy(msg);
+    stereo_mutex.unlock();
 }
 
 void stereo_xy_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo_with_xy *msg, void *user) {
@@ -735,6 +722,10 @@ void stereo_replay_handler(const lcm_recv_buf_t *rbuf, const char* channel, cons
     last_stereo_replay_msg = lcmt_stereo_copy(msg);
     stereo_replay_mutex.unlock();
 
+}
+
+void octomap_hud_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {
+    last_octomap_hud_msg = lcmt_stereo_copy(msg);
 }
 
 void mono_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user) {

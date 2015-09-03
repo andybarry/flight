@@ -70,5 +70,6 @@ void AskForFrame(int video_number, int frame_number);
 
 
 void state_machine_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_debug *msg, void *user);
+void octomap_hud_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
 
 #endif

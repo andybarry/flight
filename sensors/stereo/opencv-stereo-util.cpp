@@ -831,9 +831,10 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
  *          the points inside the box.
  * @param min_z minimum z value allowable to draw the point
  * @param max_z maximum z value allowable to draw the point
+ * @param box_size size of the box (default = 4)
  */
 void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, Scalar outline_color, Scalar inside_color, Point2d box_top, Point2d box_bottom, vector<int> *points_in_box,
-float min_z, float max_z) {
+float min_z, float max_z, int box_size) {
     vector<Point3f> &points_list = *points_list_in;
 
     if (points_list.size() <= 0)
@@ -892,12 +893,12 @@ float min_z, float max_z) {
 
                 if (max_z == 0 || points_list[i].z <= max_z) {
 
-                    rectangle(camera_image, Point(img_points_list[i].x - 4, img_points_list[i].y - 4),
-                        Point(img_points_list[i].x + 4, img_points_list[i].y + 4), outline_color, thickness);
+                    rectangle(camera_image, Point(img_points_list[i].x - box_size, img_points_list[i].y - box_size),
+                        Point(img_points_list[i].x + box_size, img_points_list[i].y + box_size), outline_color, thickness);
 
                     if (inside_color[0] != -1) {
-                        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - 2),
-                            Point(img_points_list[i].x + 2, img_points_list[i].y + 2), inside_color, thickness);
+                        rectangle(camera_image, Point(img_points_list[i].x - 2, img_points_list[i].y - box_size/2),
+                            Point(img_points_list[i].x + box_size/2, img_points_list[i].y + box_size/2), inside_color, thickness);
                     }
 
                 }
