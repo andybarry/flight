@@ -8,8 +8,9 @@
 #include "TrajectoryLibrary.hpp"
 
 // Constructor that loads a trajectorys from a directory
-TrajectoryLibrary::TrajectoryLibrary()
+TrajectoryLibrary::TrajectoryLibrary(double ground_safety_distance)
 {
+    ground_safety_distance_ = ground_safety_distance;
 }
 
 bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
@@ -165,11 +166,9 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
 
         // check minumum altitude
         double min_altitude = traj_vec_.at(i).GetMinimumAltitude() + body_to_local.trans_vec[2];
-        if (min_altitude < 0) {
+        if (min_altitude < ground_safety_distance_) {
             // this trajectory would impact the ground
             closest_obstacle_distance = 0;
-        } else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
-            closest_obstacle_distance = min_altitude;
         }
 
 

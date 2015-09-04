@@ -30,7 +30,7 @@ class TrajectoryLibrary
 {
 
     public:
-        TrajectoryLibrary();
+        TrajectoryLibrary(double ground_safety_distance);
 
         const Trajectory* GetTrajectoryByNumber(int number) const;
 
@@ -47,6 +47,7 @@ class TrajectoryLibrary
 
     private:
         std::vector<Trajectory> traj_vec_;
+        double ground_safety_distance_;
 
 };
 

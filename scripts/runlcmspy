@@ -1,6 +1,6 @@
 #!/bin/bash
 
 
-export CLASSPATH=$CLASSPATH:/home/$USER/realtime/LCM/LCMtypes.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_mav-lcmtypes.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_mav_estimator.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_bot2-core.jar:/home/$USER/pronto-distro/build/share/java/lcmspy_plugins_bot2.jar
+export CLASSPATH=$CLASSPATH:/home/$USER/realtime/LCM/LCMtypes.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_mav-lcmtypes.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_mav_estimator.jar:/home/$USER/pronto-distro/build/share/java/lcmtypes_bot2-core.jar:/home/$USER/pronto-distro/build/share/java/lcmspy_plugins_bot2.jar:/usr/local/share/java/lcmtypes_bot2-procman.jar
 
 lcm-spy
