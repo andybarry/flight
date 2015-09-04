@@ -88,11 +88,15 @@ int main(int argc,char** argv) {
     sigma0_chi_z = bot_param_get_double_or_fail(param, "state_estimator.sigma0.chi_z");
     sigma0_chi_z = deg2rad(sigma0_chi_z);
 
+    double ground_safety_distance = bot_param_get_double_or_fail(param, "tvlqr_controller.ground_safety_distance");
+
     stable_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.stable_controller");
     int start_controller = bot_param_get_int_or_fail(param, "tvlqr_controller.climb_no_throttle_controller");
 
     std::string trajectory_dir = std::string(bot_param_get_str_or_fail(param, "tvlqr_controller.library_dir"));
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
+
+    trajlib.SetGroundSafetyDistance(ground_safety_distance);
 
     if (trajectory_dir != "") {
         // load a trajectory library

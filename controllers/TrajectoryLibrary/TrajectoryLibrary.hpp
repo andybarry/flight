@@ -30,8 +30,9 @@ class TrajectoryLibrary
 {
 
     public:
-        TrajectoryLibrary(double ground_safety_distance);
+        TrajectoryLibrary(double ground_safety_distance = 0);
 
+        void SetGroundSafetyDistance(double dist) { ground_safety_distance_ = dist; }
         const Trajectory* GetTrajectoryByNumber(int number) const;
 
         int GetNumberTrajectories() const { return int(traj_vec_.size()); }
