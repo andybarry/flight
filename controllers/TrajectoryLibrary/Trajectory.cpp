@@ -419,12 +419,12 @@ double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &o
 
      // check minumum altitude
     double min_altitude = GetMinimumAltitude() + body_to_local.trans_vec[2];
-    if (min_altitude < 0) {
+    if (min_altitude < 0) { //// TODO FIXME HACK SHOULD BE A PARAM
         // this trajectory would impact the ground
         closest_obstacle_distance = 0;
-    } else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
-        closest_obstacle_distance = min_altitude;
-    }
+    }// else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
+     //   closest_obstacle_distance = min_altitude;
+    //}
 
     return closest_obstacle_distance;
 }
