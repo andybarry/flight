@@ -31,13 +31,10 @@ std::string servo_out_channel = "servo_out";
 std::string stereo_control_channel = "stereo-control";
 std::string beep_channel = "beep";
 std::string rc_action_channel = "rc-switch-action";
-std::string altitude_reset_channel = "reset-altitude";
-
 
 mavlink_msg_container_t_subscription_t * mavlink_sub;
 lcmt_deltawing_u_subscription_t *deltawing_u_sub;
 lcmt_beep_subscription_t *beep_sub;
-lcmt_timestamp_subscription_t *altitude_reset_sub;
 
 int last_stereo_control = 0;
 int last_is_autonomous = 0;
@@ -47,8 +44,6 @@ int last_servo6_raw = 0;
 int rc_switch_delta;
 
 double altimeter_r, airspeed_r, sideslip_r;
-double altitude_reset_delta = 0;
-double last_raw_altitude = 0;
 
 uint8_t systemID = getSystemID();
 
@@ -59,7 +54,6 @@ void sighandler(int dum)
     mavlink_msg_container_t_unsubscribe(lcm_, mavlink_sub);
     lcmt_deltawing_u_unsubscribe(lcm_, deltawing_u_sub);
     lcmt_beep_unsubscribe(lcm_, beep_sub);
-    lcmt_timestamp_unsubscribe(lcm_, altitude_reset_sub);
     lcm_destroy (lcm_);
 
     printf("done.\n");
@@ -97,11 +91,6 @@ void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const 
     // Publish the message on the LCM IPC bus
     sendMAVLinkMessage(lcm_, &mavmsg);
 
-}
-
-void altitude_reset_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_timestamp *msg, void *user) {
-    // whenever we get this message, set the altitude to zero
-    altitude_reset_delta = -last_raw_altitude;
 }
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user)
@@ -282,8 +271,6 @@ void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavl
 
             double altitude;
             altitude = pressure.press_diff + elev_origin;  // HACK
-            last_raw_altitude = altitude;
-            altitude += altitude_reset_delta;
 
             altimeter_msg.measured_dim = 1; // altitude only measures 1 dimension (z-axis)
 
@@ -513,7 +500,6 @@ int main(int argc,char** argv)
     mavlink_sub =  mavlink_msg_container_t_subscribe (lcm_, mavlink_channel.c_str(), &mavlink_handler, NULL);
     deltawing_u_sub = lcmt_deltawing_u_subscribe(lcm_, deltawing_u_channel.c_str(), &deltawing_u_handler, NULL);
     beep_sub = lcmt_beep_subscribe(lcm_, beep_channel.c_str(), &beep_handler, NULL);
-    altitude_reset_sub = lcmt_timestamp_subscribe(lcm_, altitude_reset_channel.c_str(), &altitude_reset_handler, NULL);
 
     signal(SIGINT,sighandler);
 
@@ -548,7 +534,7 @@ int main(int argc,char** argv)
         exit(1);
     }
 
-    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\n\tAltitude Reset: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tRC Action: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), altitude_reset_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), rc_action_channel.c_str());
+    printf("Receiving:\n\tMavlink LCM: %s\n\tDeltawing u: %s\n\tBeep: %s\nPublishing LCM:\n\tAttiude: %s\n\tBarometric altitude: %s\n\tAirspeed: %s\n\tGPS: %s\n\tBattery status: %s\n\tServo Outputs: %s\n\tStereo Control: %s\n\tRC Action: %s\n", mavlink_channel.c_str(), deltawing_u_channel.c_str(), beep_channel.c_str(), attitude_channel.c_str(), altimeter_channel.c_str(), airspeed_channel.c_str(), gps_channel.c_str(), battery_status_channel.c_str(), servo_out_channel.c_str(), stereo_control_channel.c_str(), rc_action_channel.c_str());
 
     while (true)
     {

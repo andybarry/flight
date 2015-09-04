@@ -26,7 +26,6 @@
 #include "../../LCM/lcmt_stereo_control.h"
 #include "../../LCM/lcmt_beep.h"
 #include "../../LCM/lcmt_rc_switch_action.h"
-#include "../../LCM/lcmt_timestamp.h"
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
@@ -73,8 +72,6 @@ void beep_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_be
 void deltawing_u_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_deltawing_u *msg, void *user);
 
 void mavlink_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mavlink_msg_container_t *msg, void *user);
-
-void altitude_reset_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_timestamp *msg, void *user);
 
 #endif
 
