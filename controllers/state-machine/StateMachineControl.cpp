@@ -160,6 +160,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
 
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
+        std::cout << "dist OK = " << dist << std::endl;
         return false;
     }
 
@@ -175,7 +176,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
         SetNextTrajectory(*traj);
         return true;
     } else {
-        //std::cout << "no improvement" << std::endl;
+        //std::cout << "no improvement, best dist = " << dist_diff << "current traj = " << dist << std::endl;
         return false;
     }
 }

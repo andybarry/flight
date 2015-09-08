@@ -171,7 +171,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
             closest_obstacle_distance = 0;
         }
 
-
+	//std::cout << "traj #" << i << " dist = " << closest_obstacle_distance << std::endl;
 
         //if (lcmgl != nullptr) {
             //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
