@@ -331,6 +331,109 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     UnsubscribeLcmChannels();
 }
 
+
+TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    //fsm_control->GetFsmContext()->setDebugFlag(true);
+
+    float altitude = 1;
+
+    SubscribeLcmChannels(fsm_control);
+
+    // ensure that we are in the start state
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    // send some pose messages
+    mav::pose_t msg = GetDefaultPoseMsg();
+    msg.pos[2] = 0;
+
+    // check for unexpected transitions out of wait state
+
+    lcm_->publish(pose_channel_, &msg);
+
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    // cause a takeoff transistion
+    msg.accel[0] = 100;
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::TakeoffNoThrottle") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+    // wait for takeoff to finish
+    for (int i = 0; i < 12; i++) {
+        msg = GetDefaultPoseMsg();
+        msg.pos[2] = 0;
+        msg.vel[0] = 20;
+        lcm_->publish(pose_channel_, &msg);
+        ProcessAllLcmMessages(fsm_control);
+        usleep(100000);
+    }
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::Climb") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    // reach large altitude
+    msg = GetDefaultPoseMsg();
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    // go to altitude
+    msg = GetDefaultPoseMsg();
+    msg.pos[2] = altitude;
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    // now add an obstacle in front of it and make sure it transitions!
+    ProcessAllLcmMessages(fsm_control);
+
+    ProcessAllLcmMessages(fsm_control);
+
+    float point[3] = { 24, 0, altitude };
+    SendStereoPointTriple(point);
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab, with 5.0 = safe
+
+    // NOTE: modification of x_points_ if you're checking in MATLAB (!)
+    vector<float> xpts = x_points_;
+    vector<float> zpts = z_points_;
+    for (int i = 0; i < int(x_points_.size()); i++) {
+        xpts[i] += 5;
+        zpts[i] += altitude;
+    }
+
+    SendStereoManyPointsTriple(xpts, y_points_, zpts);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
+
+    delete fsm_control;
+
+    UnsubscribeLcmChannels();
+}
+
 /**
  * Tests that the state machine requests the cruise trajectory after a timeout
  */
