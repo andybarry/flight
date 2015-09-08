@@ -317,8 +317,6 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
 
-    EXPECT_TRUE(dist == altitude);
-
     // add an obstacle close to the first trajectory
     double point[3] = { 1.05, 0, 0 };
     AddPointToOctree(&octomap, point, altitude);
@@ -415,8 +413,6 @@ TEST_F(TrajectoryLibraryTest, Altitude) {
     std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0);
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
-
-    EXPECT_NEAR(dist, altitude, TOLERANCE); // altitude should be the limiting factor here
 }
 
 TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
@@ -578,9 +574,6 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
 
     double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
 
-    // with no obstacles, we expect the ground to be the closest obstacle
-    EXPECT_EQ_ARM(dist, altitude);
-
     // add an obstacle
     double point[3] = { 0, 0, 0};
     AddPointToOctree(&octomap, point, altitude);
@@ -619,7 +612,8 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimpleAltitude) {
     const Trajectory *traj = lib.GetTrajectoryByNumber(0);
     double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
 
-    EXPECT_EQ_ARM(dist, altitude);
+
+    EXPECT_EQ_ARM(dist, -1);
 
     // add an obstacle
     double point[3] = { 0, 0, 6};
@@ -644,11 +638,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(1);
 
-    // with no obstacles, we expect the ground to be the closest obstacle
-    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
-    EXPECT_EQ_ARM(traj->GetMinimumAltitude(), -1.0308);
-    EXPECT_EQ_ARM(dist, altitude - 1.0308);
-
+    double dist;
 
     double point[3] = { 6.65, -7.23, 9.10 };
     AddPointToOctree(&octomap, point, altitude);
@@ -672,9 +662,8 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
 
     Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
-    // with no obstacles, we expect the ground to be the closest obstacle
     double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
-    EXPECT_EQ_ARM(dist, altitude);
+    EXPECT_EQ_ARM(dist, -1);
 
     double point[3] = { 1.5, -0.5, 3 };
     AddPointToOctree(&octomap, point, altitude);

@@ -141,7 +141,7 @@ void StateMachineControl::SetBestTrajectory() {
 }
 
 bool StateMachineControl::BetterTrajectoryAvailable() {
-    std::cout << "better traj available()" << std::endl;
+    //std::cout << "better traj available()" << std::endl;
     // search for an obstacle in the path
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
@@ -158,10 +158,9 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
     }
 
     double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t);
-std::cout << "better traj available, dist = " << dist << std::endl;
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
-        std::cout << "dist OK = " << dist << std::endl;
+        //std::cout << "dist OK = " << dist << std::endl;
         return false;
     }
 
