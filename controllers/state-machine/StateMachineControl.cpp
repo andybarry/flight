@@ -23,6 +23,8 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     double filter_distance_threshold = bot_param_get_double_or_fail(param_, "tvlqr_controller.filter_distance_threshold");
     int filter_num_points_threshold = bot_param_get_int_or_fail(param_, "tvlqr_controller.fitler_number_of_points_threshold");
 
+    double ground_safety_distance = bot_param_get_double_or_fail(param_, "tvlqr_controller.ground_safety_distance");
+
     spacial_stereo_filter_ = new SpacialStereoFilter(filter_distance_threshold, filter_num_points_threshold);
 
     if (min_improvement_to_switch_trajs_ <= 0) {
@@ -34,7 +36,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     octomap_ = new StereoOctomap(bot_frames_);
 
-    trajlib_ = new TrajectoryLibrary();
+    trajlib_ = new TrajectoryLibrary(ground_safety_distance);
 
     if (trajlib_->LoadLibrary(traj_dir, true) == false) {
         std::cerr << "ERROR: Failed to load trajectory library." << std::endl;
@@ -139,6 +141,7 @@ void StateMachineControl::SetBestTrajectory() {
 }
 
 bool StateMachineControl::BetterTrajectoryAvailable() {
+    std::cout << "better traj available()" << std::endl;
     // search for an obstacle in the path
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
@@ -155,9 +158,10 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
     }
 
     double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t);
-
+std::cout << "better traj available, dist = " << dist << std::endl;
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
+        std::cout << "dist OK = " << dist << std::endl;
         return false;
     }
 
@@ -173,7 +177,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
         SetNextTrajectory(*traj);
         return true;
     } else {
-        //std::cout << "no improvement" << std::endl;
+        //std::cout << "no improvement, best dist = " << dist_diff << "current traj = " << dist << std::endl;
         return false;
     }
 }

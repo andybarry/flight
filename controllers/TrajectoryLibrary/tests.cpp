@@ -276,7 +276,7 @@ TEST_F(TrajectoryLibraryTest, TestTiRollout) {
 
 
 TEST_F(TrajectoryLibraryTest, LoadLibrary) {
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     ASSERT_TRUE(lib.LoadLibrary("trajtest/simple", true));
 
@@ -295,7 +295,7 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     StereoOctomap octomap(bot_frames_);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     lib.LoadLibrary("trajtest/simple", true);
 
@@ -359,7 +359,7 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
     StereoOctomap octomap(bot_frames_);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     lib.LoadLibrary("trajtest/simple", true);
     double altitude = 30;
@@ -398,7 +398,7 @@ TEST_F(TrajectoryLibraryTest, TwoTrajectoriesOnePointWithTransform) {
 
 TEST_F(TrajectoryLibraryTest, Altitude) {
     StereoOctomap octomap(bot_frames_);
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     lib.LoadLibrary("trajtest/simple", true);
 
@@ -422,7 +422,7 @@ TEST_F(TrajectoryLibraryTest, Altitude) {
 TEST_F(TrajectoryLibraryTest, ManyTrajectoriesWithTransform) {
     StereoOctomap octomap(bot_frames_);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
     lib.LoadLibrary("trajtest/full", true);
 
     double altitude = 30;
@@ -487,7 +487,7 @@ TEST_F(TrajectoryLibraryTest, ManyPointsAgainstMatlab) {
     // load points
     AddManyPointsToOctree(&octomap, x_points_, y_points_, z_points_, number_of_reference_points_, altitude);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     lib.LoadLibrary("trajtest/many", true);
 
@@ -539,7 +539,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     AddManyPointsToOctree(&octomap, x, y, z, num_points, altitude);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
 
     lib.LoadLibrary("trajtest/many", true);
 
@@ -565,7 +565,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
 
     // get a trajectory
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
     lib.LoadLibrary("trajtest/simple", true);
 
     double altitude = 100;
@@ -607,7 +607,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimpleAltitude) {
     StereoOctomap octomap(bot_frames_);
 
     // get a trajectory
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
     lib.LoadLibrary("trajtest/simple", true);
 
     double altitude = 5;
@@ -634,7 +634,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
     StereoOctomap octomap(bot_frames_);
 
     // Load a complicated trajectory
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
     lib.LoadLibrary("trajtest/many", true);
 
     double altitude = 30;
@@ -689,7 +689,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
 TEST_F(TrajectoryLibraryTest, FindFarthestWithTI) {
     StereoOctomap octomap(bot_frames_);
 
-    TrajectoryLibrary lib;
+    TrajectoryLibrary lib(0);
     lib.LoadLibrary("trajtest/full", true);
 
     double altitude = 30;

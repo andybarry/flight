@@ -30,8 +30,9 @@ class TrajectoryLibrary
 {
 
     public:
-        TrajectoryLibrary();
+        TrajectoryLibrary(double ground_safety_distance = 0);
 
+        void SetGroundSafetyDistance(double dist) { ground_safety_distance_ = dist; }
         const Trajectory* GetTrajectoryByNumber(int number) const;
 
         int GetNumberTrajectories() const { return int(traj_vec_.size()); }
@@ -47,6 +48,7 @@ class TrajectoryLibrary
 
     private:
         std::vector<Trajectory> traj_vec_;
+        double ground_safety_distance_;
 
 };
 

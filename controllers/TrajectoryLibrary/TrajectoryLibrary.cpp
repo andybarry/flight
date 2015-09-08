@@ -8,8 +8,9 @@
 #include "TrajectoryLibrary.hpp"
 
 // Constructor that loads a trajectorys from a directory
-TrajectoryLibrary::TrajectoryLibrary()
+TrajectoryLibrary::TrajectoryLibrary(double ground_safety_distance)
 {
+    ground_safety_distance_ = ground_safety_distance;
 }
 
 bool TrajectoryLibrary::LoadLibrary(std::string dirname, bool quiet) {
@@ -125,7 +126,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
     // for each point in each trajectory, find the point that is closest in the octree
     for (int i = 0; i < GetNumberTrajectories(); i++) {
 
-        //std::cout << "Searching trajectory: " << i << std::endl;
+        std::cout << "Searching trajectory: " << i << std::endl;
 
         double closest_obstacle_distance = -1;
 
@@ -164,15 +165,15 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         }
 
         // check minumum altitude
+        // TODO: do this check before searching the entire trajectory and bail if this is true
         double min_altitude = traj_vec_.at(i).GetMinimumAltitude() + body_to_local.trans_vec[2];
-        if (min_altitude < 0) {
+        if (min_altitude < ground_safety_distance_) {
             // this trajectory would impact the ground
             closest_obstacle_distance = 0;
-        } else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
-            closest_obstacle_distance = min_altitude;
+            std::cout << "Trajectory " << i << " would violate ground safety." << std::endl;
         }
 
-
+        std::cout << "Trajectory " << i << " has distance = " << closest_obstacle_distance << std::endl;
 
         //if (lcmgl != nullptr) {
             //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
@@ -190,6 +191,8 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
                     bot_lcmgl_pop_matrix(lcmgl);
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
+
+                std::cout << "Trajectory " << i << " is good enough, running!" << std::endl;
 
                 return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
             }
