@@ -75,6 +75,7 @@ int main(int argc,char** argv) {
     bool draw_stereo_replay = true;
     bool rec_only_vision = true;
     bool traj_boxes_in_manual_mode = false;
+    bool draw_stereo_2d = true;
     int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
@@ -358,16 +359,17 @@ int main(int argc,char** argv) {
 
             // -- stereo -- //
             // transform the point from 3D space back onto the image's 2D space
-            vector<Point3f> lcm_points;
+            if (draw_stereo_2d) {
+                vector<Point3f> lcm_points;
 
-            stereo_mutex.lock();
-            if (last_stereo_msg) {
-                Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+                stereo_mutex.lock();
+                if (last_stereo_msg) {
+                    Get3DPointsFromStereoMsg(last_stereo_msg, &lcm_points);
+                }
+                stereo_mutex.unlock();
+
+                Draw3DPointsOnImage(color_img, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, block_match_color, block_match_fill_color);
             }
-            stereo_mutex.unlock();
-
-            Draw3DPointsOnImage(color_img, &lcm_points, stereo_calibration.M1, stereo_calibration.D1, stereo_calibration.R1, block_match_color, block_match_fill_color);
-
 
 
             // -- stereo replay -- //
@@ -449,7 +451,7 @@ int main(int argc,char** argv) {
 
             // -- trajectories -- //
             if (hud_object_drawer != nullptr) {
-                hud_object_drawer->DrawTrajectory(remapped_image);
+                //hud_object_drawer->DrawTrajectory(remapped_image);
             }
 
             //Eigen::VectorXd u0;
@@ -536,6 +538,7 @@ int main(int argc,char** argv) {
 
             case 's':
                 draw_stereo_replay = !draw_stereo_replay;
+                draw_stereo_2d = draw_stereo_replay;
                 change_flag = true;
                 break;
 

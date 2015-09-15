@@ -61,9 +61,9 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
     //Draw3DPointsOnImage(hud_img, &points, stereo_calibration_->M1, stereo_calibration_->D1, stereo_calibration_->R1);
 
     double start_t = 0;//round(current_t_ / 0.10) * 0.10;
-    for (double t = start_t; t < traj->GetMaxTime(); t += 0.10) {
-
-    //double t = 0.5;
+    for (double t = start_t; t < traj->GetMaxTime(); t += 0.20) {
+//{
+  //      double t = 0.5;
         Eigen::VectorXd traj_x = traj->GetState(t);
 
         Eigen::VectorXd state = traj_x - state_minus_init;
@@ -76,7 +76,8 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
         rpy[1] = state(4);
         rpy[2] = state(5);
 
-        DrawBox(hud_img, xyz, rpy, 0.84, .5, hud_color_);
+        //DrawBox(hud_img, xyz, rpy, 0.84, .5, hud_color_);
+        DrawBox(hud_img, xyz, rpy, 0.84*4, 0.5*4, hud_color_);
     }
 }
 
@@ -89,7 +90,7 @@ void HudObjectDrawer::DrawObstacles(Mat hud_img, lcmt_stereo *msg) {
         xyz[1] = msg->y[i];
         xyz[2] = msg->z[i];
 
-        DrawCube(hud_img, xyz, rpy, 0.5, 0.5, 0.25, Scalar(0, 0, 1));
+        DrawCube(hud_img, xyz, rpy, 0.25, 0.25, 0.25, Scalar(0, 0, 1));
     }
 }
 
@@ -162,7 +163,20 @@ std::vector<Point2d> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double
     vector<Point2d> *points_to_draw;
 
     //projectPoints(points_list, cam_mat_r.inv(), Mat::zeros(3, 1, CV_32F), cam_mat_m, cam_mat_d, img_points_list);
-    projectPoints(box_points, stereo_calibration_->R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_->M1, stereo_calibration_->D1, projected_box);
+    Mat jacobian;
+    projectPoints(box_points, stereo_calibration_->R1.inv(), Mat::zeros(3, 1, CV_32F), stereo_calibration_->M1, stereo_calibration_->D1, projected_box, jacobian);
+
+    // sometimes the reprojection of boxes behind the camera is ridiculous and causes junk to plot on the screen
+    // the jacobian is a decent way of figuring out what points are real
+    //if (abs(jacobian.at<double>(0)) > 30 || abs(jacobian.at<double>(0)) < 3 || abs(jacobian.at<double>(1)) < 150 || jacobian.at<double>(5,0) > 0 ) {
+    if (abs(jacobian.at<double>(0)) > 50 || jacobian.at<double>(5,0) > 0 ) {
+        vector<Point2d> nothing;
+        return nothing;
+    }
+
+    //std::cout << "jacobian:" << std::endl << jacobian.at<double>(5,0) << std::endl;
+
+
 
     if (show_unremapped_ == false) {
         // undistort the points
@@ -174,14 +188,16 @@ std::vector<Point2d> HudObjectDrawer::DrawBox(Mat hud_img, double xyz[3], double
     }
 
     // if any of the points are outside our frame, don't draw
-    if (   points_to_draw->at(0).x < -10 || points_to_draw->at(0).x > hud_img.cols + 10
-        || points_to_draw->at(1).x < -10 || points_to_draw->at(1).x > hud_img.cols + 10
-        || points_to_draw->at(2).x < -10 || points_to_draw->at(2).x > hud_img.cols + 10
-        || points_to_draw->at(3).x < -10 || points_to_draw->at(3).x > hud_img.cols + 10
-        || points_to_draw->at(0).y < -10 || points_to_draw->at(0).y > hud_img.rows + 10
-        || points_to_draw->at(1).y < -10 || points_to_draw->at(1).y > hud_img.rows + 10
-        || points_to_draw->at(2).y < -10 || points_to_draw->at(2).y > hud_img.rows + 10
-        || points_to_draw->at(3).y < -10 || points_to_draw->at(3).y > hud_img.rows + 10) {
+    int neg_region = -100;
+    int pos_region = 100;
+    if (   points_to_draw->at(0).x < neg_region || points_to_draw->at(0).x > hud_img.cols + pos_region
+        || points_to_draw->at(1).x < neg_region || points_to_draw->at(1).x > hud_img.cols + pos_region
+        || points_to_draw->at(2).x < neg_region || points_to_draw->at(2).x > hud_img.cols + pos_region
+        || points_to_draw->at(3).x < neg_region || points_to_draw->at(3).x > hud_img.cols + pos_region
+        || points_to_draw->at(0).y < neg_region || points_to_draw->at(0).y > hud_img.rows + pos_region
+        || points_to_draw->at(1).y < neg_region || points_to_draw->at(1).y > hud_img.rows + pos_region
+        || points_to_draw->at(2).y < neg_region || points_to_draw->at(2).y > hud_img.rows + pos_region
+        || points_to_draw->at(3).y < neg_region || points_to_draw->at(3).y > hud_img.rows + pos_region) {
 
         vector<Point2d> nothing;
         return nothing;
