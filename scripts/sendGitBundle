@@ -1,16 +1,18 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Usage: sendGitBundle <hostname>"
+    echo "Usage: sendGitBundle <plane_number>"
     exit 1
 fi
 
 cd $HOME/realtime
 
-git bundle create commits.bundle HEAD~15..HEAD
 
-rsync --progress commits.bundle odroid@$1:/home/odroid/
 
-ssh odroid@$1 "/home/odroid/realtime/scripts/unpackGitBundle /home/odroid/commits.bundle"
+# upload to gps computer
+echo "Sending to odroid-gps$1..."
+scripts/sendGitBundleSingle odroid-gps$1
 
-rm commits.bundle
+# upload to cam computer
+echo "Sending to cam computer..."
+ssh odroid@odroid-gps$1 "/home/odroid/realtime/scripts/sendGitBundleSingle  odroid-cam$1"

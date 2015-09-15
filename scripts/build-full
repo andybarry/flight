@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# compile all
+
+if [ -z "$1" ]; then
+    echo "Usage: build-full <plane_number>"
+    exit 1
+fi
+
+cd $HOME/realtime
+xfce4-terminal -H -e "./build-all -j8"
+
+xfce4-terminal -H -e 'ssh odroid@odroid-gps$1 "cd /home/odroid & ./build-all -j2"'
+
+xfce4-terminal -H -e 'ssh odroid@odroid-cam$1 "cd /home/odroid & ./build-all -j2"'
