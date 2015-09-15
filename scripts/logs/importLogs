@@ -6,12 +6,28 @@ VIDEODIR=$HOME/video/rlg/4-delta-wing-era
 
 LOGDIR=$HOME/rlg/logs
 
+AUTO_DOWNLOAD=false
+
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
 # check for a flag that the user might want their own date
-while getopts d flag; do
+while getopts "dc:h" flag; do
     case $flag in
         d)
             echo "Enter the date in YYYY-MM-DD format:"
             read DATESTR
+            ;;
+        c)
+            AUTO_DOWNLOAD=true
+            PLANE_NUMBER=$OPTARG
+            ;;
+        h)
+            echo ""
+            echo "importLogs:"
+            echo "    -d                request a custom date"
+            echo "    -c=PLANE_NUMBER   automatic yes on all download questions"
+            echo "    -h                show this help"
+            echo ""
+            exit
             ;;
     esac
 done
@@ -83,52 +99,77 @@ ln -s $VIDEODIR/$DATESTR-$DIRNAME $LOGDIR/$DATESTR-$DIRNAME/ground-vids
 echo "$LOGDIR/$DATESTR-$DIRNAME/onboard-vids -> $VIDEODIR/$DATESTR-$DIRNAME/onboard-vids"
 ln -s $LOGDIR/$DATESTR-$DIRNAME/onboard-vids $VIDEODIR/$DATESTR-$DIRNAME/onboard-vids
 
-
 # download logs
-while true; do
-    read -p "Do you want to copy local logs now? [Y/N] " yn
-    case $yn in
-        [Yy]* ) ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs; break;;
-        [Nn]* ) break;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
+if [ "$AUTO_DOWNLOAD" = true ]
+then
+    ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs
+else
+    while true; do
+        read -p "Do you want to copy local logs now? [Y/N] " yn
+        case $yn in
+            [Yy]* ) ./downloadLocalLogs "/home/$USER/lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME/local-logs; break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+fi
 
+if [ "$AUTO_DOWNLOAD" = true ]
+then
+    ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z" "odroid-gps$PLANE_NUMBER"
+else
+    while true; do
+        read -p "Do you want to download GPS logs now? [Y/N] " yn
+        case $yn in
+            [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z"; break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+fi
 
-while true; do
-    read -p "Do you want to download GPS logs now? [Y/N] " yn
-    case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z"; break;;
-        [Nn]* ) break;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
+if [ "$AUTO_DOWNLOAD" = true ]
+then
+    ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z" "odroid-cam$PLANE_NUMBER"
+else
+    while true; do
+        read -p "Do you want to download CAM logs now? [Y/N] " yn
+        case $yn in
+            [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z"; break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+fi
 
-while true; do
-    read -p "Do you want to download CAM logs now? [Y/N] " yn
-    case $yn in
-        [Yy]* ) ./downloadLogs "lcmlog-$DATESTR.*" $LOGDIR/$DATESTR-$DIRNAME "-z"; break;;
-        [Nn]* ) break;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
+if [ "$AUTO_DOWNLOAD" = true ]
+then
+    ./downloadLogs "realtime/sensors/stereo/vids/mono-*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-z" "odroid-cam$PLANE_NUMBER"
+else
+    while true; do
+        read -p "Do you want to download mono videos now? [Y/N] " yn
+        case $yn in
+            [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/mono-*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-z"; break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
 
-while true; do
-    read -p "Do you want to download mono videos now? [Y/N] " yn
-    case $yn in
-        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/mono-*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-z"; break;;
-        [Nn]* ) break;;
-        * ) echo "Please answer yes or no.";;
-    esac
+    done
+fi
 
-done
+if [ "$AUTO_DOWNLOAD" = true ]
+then
+    ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z" "odroid-cam$PLANE_NUMBER"
+else
+    while true; do
+        read -p "Do you want to download stereo videos now? [Y/N] " yn
+        case $yn in
+            [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z"; break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
 
-while true; do
-    read -p "Do you want to download stereo videos now? [Y/N] " yn
-    case $yn in
-        [Yy]* ) ./downloadLogs "realtime/sensors/stereo/vids/video*$DATESTR*" $LOGDIR/$DATESTR-$DIRNAME/onboard-vids "-r -z"; break;;
-        [Nn]* ) break;;
-        * ) echo "Please answer yes or no.";;
-    esac
+    done
+fi
 
-done
+echo "Log download complete."
