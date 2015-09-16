@@ -107,6 +107,7 @@ class StateMachineControl {
         double takeoff_threshold_x_;
         double takeoff_max_y_;
         double takeoff_max_z_;
+        double ground_safety_distance_;
 
         double t_clear_cable_;
         double crusing_altitude_;

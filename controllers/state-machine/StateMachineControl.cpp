@@ -23,7 +23,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
     double filter_distance_threshold = bot_param_get_double_or_fail(param_, "tvlqr_controller.filter_distance_threshold");
     int filter_num_points_threshold = bot_param_get_int_or_fail(param_, "tvlqr_controller.fitler_number_of_points_threshold");
 
-    double ground_safety_distance = bot_param_get_double_or_fail(param_, "tvlqr_controller.ground_safety_distance");
+    ground_safety_distance_ = bot_param_get_double_or_fail(param_, "tvlqr_controller.ground_safety_distance");
 
     spacial_stereo_filter_ = new SpacialStereoFilter(filter_distance_threshold, filter_num_points_threshold);
 
@@ -36,7 +36,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     octomap_ = new StereoOctomap(bot_frames_);
 
-    trajlib_ = new TrajectoryLibrary(ground_safety_distance);
+    trajlib_ = new TrajectoryLibrary(ground_safety_distance_);
 
     if (trajlib_->LoadLibrary(traj_dir, true) == false) {
         std::cerr << "ERROR: Failed to load trajectory library." << std::endl;
@@ -157,7 +157,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
         t = 0;
     }
 
-    double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t);
+    double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t, ground_safety_distance_);
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
         //std::cout << "dist OK = " << dist << std::endl;

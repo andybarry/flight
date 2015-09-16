@@ -60,7 +60,7 @@ class Trajectory
 
         Eigen::MatrixXd GetXpoints() const { return xpoints_; }
 
-        double ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double current_t) const;
+        double ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double current_t, double min_altitude_allowed) const;
 
         void Print() const;
 

@@ -572,27 +572,27 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(0);
 
-    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
 
     // add an obstacle
     double point[3] = { 0, 0, 0};
     AddPointToOctree(&octomap, point, altitude);
 
     // now we expect zero distance since the obstacle and the trajectory start at the origin
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
     EXPECT_NEAR(dist, 0, TOLERANCE);
 
     // at t = 0.01, we expect a distance of 1 since the point is already behind us
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01, 0);
     EXPECT_EQ_ARM(dist, 1);
 
     // add a transform
     trans.trans_vec[2] += 42;
 
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
     EXPECT_EQ_ARM(dist, 42);
 
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.01, 0);
     EXPECT_NEAR(dist, sqrt( 42*42 + 1*1  ), TOLERANCE);
 }
 
@@ -610,7 +610,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimpleAltitude) {
     trans.trans_vec[2] = altitude;
 
     const Trajectory *traj = lib.GetTrajectoryByNumber(0);
-    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    double dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
 
 
     EXPECT_EQ_ARM(dist, -1);
@@ -619,7 +619,7 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimpleAltitude) {
     double point[3] = { 0, 0, 6};
     AddPointToOctree(&octomap, point, 0);
 
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
 
     EXPECT_EQ_ARM(dist, 6 - altitude);
 }
@@ -642,13 +642,13 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectory) {
 
     double point[3] = { 6.65, -7.23, 9.10 };
     AddPointToOctree(&octomap, point, altitude);
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
     EXPECT_NEAR(dist, 11.748141101535500, TOLERANCE2); // from matlab
 
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.95);
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0.95, 0);
     EXPECT_NEAR(dist, 11.8831, TOLERANCE2);
 
-    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.5); // t after trajectory
+    dist = traj->ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.5, 0); // t after trajectory
     EXPECT_NEAR(dist, 12.3832, TOLERANCE2); // from matlab
 }
 
@@ -662,15 +662,15 @@ TEST_F(TrajectoryLibraryTest, RemainderTrajectoryTi) {
 
     Trajectory traj("trajtest/ti/TI-test-TI-straight-pd-no-yaw-00000", true);
 
-    double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    double dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
     EXPECT_EQ_ARM(dist, -1);
 
     double point[3] = { 1.5, -0.5, 3 };
     AddPointToOctree(&octomap, point, altitude);
-    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0);
+    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 0, 0);
     EXPECT_NEAR(dist, 3.041506, TOLERANCE2); // from matlab
 
-    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.21);
+    dist = traj.ClosestObstacleInRemainderOfTrajectory(octomap, trans, 1.21, 0);
     EXPECT_NEAR(dist, 13.6886, TOLERANCE2);
 
 }

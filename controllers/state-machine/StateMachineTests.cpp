@@ -469,7 +469,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
     // wait for that trajectory to time out
     int64_t t_start = GetTimestampNow();
     double t = 0;
-    while (t < 3.1) {
+    while (t < 4.1) {
         usleep(7142); // 1/140 of a second
 
         msg.utime = GetTimestampNow();

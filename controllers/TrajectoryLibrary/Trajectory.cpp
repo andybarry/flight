@@ -8,8 +8,6 @@
 #include "Trajectory.hpp"
 
 
-
-// Constructor that loads a trajectory from a file
 Trajectory::Trajectory() {
     trajectory_number_ = -1;
     dimension_ = 0;
@@ -18,6 +16,7 @@ Trajectory::Trajectory() {
     dt_ = 0;
 }
 
+// Constructor that loads a trajectory from a file
 Trajectory::Trajectory(std::string filename_prefix, bool quiet) : Trajectory() {
     LoadTrajectory(filename_prefix, quiet);
 }
@@ -384,7 +383,7 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
  *
  * @retval Distance to the closest obstacle along the remainder of the trajectory
  */
-double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double current_t) const {
+double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double current_t, double min_altitude_allowed) const {
 
     // for each point remaining in the trajectory
     int number_of_points = GetNumberOfPoints();
@@ -418,12 +417,12 @@ double Trajectory::ClosestObstacleInRemainderOfTrajectory(const StereoOctomap &o
     }
 
      // check minumum altitude
-    double min_altitude = GetMinimumAltitude() + body_to_local.trans_vec[2];
-    if (min_altitude < 0) { //// TODO FIXME HACK SHOULD BE A PARAM
+    double min_altitude_traj = GetMinimumAltitude() + body_to_local.trans_vec[2];
+    if (min_altitude_traj < min_altitude_allowed) {
         // this trajectory would impact the ground
         closest_obstacle_distance = 0;
-    }// else if (min_altitude < closest_obstacle_distance || closest_obstacle_distance < 0) {
-     //   closest_obstacle_distance = min_altitude;
+    }// else if (min_altitude_traj < closest_obstacle_distance || closest_obstacle_distance < 0) {
+     //   closest_obstacle_distance = min_altitude_traj;
     //}
 
     return closest_obstacle_distance;
