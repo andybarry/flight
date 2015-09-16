@@ -11,6 +11,7 @@
 #include "opencv-stereo.hpp"
 
 bool show_display; // set to true to show opencv images on screen
+int show_display_wait = 1; // milli seconds to wait between frames when showing display
 bool disable_stereo = false;
 bool show_unrectified = false;
 bool display_hud = false;
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
     ConciseArgs parser(argc, argv);
     parser.add(configFile, "c", "config", "Configuration file containing camera GUIDs, etc.", true);
     parser.add(show_display, "d", "show-dispaly", "Enable for visual debugging display. Will reduce framerate significantly.");
+    parser.add(show_display_wait, "w", "show-display-wait", "Optional argument to decrease framerate for lower network traffic when forwarding the display.");
     parser.add(show_unrectified, "u", "show-unrectified", "When displaying images, do not apply rectification.");
     parser.add(disable_stereo, "s", "disable-stereo", "Disable online stereo processing.");
     parser.add(force_brightness, "b", "force-brightness", "Force a brightness setting.");
@@ -628,7 +630,7 @@ int main(int argc, char *argv[])
             }
 
 
-            char key = waitKey(1);
+            char key = waitKey(show_display_wait);
 
             if (key != 255 && key != -1)
             {
