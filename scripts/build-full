@@ -12,4 +12,4 @@ xfce4-terminal -H -e "./build-all -j8"
 
 xfce4-terminal -H -e "ssh odroid@odroid-gps$1 'cd /home/odroid/realtime && ./build-all -j2 && echo GPS_DONE'"
 
-xfce4-terminal -H -e "ssh -A -t odroid@odroid-gps$1 ssh -A odroid@odroid-cam$1 'pwd && cd /home/odroid/realtime && ./build-all -j2 && echo CAM_DONE'"
+xfce4-terminal -H -e "ssh -A -t odroid@odroid-gps$1 'ssh -A odroid@odroid-cam$1 'cd /home/odroid/realtime \&\& ./build-all -j2 \&\& echo CAM_DONE'"
