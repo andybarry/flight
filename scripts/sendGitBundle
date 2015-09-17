@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Usage: sendGitBundle <plane_number>"
+    echo "Usage: sendGitBundle <plane_number> [number of commits]"
     exit 1
 fi
 
@@ -11,8 +11,8 @@ cd $HOME/realtime
 
 # upload to gps computer
 echo "Sending to odroid-gps$1..."
-scripts/sendGitBundleSingle odroid-gps$1
+scripts/sendGitBundleSingle odroid-gps$1 $2
 
 # upload to cam computer
 echo "Sending to cam computer..."
-ssh odroid@odroid-gps$1 "/home/odroid/realtime/scripts/sendGitBundleSingle  odroid-cam$1"
+ssh odroid@odroid-gps$1 "/home/odroid/realtime/scripts/sendGitBundleSingle  odroid-cam$1" $NUM_COMMITS
