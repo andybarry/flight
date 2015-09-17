@@ -3,7 +3,6 @@
 
 TYPELIST=`find $HOME/realtime/LCM/*.py -printf ",%f" | cut -c  2- | sed s/.py//g`
 TYPELIST2=`find $HOME/realtime/LCM/lcmt/*.py -printf ",%f" | cut -c  2- | sed s/.py//g`
-`find $HOME/realtime/LCM/*.py -printf ",%f" | cut -c  2- | sed s/.py//g`
 
 TYPELIST="$TYPELIST,$TYPELIST2"
 
