@@ -51,3 +51,5 @@ SHA=`git rev-parse HEAD`
 LAST_BUILD_DATE=`date +%s`
 
 printf "SHA at last build: $SHA\nTimestmap of last build: $LAST_BUILD_DATE\n" > lastbuild.txt
+
+echo "done with "`pwd`

@@ -5,6 +5,13 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+if [ `date +%s` -lt 1430231759 ]
+then
+    echo "Error: time/date is not set correctly."
+    echo "Current time/date: `date`"
+    exit 1
+fi
+
 cd $HOME/realtime
 echo "Adding remote..."
 git remote add bundle $1
