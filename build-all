@@ -14,6 +14,8 @@ then
     exit 1
 fi
 
+echo "This is: $HOSTNAME"
+
 # read the file
 FILE=tobuild.txt
 
@@ -52,4 +54,4 @@ LAST_BUILD_DATE=`date +%s`
 
 printf "SHA at last build: $SHA\nTimestmap of last build: $LAST_BUILD_DATE\n" > lastbuild.txt
 
-echo "done with "`pwd`
+echo "done with "`pwd`" on $HOSTNAME"
