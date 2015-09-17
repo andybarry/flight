@@ -15,4 +15,4 @@ scripts/sendGitBundleSingle odroid-gps$1 $2
 
 # upload to cam computer
 echo "Sending to cam computer..."
-ssh odroid@odroid-gps$1 "/home/odroid/realtime/scripts/sendGitBundleSingle  odroid-cam$1" $NUM_COMMITS
+ssh odroid@odroid-gps$1 "/home/odroid/realtime/scripts/sendGitBundleSingle  odroid-cam$1 $2"
