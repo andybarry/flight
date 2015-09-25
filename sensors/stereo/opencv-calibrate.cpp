@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to parse configuration file, quitting.\n");
         return -1;
     }
-
+printf("got config\n");
     if (left_camera_mode || right_camera_mode)
     {
         stereo_mode = false;

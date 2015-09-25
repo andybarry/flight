@@ -357,16 +357,22 @@ GoForFlightFrame::GoForFlightFrame(wxWindow* parent,wxWindowID id)
     lcm.subscribe("log-info-odroid-cam1", &LogSizeHandler::handleMessage, &log_size_handler_);
     lcm.subscribe("log-info-odroid-gps2", &LogSizeHandler::handleMessage, &log_size_handler_);
     lcm.subscribe("log-info-odroid-cam2", &LogSizeHandler::handleMessage, &log_size_handler_);
+    lcm.subscribe("log-info-odroid-gps3", &LogSizeHandler::handleMessage, &log_size_handler_);
+    lcm.subscribe("log-info-odroid-cam3", &LogSizeHandler::handleMessage, &log_size_handler_);
 
     lcm.subscribe("cpu-info-odroid-gps1", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
     lcm.subscribe("cpu-info-odroid-cam1", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
     lcm.subscribe("cpu-info-odroid-gps2", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
     lcm.subscribe("cpu-info-odroid-cam2", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
+    lcm.subscribe("cpu-info-odroid-gps3", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
+    lcm.subscribe("cpu-info-odroid-cam3", &CpuInfoHandler::handleMessage, &cpu_info_handler_);
 
     lcm.subscribe("git-status-odroid-gps1", &GitStatusHandler::handleMessage, &git_status_handler_);
     lcm.subscribe("git-status-odroid-cam1", &GitStatusHandler::handleMessage, &git_status_handler_);
     lcm.subscribe("git-status-odroid-gps2", &GitStatusHandler::handleMessage, &git_status_handler_);
     lcm.subscribe("git-status-odroid-cam2", &GitStatusHandler::handleMessage, &git_status_handler_);
+    lcm.subscribe("git-status-odroid-gps3", &GitStatusHandler::handleMessage, &git_status_handler_);
+    lcm.subscribe("git-status-odroid-cam3", &GitStatusHandler::handleMessage, &git_status_handler_);
 
     lcm.subscribe("log-info-AAAZZZA", &LogSizeHandler::handleMessage, &log_size_handler_);
     lcm.subscribe("cpu-info-AAAZZZA", &CpuInfoHandler::handleMessage, &cpu_info_handler_);

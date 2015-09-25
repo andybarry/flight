@@ -6,14 +6,19 @@ New system setup:
     /etc/hosts
         - for local hostname
         - other hosts on the network
+    /home/odroid/crontab for gps or cam deputy
 
 
 192.168.1.101 abarry.csail.mit.edu
 192.168.1.102 AAAZZZL
+192.168.1.103 AAAZZZA
 192.168.1.110 odroid-gps1
 192.168.1.111 odroid-cam1
 192.168.1.120 odroid-gps2
 192.168.1.121 odroid-cam2
+192.168.1.130 odroid-gps3
+192.168.1.131 odroid-cam3
+
 
 
 
@@ -26,14 +31,9 @@ New system setup:
 
 - file on the desktop to indicate which computer it is
 
-- update bot-procman-sheriff shortcut
-
 - git pull on realtime folder
     - compile stuff
 
-
-- add to the buttom of sudoers (using visudo)
-odroid ALL=(ALL) NOPASSWD:/sbin/shutdown
 
 set cloned MAC address for wired:
 
@@ -43,11 +43,8 @@ cam1: C2:22:09:F2:5F:11
 gps2: C2:22:09:F2:5F:20
 cam2: C2:22:09:F2:5F:21
 
-
-Update
-    sudo crontab -e
-    crontab -e
-        procman deputy name
+gps3: C2:22:09:F2:5F:30
+cam3: C2:22:09:F2:5F:31
 
 
 UPDATE ARDUREAD
