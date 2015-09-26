@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # compile all
-
 if [ -z "$1" ]; then
     echo "Usage: build-full <plane_number>"
     exit 1
