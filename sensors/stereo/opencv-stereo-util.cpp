@@ -908,6 +908,47 @@ float min_z, float max_z, int box_size) {
     }
 }
 
+int GetDisparityForDistance(double distance, const OpenCvStereoCalibration &calibration, int *inf_disparity) {
+
+    int min_search = -100;
+    int max_search = 100;
+
+    cv::vector<Point3f> disparity_candidates;
+    cv::vector<int> disparity_values;
+    for (int i = min_search; i <= max_search; i++) {
+        disparity_candidates.push_back(Point3f(0, 0, -i)); // note the negative! it is correct!
+        disparity_values.push_back(i);
+    }
+    cv::vector<Point3f> vector_3d_out;
+
+    perspectiveTransform(disparity_candidates, vector_3d_out, calibration.qMat);
+
+    int best_disparity = 0;
+    double best_dist_abs = -1;
+    double max_dist = -1000;
+    int max_disparity = 0;
+
+    for (int i = 0; i < (int)vector_3d_out.size(); i++) {
+        double this_dist_abs = fabs(vector_3d_out.at(i).z - distance);
+        //std::cout << "Disp: " << disparity_values.at(i) << " ----> " << vector_3d_out.at(i).z << " (dist = " << this_dist_abs << ")" << std::endl;
+        if (best_dist_abs == -1 || this_dist_abs < best_dist_abs) {
+            best_disparity = disparity_values.at(i);
+            best_dist_abs = this_dist_abs;
+        }
+
+        if (vector_3d_out.at(i).z > max_dist) {
+            max_dist = vector_3d_out.at(i).z;
+            max_disparity = disparity_values.at(i);
+        }
+    }
+
+    if (inf_disparity != nullptr) {
+        *inf_disparity = max_disparity;
+    }
+
+    return best_disparity;
+}
+
 
 /**
  * We need to make sure the brightness settings

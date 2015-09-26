@@ -122,4 +122,6 @@ void Get3DPointsFromStereoMsg(const lcmt_stereo *msg, vector<Point3f> *points_ou
 
 void Draw3DPointsOnImage(Mat camera_image, vector<Point3f> *points_list_in, Mat cam_mat_m, Mat cam_mat_d, Mat cam_mat_r, Scalar outline_color = 128, Scalar inside_color = 255, Point2d box_top = Point2d(-1, -1), Point2d box_bottom = Point2d(-1, -1), vector<int> *points_in_box = NULL, float min_z = 0, float max_z = 0, int box_size = 4);
 
+int GetDisparityForDistance(double distance, const OpenCvStereoCalibration &calibration, int *inf_disparity = NULL);
+
 #endif

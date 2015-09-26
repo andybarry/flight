@@ -356,6 +356,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    int inf_disparity_tester, disparity_tester;
+    disparity_tester = GetDisparityForDistance(10, stereoCalibration, &inf_disparity_tester);
+
+    std::cout << "computed disparity is = " << disparity_tester << ", inf disparity = " << inf_disparity_tester << std::endl;
+
     // subscribe to the stereo control channel
     stereo_control_sub = lcmt_stereo_control_subscribe(lcm, stereoConfig.stereoControlChannel.c_str(), &lcm_stereo_control_handler, NULL);
 
