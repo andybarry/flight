@@ -17,4 +17,4 @@ echo "Adding remote..."
 git remote add bundle $1
 
 echo "Merging to HEAD..."
-git pull bundle HEAD && git remote remove bundle && echo "Backing up bundle..." && mv $1 $1.merged.`date "+%F.%T"`
+git pull bundle HEAD && git remote remove bundle && echo "Removing bundle..." && rm $1
