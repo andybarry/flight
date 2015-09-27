@@ -91,7 +91,8 @@ int main(int argc,char** argv) {
     parser.add(show_unremapped, "u", "show-unremapped", "Show the unremapped image");
     parser.add(ui_box_path, "b", "draw-box", "Path to write box drawing results to.");
     parser.add(depth_crop_bm, "z", "depth-crop-bm", "Crop depth for BM stereo to between BM_DEPTH_MIN and BM_DEPTH_MAX meters.");
-    parser.add(draw_stereo_replay, "s", "draw-stereo-replay", "Display stereo points from the stereo_replay channel.");
+    parser.add(draw_stereo_2d, "s", "draw-stereo", "Display raw stereo hits.");
+    parser.add(draw_stereo_replay, "S", "draw-stereo-replay", "Display stereo points from the stereo_replay channel.");
     parser.add(rec_only_vision, "o", "record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
     parser.add(traj_boxes_in_manual_mode, "t", "traj-boxes-in-manual-mode", "Draw trajectory boxes even in manual mode.");
     parser.parse();
