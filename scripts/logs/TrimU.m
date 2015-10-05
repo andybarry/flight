@@ -15,6 +15,10 @@ function u = TrimU(start_time, end_time, u_in)
   
   u.rad.trim = u_in.rad.trim;
   
+  for i = 1 : 3
+    u.rad.zeroed_vector(:,i) = TrimTimes(start_time, end_time, u_in.logtime, u_in.rad.zeroed_vector(:,i));
+  end
+  
   u.cmd.utime = TrimTimes(start_time, end_time, u_in.cmd.logtime, u_in.cmd.utime);
   u.cmd.throttle = TrimTimes(start_time, end_time, u_in.cmd.logtime, u_in.cmd.throttle);
   u.cmd.elevonL = TrimTimes(start_time, end_time, u_in.cmd.logtime, u_in.cmd.elevonL);

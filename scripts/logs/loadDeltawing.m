@@ -27,7 +27,8 @@ if exist('cpu_info_odroid_gps1', 'var')
   cpu.gps.utime = cpu_info_odroid_gps1(:,1);
   cpu.gps.freq = cpu_info_odroid_gps1(:,2);
   cpu.gps.temp = cpu_info_odroid_gps1(:,3);
-  cpu.gps.logtime = cpu_info_odroid_gps1(:,4);
+  cpu.gps.fan = cpu_info_odroid_gps1(:,4);
+  cpu.gps.logtime = cpu_info_odroid_gps1(:,5);
   log.aircraft_number = 1;
   clear cpu_info_odroid_gps1
 end
@@ -36,16 +37,28 @@ if exist('cpu_info_odroid_gps2', 'var')
   cpu.gps.utime = cpu_info_odroid_gps2(:,1);
   cpu.gps.freq = cpu_info_odroid_gps2(:,2);
   cpu.gps.temp = cpu_info_odroid_gps2(:,3);
-  cpu.gps.logtime = cpu_info_odroid_gps2(:,4);
+  cpu.gps.fan = cpu_info_odroid_gps2(:,4);
+  cpu.gps.logtime = cpu_info_odroid_gps2(:,5);
   log.aircraft_number = 2;
   clear cpu_info_odroid_gps2
+end
+
+if exist('cpu_info_odroid_gps3', 'var')
+  cpu.gps.utime = cpu_info_odroid_gps3(:,1);
+  cpu.gps.freq = cpu_info_odroid_gps3(:,2);
+  cpu.gps.temp = cpu_info_odroid_gps3(:,3);
+  cpu.gps.fan = cpu_info_odroid_gps3(:,4);
+  cpu.gps.logtime = cpu_info_odroid_gps3(:,5);
+  log.aircraft_number = 3;
+  clear cpu_info_odroid_gps3
 end
 
 if exist('cpu_info_odroid_cam1', 'var')
   cpu.cam.utime = cpu_info_odroid_cam1(:,1);
   cpu.cam.freq = cpu_info_odroid_cam1(:,2);
   cpu.cam.temp = cpu_info_odroid_cam1(:,3);
-  cpu.cam.logtime = cpu_info_odroid_cam1(:,4);
+  cpu.cam.fan = cpu_info_odroid_cam1(:,4);
+  cpu.cam.logtime = cpu_info_odroid_cam1(:,5);
   clear cpu_info_odroid_cam1
 end
 
@@ -53,8 +66,18 @@ if exist('cpu_info_odroid_cam2', 'var')
   cpu.cam.utime = cpu_info_odroid_cam2(:,1);
   cpu.cam.freq = cpu_info_odroid_cam2(:,2);
   cpu.cam.temp = cpu_info_odroid_cam2(:,3);
-  cpu.cam.logtime = cpu_info_odroid_cam2(:,4);
+  cpu.cam.fan = cpu_info_odroid_cam2(:,4);
+  cpu.cam.logtime = cpu_info_odroid_cam2(:,5);
   clear cpu_info_odroid_cam2
+end
+
+if exist('cpu_info_odroid_cam3', 'var')
+  cpu.cam.utime = cpu_info_odroid_cam3(:,1);
+  cpu.cam.freq = cpu_info_odroid_cam3(:,2);
+  cpu.cam.temp = cpu_info_odroid_cam3(:,3);
+  cpu.cam.fan = cpu_info_odroid_cam3(:,4);
+  cpu.cam.logtime = cpu_info_odroid_cam3(:,5);
+  clear cpu_info_odroid_cam3
 end
 
 % grab estimator values
@@ -198,6 +221,8 @@ u.rad.trim.zero.elevonR = servo_to_rad.elevR_slope .* u.trim.zero.elevonR + serv
 
 u.rad.trim.flight.elevonL = servo_to_rad.elevL_slope .* u.trim.flight.elevonL + servo_to_rad.elevL_y_intercept;
 u.rad.trim.flight.elevonR = servo_to_rad.elevR_slope .* u.trim.flight.elevonR + servo_to_rad.elevR_y_intercept;
+
+u.rad.zeroed_vector = [ u.rad.elevonL - u.rad.trim.zero.elevonL, u.rad.elevonR - u.rad.trim.zero.elevonR, u.rad.throttle];
 
 clear servo_out
 
