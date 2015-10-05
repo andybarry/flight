@@ -42,6 +42,11 @@ void HudObjectDrawer::DrawTrajectory(Mat hud_img) {
     last_state_ = state_minus_init;
 
     const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_number_);
+    if (traj == nullptr) {
+        // maybe we're looking at the wrong library or something
+        // give up
+        return;
+    }
 
     double xyz[3], rpy[3];
 
@@ -270,6 +275,10 @@ bool HudObjectDrawer:: GetCurrentU0(Eigen::VectorXd *u0) const {
     }
 
     const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_number_);
+    if (traj == nullptr) {
+        return false;
+    }
+
     *u0 = traj->GetUCommand(current_t_);
     return true;
 }

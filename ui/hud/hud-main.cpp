@@ -76,6 +76,7 @@ int main(int argc,char** argv) {
     bool rec_only_vision = true;
     bool traj_boxes_in_manual_mode = false;
     bool draw_stereo_2d = true;
+    bool draw_traj_boxes = true;
     int clutter_level = 5;
     string ui_box_path = ""; // a mode that lets the user draw boxes on screen to select relevant parts of the image
 
@@ -94,7 +95,8 @@ int main(int argc,char** argv) {
     parser.add(draw_stereo_2d, "s", "draw-stereo", "Display raw stereo hits.");
     parser.add(draw_stereo_replay, "S", "draw-stereo-replay", "Display stereo points from the stereo_replay channel.");
     parser.add(rec_only_vision, "o", "record only on vision frame updates", "Only write new frames to the recording if there is an updated camera image.");
-    parser.add(traj_boxes_in_manual_mode, "t", "traj-boxes-in-manual-mode", "Draw trajectory boxes even in manual mode.");
+    parser.add(draw_traj_boxes, "t", "draw-traj-boxes", "Draw trajectory boxes.");
+    parser.add(traj_boxes_in_manual_mode, "T", "traj-boxes-in-manual-mode", "Draw trajectory boxes even in manual mode.");
     parser.parse();
 
     OpenCvStereoConfig stereo_config;
@@ -451,7 +453,7 @@ int main(int argc,char** argv) {
             }
 
             // -- trajectories -- //
-            if (hud_object_drawer != nullptr) {
+            if (draw_traj_boxes && hud_object_drawer != nullptr) {
                 hud_object_drawer->DrawTrajectory(remapped_image);
             }
 
@@ -463,7 +465,7 @@ int main(int argc,char** argv) {
 
                 float u0_percent_left = (u0_raw[0]-1000)/10.0;
                 float u0_percent_right = (u0_raw[1]-1000)/10.0;
-                hud.SetUCommand(u0_percent_left, u0_percent_right, throttle_percent);
+                //hud.SetUCommand(u0_percent_left, u0_percent_right, throttle_percent);
             }
 
             // -- octomap-hud -- //

@@ -113,7 +113,7 @@ const Trajectory* TrajectoryLibrary::GetTrajectoryByNumber(int number) const {
  *
  * @retval the distance to the closest obstacle or -1 if there are no obstacles
  */
-std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double threshold, bot_lcmgl_t* lcmgl) const {
+std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &body_to_local, double threshold, bot_lcmgl_t* lcmgl, int preferred_traj) const {
 
     const Trajectory *farthest_traj = nullptr;
 
@@ -123,22 +123,47 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
         bot_lcmgl_push_matrix(lcmgl);
     }
 
+
     // for each point in each trajectory, find the point that is closest in the octree
     for (int i = 0; i < GetNumberTrajectories(); i++) {
 
-        //std::cout << "Searching trajectory: " << i << std::endl;
+        int this_traj = i;
+
+        if (preferred_traj >= GetNumberTrajectories()) {
+            std::cerr << "WARNING: preferred trajectory number exceeds library size, ignoring it." << std::endl;
+            preferred_traj = -1;
+        }
+
+        if (preferred_traj >= 0) {
+            // there is a preferred trajectory active
+
+            if (i == 0) {
+                // search for the preferred traj
+                this_traj = preferred_traj;
+            } else {
+                // searching for something else, make sure to skip searching
+                // for the preferred traj
+                if (i <= preferred_traj) {
+                    this_traj = i - 1;
+                } else {
+                    this_traj = i;
+                }
+            }
+        }
+
+        //std::cout << "Searching trajectory: " << this_traj << std::endl;
 
         double closest_obstacle_distance = -1;
 
-        int number_of_points = traj_vec_.at(i).GetNumberOfPoints();
+        int number_of_points = traj_vec_.at(this_traj).GetNumberOfPoints();
         vector<double> point_distances(number_of_points);
 
         // check minumum altitude
-        double min_altitude = traj_vec_.at(i).GetMinimumAltitude() + body_to_local.trans_vec[2];
+        double min_altitude = traj_vec_.at(this_traj).GetMinimumAltitude() + body_to_local.trans_vec[2];
         if (min_altitude < ground_safety_distance_) {
             // this trajectory would impact the ground
             closest_obstacle_distance = 0;
-            //std::cout << "Trajectory " << i << " would violate ground safety." << std::endl;
+            //std::cout << "Trajectory " << this_traj << " would violate ground safety." << std::endl;
         } else {
 
             // for each trajectory, look at each point
@@ -150,9 +175,9 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
 
                 double transformedPoint[3];
 
-                double this_t = traj_vec_.at(i).GetTimeAtIndex(j);
+                double this_t = traj_vec_.at(this_traj).GetTimeAtIndex(j);
 
-                traj_vec_.at(i).GetXyzYawTransformedPoint(this_t, body_to_local, transformedPoint);
+                traj_vec_.at(this_traj).GetXyzYawTransformedPoint(this_t, body_to_local, transformedPoint);
 
                 //std::cout << "searching at (" << transformedPoint[0] << ", " << transformedPoint[1] << ", " << transformedPoint[2] << ")...";
 
@@ -172,15 +197,15 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
             }
         }
 
-        //std::cout << "Trajectory " << i << " has distance = " << closest_obstacle_distance << std::endl;
+        //std::cout << "Trajectory " << this_traj << " has distance = " << closest_obstacle_distance << std::endl;
 
         //if (lcmgl != nullptr) {
-            //traj_vector_[i].PlotTransformedTrajectory(lcmgl, body_to_local);
+            //traj_vector_[this_traj].PlotTransformedTrajectory(lcmgl, body_to_local);
         //}
 
         if (traj_closest_dist == -1 || closest_obstacle_distance > traj_closest_dist) {
             traj_closest_dist = closest_obstacle_distance;
-            farthest_traj = &traj_vec_.at(i);
+            farthest_traj = &traj_vec_.at(this_traj);
 
             if (traj_closest_dist > threshold || traj_closest_dist < 0) {
                 // we are satisfied with this one, run it!
@@ -191,7 +216,7 @@ std::tuple<double, const Trajectory*> TrajectoryLibrary::FindFarthestTrajectory(
                     bot_lcmgl_switch_buffer(lcmgl);
                 }
 
-                //std::cout << "Trajectory " << i << " is good enough, running!" << std::endl;
+                //std::cout << "Trajectory " << this_traj << " is good enough, running!" << std::endl;
 
                 return std::tuple<double, const Trajectory*>(traj_closest_dist, farthest_traj);
             }

@@ -317,6 +317,16 @@ TEST_F(TrajectoryLibraryTest, FindFarthestTrajectory) {
 
     EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
 
+    // check for preferred trajectory
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0, nullptr, 1);
+    ASSERT_TRUE(best_traj != nullptr);
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 1);
+
+    // preferred trajectory error
+    std::tie(dist, best_traj) = lib.FindFarthestTrajectory(octomap, trans, 2.0, nullptr, 2);
+    ASSERT_TRUE(best_traj != nullptr);
+    EXPECT_TRUE(best_traj->GetTrajectoryNumber() == 0);
+
     // add an obstacle close to the first trajectory
     double point[3] = { 1.05, 0, 0 };
     AddPointToOctree(&octomap, point, altitude);
@@ -553,7 +563,7 @@ TEST_F(TrajectoryLibraryTest, TimingTest) {
 
     double num_sec = toc();
 
-    std::cout << num_lookups <<  " lookups with " << lib.GetNumberTrajectories() << " trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup " << std::endl;
+    std::cout << num_lookups <<  " lookups with " << lib.GetNumberTrajectories() << " trajectories on a cloud (" << num_points << ") took: " << num_sec << " sec (" << num_sec / (double)num_lookups*1000.0 << " ms / lookup)" << std::endl;
 }
 
 TEST_F(TrajectoryLibraryTest, RemainderTrajectorySimple) {

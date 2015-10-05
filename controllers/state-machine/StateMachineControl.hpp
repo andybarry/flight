@@ -22,9 +22,6 @@
 #include "../../estimators/StereoOctomap/StereoOctomap.hpp"
 #include "../../estimators/SpacialStereoFilter/SpacialStereoFilter.hpp"
 
-#define IMU_DOWNSAMPLE_RATE 2 // only read every other message
-
-
 class StateMachineControl {
 
     public:
@@ -52,6 +49,11 @@ class StateMachineControl {
         void ProcessArmForTakeoffMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
         void SetTakeoffTime() { t_takeoff_ = ConvertTimestampToSeconds(GetTimestampNow()); }
+        void SetTakeoffBearing() {
+            double rpy[3];
+            bot_quat_to_roll_pitch_yaw(last_imu_msg_.orientation, rpy);
+            desired_bearing_ = rpy[2];
+        }
 
         bool CheckTrajectoryExpired();
         bool IsTakeoffAccel(const mav::pose_t &msg) const;
@@ -113,6 +115,10 @@ class StateMachineControl {
         double crusing_altitude_;
         double min_velocity_x_for_throttle_;
 
+        double desired_bearing_;
+        double bearing_tolerance_;
+        int traj_left_turn_, traj_right_turn_;
+
         double t_takeoff_ = -1;
 
         const Trajectory *current_traj_;
@@ -130,6 +136,7 @@ class StateMachineControl {
         bool visualization_;
 
         mav::pose_t last_imu_msg_;
+
 
 
 };

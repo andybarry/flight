@@ -39,7 +39,7 @@ class TrajectoryLibrary
 
         bool LoadLibrary(std::string dirname, bool quiet = false);  // loads a trajectory from a directory of .csv files
 
-        std::tuple<double, const Trajectory*> FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl = nullptr) const;
+        std::tuple<double, const Trajectory*> FindFarthestTrajectory(const StereoOctomap &octomap, const BotTrans &bodyToLocal, double threshold, bot_lcmgl_t* lcmgl = nullptr, int preferred_traj = -1) const;
 
         void Print() const;
         void Draw(lcm_t *lcm, const BotTrans *transform = nullptr) const;

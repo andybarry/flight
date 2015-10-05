@@ -96,6 +96,7 @@ TakeoffNoThrottle
         SetNextTrajectoryByNumber(ctxt.GetClimbNoThrottleTrajNum());
         RequestNewTrajectory();
         SetTakeoffTime();
+        SetTakeoffBearing();
         SendStateMsg("TakeoffNoThrottle");
         SendAltitudeResetMsg();
     }

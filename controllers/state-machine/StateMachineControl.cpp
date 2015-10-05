@@ -25,6 +25,10 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     ground_safety_distance_ = bot_param_get_double_or_fail(param_, "tvlqr_controller.ground_safety_distance");
 
+    traj_left_turn_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.left_turn_controller");
+    traj_right_turn_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.right_turn_controller");
+    bearing_tolerance_ = bot_param_get_double_or_fail(param_, "tvlqr_controller.bearing_tolerance");
+
     spacial_stereo_filter_ = new SpacialStereoFilter(filter_distance_threshold, filter_num_points_threshold);
 
     if (min_improvement_to_switch_trajs_ <= 0) {
