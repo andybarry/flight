@@ -333,7 +333,7 @@ TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
     StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
-    float altitude = 1;
+    float altitude = 5;
 
     SubscribeLcmChannels(fsm_control);
 
@@ -405,6 +405,7 @@ TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
 
     float point[3] = { 24, 0, altitude };
     SendStereoPointTriple(point);
+
 
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
