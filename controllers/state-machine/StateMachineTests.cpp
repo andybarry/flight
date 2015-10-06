@@ -217,9 +217,6 @@ class StateMachineControlTest : public testing::Test {
 
             return msg;
         }
-
-
-
 };
 
 TEST_F(StateMachineControlTest, BasicStateMachineTest) {

@@ -88,6 +88,17 @@ void StateMachineControl::SetNextTrajectoryByNumber(int traj_num) {
 
 void StateMachineControl::ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const std::string &chan, const mav::pose_t *msg) {
     need_imu_update_ = true;
+
+    double rpy[3];
+    bot_quat_to_roll_pitch_yaw(last_imu_msg_.orientation, rpy);
+
+    if (bearing_init_ == false) {
+        current_bearing_ = rpy[2];
+        bearing_init_ = true;
+    } else {
+        current_bearing_ = AngleUnwrap(rpy[2], current_bearing_);
+    }
+
     last_imu_msg_ = *msg;
 }
 
@@ -139,9 +150,31 @@ void StateMachineControl::SetBestTrajectory() {
     double dist;
     const Trajectory *traj;
 
-    std::tie(dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
+    std::tie(dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_, nullptr, GetBearingPreferredTrajectoryNumber());
 
     SetNextTrajectory(*traj);
+}
+
+int StateMachineControl::GetBearingPreferredTrajectoryNumber() const {
+return -1;
+    double bearing_delta = current_bearing_ - desired_bearing_;
+
+    if (fabs(bearing_delta) < bearing_tolerance_) {
+        // go straight
+        return -1;
+    } else if (fabs(bearing_delta) > 3.14159) {
+        // we are really far off, something is probably wrong
+        return -1;
+    }
+
+    // if we are here, we're in the range of something we want to control for
+    if (bearing_delta > 0) {
+        // need to turn left
+        return traj_left_turn_;
+    } else {
+        // need to turn right
+        return traj_right_turn_;
+    }
 }
 
 bool StateMachineControl::BetterTrajectoryAvailable() {
