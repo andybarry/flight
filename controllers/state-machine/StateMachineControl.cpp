@@ -98,7 +98,6 @@ void StateMachineControl::ProcessImuMsg(const lcm::ReceiveBuffer *rbuf, const st
     } else {
         current_bearing_ = AngleUnwrap(rpy[2], current_bearing_);
     }
-
     last_imu_msg_ = *msg;
 }
 
@@ -156,7 +155,6 @@ void StateMachineControl::SetBestTrajectory() {
 }
 
 int StateMachineControl::GetBearingPreferredTrajectoryNumber() const {
-return -1;
     double bearing_delta = current_bearing_ - desired_bearing_;
 
     if (fabs(bearing_delta) < bearing_tolerance_) {
@@ -168,7 +166,7 @@ return -1;
     }
 
     // if we are here, we're in the range of something we want to control for
-    if (bearing_delta > 0) {
+    if (bearing_delta < 0) {
         // need to turn left
         return traj_left_turn_;
     } else {
@@ -194,22 +192,38 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
         t = 0;
     }
 
+    double new_dist;
+    const Trajectory *traj;
+
     double dist = current_traj_->ClosestObstacleInRemainderOfTrajectory(*octomap_, body_to_local, t, ground_safety_distance_);
     if (dist > safe_distance_ || dist < 0) {
         // we're still OK
         //std::cout << "dist OK = " << dist << std::endl;
+
+        // this is the case where we're obstacle free
+        // check if we could turn towards a better bearing or stop turning
+
+        if ((GetBearingPreferredTrajectoryNumber() == -1 && current_traj_ != 0) || GetBearingPreferredTrajectoryNumber() != -1) {
+            std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_, nullptr, GetBearingPreferredTrajectoryNumber());
+
+            if (current_traj_->GetTrajectoryNumber() != traj->GetTrajectoryNumber() && (traj->GetTrajectoryNumber() == 0 || traj->GetTrajectoryNumber() == traj_left_turn_ || traj->GetTrajectoryNumber() == traj_right_turn_)) {
+                std::cout << "CHANGE FOR BEARING: " << current_traj_->GetTrajectoryNumber() << " -> " << traj->GetTrajectoryNumber() << ", dist = " << new_dist << std::endl;
+                SetNextTrajectory(*traj);
+                return true;
+            } else {
+                return false;
+            }
+        }
         return false;
     }
 
-    double new_dist;
-    const Trajectory *traj;
     std::tie(new_dist, traj) = trajlib_->FindFarthestTrajectory(*octomap_, body_to_local, safe_distance_);
 
     double dist_diff = new_dist - dist;
 
     if (dist_diff > min_improvement_to_switch_trajs_) {
         // this trajectory is better than the old one!
-        std::cout << "INTERRUPT: " << current_traj_->GetTrajectoryNumber() << " -> " << traj->GetTrajectoryNumber() << " dist = " << new_dist << std::endl;
+        std::cout << "INTERRUPT: " << current_traj_->GetTrajectoryNumber() << " -> " << traj->GetTrajectoryNumber() << ", dist = " << new_dist << std::endl;
         SetNextTrajectory(*traj);
         return true;
     } else {

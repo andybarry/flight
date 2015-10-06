@@ -305,6 +305,8 @@ TEST_F(StateMachineControlTest, OneObstacle) {
 
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
 
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab, with 5.0 = safe
@@ -318,6 +320,8 @@ TEST_F(StateMachineControlTest, OneObstacle) {
     }
 
     SendStereoManyPointsTriple(xpts, y_points_, zpts);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
 
@@ -424,6 +428,8 @@ TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
     SendStereoManyPointsTriple(xpts, y_points_, zpts);
     lcm_->publish(pose_channel_, &msg);
     ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
 
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // from matlab
 
@@ -521,6 +527,8 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     // ensure that we have changed trajectories
     EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 2); // from matlab
 
+    Trajectory running_traj = fsm_control->GetCurrentTrajectory();
+
     // wait for that trajectory to time out
     int64_t t_start = GetTimestampNow();
     double t = 0;
@@ -531,7 +539,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
         t = (msg.utime - t_start) / 1000000.0;
 
-        Eigen::VectorXd state_t = fsm_control->GetCurrentTrajectory().GetState(t);
+        Eigen::VectorXd state_t = running_traj.GetState(t);
 
         msg.pos[0] = state_t(0);
         msg.pos[1] = state_t(1);
@@ -596,10 +604,128 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
     UnsubscribeLcmChannels();
 }
 
+TEST_F(StateMachineControlTest, BearingController) {
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    //fsm_control->GetFsmContext()->setDebugFlag(true);
+
+    SubscribeLcmChannels(fsm_control);
+
+    // ensure that we are in the start state
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    // send some pose messages
+    mav::pose_t msg = GetDefaultPoseMsg();
+    msg.pos[2] = 0;
+
+    // check for unexpected transitions out of wait state
+
+    lcm_->publish(pose_channel_, &msg);
+
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::WaitForTakeoff") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    // cause a takeoff transistion
+    msg.accel[0] = 100;
+
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::TakeoffNoThrottle") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+    // wait for takeoff to finish
+    for (int i = 0; i < 12; i++) {
+        msg = GetDefaultPoseMsg();
+        msg.pos[2] = 0;
+        msg.vel[0] = 20;
+        lcm_->publish(pose_channel_, &msg);
+        ProcessAllLcmMessages(fsm_control);
+        usleep(100000);
+    }
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::Climb") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    // reach altitude
+    msg = GetDefaultPoseMsg();
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_TRUE(fsm_control->GetCurrentStateName().compare("AirplaneFsm::ExecuteTrajectory") == 0) << "In wrong state: " << fsm_control->GetCurrentStateName();
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    // now add an obstacle in front of it and make sure it transitions!
+    ProcessAllLcmMessages(fsm_control);
+
+    ProcessAllLcmMessages(fsm_control);
+
+    // send message indicating that we are turned to the right
+    msg = GetDefaultPoseMsg();
+    double rpy[3] = { 0, 0, -0.5 };
+    double quat[4];
+    bot_roll_pitch_yaw_to_quat(rpy, quat);
+
+    msg.orientation[0] = quat[0];
+    msg.orientation[1] = quat[1];
+    msg.orientation[2] = quat[2];
+    msg.orientation[3] = quat[3];
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 3); // 3 = left turn controller
+
+    // check for stop
+    msg = GetDefaultPoseMsg();
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    // check for right turn
+    msg = GetDefaultPoseMsg();
+    double rpy2[3] = { 0, 0, 0.5 };
+    double quat2[4];
+    bot_roll_pitch_yaw_to_quat(rpy2, quat2);
+
+    msg.orientation[0] = quat2[0];
+    msg.orientation[1] = quat2[1];
+    msg.orientation[2] = quat2[2];
+    msg.orientation[3] = quat2[3];
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 4); // 4 = right turn controller
+
+    // check for stop
+    msg = GetDefaultPoseMsg();
+    lcm_->publish(pose_channel_, &msg);
+    lcm_->publish(pose_channel_, &msg);
+    ProcessAllLcmMessages(fsm_control);
+    EXPECT_EQ_ARM(fsm_control->GetCurrentTrajectory().GetTrajectoryNumber(), 0);
+
+    delete fsm_control;
+
+    UnsubscribeLcmChannels();
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  ::testing::GTEST_FLAG(filter) = "StateMachineControl*";
+  ::testing::GTEST_FLAG(filter) = "*StateMachine**";
   return RUN_ALL_TESTS();
 }
 
