@@ -34,6 +34,11 @@ echo "------------------------"
 find $CONVERT_DIR/odroid-gps2/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
 
 echo "------------------------"
+echo "Converting odroid-gps3 logs..."
+echo "------------------------"
+find $CONVERT_DIR/odroid-gps3/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
 echo "Converting odroid-cam1 logs..."
 echo "------------------------"
 
@@ -44,4 +49,10 @@ echo "Converting odroid-cam2 logs..."
 echo "------------------------"
 
 find $CONVERT_DIR/odroid-cam2/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
+
+echo "------------------------"
+echo "Converting odroid-cam3 logs..."
+echo "------------------------"
+
+find $CONVERT_DIR/odroid-cam3/ -name "lcmlog-*" |grep -v ".jlp" | xargs -n 1 -P 8 ./convertDeltawingSingle
 
