@@ -24,7 +24,7 @@ class CpuInfoHandler : public MultiStatusHandler
             ComputerType index = GetIndexFromChannelName(chan);
             boost::format formatter;
 
-            if (msg->fan_pwm > 0) {
+            if (msg->fan_pwm >= 0) {
                 double percent = msg->fan_pwm / 255.0 * 100.0;
                 if (msg->fan_pwm == 1) {
                     percent = 0;
