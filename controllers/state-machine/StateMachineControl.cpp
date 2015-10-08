@@ -27,7 +27,8 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     traj_left_turn_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.left_turn_controller");
     traj_right_turn_ = bot_param_get_int_or_fail(param_, "tvlqr_controller.right_turn_controller");
-    bearing_tolerance_ = bot_param_get_double_or_fail(param_, "tvlqr_controller.bearing_tolerance");
+    bearing_tolerance_ = bot_param_get_double_or_fail(param_, "bearing_controller.bearing_tolerance");
+    bearing_offset_ = bot_param_get_double_or_fail(param_, "bearing_controller.offset");
 
     spacial_stereo_filter_ = new SpacialStereoFilter(filter_distance_threshold, filter_num_points_threshold);
 

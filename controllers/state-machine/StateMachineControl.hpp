@@ -49,7 +49,7 @@ class StateMachineControl {
         void ProcessArmForTakeoffMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::timestamp *msg);
 
         void SetTakeoffTime() { t_takeoff_ = ConvertTimestampToSeconds(GetTimestampNow()); }
-        void SetTakeoffBearing() { desired_bearing_ = current_bearing_; }
+        void SetTakeoffBearing() { desired_bearing_ = current_bearing_ + bearing_offset_; }
 
         bool CheckTrajectoryExpired();
         bool IsTakeoffAccel(const mav::pose_t &msg) const;
@@ -114,6 +114,7 @@ class StateMachineControl {
 
         double desired_bearing_;
         double bearing_tolerance_;
+        double bearing_offset_;
         int traj_left_turn_, traj_right_turn_;
 
         double current_bearing_ = 0;

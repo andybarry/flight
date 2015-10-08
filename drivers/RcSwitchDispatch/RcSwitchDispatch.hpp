@@ -74,13 +74,6 @@ class RcSwitchDispatch {
         std::vector<float> y_points2_ = {-4, -2,  0,  2,  4};
         std::vector<float> z_points2_ = {-3, -3, -3, -3, -3};
 
-        // nothing
-        std::vector<float> x_points_nothing_ = {};
-        std::vector<float> y_points_nothing_ = {};
-        std::vector<float> z_points_nothing_ = {};
-
-
-
 
 };
 

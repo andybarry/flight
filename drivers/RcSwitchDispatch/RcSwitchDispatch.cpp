@@ -101,9 +101,9 @@ void RcSwitchDispatch::SendStereoMsg(int stereo_msg_num) const {
     bool flag = true;
 
     if (stereo_msg_num == 0) {
-        x = x_points_nothing_;
-        y = y_points_nothing_;
-        z = z_points_nothing_;
+        x = x_points0_;
+        y = y_points0_;
+        z = z_points0_;
     } else if (stereo_msg_num == 1) {
         x = x_points1_;
         y = y_points1_;
