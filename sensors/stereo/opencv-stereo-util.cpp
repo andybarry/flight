@@ -256,6 +256,17 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->cpu_info_channel2 = cpu_info_channel2;
 
+    const char *cpu_info_channel3 = g_key_file_get_string(keyfile, "lcm", "cpu_info_channel3", NULL);
+
+    if (cpu_info_channel3 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify cpu_info_channel3 (or I failed to read it). Parameter: lcm.cpu_info_channel3\n");
+
+        // this is not a fatal error, don't bail out
+        cpu_info_channel3 = "";
+    }
+    configStruct->cpu_info_channel3 = cpu_info_channel3;
+
     char *lcmUrl = g_key_file_get_string(keyfile, "lcm", "url", NULL);
     if (lcmUrl == NULL)
     {

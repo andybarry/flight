@@ -69,6 +69,7 @@ struct OpenCvStereoConfig
     string optotrak_channel;
     string cpu_info_channel1;
     string cpu_info_channel2;
+    string cpu_info_channel3;
 
     int disparity;
     int infiniteDisparity;

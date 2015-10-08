@@ -43,6 +43,7 @@ BarryMooreState state; // HACK
 lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_cpu_info_subscription_t *cpu_info_sub1;
 lcmt_cpu_info_subscription_t *cpu_info_sub2;
+lcmt_cpu_info_subscription_t *cpu_info_sub3;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
@@ -343,6 +344,7 @@ int main(int argc, char *argv[])
         if (stereoConfig.cpu_info_channel1.length() > 0) {
             cpu_info_sub1 = lcmt_cpu_info_subscribe(lcm, stereoConfig.cpu_info_channel1.c_str(), &cpu_info_handler, &recording_manager);
             cpu_info_sub2 = lcmt_cpu_info_subscribe(lcm, stereoConfig.cpu_info_channel2.c_str(), &cpu_info_handler, &recording_manager);
+            cpu_info_sub3 = lcmt_cpu_info_subscribe(lcm, stereoConfig.cpu_info_channel3.c_str(), &cpu_info_handler, &recording_manager);
         }
 
     } // end show_display || publish_all_images
