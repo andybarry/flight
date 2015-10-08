@@ -60,9 +60,9 @@ class RcSwitchDispatch {
         bool stabilization_mode_;
 
         // pole to the left
-        std::vector<float> x_points0_ = {10, 10, 10, 10, 10};
-        std::vector<float> y_points0_ = {2,  2,  2,  2,   2};
-        std::vector<float> z_points0_ = {4,  2,  0, -2,  -4};
+        std::vector<float> x_points0_ = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+        std::vector<float> y_points0_ = { 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2};
+        std::vector<float> z_points0_ = { 4,  4,  4,  2,  2,  2,  0 , 0,  0, -2, -2, -2, -4, -4, -4};
 
         // pole to the right
         std::vector<float> x_points1_ = {10, 10, 10, 10, 10};
