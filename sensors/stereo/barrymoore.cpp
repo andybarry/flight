@@ -745,13 +745,14 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
     int endY = pxY + blockSize - 1;
 
 
-    // if we are off the edge of the image, we are not likely to be detecting
-    // horizontal, so return false
+    // if we are off the edge of the image so we can't tell if this
+    // might be an issue -- give up and return true
+    // (note: this used to be false and caused bad detections on real flight
+    // data near the edge of the frame)
     if (   startX + disparity + INVARIANCE_CHECK_HORZ_OFFSET_MIN < 0
         || endX + disparity + INVARIANCE_CHECK_HORZ_OFFSET_MAX > rightImage.cols) {
 
-        return false;
-
+        return true;
     }
 
     if (startY + INVARIANCE_CHECK_VERT_OFFSET_MIN < 0
