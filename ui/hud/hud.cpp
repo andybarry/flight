@@ -1118,21 +1118,23 @@ void Hud::DrawPlaneAndLogNumbers(Mat hud_img) {
     int top = 25;
 
     // add the plane number and the log number
-    std::string plane_number = "L";
+    std::string plane_number = "P";
     if (plane_number_ >= 0) {
         plane_number += std::to_string(plane_number_);
     } else {
         plane_number += "-";
     }
 
+    plane_number += " ";
+
     if (log_number_ >= 0) {
         if (log_number_ < 10) {
-            plane_number += ".0" + std::to_string(log_number_);
+            plane_number += "L0" + std::to_string(log_number_);
         } else {
-            plane_number += "." + std::to_string(log_number_);
+            plane_number += "L" + std::to_string(log_number_);
         }
     } else {
-        plane_number += ".--";
+        plane_number += "L--";
     }
 
     // put the date/time on the frame
