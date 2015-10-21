@@ -18,6 +18,7 @@ class Hud {
         float airspeed_, airspeed_unchecked_, altitude_, q0_, q1_, q2_, q3_, gps_speed_, gps_heading_, battery_voltage_, x_accel_, y_accel_, z_accel_, throttle_, elevonL_, elevonR_;
         long timestamp_;
         int frame_number_, video_number_;
+        int plane_number_, log_number_;
         int scale_factor_;
         Scalar hud_color_ ;
         int box_line_width_;
@@ -58,6 +59,7 @@ class Hud {
 
         void DrawCenterMark(Mat hud_img);
         void DrawThrottle(Mat hud_img);
+        void DrawPlaneAndLogNumbers(Mat hud_img);
 
         void DrawAllAccelerationIndicators(Mat hud_img);
         void DrawGraphIndicator(Mat hud_img, int left, int top, string label, int min_value, int max_value, int mark_increment, string plus_format, string minus_format, float value, bool zero_in_center = false, bool reverse_graph_direction = false);
@@ -83,6 +85,9 @@ class Hud {
         void SetAltitude(float altitude_in_meters) { altitude_ = 3.28084*altitude_in_meters; }
 
         void SetGpsSpeed(float gps_speed_in_mps) { gps_speed_ = gps_speed_in_mps * 2.23694; }
+
+        void SetPlaneNumber(int num) { plane_number_ = num; }
+        void SetLogNumber(int num) { log_number_ = num; }
 
         void SetOrientation(float q0, float q1, float q2, float q3) {
             q0_ = q0;

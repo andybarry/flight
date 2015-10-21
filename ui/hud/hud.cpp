@@ -10,6 +10,8 @@ Hud::Hud(Scalar hud_color) {
     text_thickness_ = 1;
     pitch_range_of_lens_ = 108.2; // measured for the calibrated and rectified image
 
+    plane_number_ = -1;
+    log_number_ = -1;
     airspeed_ = -10001;
     airspeed_unchecked_ = -10001;
     altitude_ = -10001;
@@ -97,7 +99,7 @@ void Hud::DrawHud(InputArray _input_image, OutputArray _output_image) {
             DrawFrameNumber(hud_img);
             DrawBatteryVoltage(hud_img);
             DrawDateTime(hud_img);
-
+            DrawPlaneAndLogNumbers(hud_img);
         }
 
         if (clutter_level_ > 2) {
@@ -1106,9 +1108,35 @@ void Hud::DrawCenterMark(Mat hud_img) {
 void Hud::DrawThrottle(Mat hud_img) {
 
     int left = 70;
-    int top = 50;
+    int top = 60;
 
     DrawGraphIndicator(hud_img, left, top, "Thr", 0, 100, 25, "%.0f%%", "-%.0f%%", throttle_, false, false);
+}
+
+void Hud::DrawPlaneAndLogNumbers(Mat hud_img) {
+    int left = 10;
+    int top = 25;
+
+    // add the plane number and the log number
+    std::string plane_number = "L";
+    if (plane_number_ >= 0) {
+        plane_number += std::to_string(plane_number_);
+    } else {
+        plane_number += "-";
+    }
+
+    if (log_number_ >= 0) {
+        if (log_number_ < 10) {
+            plane_number += ".0" + std::to_string(log_number_);
+        } else {
+            plane_number += "." + std::to_string(log_number_);
+        }
+    } else {
+        plane_number += ".--";
+    }
+
+    // put the date/time on the frame
+    PutHudTextSmall(hud_img, plane_number, Point(left, top));
 }
 
 void Hud::DrawDateTime(Mat hud_img) {

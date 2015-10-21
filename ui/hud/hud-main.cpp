@@ -32,6 +32,7 @@ lcmt_stereo_with_xy_subscription_t *stereo_xy_sub;
 lcmt_stereo_subscription_t *stereo_bm_sub;
 lcmt_tvlqr_controller_action_subscription_t *tvlqr_action_sub;
 lcmt_debug_subscription_t *state_machine_sub;
+lcmt_log_size_subscription_t *log_info_gps1_sub, *log_info_gps2_sub, *log_info_gps3_sub;
 
 
 mutex image_mutex;
@@ -268,6 +269,19 @@ int main(int argc,char** argv) {
     char *octomap_hud_channel;
     if (bot_param_get_str(param, "lcm_channels.octomap_hud", &octomap_hud_channel) >= 0) {
         octomap_hud_sub = lcmt_stereo_subscribe(lcm, octomap_hud_channel, &octomap_hud_handler, &hud);
+    }
+
+    char *log_size_channel;
+    if (bot_param_get_str(param, "lcm_channels.log_size_channel", &log_size_channel) >= 0) {
+        char log_size_channel_temp[100];
+        strcpy(log_size_channel_temp, log_size_channel);
+        log_info_gps1_sub = lcmt_log_size_subscribe(lcm, strcat(log_size_channel_temp, "1"), &log_size_handler, &hud);
+        strcpy(log_size_channel_temp, log_size_channel);
+        log_info_gps2_sub = lcmt_log_size_subscribe(lcm, strcat(log_size_channel_temp, "2"), &log_size_handler, &hud);
+        strcpy(log_size_channel_temp, log_size_channel);
+        log_info_gps3_sub = lcmt_log_size_subscribe(lcm, strcat(log_size_channel_temp, "3"), &log_size_handler, &hud);
+        strcpy(log_size_channel_temp, log_size_channel);
+        std::cout << strcat(log_size_channel_temp, "3") << std::endl;
     }
 
 
@@ -781,6 +795,18 @@ void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 
     hud->SetGpsSpeed(msg->speed);
     hud->SetGpsHeading(msg->heading);
+}
+
+void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user) {
+    Hud *hud = (Hud*)user;
+
+    // plane number is the last character of the channel name
+    char last_char = channel[strlen(channel)-1];
+    int plane_number = last_char - '0'; // this converts a single character to an integer
+                                        // and is standards conforming C
+
+    hud->SetPlaneNumber(plane_number);
+    hud->SetLogNumber(msg->log_number);
 }
 
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {

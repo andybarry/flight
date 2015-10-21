@@ -13,6 +13,7 @@
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
 #include "../../LCM/lcmt_debug.h"
+#include "../../LCM/lcmt_log_size.h"
 
 #include "lcmtypes/bot_core_image_t.h" // from libbot for images over LCM
 #include "lcmtypes/mav_indexed_measurement_t.h" // from pronto
@@ -71,5 +72,6 @@ void AskForFrame(int video_number, int frame_number);
 
 void state_machine_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_debug *msg, void *user);
 void octomap_hud_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_stereo *msg, void *user);
+void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user);
 
 #endif
