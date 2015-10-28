@@ -281,7 +281,6 @@ int main(int argc,char** argv) {
         strcpy(log_size_channel_temp, log_size_channel);
         log_info_gps3_sub = lcmt_log_size_subscribe(lcm, strcat(log_size_channel_temp, "3"), &log_size_handler, &hud);
         strcpy(log_size_channel_temp, log_size_channel);
-        std::cout << strcat(log_size_channel_temp, "3") << std::endl;
     }
 
 

@@ -138,7 +138,7 @@ class StateMachineControl {
 
         mav::pose_t last_imu_msg_;
 
-
+        BotTrans last_draw_transform_;
 
 };
 

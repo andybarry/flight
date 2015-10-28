@@ -157,7 +157,7 @@ void StereoOctomap::PrintAllPoints() const {
 
 void StereoOctomap::Draw(lcm_t *lcm) const {
     bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm, "PointCloud");
-    bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+    bot_lcmgl_color3f(lcmgl, 1, 0, 0);
 
     for(pcl::PointCloud<pcl::PointXYZ>::iterator it = current_cloud_->begin(); it != current_cloud_->end(); it++) {
         double xyz[3];
@@ -165,7 +165,10 @@ void StereoOctomap::Draw(lcm_t *lcm) const {
         xyz[1] = it->y;
         xyz[2] = it->z;
 
-        bot_lcmgl_sphere(lcmgl, xyz, 0.5, 20, 20);
+        float box_size[3] = { .25, .25, .25 };
+
+        //bot_lcmgl_sphere(lcmgl, xyz, 0.5, 20, 20);
+        bot_lcmgl_box(lcmgl, xyz, box_size);
     }
     bot_lcmgl_switch_buffer(lcmgl);
 

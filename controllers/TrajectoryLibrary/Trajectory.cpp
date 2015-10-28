@@ -324,11 +324,15 @@ void Trajectory::GetXyzYawTransformedPoint(double t, const BotTrans &transform, 
 
 }
 
-void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
+void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform, double final_time) const {
     if (transform == nullptr) {
         BotTrans temp_trans;
         bot_trans_set_identity(&temp_trans);
         transform = &temp_trans;
+    }
+
+    if (final_time < 0) {
+        final_time = GetMaxTime();
     }
 
     // draw the trajectory's origin
@@ -343,7 +347,7 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
 
     bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
     double t = 0;
-    while (t < GetMaxTime()) {
+    while (t < final_time) {
         GetXyzYawTransformedPoint(t, *transform, xyz);
 
         bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
@@ -352,13 +356,40 @@ void Trajectory::Draw(bot_lcmgl_t *lcmgl, const BotTrans *transform) const {
     bot_lcmgl_end(lcmgl);
 
     t = 0;
-    while (t < GetMaxTime()) {
+    while (t < final_time) {
         GetXyzYawTransformedPoint(t, *transform, xyz);
 
         bot_lcmgl_sphere(lcmgl, xyz, 0.05, 20, 20);
 
         t += GetDT();
     }
+
+    t = 0;
+    while (t < final_time) {
+        GetXyzYawTransformedPoint(t, *transform, xyz);
+
+        bot_lcmgl_begin(lcmgl, GL_LINE_STRIP);
+        // draw roll angle with a line on the z axis
+
+        Eigen::Vector3d unit_z;
+        unit_z << 0, 0, 1;
+
+        Eigen::VectorXd state = GetState(t);
+        Eigen::Vector3d rpy;
+        rpy << -state(3), state(4), state(5); // HACK?
+        Eigen::Matrix3d rot_mat = rpy2rotmat(rpy);
+
+        Eigen::Vector3d rot_z = rot_mat * unit_z;
+
+        bot_lcmgl_vertex3f(lcmgl, xyz[0], xyz[1], xyz[2]);
+        bot_lcmgl_vertex3f(lcmgl, xyz[0]+rot_z(0), xyz[1]+rot_z(1), xyz[2]+rot_z(2));
+        bot_lcmgl_end(lcmgl);
+
+        t += 2*GetDT();
+    }
+
+
+
 
     // label the last point with a timestamp
     //char t_end[50];

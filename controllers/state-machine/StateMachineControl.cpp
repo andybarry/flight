@@ -65,6 +65,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     need_imu_update_ = false;
     visualization_ = visualization;
+    bot_trans_set_identity(&last_draw_transform_);
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
     state_message_channel_ = state_message_channel;
@@ -239,6 +240,18 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
  * are running.
  */
 void StateMachineControl::RequestNewTrajectory() {
+    if (visualization_ && traj_start_t_ > 0) {
+        // redraw the old trajectory to remove anything that we didn't actually execute
+        std::string lcmgl_name = "StateMachineControl Trajectory: " + std::to_string(traj_start_t_);
+
+        bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), lcmgl_name.c_str());
+        bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+
+        current_traj_->Draw(lcmgl, &last_draw_transform_, ConvertTimestampToSeconds(GetTimestampNow() - traj_start_t_));
+        bot_lcmgl_switch_buffer(lcmgl);
+        bot_lcmgl_destroy(lcmgl);
+    }
+
     lcmt::tvlqr_controller_action msg;
 
     msg.timestamp = GetTimestampNow();
@@ -252,16 +265,20 @@ void StateMachineControl::RequestNewTrajectory() {
     lcm_->publish(tvlqr_action_out_channel_, &msg);
 
     if (visualization_) {
-        // draw the trajectory via lcmgl
+        // draw new the trajectory via lcmgl
         BotTrans body_to_local;
         bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
 
-        bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "StateMachineControl Trajectory");
+        std::string lcmgl_name = "StateMachineControl Trajectory: " + std::to_string(traj_start_t_);
+
+        bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), lcmgl_name.c_str());
         bot_lcmgl_color3f(lcmgl, 0, 0, 1);
 
         current_traj_->Draw(lcmgl, &body_to_local);
         bot_lcmgl_switch_buffer(lcmgl);
         bot_lcmgl_destroy(lcmgl);
+
+        last_draw_transform_ = body_to_local;
 
         PublishDebugMsg("StateMachineControl: visualization");
     }
