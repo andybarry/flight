@@ -20,4 +20,4 @@ This code powers:
   * [abstract (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry14.pdf)
   * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry12a.pdf)
 
-Contact <abarry@csail.mit.edu> / abarry.org for more information.
+Contact <abarry@csail.mit.edu> / [abarry.org](http://abarry.org) for more information.
