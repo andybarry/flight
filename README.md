@@ -3,7 +3,10 @@ flight
 
 Flight code for MIT CSAIL [Robot Locomotion Group](https://groups.csail.mit.edu/locomotion/index.html) flying-through-forests project
 
-This code powers
+This code powers:
+
+* *FPGA vs. pushbroom stereo vision for MAVs*:
+  * [paper (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry15a.pdf)
 
 * *Pushbroom stereo for high-speed navigation in cluttered environments*:
   * [paper (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry15.pdf)
@@ -17,4 +20,4 @@ This code powers
   * [abstract (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry14.pdf)
   * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry12a.pdf)
 
-Contact <abarry@csail.mit.edu> for more information.
+Contact <abarry@csail.mit.edu> / abarry.org for more information.
