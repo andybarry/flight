@@ -21,7 +21,7 @@ This code powers:
   * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry12a.pdf)
 
 See also:
-* * [Drake toolbox](http://drake.mit.edu) for planning, control, and analysis
+  * [Drake toolbox](http://drake.mit.edu) for planning, control, and analysis
   * [Simulation code](https://github.com/andybarry/simflight)
   * [CAD](https://github.com/andybarry/flight-cad/tree/master/TBSC)
   * [Pronto state estimator](https://github.com/ipab-slmc/pronto-distro)
