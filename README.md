@@ -5,6 +5,11 @@ Flight code for MIT CSAIL [Robot Locomotion Group](https://groups.csail.mit.edu/
 
 This code powers:
 
+* Self-flying drone dips, darts and dives through trees at 30 mph(drone_flies_through_forest_at_30_mph)
+  * [video](https://www.youtube.com/watch?v=_qah8oIzCwk)
+  
+  [![Drone Autonomously Avoiding Obstacles at 30 MPH](http://img.youtube.com/vi/_qah8oIzCwk/0.jpg)](https://www.youtube.com/watch?v=_qah8oIzCwk)
+
 * *FPGA vs. pushbroom stereo vision for MAVs*:
   * [paper (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry15a.pdf)
 
