@@ -26,6 +26,7 @@ This code powers:
   * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry12a.pdf)
 
 See also:
+  * [Full parts list (PDF)](https://github.com/andybarry/flight-cad/blob/master/TBSC/PartsList.pdf)
   * [Drake toolbox](http://drake.mit.edu) for planning, control, and analysis
   * [Simulation code](https://github.com/andybarry/simflight)
   * [CAD](https://github.com/andybarry/flight-cad/tree/master/TBSC)
