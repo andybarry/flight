@@ -6,6 +6,7 @@ int main(int argc,char** argv) {
 
     bool ttl_one = false;
     bool visualization = false;
+    bool traj_visualization = false;
 
     std::string pose_channel = "STATE_ESTIMATOR_POSE";
     std::string stereo_channel = "stereo";
@@ -25,7 +26,8 @@ int main(int argc,char** argv) {
     parser.add(tvlqr_action_out_channel, "o", "tvlqr-out-channel", "LCM channel to publish which TVLQR trajectory is running on.");
     parser.add(rc_trajectory_commands_channel, "r", "rc-trajectory-commands-channel", "LCM channel to listen for RC trajectory commands on.");
     parser.add(state_machine_go_autonomous_channel, "a", "state-machine-go-autonomous-channel", "LCM channel to send go-autonmous messages on.");
-    parser.add(visualization, "v", "visualization", "Enables visualization for HUD / LCMGL.");
+    parser.add(visualization, "v", "visualization", "Enables visualization of obstacles for HUD / LCMGL.");
+    parser.add(traj_visualization, "V", "traj-visualization", "Enables visualization of trajectories using LCMGL.");
     parser.add(arm_for_takeoff_channel, "A", "arm-for-takeoff-channel", "LCM channel to receive arm for takeoff messages on.");
     parser.add(state_message_channel, "s" "state-machine-state-channel", "LCM channel to send state machine state messages on.");
 
@@ -53,7 +55,7 @@ int main(int argc,char** argv) {
 
     trajectory_dir = ReplaceUserVarInPath(trajectory_dir);
 
-    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, state_message_channel, altitude_reset_channel, visualization);
+    StateMachineControl fsm_control(&lcm, trajectory_dir, tvlqr_action_out_channel, state_message_channel, altitude_reset_channel, visualization, traj_visualization);
     //fsm_control.GetFsmContext()->setDebugFlag(true);
 
     // subscribe to LCM channels

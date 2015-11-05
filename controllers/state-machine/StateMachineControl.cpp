@@ -1,6 +1,6 @@
 #include "StateMachineControl.hpp"
 
-StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization) : fsm_(*this) {
+StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization, bool traj_visualization) : fsm_(*this) {
     lcm_ = lcm;
 
     param_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -65,6 +65,7 @@ StateMachineControl::StateMachineControl(lcm::LCM *lcm, std::string traj_dir, st
 
     need_imu_update_ = false;
     visualization_ = visualization;
+    traj_visualization_ = traj_visualization;
     bot_trans_set_identity(&last_draw_transform_);
 
     tvlqr_action_out_channel_ = tvlqr_action_out_channel;
@@ -240,7 +241,7 @@ bool StateMachineControl::BetterTrajectoryAvailable() {
  * are running.
  */
 void StateMachineControl::RequestNewTrajectory() {
-    if (visualization_ && traj_start_t_ > 0) {
+    if (traj_visualization_ && traj_start_t_ > 0) {
         // redraw the old trajectory to remove anything that we didn't actually execute
         std::string lcmgl_name = "StateMachineControl Trajectory: " + std::to_string(traj_start_t_);
 
@@ -264,7 +265,7 @@ void StateMachineControl::RequestNewTrajectory() {
 
     lcm_->publish(tvlqr_action_out_channel_, &msg);
 
-    if (visualization_) {
+    if (traj_visualization_) {
         // draw new the trajectory via lcmgl
         BotTrans body_to_local;
         bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
@@ -280,7 +281,7 @@ void StateMachineControl::RequestNewTrajectory() {
 
         last_draw_transform_ = body_to_local;
 
-        PublishDebugMsg("StateMachineControl: visualization");
+        PublishDebugMsg("StateMachineControl: traj_visualization");
     }
 }
 

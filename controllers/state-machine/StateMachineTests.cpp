@@ -220,7 +220,7 @@ class StateMachineControlTest : public testing::Test {
 };
 
 TEST_F(StateMachineControlTest, BasicStateMachineTest) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
 
     int stable_traj_num = 0;
     int takeoff_traj_num = 2;
@@ -233,7 +233,7 @@ TEST_F(StateMachineControlTest, BasicStateMachineTest) {
 }
 
 TEST_F(StateMachineControlTest, OneObstacle) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     float altitude = 100;
@@ -334,7 +334,7 @@ TEST_F(StateMachineControlTest, OneObstacle) {
 
 
 TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     float altitude = 5;
@@ -443,7 +443,7 @@ TEST_F(StateMachineControlTest, OneObstacleLowAltitude) {
  */
 TEST_F(StateMachineControlTest, TrajectoryTimeout) {
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     float altitude = 100;
@@ -500,7 +500,7 @@ TEST_F(StateMachineControlTest, TrajectoryTimeout) {
  */
 TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     SubscribeLcmChannels(fsm_control);
@@ -605,7 +605,7 @@ TEST_F(StateMachineControlTest, TrajectoryInterrupt) {
 }
 
 TEST_F(StateMachineControlTest, BearingController) {
-    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false);
+    StateMachineControl *fsm_control = new StateMachineControl(lcm_, "../TrajectoryLibrary/trajtest/full", "tvlqr-action-out", "state-machine-state", "altitude-reset", false, false);
     //fsm_control->GetFsmContext()->setDebugFlag(true);
 
     SubscribeLcmChannels(fsm_control);

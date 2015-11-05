@@ -25,7 +25,7 @@
 class StateMachineControl {
 
     public:
-        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization);
+        StateMachineControl(lcm::LCM *lcm, std::string traj_dir, std::string tvlqr_action_out_channel, std::string state_message_channel, std::string altitude_reset_channel, bool visualization, bool traj_visualization);
         ~StateMachineControl();
 
         void DoDelayedImuUpdate();
@@ -135,6 +135,7 @@ class StateMachineControl {
 
         bool need_imu_update_;
         bool visualization_;
+        bool traj_visualization_;
 
         mav::pose_t last_imu_msg_;
 

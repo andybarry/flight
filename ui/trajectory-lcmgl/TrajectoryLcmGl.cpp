@@ -9,21 +9,40 @@ TrajectoryLcmGl::TrajectoryLcmGl(lcm::LCM *lcm, const TrajectoryLibrary *trajlib
 }
 
 void TrajectoryLcmGl::ProcessTrajectoryMsg(const lcm::ReceiveBuffer *rbus, const std::string &chan, const lcmt::tvlqr_controller_action *msg) {
-    DrawTrajectoryLcmGl(msg->trajectory_number);
+    DrawTrajectoryLcmGl(msg->trajectory_number, msg->timestamp);
 }
 
-void TrajectoryLcmGl::DrawTrajectoryLcmGl(int traj_number) {
+void TrajectoryLcmGl::DrawTrajectoryLcmGl(int traj_number, int64_t timestamp) {
+    std::cout << "Drawing t=" << timestamp << std::endl;
+
+    if (!last_traj_name_.empty() && timestamp > last_traj_timestamp_) {
+        // redraw the old trajectory to remove anything that we didn't actually execute
+        bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), last_traj_name_.c_str());
+        bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+
+        last_traj_->Draw(lcmgl, &last_draw_transform_, ConvertTimestampToSeconds(timestamp - last_traj_timestamp_));
+        bot_lcmgl_switch_buffer(lcmgl);
+        bot_lcmgl_destroy(lcmgl);
+    }
+
     // draw the trajectory via lcmgl
+    std::string name = "Trajectory playback t=" + std::to_string(timestamp);
     BotTrans body_to_local;
     bot_frames_get_trans(bot_frames_, "body", "local", &body_to_local);
 
-    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "Trajectory playback");
+    bot_lcmgl_t *lcmgl = bot_lcmgl_init(lcm_->getUnderlyingLCM(), name.c_str());
     bot_lcmgl_color3f(lcmgl, 0, 0, 1);
 
     const Trajectory *traj = trajlib_->GetTrajectoryByNumber(traj_number);
     traj->Draw(lcmgl, &body_to_local);
     bot_lcmgl_switch_buffer(lcmgl);
     bot_lcmgl_destroy(lcmgl);
+
+    last_traj_name_ = name;
+    last_draw_transform_ = body_to_local;
+    last_traj_timestamp_ = timestamp;
+    last_traj_ = traj;
+    std::cout << "done" << std::endl;
 }
 
 int main(int argc,char** argv) {

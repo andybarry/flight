@@ -18,11 +18,15 @@ class TrajectoryLcmGl {
 
     private:
 
-        void DrawTrajectoryLcmGl(int traj_number);
+        void DrawTrajectoryLcmGl(int traj_number, int64_t timestamp);
 
         lcm::LCM *lcm_;
         const TrajectoryLibrary *trajlib_;
         BotFrames *bot_frames_;
+        std::string last_traj_name_ = "";
+        BotTrans last_draw_transform_;
+        int64_t last_traj_timestamp_;
+        const Trajectory *last_traj_;
 
 
 };
