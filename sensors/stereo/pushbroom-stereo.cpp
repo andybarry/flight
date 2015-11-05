@@ -1,11 +1,11 @@
-/*
- * Implements the fast, single-disparity stereo alogrithm.
+/**
+ * Implements pushbroom stereo, a fast, single-disparity stereo algorithm.
  *
- * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
+ * Copyright 2013-2015, Andrew Barry <abarry@csail.mit.edu>
  *
  */
 
-#include "barrymoore.hpp"
+#include "pushbroom-stereo.hpp"
 #include <pthread.h>
 
 // if USE_SAFTEY_CHECKS is 1, GetSAD will try to make sure
@@ -23,10 +23,10 @@
 #define NUMERIC_CONST 333 // just a constant that we multiply the score by to make
                           // all the parameters in a nice integer range
 
-BarryMooreThreadStarter thread_starter[NUM_THREADS+1];
+PushbroomStereoThreadStarter thread_starter[NUM_THREADS+1];
 
 
-BarryMoore::BarryMoore() {
+PushbroomStereo::PushbroomStereo() {
     // init worker threads
 
 
@@ -52,16 +52,16 @@ BarryMoore::BarryMoore() {
     }
 }
 
-void* BarryMoore::WorkerThread(void *x) {
+void* PushbroomStereo::WorkerThread(void *x) {
 
-    BarryMooreThreadStarter *statet = (BarryMooreThreadStarter*) x;
+    PushbroomStereoThreadStarter *statet = (PushbroomStereoThreadStarter*) x;
 
     mutex *data_mutex = statet->data_mutex;
     int thread_number = statet->thread_number;
     condition_variable *cv_new_data = statet->cv_new_data;
     condition_variable *cv_thread_finish = statet->cv_thread_finish;
 
-    BarryMoore *parent = statet->parent;
+    PushbroomStereo *parent = statet->parent;
 
     unique_lock<mutex> locker(*data_mutex, std::defer_lock);
 
@@ -101,7 +101,7 @@ void* BarryMoore::WorkerThread(void *x) {
                 break;
 
             case STEREO:
-                parent->RunStereoBarryMoore(parent->GetThreadedState(thread_number));
+                parent->RunStereoPushbroomStereo(parent->GetThreadedState(thread_number));
                 break;
 
             default:
@@ -134,7 +134,7 @@ void* BarryMoore::WorkerThread(void *x) {
  * @param state set of configuration parameters for the function.
  *      You can change these on each run of the function if you'd like.
  */
-void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state) {
+void PushbroomStereo::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, PushbroomStereoState state) {
 
     //cout << "[main] entering process images" << endl;
 
@@ -310,7 +310,7 @@ void BarryMoore::ProcessImages(InputArray _leftImage, InputArray _rightImage, cv
 
 }
 
-void BarryMoore::StartWorkerThread(int i, ThreadWorkType work_type) {
+void PushbroomStereo::StartWorkerThread(int i, ThreadWorkType work_type) {
 
     work_type_[i] = work_type;
 
@@ -324,7 +324,7 @@ void BarryMoore::StartWorkerThread(int i, ThreadWorkType work_type) {
     cv_new_data_[i].notify_one();
 }
 
-void BarryMoore::SyncWorkerThreads() {
+void PushbroomStereo::SyncWorkerThreads() {
 
     //cout << "[main] in sync workers" << endl;
     for (int i=0;i<NUM_THREADS;i++) {
@@ -348,7 +348,7 @@ void BarryMoore::SyncWorkerThreads() {
  * Function (for running in a thread) that remaps images
  *
  */
-void BarryMoore::RunRemapping(RemapThreadState *remap_state) {
+void PushbroomStereo::RunRemapping(RemapThreadState *remap_state) {
 
     // remap this part of the image
 
@@ -359,7 +359,7 @@ void BarryMoore::RunRemapping(RemapThreadState *remap_state) {
 
 }
 
-void BarryMoore::RunInterestOp(InterestOpState *interest_state) {
+void PushbroomStereo::RunInterestOp(InterestOpState *interest_state) {
 
     // apply interest operator
     Laplacian(interest_state->left_image.rowRange(interest_state->row_start, interest_state->row_end), interest_state->sub_laplacian_left, -1, 3, 1, 0, BORDER_DEFAULT);
@@ -369,15 +369,15 @@ void BarryMoore::RunInterestOp(InterestOpState *interest_state) {
 }
 
 /**
- * Function that actually does the work for the BarryMoore algorithm.
+ * Function that actually does the work for the PushbroomStereo algorithm.
  *
  * @param statet all the parameters are set
- *          as a BarryMooreStateThreaded struct.
+ *          as a PushbroomStereoStateThreaded struct.
  *
  * @retval will always be NULL since the real values are passed
  *      back in the vector that is in statet.
  */
-void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
+void PushbroomStereo::RunStereoPushbroomStereo(PushbroomStereoStateThreaded *statet)
 {
 
     Mat leftImage = statet->remapped_left;
@@ -392,7 +392,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
     int row_start = statet->row_start;
     int row_end = statet->row_end;
 
-    BarryMooreState state = statet->state;
+    PushbroomStereoState state = statet->state;
 
     // we will do this by looping through every block in the left image
     // (defined by blockSize) and checking for a matching value on
@@ -509,7 +509,7 @@ void BarryMoore::RunStereoBarryMoore(BarryMooreStateThreaded *statet)
  * @retval scaled sum of absolute differences for this block --
  *      the value is the sum/numberOfPixels
  */
-int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state, int *left_interest, int *right_interest, int *raw_sad)
+int PushbroomStereo::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, PushbroomStereoState state, int *left_interest, int *right_interest, int *raw_sad)
 {
     // init parameters
     int blockSize = state.blockSize;
@@ -728,8 +728,8 @@ int BarryMoore::GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplac
  *
  * @retval true if there is another match (so NOT an obstacle)
  */
-bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
-    Mat sobelR, int pxX, int pxY, BarryMooreState state) {
+bool PushbroomStereo::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL,
+    Mat sobelR, int pxX, int pxY, PushbroomStereoState state) {
 
     // init parameters
     int blockSize = state.blockSize;
@@ -862,7 +862,7 @@ bool BarryMoore::CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat so
  *  roundUp(52, 20) --> 60
  *
  */
-int BarryMoore::RoundUp(int numToRound, int multiple)
+int PushbroomStereo::RoundUp(int numToRound, int multiple)
 {
     if (multiple == 0)
         return numToRound;

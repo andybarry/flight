@@ -1,12 +1,12 @@
-/*
- * Implements the fast, single-disparity stereo alogrithm.
+/**
+ * Implements pushbroom stereo, a fast, single-disparity stereo algorithm.
  *
- * Copyright 2013, Andrew Barry <abarry@csail.mit.edu>
+ * Copyright 2013-2015, Andrew Barry <abarry@csail.mit.edu>
  *
  */
 
-#ifndef BARRYMOORE_H
-#define BARRYMOORE_H
+#ifndef PUSHBROOM_STEREO_HPP
+#define PUSHBROOM_STEREO_HPP
 
 #include "opencv2/opencv.hpp"
 #include <cv.h>
@@ -28,7 +28,7 @@ using namespace std;
 
 enum ThreadWorkType { REMAP, INTEREST_OP, STEREO };
 
-struct BarryMooreState
+struct PushbroomStereoState
 {
     int disparity;
     int zero_dist_disparity;
@@ -54,8 +54,8 @@ struct BarryMooreState
     //cv::vector<Point3f> *localHitPoints; // this is an array of cv::vector<Point3f>'s
 };
 
-struct BarryMooreStateThreaded {
-    BarryMooreState state;
+struct PushbroomStereoStateThreaded {
+    PushbroomStereoState state;
 
     Mat remapped_left;
     Mat remapped_right;
@@ -99,15 +99,15 @@ struct InterestOpState {
 };
 
 
-class BarryMoore {
+class PushbroomStereo {
     private:
-        void RunStereoBarryMoore(BarryMooreStateThreaded *statet);
+        void RunStereoPushbroomStereo(PushbroomStereoStateThreaded *statet);
 
         void RunRemapping(RemapThreadState *remap_state);
 
         void RunInterestOp(InterestOpState *interest_state);
 
-        bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, BarryMooreState state);
+        bool CheckHorizontalInvariance(Mat leftImage, Mat rightImage, Mat sobelL, Mat sobelR, int pxX, int pxY, PushbroomStereoState state);
 
         void StartWorkerThread(int i, ThreadWorkType work_type);
         void SyncWorkerThreads();
@@ -123,7 +123,7 @@ class BarryMoore {
 
         bool has_new_data_[NUM_THREADS+1];
 
-        BarryMooreStateThreaded thread_states_[NUM_THREADS+1];
+        PushbroomStereoStateThreaded thread_states_[NUM_THREADS+1];
         RemapThreadState remap_thread_states_[NUM_THREADS+1];
         InterestOpState interest_op_states_[NUM_THREADS+1];
 
@@ -136,20 +136,20 @@ class BarryMoore {
 
 
     public:
-        BarryMoore();
+        PushbroomStereo();
 
-        void ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, BarryMooreState state);
+        void ProcessImages(InputArray _leftImage, InputArray _rightImage, cv::vector<Point3f> *pointVector3d, cv::vector<uchar> *pointColors, cv::vector<Point3i> *pointVector2d, PushbroomStereoState state);
 
         ThreadWorkType GetWorkType(int i) { return work_type_[i]; }
 
-        BarryMooreStateThreaded* GetThreadedState(int i) {
+        PushbroomStereoStateThreaded* GetThreadedState(int i) {
             return &(thread_states_[i]);
         }
 
         bool GetHasNewData(int i) { return has_new_data_[i]; }
         void SetHasNewData(int i, bool val) { has_new_data_[i] = val; }
 
-        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, BarryMooreState state, int *left_interest = NULL, int *right_interest = NULL, int *raw_sad = NULL);
+        int GetSAD(Mat leftImage, Mat rightImage, Mat laplacianL, Mat laplacianR, int pxX, int pxY, PushbroomStereoState state, int *left_interest = NULL, int *right_interest = NULL, int *raw_sad = NULL);
 
         RemapThreadState* GetRemapState(int i) { return &(remap_thread_states_[i]); }
 
@@ -157,14 +157,14 @@ class BarryMoore {
 
 };
 
-struct BarryMooreThreadStarter {
+struct PushbroomStereoThreadStarter {
     int thread_number;
     mutex *data_mutex;
     condition_variable *cv_new_data;
     condition_variable *cv_thread_finish;
     bool *is_working;
 
-    BarryMoore *parent;
+    PushbroomStereo *parent;
 };
 
 

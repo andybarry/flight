@@ -78,6 +78,7 @@ estimators/mav-state-init/send-mav-state-init
 sensors/stereo/opencv-calibrate_d
 sensors/stereo/opencv-cam-calib-test_d
 sensors/stereo/opencv-stereo_d
+sensors/stereo/pushbroom-stereo
 *.ppm
 *.pgm
 sensors/stereo/stereo_camera_calibrate/*.xml
