@@ -567,10 +567,8 @@ int RecordingManager::GetFrameNumber() {
 void RecordingManager::SetHudNumbers(Hud *hud) {
 
     if (!UsingLiveCameras()) {
-std::cout << "set hud numbers NOT LIVE" << std::endl;
         hud->SetFrameNumber(file_frame_number_);
     }
-std::cout << "set hud numbers = " << GetHudVideoNumber() << std::endl;
     hud->SetVideoNumber(current_video_number_);
 }
 
