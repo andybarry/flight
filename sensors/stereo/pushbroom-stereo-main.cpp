@@ -45,6 +45,9 @@ lcmt_stereo_subscription_t *stereo_replay_sub;
 lcmt_cpu_info_subscription_t *cpu_info_sub1;
 lcmt_cpu_info_subscription_t *cpu_info_sub2;
 lcmt_cpu_info_subscription_t *cpu_info_sub3;
+lcmt_log_size_subscription_t *log_size_sub1;
+lcmt_log_size_subscription_t *log_size_sub2;
+lcmt_log_size_subscription_t *log_size_sub3;
 mav_pose_t_subscription_t *mav_pose_t_sub;
 lcmt_baro_airspeed_subscription_t *baro_airspeed_sub;
 lcmt_battery_status_subscription_t *battery_status_sub;
@@ -348,6 +351,12 @@ int main(int argc, char *argv[])
             cpu_info_sub3 = lcmt_cpu_info_subscribe(lcm, stereoConfig.cpu_info_channel3.c_str(), &cpu_info_handler, &recording_manager);
         }
 
+        if (stereoConfig.log_size_channel1.length() > 0) {
+            log_size_sub1 = lcmt_log_size_subscribe(lcm, stereoConfig.log_size_channel1.c_str(), &log_size_handler, &hud);
+            log_size_sub2 = lcmt_log_size_subscribe(lcm, stereoConfig.log_size_channel2.c_str(), &log_size_handler, &hud);
+            log_size_sub3 = lcmt_log_size_subscribe(lcm, stereoConfig.log_size_channel3.c_str(), &log_size_handler, &hud);
+        }
+
     } // end show_display || publish_all_images
 
     // load calibration
@@ -622,7 +631,7 @@ int main(int argc, char *argv[])
             if (display_hud) {
                 Mat with_hud;
 
-                recording_manager.SetHudNumbers(hud);
+                recording_manager.SetHudNumbers(&hud);
 
                 hud.DrawHud(matDisp, with_hud);
 
@@ -1126,12 +1135,25 @@ void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
     hud->SetGpsHeading(msg->heading);
 }
 
+void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user) {
+    Hud *hud = (Hud*)user;
+
+    // plane number is the last character of the channel name
+    char last_char = channel[strlen(channel)-1];
+    int plane_number = last_char - '0'; // this converts a single character to an integer
+                                        // and is standards conforming C
+
+    hud->SetPlaneNumber(plane_number);
+    hud->SetLogNumber(msg->log_number);
+}
+
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user) {
     Hud *hud = (Hud*)user;
 
     hud->SetAltitude(msg->pos[2]);
     hud->SetOrientation(msg->orientation[0], msg->orientation[1], msg->orientation[2], msg->orientation[3]);
     hud->SetAcceleration(msg->accel[0], msg->accel[1], msg->accel[2]);
+    hud->SetAirspeed(msg->vel[0]);
 
     hud->SetTimestamp(msg->utime);
 }

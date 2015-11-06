@@ -32,7 +32,7 @@
 #include "../../LCM/mav_gps_data_t.h"
 #include "../../LCM/mav_pose_t.h"
 #include "../../LCM/lcmt_cpu_info.h"
-
+#include "../../LCM/lcmt_log_size.h"
 
 #include "../../LCM/lcmt_stereo_control.h"
 
@@ -118,5 +118,7 @@ void mav_gps_data_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, con
 void mav_pose_t_handler(const lcm_recv_buf_t *rbuf, const char* channel, const mav_pose_t *msg, void *user);
 
 void cpu_info_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_cpu_info *msg, void *user);
+
+void log_size_handler(const lcm_recv_buf_t *rbuf, const char* channel, const lcmt_log_size *msg, void *user);
 
 #endif

@@ -564,13 +564,14 @@ int RecordingManager::GetFrameNumber() {
     }
 }
 
-void RecordingManager::SetHudNumbers(Hud hud) {
+void RecordingManager::SetHudNumbers(Hud *hud) {
+
     if (!UsingLiveCameras()) {
-
-        hud.SetFrameNumber(file_frame_number_);
+std::cout << "set hud numbers NOT LIVE" << std::endl;
+        hud->SetFrameNumber(file_frame_number_);
     }
-
-    hud.SetVideoNumber(GetFrameNumber());
+std::cout << "set hud numbers = " << GetHudVideoNumber() << std::endl;
+    hud->SetVideoNumber(current_video_number_);
 }
 
 void RecordingManager::RecFrameHud(Mat hud_frame, bool is_color, std::string prepend_str) {

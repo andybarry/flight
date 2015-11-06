@@ -45,7 +45,7 @@ class RecordingManager {
         int GetRecVideoNumber() { return video_number_; }
         int GetHudVideoNumber() { return hud_video_number_; }
 
-        void SetHudNumbers(Hud hud);
+        void SetHudNumbers(Hud *hud);
 
         void RestartRecHud() { record_hud_setup_ = false; }
         void RecFrameHud(Mat hud_frame, bool is_color = true, std::string prepend_str = "HUD");

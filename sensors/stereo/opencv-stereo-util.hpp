@@ -71,6 +71,11 @@ struct OpenCvStereoConfig
     string cpu_info_channel2;
     string cpu_info_channel3;
 
+    string log_size_channel1;
+    string log_size_channel2;
+    string log_size_channel3;
+
+
     int disparity;
     int infiniteDisparity;
     int interestOperatorLimit;

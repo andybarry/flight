@@ -267,6 +267,42 @@ bool ParseConfigFile(string configFile, OpenCvStereoConfig *configStruct)
     }
     configStruct->cpu_info_channel3 = cpu_info_channel3;
 
+
+    const char *log_size_channel1 = g_key_file_get_string(keyfile, "lcm", "log_size_channel1", NULL);
+
+    if (log_size_channel1 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify log_size_channel1 (or I failed to read it). Parameter: lcm.log_size_channel1\n");
+
+        // this is not a fatal error, don't bail out
+        log_size_channel1 = "";
+    }
+    configStruct->log_size_channel1 = log_size_channel1;
+
+    const char *log_size_channel2 = g_key_file_get_string(keyfile, "lcm", "log_size_channel2", NULL);
+
+    if (log_size_channel2 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify log_size_channel2 (or I failed to read it). Parameter: lcm.log_size_channel2\n");
+
+        // this is not a fatal error, don't bail out
+        log_size_channel2 = "";
+    }
+    configStruct->log_size_channel2 = log_size_channel2;
+
+    const char *log_size_channel3 = g_key_file_get_string(keyfile, "lcm", "log_size_channel3", NULL);
+
+    if (log_size_channel3 == NULL)
+    {
+        fprintf(stderr, "Warning: configuration file does not specify log_size_channel3 (or I failed to read it). Parameter: lcm.log_size_channel3\n");
+
+        // this is not a fatal error, don't bail out
+        log_size_channel3 = "";
+    }
+    configStruct->log_size_channel3 = log_size_channel3;
+
+
+
     char *lcmUrl = g_key_file_get_string(keyfile, "lcm", "url", NULL);
     if (lcmUrl == NULL)
     {
