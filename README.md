@@ -25,6 +25,10 @@ This code powers:
   * [abstract (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry14.pdf)
   * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry12a.pdf)
 
+Pushbroom stereo files are here:
+  * [Main class](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo.hpp) [[cpp](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo.cpp)]
+  * [Camera capture, recording mangement, debuging UI, etc.](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.hpp) [[cpp](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.cpp)]
+
 See also:
   * [Full parts list (PDF)](https://github.com/andybarry/flight-cad/blob/master/TBSC/PartsList.pdf)
   * [Drake toolbox](http://drake.mit.edu) for planning, control, and analysis
