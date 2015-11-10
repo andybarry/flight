@@ -10,6 +10,6 @@ TYPELIST="$TYPELIST,$TYPELIST2"
 TYPELIST=${TYPELIST/,mavlink_msg_container_t/}
 TYPELIST=${TYPELIST/,__init__/}
 
-export PYTHONPATH=$PYTHONPATH:$HOME/realtime/LCM:$HOME/realtime/LCM/lcmt:$HOME/pronto-distro/build/lib/python2.7/dist-packages/mav
+export PYTHONPATH=$PYTHONPATH:$HOME/realtime/LCM:$HOME/realtime/LCM/lcmt:$HOME/pronto-distro/build/lib/python2.7/dist-packages/mav:$HOME/pronto-distro/build/lib/python2.7/dist-packages/bot_core
 
-python $HOME/realtime/scripts/logs/log_to_mat.py -m -f -l $TYPELIST,pose_t,pose_t,ins_t,gps_data_t,indexed_measurement_t $1
+python $HOME/realtime/scripts/logs/log_to_mat.py -m -f -l $TYPELIST,pose_t,pose_t,ins_t,gps_data_t,indexed_measurement_t,filter_state_t,image_sync_t $1

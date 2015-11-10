@@ -19,6 +19,7 @@ clear stereo_control
 clear debug airspeed_unchecked altimeter
 clear servo_out stereo_replay battery gpsValues stereo this_number
 clear stereo_octomap stereoOctomapVals
+clear state_init state_init_complete
 
 load(strcat(dir, filename));
 %load(strcat(dir, filename2));
@@ -533,6 +534,13 @@ if exist('log_info_AAAZZZA', 'var')
   log.info.laptop.logtime = log_info_AAAZZZA(:,5);
   clear log_info_AAAZZZA
 end
+
+if exist('MAV_STATE_EST_INIT_COMPLETE', 'var')
+  state_init_complete.utime = MAV_STATE_EST_INIT_COMPLETE(:,1);
+  state_init_complete.logtime = MAV_STATE_EST_INIT_COMPLETE(:,2);
+  clear MAV_STATE_EST_INIT_COMPLETE;
+end
+
 
 
 
