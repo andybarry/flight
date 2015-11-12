@@ -6,7 +6,6 @@
 
 %filename2 = 'laptop_lcmlog_2013_04_17_00.mat';
 
-
 clear STATE_ESTIMATOR_POSE battery_status stereoBmVals u
 clear imu stereoReplayVals wind_groundspeed attitude est stereoVals 
 clear wind_gspeed baro log stereo_bm wingeron_u airspeed sideslip gps
@@ -273,7 +272,7 @@ if (exist('stereo', 'var'))
   clear stereo
 
   stereo = LoadStereo(stereoVals);
-  
+  stereo2 = stereo; % sometimes the matlab stereo function can cause problems with shadowing
 end
 
 
@@ -365,6 +364,7 @@ clear airspeed;
 airspeed.utime = airspeedValues(:,1);
 airspeed.airspeed = airspeedValues(:,4);
 airspeed.logtime = airspeedValues(:,8);
+airspeed2 = airspeed; % sometimes the matlab airspeed function can cause problems with shadowing
 clear airspeedValues
 
 airspeed_uncheckedValues = airspeed_unchecked;
@@ -559,6 +559,7 @@ log.number = filename(end-5:end-4);
 mypath = strsplit([dir filename], '/');
 log.name = mypath{end};
 clear mypath;
+log42 = log; % for shadowing issues
 
 
 

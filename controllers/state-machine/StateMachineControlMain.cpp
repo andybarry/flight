@@ -29,7 +29,7 @@ int main(int argc,char** argv) {
     parser.add(visualization, "v", "visualization", "Enables visualization of obstacles for HUD / LCMGL.");
     parser.add(traj_visualization, "V", "traj-visualization", "Enables visualization of trajectories using LCMGL.");
     parser.add(arm_for_takeoff_channel, "A", "arm-for-takeoff-channel", "LCM channel to receive arm for takeoff messages on.");
-    parser.add(state_message_channel, "s" "state-machine-state-channel", "LCM channel to send state machine state messages on.");
+    parser.add(state_message_channel, "s", "state-machine-state-channel", "LCM channel to send state machine state messages on.");
 
     parser.parse();
 
