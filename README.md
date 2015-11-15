@@ -10,6 +10,10 @@ This code powers:
   
   [![Drone Autonomously Avoiding Obstacles at 30 MPH](http://img.youtube.com/vi/_qah8oIzCwk/0.jpg)](https://www.youtube.com/watch?v=_qah8oIzCwk)
 
+  * [techincal video](https://www.youtube.com/watch?v=iksfHQkkq88)
+  
+  [![Pushbroom Stereo for High-Speed Obstacle Avoidance (technical video)](http://img.youtube.com/vi/iksfHQkkq88/0.jpg)](https://www.youtube.com/watch?v=iksfHQkkq88)
+
 * *FPGA vs. pushbroom stereo vision for MAVs*:
   * [paper (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry15a.pdf)
 
