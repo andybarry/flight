@@ -1,5 +1,9 @@
 function stereo = TrimStereo(start_time, end_time, stereo_in)
 
+  if end_time > stereo_in.logtime(end)
+    end_time = stereo_in.logtime(end);
+  end
+
   stereo.utime = TrimTimes(start_time, end_time, stereo_in.logtime, stereo_in.utime);
   
   stereo.number_of_points = TrimTimes(start_time, end_time, stereo_in.logtime, stereo_in.number_of_points);
