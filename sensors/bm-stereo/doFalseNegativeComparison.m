@@ -4,7 +4,7 @@
 
 
 
-pass_number = 3;
+pass_number = 2;
 
 %start_frame_pass = [ 1772 675 559 ];
 %end_frame_pass = [ 2528 1262 1594 ];
@@ -170,7 +170,7 @@ else
 
 
   distancesFalsePositives = SmallestDistance(stereo_octomap_filtered.x, stereo_octomap_filtered.y, stereo_octomap_filtered.z, ...
-  %  bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1.5, 100);
+    bm_stereo_aligned.x, bm_stereo_aligned.y, bm_stereo_aligned.z, 1.5, 100);
 
 end
 
@@ -195,18 +195,35 @@ real_dists_array{pass_number} = real_dists;
 
 %% sum up
 
-% figure(20)
-% real_sum = [];
-% for i = 1 : length(real_dists_array)
-%   real_sum = [real_sum; real_dists_array{i}];
-% end
-% hist(real_sum(:,1), 0:.1:ceil(max(real_sum(:,1))));
-% xlabel('Minimum separation (meters)')
-% ylabel('Number of pixels')
-% title('3 Passes');
-% xlim([-1 11]);
-% %ylim([0 1500]);
-% grid on
-% 
-% 
+figure(20)
+real_sum = [];
+for i = 1 : length(real_dists_array)
+  real_sum = [real_sum; real_dists_array{i}];
+end
+hist(real_sum(:,1), 0:.1:ceil(max(real_sum(:,1))));
+xlabel('Minimum separation (meters)')
+ylabel('Number of pixels')
+title('3 Passes');
+xlim([-1 11]);
+%ylim([0 1500]);
+grid on
+
+%% make a CDF-ish plot
+
+figure(21)
+clf
+real_sum_sorted = sort(real_sum);
+
+% so now I have a sorted vector
+% compute a vector that is the percentages of values at this point
+percent_vals = 0:1/length(real_sum_sorted):1-1/length(real_sum_sorted);
+
+plot(real_sum_sorted, percent_vals,'b-')
+
+xlabel('Separation (meters)')
+ylabel('Fraction of Pixels')
+title('');
+xlim([0 6]);
+%set(gca, 'XTickLabel',{'0','1','2','3','4','5','No Match'});
+grid on
 
