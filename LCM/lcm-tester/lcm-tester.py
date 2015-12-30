@@ -5,13 +5,12 @@ lc = lcm.LCM()
 
 sys.path.insert(0, '../')
 sys.path.insert(0, '../lcmt')
+sys.path.insert(0, '../mav')
 
-from rc_switch_action import rc_switch_action
+from pose_t import pose_t
 
-msg = rc_switch_action();
+msg = pose_t();
 
-msg.timestamp = 0;
+msg.utime = 42;
 
-msg.action = 1;
-
-lc.publish("rc-switch-action", msg.encode())
+lc.publish("test", msg.encode())
