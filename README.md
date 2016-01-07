@@ -32,7 +32,6 @@ This code powers:
 Pushbroom stereo files are here:
   * [Main class](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo.hpp) [[cpp](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo.cpp)]
   * [Camera capture, recording management, debugging UI, etc.](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.hpp) [[cpp](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.cpp)]
-  * 
   
 Logs and videos:
   * http://abarry.org/files/logs
