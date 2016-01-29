@@ -7,6 +7,7 @@ This code powers:
 
 * [Self-flying drone dips, darts and dives through trees at 30 mph](http://www.csail.mit.edu/drone_flies_through_forest_at_30_mph)
   * [video](https://www.youtube.com/watch?v=_qah8oIzCwk)
+  * [thesis (pdf)](http://groups.csail.mit.edu/robotics-center/public_papers/Barry16.pdf)
   
   [![Drone Autonomously Avoiding Obstacles at 30 MPH](http://img.youtube.com/vi/_qah8oIzCwk/0.jpg)](https://www.youtube.com/watch?v=_qah8oIzCwk)
 
