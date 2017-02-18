@@ -35,7 +35,7 @@ Pushbroom stereo files are here:
   * [Camera capture, recording management, debugging UI, etc.](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.hpp) [[cpp](https://github.com/andybarry/flight/blob/master/sensors/stereo/pushbroom-stereo-main.cpp)]
   
 Stereo image and synced sensor data:
- * [Dataset](https://drive.google.com/drive/folders/0B504R2Bs0QpzcVlBRXhsREVLMFE)
+ * [Datasets](https://drive.google.com/drive/folders/0B504R2Bs0QpzcVlBRXhsREVLMFE)
 
 See also:
   * [Full parts list (PDF)](https://github.com/andybarry/flight-cad/blob/master/TBSC/PartsList.pdf)
